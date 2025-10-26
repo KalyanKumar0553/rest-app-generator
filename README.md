@@ -20,7 +20,7 @@ Initializer Application for Scaffold Spring Boot Project
 http://localhost:8080/swagger-ui/index.html#/project-controller/create
 
 ## 🎭 Sample YAML For Post Endpoint
-
+```
 app:
   name: Demo API
   groupId: com.src.main
@@ -202,3 +202,4 @@ dtos:
         type: "List<AddressDTO>"
         constraints:
           notEmpty: { value: true, messageKey: "dto.createUser.addresses.notEmpty" }
+```
