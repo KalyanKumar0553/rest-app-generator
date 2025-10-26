@@ -1,0 +1,22 @@
+package {{basePkg}}.validation;
+
+import static java.lang.annotation.ElementType.TYPE;
+import static java.lang.annotation.RetentionPolicy.RUNTIME;
+
+import java.lang.annotation.*;
+import jakarta.validation.Constraint;
+import jakarta.validation.Payload;
+
+@Documented
+@Constraint(validatedBy = ConditionalRequiredValidator.class)
+@Target(TYPE)
+@Retention(RUNTIME)
+public @interface ConditionalRequired {
+  String message() default "{validation.conditionalRequired}";
+  Class<?>[] groups() default {};
+  Class<? extends Payload>[] payload() default {};
+
+  String field();        // field that becomes required
+  String dependsOn();    // field to inspect
+  String equals() default ""; // when dependsOn == equals, 'field' must be non-null / non-blank
+}

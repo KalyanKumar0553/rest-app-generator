@@ -1,0 +1,5 @@
+package com.src.main.sm;
+
+public enum Events {
+	START, DTO_DONE, DTO_FAIL, APPFILES_DONE, APPFILES_FAIL, SCAFFOLD_DONE, SCAFFOLD_FAIL, FAIL
+}

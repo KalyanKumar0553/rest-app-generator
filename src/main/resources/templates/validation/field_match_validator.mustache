@@ -1,0 +1,36 @@
+package {{basePkg}}.validation;
+
+import jakarta.validation.ConstraintValidator;
+import jakarta.validation.ConstraintValidatorContext;
+import java.lang.reflect.Field;
+
+public class FieldMatchValidator implements ConstraintValidator<FieldMatch, Object> {
+  private String first;
+  private String second;
+
+  @Override
+  public void initialize(FieldMatch constraint) {
+    this.first = constraint.first();
+    this.second = constraint.second();
+  }
+
+  @Override
+  public boolean isValid(Object value, ConstraintValidatorContext ctx) {
+    if (value == null) return true;
+    Object v1 = read(value, first);
+    Object v2 = read(value, second);
+    if (v1 == null && v2 == null) return true;
+    if (v1 == null || v2 == null) return false;
+    return v1.equals(v2);
+  }
+
+  private Object read(Object bean, String field) {
+    try {
+      Field f = bean.getClass().getDeclaredField(field);
+      f.setAccessible(true);
+      return f.get(bean);
+    } catch (Exception e) {
+      return null;
+    }
+  }
+}

@@ -1,0 +1,2 @@
+package com.src.main.web.dto;
+import lombok.*; @Data @NoArgsConstructor @AllArgsConstructor public class RunSummary { private Long executionId; private String status; private java.time.LocalDateTime startTime; private java.time.LocalDateTime endTime; }

@@ -1,0 +1,47 @@
+package {{basePkg}}.validation;
+
+import jakarta.validation.ConstraintValidator;
+import jakarta.validation.ConstraintValidatorContext;
+import java.lang.reflect.Field;
+
+public class ConditionalRequiredValidator implements ConstraintValidator<ConditionalRequired, Object> {
+  private String field;
+  private String dependsOn;
+  private String equalsVal;
+
+  @Override
+  public void initialize(ConditionalRequired a) {
+    this.field = a.field();
+    this.dependsOn = a.dependsOn();
+    this.equalsVal = a.equals();
+  }
+
+  @Override
+  public boolean isValid(Object bean, ConstraintValidatorContext ctx) {
+    if (bean == null) return true;
+
+    Object dep = read(bean, dependsOn);
+    boolean condition = (equalsVal == null || equalsVal.isBlank())
+        ? dep != null
+        : equalsVal.equals(String.valueOf(dep));
+
+    if (!condition) return true;
+
+    Object target = read(bean, field);
+    if (target == null) return false;
+    if (target instanceof CharSequence) {
+      return ((CharSequence) target).toString().trim().length() > 0;
+    }
+    return true;
+  }
+
+  private Object read(Object bean, String name) {
+    try {
+      Field f = bean.getClass().getDeclaredField(name);
+      f.setAccessible(true);
+      return f.get(bean);
+    } catch (Exception e) {
+      return null;
+    }
+  }
+}

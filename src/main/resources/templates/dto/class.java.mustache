@@ -1,0 +1,32 @@
+package {{basePkg}}.dto.{{sub}};
+
+import java.util.*;
+import java.math.*;
+import java.time.*;
+import com.fasterxml.jackson.annotation.*;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.*;
+import lombok.*;
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@ToString
+@EqualsAndHashCode
+@JsonInclude(JsonInclude.Include.NON_NULL)
+{{#classAnnotations}}
+{{{classAnnotations}}}
+{{/classAnnotations}}
+public class {{name}} {
+
+{{#fields}}
+  {{#annotations}}
+  {{{.}}}
+  {{/annotations}}
+  {{#jsonProperty}}
+  @JsonProperty("{{jsonProperty}}")
+  {{/jsonProperty}}
+  private {{{javaType}}} {{name}};
+
+{{/fields}}
+}
