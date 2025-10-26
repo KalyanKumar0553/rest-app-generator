@@ -37,8 +37,7 @@ dependencies:
   - mapstruct
   - jpa
   - h2
-  - openapi # springdoc
-  # optional: security, postgres, mysql, testcontainers, actuator
+  - openapi
 
 profiles:
   dev:
@@ -52,7 +51,7 @@ profiles:
       spring.jpa.hibernate.ddl-auto: validate
 
 security:
-  type: none # none | basic | jwt
+  type: none
   roles:
     - name: ADMIN
     - name: USER
@@ -92,7 +91,6 @@ dtos:
       - name: line2
         type: String
         constraints:
-          # Demonstrate @Null (field must be absent/null on create)
           null: { value: true, messageKey: "dto.address.line2.mustBeNull" }
 
       - name: city
@@ -117,28 +115,21 @@ dtos:
     type: request
     flavor: body
     fields:
-      # ---- Presence / emptiness ----
       - name: name
         type: String
         jsonProperty: full_name
         constraints:
           notBlank: { value: true, messageKey: "dto.createUser.name.notBlank" }
           size:     { min: 2, max: 80, messageKey: "dto.createUser.name.size" }
-
       - name: nickname
         type: String
         constraints:
-          # @NotEmpty (not null and length > 0) to show difference vs NotBlank
           notEmpty: { value: true, messageKey: "dto.createUser.nickname.notEmpty" }
           size:     { max: 40, messageKey: "dto.createUser.nickname.size" }
-
       - name: referenceCode
         type: String
         constraints:
-          # Explicitly accept only null (shows @Null)
           null: { value: true, messageKey: "dto.createUser.reference.mustBeNull" }
-
-      # ---- String/format ----
       - name: email
         type: String
         jsonProperty: email
@@ -146,22 +137,18 @@ dtos:
           notNull: { value: true, messageKey: "dto.createUser.email.required" }
           email:   { value: true, messageKey: "dto.createUser.email.invalid" }
           size:    { max: 200, messageKey: "dto.createUser.email.size" }
-
       - name: username
         type: String
         constraints:
           notBlank: { value: true, messageKey: "dto.createUser.username.notBlank" }
           size:     { min: 3, max: 30, messageKey: "dto.createUser.username.size" }
           pattern:  { regex: "^[A-Za-z0-9_]+$", messageKey: "dto.createUser.username.pattern" }
-
       - name: password
         type: String
         constraints:
           notNull: { value: true, messageKey: "dto.createUser.password.required" }
           size:    { min: 8, max: 128, messageKey: "dto.createUser.password.size" }
           pattern: { regex: "^(?=.*[A-Z])(?=.*[a-z])(?=.*\\d).+$", messageKey: "dto.createUser.password.pattern" }
-
-      # ---- Numeric (integer) ----
       - name: age
         type: Integer
         constraints:
@@ -169,63 +156,48 @@ dtos:
           min:     { value: 18,  messageKey: "dto.createUser.age.min" }
           max:     { value: 120, messageKey: "dto.createUser.age.max" }
           positiveOrZero: { value: true, messageKey: "dto.createUser.age.posOrZero" } # redundant but illustrative
-
       - name: quantity
         type: Integer
         constraints:
           positive: { value: true, messageKey: "dto.createUser.quantity.positive" }
-
       - name: delta
         type: Integer
         constraints:
           negativeOrZero: { value: true, messageKey: "dto.createUser.delta.negOrZero" }
-
-      # ---- Numeric (decimal) ----
       - name: price
         type: BigDecimal
         constraints:
           decimalMin: { value: "0.01", inclusive: true,  messageKey: "dto.createUser.price.decimalMin" }
           decimalMax: { value: "999999.99", inclusive: true, messageKey: "dto.createUser.price.decimalMax" }
           digits:     { integer: 8, fraction: 2, messageKey: "dto.createUser.price.digits" }
-
       - name: discount
         type: BigDecimal
         constraints:
           negative: { value: true, messageKey: "dto.createUser.discount.negative" }
-
-      # ---- Temporal ----
       - name: birthDate
         type: LocalDate
         constraints:
           past: { value: true, messageKey: "dto.createUser.birthDate.past" }
-
       - name: createdAt
         type: OffsetDateTime
         constraints:
           pastOrPresent: { value: true, messageKey: "dto.createUser.createdAt.pastOrPresent" }
-
       - name: startAt
         type: OffsetDateTime
         constraints:
           futureOrPresent: { value: true, messageKey: "dto.createUser.startAt.futureOrPresent" }
-
       - name: expiresAt
         type: OffsetDateTime
         constraints:
           future: { value: true, messageKey: "dto.createUser.expiresAt.future" }
-
-      # ---- Booleans ----
       - name: agreedTerms
         type: Boolean
         constraints:
           assertTrue: { value: true, messageKey: "dto.createUser.agreedTerms.assertTrue" }
-
       - name: archived
         type: Boolean
         constraints:
           assertFalse: { value: true, messageKey: "dto.createUser.archived.assertFalse" }
-
-      # ---- Nested DTOs (triggers @Valid) ----
       - name: addresses
         type: "List<AddressDTO>"
         constraints:
