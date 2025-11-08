@@ -31,7 +31,11 @@ public class ApplicationFileGenerationExecutor implements StepExecutor {
 		}
 		Object defaultPropsObj = yaml.get("properties");
 		if (defaultPropsObj instanceof Map) {
-			writePropertiesFile(root, "application.properties", (Map<String, Object>) defaultPropsObj);
+			Map<String, Object> propsObj = (Map<String, Object>)defaultPropsObj;
+			propsObj.put("spring.messages.basename","messages");
+			propsObj.put("spring.messages.encoding","UTF-8");
+			propsObj.put("spring.messages.fallback-to-system-locale","false");
+			writePropertiesFile(root, "application.properties", propsObj);
 		}
 		Object profilesObj = yaml.get("profiles");
 		if (profilesObj instanceof Map) {

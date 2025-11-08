@@ -1,0 +1,1103 @@
+[
+  {
+    "id": "org.apache.activemq:activemq-console"
+  },
+  {
+    "id": "org.apache.activemq:activemq-spring"
+  },
+  {
+    "id": "org.eclipse.angus:angus-core"
+  },
+  {
+    "id": "org.eclipse.angus:angus-mail"
+  },
+  {
+    "id": "org.eclipse.angus:dsn"
+  },
+  {
+    "id": "org.eclipse.angus:gimap"
+  },
+  {
+    "id": "org.eclipse.angus:imap"
+  },
+  {
+    "id": "org.eclipse.angus:jakarta.mail"
+  },
+  {
+    "id": "org.eclipse.angus:logging-mailhandler"
+  },
+  {
+    "id": "org.eclipse.angus:pop3"
+  },
+  {
+    "id": "org.eclipse.angus:smtp"
+  },
+  {
+    "id": "org.aspectj:aspectjrt"
+  },
+  {
+    "id": "org.aspectj:aspectjtools"
+  },
+  {
+    "id": "org.aspectj:aspectjweaver"
+  },
+  {
+    "id": "org.awaitility:awaitility"
+  },
+  {
+    "id": "org.awaitility:awaitility-groovy"
+  },
+  {
+    "id": "org.awaitility:awaitility-kotlin"
+  },
+  {
+    "id": "org.awaitility:awaitility-scala"
+  },
+  {
+    "id": "net.bytebuddy:byte-buddy"
+  },
+  {
+    "id": "net.bytebuddy:byte-buddy-agent"
+  },
+  {
+    "id": "org.cache2k:cache2k-api"
+  },
+  {
+    "id": "org.cache2k:cache2k-config"
+  },
+  {
+    "id": "org.cache2k:cache2k-core"
+  },
+  {
+    "id": "org.cache2k:cache2k-jcache"
+  },
+  {
+    "id": "org.cache2k:cache2k-micrometer"
+  },
+  {
+    "id": "org.cache2k:cache2k-spring"
+  },
+  {
+    "id": "com.github.ben-manes.caffeine:caffeine"
+  },
+  {
+    "id": "com.github.ben-manes.caffeine:guava"
+  },
+  {
+    "id": "com.github.ben-manes.caffeine:jcache"
+  },
+  {
+    "id": "com.github.ben-manes.caffeine:simulator"
+  },
+  {
+    "id": "org.apache.cassandra:java-driver-core"
+  },
+  {
+    "id": "com.fasterxml:classmate"
+  },
+  {
+    "id": "commons-codec:commons-codec"
+  },
+  {
+    "id": "org.apache.commons:commons-dbcp2"
+  },
+  {
+    "id": "org.apache.commons:commons-lang3"
+  },
+  {
+    "id": "commons-pool:commons-pool"
+  },
+  {
+    "id": "org.apache.commons:commons-pool2"
+  },
+  {
+    "id": "com.couchbase.client:java-client"
+  },
+  {
+    "id": "org.crac:crac"
+  },
+  {
+    "id": "com.ibm.db2:jcc"
+  },
+  {
+    "id": "io.spring.gradle:dependency-management-plugin"
+  },
+  {
+    "id": "org.apache.derby:derby"
+  },
+  {
+    "id": "org.apache.derby:derbyclient"
+  },
+  {
+    "id": "org.apache.derby:derbynet"
+  },
+  {
+    "id": "org.apache.derby:derbyoptionaltools"
+  },
+  {
+    "id": "org.apache.derby:derbyshared"
+  },
+  {
+    "id": "org.apache.derby:derbytools"
+  },
+  {
+    "id": "org.ehcache:ehcache"
+  },
+  {
+    "id": "org.ehcache:ehcache"
+  },
+  {
+    "id": "org.ehcache:ehcache-clustered"
+  },
+  {
+    "id": "org.ehcache:ehcache-transactions"
+  },
+  {
+    "id": "org.ehcache:ehcache-transactions"
+  },
+  {
+    "id": "org.elasticsearch.client:elasticsearch-rest-client"
+  },
+  {
+    "id": "org.elasticsearch.client:elasticsearch-rest-client-sniffer"
+  },
+  {
+    "id": "co.elastic.clients:elasticsearch-java"
+  },
+  {
+    "id": "org.flywaydb:flyway-commandline"
+  },
+  {
+    "id": "org.flywaydb:flyway-core"
+  },
+  {
+    "id": "org.flywaydb:flyway-database-cassandra"
+  },
+  {
+    "id": "org.flywaydb:flyway-database-db2"
+  },
+  {
+    "id": "org.flywaydb:flyway-database-derby"
+  },
+  {
+    "id": "org.flywaydb:flyway-database-hsqldb"
+  },
+  {
+    "id": "org.flywaydb:flyway-database-informix"
+  },
+  {
+    "id": "org.flywaydb:flyway-database-mongodb"
+  },
+  {
+    "id": "org.flywaydb:flyway-database-oracle"
+  },
+  {
+    "id": "org.flywaydb:flyway-database-postgresql"
+  },
+  {
+    "id": "org.flywaydb:flyway-database-redshift"
+  },
+  {
+    "id": "org.flywaydb:flyway-database-saphana"
+  },
+  {
+    "id": "org.flywaydb:flyway-database-snowflake"
+  },
+  {
+    "id": "org.flywaydb:flyway-database-sybasease"
+  },
+  {
+    "id": "org.flywaydb:flyway-firebird"
+  },
+  {
+    "id": "org.flywaydb:flyway-gcp-bigquery"
+  },
+  {
+    "id": "org.flywaydb:flyway-gcp-spanner"
+  },
+  {
+    "id": "org.flywaydb:flyway-mysql"
+  },
+  {
+    "id": "org.flywaydb:flyway-singlestore"
+  },
+  {
+    "id": "org.flywaydb:flyway-sqlserver"
+  },
+  {
+    "id": "org.freemarker:freemarker"
+  },
+  {
+    "id": "org.glassfish.web:jakarta.servlet.jsp.jstl"
+  },
+  {
+    "id": "com.graphql-java:graphql-java"
+  },
+  {
+    "id": "com.google.code.gson:gson"
+  },
+  {
+    "id": "com.h2database:h2"
+  },
+  {
+    "id": "org.hamcrest:hamcrest"
+  },
+  {
+    "id": "org.hamcrest:hamcrest-core"
+  },
+  {
+    "id": "org.hamcrest:hamcrest-library"
+  },
+  {
+    "id": "com.hazelcast:hazelcast"
+  },
+  {
+    "id": "com.hazelcast:hazelcast-spring"
+  },
+  {
+    "id": "org.hibernate.orm:hibernate-agroal"
+  },
+  {
+    "id": "org.hibernate.orm:hibernate-ant"
+  },
+  {
+    "id": "org.hibernate.orm:hibernate-c3p0"
+  },
+  {
+    "id": "org.hibernate.orm:hibernate-community-dialects"
+  },
+  {
+    "id": "org.hibernate.orm:hibernate-core"
+  },
+  {
+    "id": "org.hibernate.orm:hibernate-envers"
+  },
+  {
+    "id": "org.hibernate.orm:hibernate-graalvm"
+  },
+  {
+    "id": "org.hibernate.orm:hibernate-hikaricp"
+  },
+  {
+    "id": "org.hibernate.orm:hibernate-jcache"
+  },
+  {
+    "id": "org.hibernate.orm:hibernate-jpamodelgen"
+  },
+  {
+    "id": "org.hibernate.orm:hibernate-micrometer"
+  },
+  {
+    "id": "org.hibernate.orm:hibernate-proxool"
+  },
+  {
+    "id": "org.hibernate.orm:hibernate-spatial"
+  },
+  {
+    "id": "org.hibernate.orm:hibernate-testing"
+  },
+  {
+    "id": "org.hibernate.orm:hibernate-vibur"
+  },
+  {
+    "id": "org.hibernate.validator:hibernate-validator"
+  },
+  {
+    "id": "org.hibernate.validator:hibernate-validator-annotation-processor"
+  },
+  {
+    "id": "com.zaxxer:HikariCP"
+  },
+  {
+    "id": "org.hsqldb:hsqldb"
+  },
+  {
+    "id": "org.htmlunit:htmlunit"
+  },
+  {
+    "id": "org.apache.httpcomponents:httpasyncclient"
+  },
+  {
+    "id": "org.apache.httpcomponents.client5:httpclient5"
+  },
+  {
+    "id": "org.apache.httpcomponents.client5:httpclient5-cache"
+  },
+  {
+    "id": "org.apache.httpcomponents.client5:httpclient5-fluent"
+  },
+  {
+    "id": "org.apache.httpcomponents:httpcore"
+  },
+  {
+    "id": "org.apache.httpcomponents:httpcore-nio"
+  },
+  {
+    "id": "org.apache.httpcomponents.core5:httpcore5"
+  },
+  {
+    "id": "org.apache.httpcomponents.core5:httpcore5-h2"
+  },
+  {
+    "id": "org.apache.httpcomponents.core5:httpcore5-reactive"
+  },
+  {
+    "id": "org.influxdb:influxdb-java"
+  },
+  {
+    "id": "jakarta.activation:jakarta.activation-api"
+  },
+  {
+    "id": "jakarta.annotation:jakarta.annotation-api"
+  },
+  {
+    "id": "jakarta.inject:jakarta.inject-api"
+  },
+  {
+    "id": "jakarta.jms:jakarta.jms-api"
+  },
+  {
+    "id": "jakarta.json:jakarta.json-api"
+  },
+  {
+    "id": "jakarta.json.bind:jakarta.json.bind-api"
+  },
+  {
+    "id": "jakarta.mail:jakarta.mail-api"
+  },
+  {
+    "id": "jakarta.management.j2ee:jakarta.management.j2ee-api"
+  },
+  {
+    "id": "jakarta.persistence:jakarta.persistence-api"
+  },
+  {
+    "id": "jakarta.servlet:jakarta.servlet-api"
+  },
+  {
+    "id": "jakarta.servlet.jsp.jstl:jakarta.servlet.jsp.jstl-api"
+  },
+  {
+    "id": "jakarta.transaction:jakarta.transaction-api"
+  },
+  {
+    "id": "jakarta.validation:jakarta.validation-api"
+  },
+  {
+    "id": "jakarta.websocket:jakarta.websocket-api"
+  },
+  {
+    "id": "jakarta.websocket:jakarta.websocket-client-api"
+  },
+  {
+    "id": "jakarta.ws.rs:jakarta.ws.rs-api"
+  },
+  {
+    "id": "jakarta.xml.bind:jakarta.xml.bind-api"
+  },
+  {
+    "id": "jakarta.xml.soap:jakarta.xml.soap-api"
+  },
+  {
+    "id": "jakarta.xml.ws:jakarta.xml.ws-api"
+  },
+  {
+    "id": "org.codehaus.janino:commons-compiler"
+  },
+  {
+    "id": "org.codehaus.janino:commons-compiler-jdk"
+  },
+  {
+    "id": "org.codehaus.janino:janino"
+  },
+  {
+    "id": "javax.cache:cache-api"
+  },
+  {
+    "id": "javax.money:money-api"
+  },
+  {
+    "id": "jaxen:jaxen"
+  },
+  {
+    "id": "org.firebirdsql.jdbc:jaybird"
+  },
+  {
+    "id": "org.jboss.logging:jboss-logging"
+  },
+  {
+    "id": "org.jdom:jdom2"
+  },
+  {
+    "id": "redis.clients:jedis"
+  },
+  {
+    "id": "org.eclipse.jetty:jetty-reactive-httpclient"
+  },
+  {
+    "id": "com.samskivert:jmustache"
+  },
+  {
+    "id": "org.jooq:jooq"
+  },
+  {
+    "id": "org.jooq:jooq-codegen"
+  },
+  {
+    "id": "org.jooq:jooq-kotlin"
+  },
+  {
+    "id": "org.jooq:jooq-meta"
+  },
+  {
+    "id": "com.jayway.jsonpath:json-path"
+  },
+  {
+    "id": "com.jayway.jsonpath:json-path-assert"
+  },
+  {
+    "id": "net.minidev:json-smart"
+  },
+  {
+    "id": "org.skyscreamer:jsonassert"
+  },
+  {
+    "id": "net.sourceforge.jtds:jtds"
+  },
+  {
+    "id": "junit:junit"
+  },
+  {
+    "id": "org.apache.kafka:connect"
+  },
+  {
+    "id": "org.apache.kafka:connect-api"
+  },
+  {
+    "id": "org.apache.kafka:connect-basic-auth-extension"
+  },
+  {
+    "id": "org.apache.kafka:connect-file"
+  },
+  {
+    "id": "org.apache.kafka:connect-json"
+  },
+  {
+    "id": "org.apache.kafka:connect-mirror"
+  },
+  {
+    "id": "org.apache.kafka:connect-mirror-client"
+  },
+  {
+    "id": "org.apache.kafka:connect-runtime"
+  },
+  {
+    "id": "org.apache.kafka:connect-transforms"
+  },
+  {
+    "id": "org.apache.kafka:generator"
+  },
+  {
+    "id": "org.apache.kafka:kafka-clients"
+  },
+  {
+    "id": "org.apache.kafka:kafka-clients"
+  },
+  {
+    "id": "org.apache.kafka:kafka-log4j-appender"
+  },
+  {
+    "id": "org.apache.kafka:kafka-metadata"
+  },
+  {
+    "id": "org.apache.kafka:kafka-raft"
+  },
+  {
+    "id": "org.apache.kafka:kafka-server"
+  },
+  {
+    "id": "org.apache.kafka:kafka-server-common"
+  },
+  {
+    "id": "org.apache.kafka:kafka-server-common"
+  },
+  {
+    "id": "org.apache.kafka:kafka-shell"
+  },
+  {
+    "id": "org.apache.kafka:kafka-storage"
+  },
+  {
+    "id": "org.apache.kafka:kafka-storage-api"
+  },
+  {
+    "id": "org.apache.kafka:kafka-streams"
+  },
+  {
+    "id": "org.apache.kafka:kafka-streams-scala_2.12"
+  },
+  {
+    "id": "org.apache.kafka:kafka-streams-scala_2.13"
+  },
+  {
+    "id": "org.apache.kafka:kafka-streams-test-utils"
+  },
+  {
+    "id": "org.apache.kafka:kafka-tools"
+  },
+  {
+    "id": "org.apache.kafka:kafka_2.12"
+  },
+  {
+    "id": "org.apache.kafka:kafka_2.12"
+  },
+  {
+    "id": "org.apache.kafka:kafka_2.13"
+  },
+  {
+    "id": "org.apache.kafka:kafka_2.13"
+  },
+  {
+    "id": "org.apache.kafka:trogdor"
+  },
+  {
+    "id": "io.lettuce:lettuce-core"
+  },
+  {
+    "id": "org.liquibase:liquibase-cdi"
+  },
+  {
+    "id": "org.liquibase:liquibase-core"
+  },
+  {
+    "id": "ch.qos.logback:logback-classic"
+  },
+  {
+    "id": "ch.qos.logback:logback-core"
+  },
+  {
+    "id": "org.mariadb.jdbc:mariadb-java-client"
+  },
+  {
+    "id": "io.micrometer:micrometer-registry-stackdriver"
+  },
+  {
+    "id": "com.microsoft.sqlserver:mssql-jdbc"
+  },
+  {
+    "id": "com.mysql:mysql-connector-j"
+  },
+  {
+    "id": "net.sourceforge.nekohtml:nekohtml"
+  },
+  {
+    "id": "org.neo4j.driver:neo4j-java-driver"
+  },
+  {
+    "id": "com.oracle.database.ha:ons"
+  },
+  {
+    "id": "com.oracle.database.ha:simplefan"
+  },
+  {
+    "id": "com.oracle.database.jdbc:ojdbc11"
+  },
+  {
+    "id": "com.oracle.database.jdbc:ojdbc11-production"
+  },
+  {
+    "id": "com.oracle.database.jdbc:ojdbc17"
+  },
+  {
+    "id": "com.oracle.database.jdbc:ojdbc17-production"
+  },
+  {
+    "id": "com.oracle.database.jdbc:ojdbc8"
+  },
+  {
+    "id": "com.oracle.database.jdbc:ojdbc8-production"
+  },
+  {
+    "id": "com.oracle.database.jdbc:rsi"
+  },
+  {
+    "id": "com.oracle.database.jdbc:ucp"
+  },
+  {
+    "id": "com.oracle.database.jdbc:ucp11"
+  },
+  {
+    "id": "com.oracle.database.jdbc:ucp17"
+  },
+  {
+    "id": "com.oracle.database.nls:orai18n"
+  },
+  {
+    "id": "com.oracle.database.security:oraclepki"
+  },
+  {
+    "id": "com.oracle.database.xml:xdb"
+  },
+  {
+    "id": "com.oracle.database.xml:xmlparserv2"
+  },
+  {
+    "id": "com.oracle.database.r2dbc:oracle-r2dbc"
+  },
+  {
+    "id": "org.messaginghub:pooled-jms"
+  },
+  {
+    "id": "org.postgresql:postgresql"
+  },
+  {
+    "id": "org.quartz-scheduler:quartz"
+  },
+  {
+    "id": "org.quartz-scheduler:quartz-jobs"
+  },
+  {
+    "id": "io.r2dbc:r2dbc-h2"
+  },
+  {
+    "id": "org.mariadb:r2dbc-mariadb"
+  },
+  {
+    "id": "io.r2dbc:r2dbc-mssql"
+  },
+  {
+    "id": "io.asyncer:r2dbc-mysql"
+  },
+  {
+    "id": "io.r2dbc:r2dbc-pool"
+  },
+  {
+    "id": "org.postgresql:r2dbc-postgresql"
+  },
+  {
+    "id": "io.r2dbc:r2dbc-proxy"
+  },
+  {
+    "id": "io.r2dbc:r2dbc-spi"
+  },
+  {
+    "id": "com.rabbitmq:amqp-client"
+  },
+  {
+    "id": "com.rabbitmq:stream-client"
+  },
+  {
+    "id": "org.reactivestreams:reactive-streams"
+  },
+  {
+    "id": "io.reactivex.rxjava3:rxjava"
+  },
+  {
+    "id": "org.springframework.boot:spring-boot-actuator"
+  },
+  {
+    "id": "org.springframework.boot:spring-boot-autoconfigure-processor"
+  },
+  {
+    "id": "org.springframework.boot:spring-boot-buildpack-platform"
+  },
+  {
+    "id": "org.springframework.boot:spring-boot-configuration-metadata"
+  },
+  {
+    "id": "org.springframework.boot:spring-boot-configuration-processor"
+  },
+  {
+    "id": "org.springframework.boot:spring-boot-devtools"
+  },
+  {
+    "id": "org.springframework.boot:spring-boot-jarmode-tools"
+  },
+  {
+    "id": "org.springframework.boot:spring-boot-loader"
+  },
+  {
+    "id": "org.springframework.boot:spring-boot-loader-classic"
+  },
+  {
+    "id": "org.springframework.boot:spring-boot-loader-tools"
+  },
+  {
+    "id": "org.springframework.boot:spring-boot-properties-migrator"
+  },
+  {
+    "id": "org.springframework.boot:spring-boot-starter"
+  },
+  {
+    "id": "org.springframework.boot:spring-boot-starter-activemq"
+  },
+  {
+    "id": "org.springframework.boot:spring-boot-starter-actuator"
+  },
+  {
+    "id": "org.springframework.boot:spring-boot-starter-amqp"
+  },
+  {
+    "id": "org.springframework.boot:spring-boot-starter-aop"
+  },
+  {
+    "id": "org.springframework.boot:spring-boot-starter-artemis"
+  },
+  {
+    "id": "org.springframework.boot:spring-boot-starter-batch"
+  },
+  {
+    "id": "org.springframework.boot:spring-boot-starter-cache"
+  },
+  {
+    "id": "org.springframework.boot:spring-boot-starter-data-cassandra"
+  },
+  {
+    "id": "org.springframework.boot:spring-boot-starter-data-cassandra-reactive"
+  },
+  {
+    "id": "org.springframework.boot:spring-boot-starter-data-couchbase"
+  },
+  {
+    "id": "org.springframework.boot:spring-boot-starter-data-couchbase-reactive"
+  },
+  {
+    "id": "org.springframework.boot:spring-boot-starter-data-elasticsearch"
+  },
+  {
+    "id": "org.springframework.boot:spring-boot-starter-data-jdbc"
+  },
+  {
+    "id": "org.springframework.boot:spring-boot-starter-data-ldap"
+  },
+  {
+    "id": "org.springframework.boot:spring-boot-starter-data-mongodb"
+  },
+  {
+    "id": "org.springframework.boot:spring-boot-starter-data-mongodb-reactive"
+  },
+  {
+    "id": "org.springframework.boot:spring-boot-starter-data-neo4j"
+  },
+  {
+    "id": "org.springframework.boot:spring-boot-starter-data-r2dbc"
+  },
+  {
+    "id": "org.springframework.boot:spring-boot-starter-data-redis"
+  },
+  {
+    "id": "org.springframework.boot:spring-boot-starter-data-redis-reactive"
+  },
+  {
+    "id": "org.springframework.boot:spring-boot-starter-data-rest"
+  },
+  {
+    "id": "org.springframework.boot:spring-boot-starter-freemarker"
+  },
+  {
+    "id": "org.springframework.boot:spring-boot-starter-graphql"
+  },
+  {
+    "id": "org.springframework.boot:spring-boot-starter-groovy-templates"
+  },
+  {
+    "id": "org.springframework.boot:spring-boot-starter-hateoas"
+  },
+  {
+    "id": "org.springframework.boot:spring-boot-starter-integration"
+  },
+  {
+    "id": "org.springframework.boot:spring-boot-starter-jdbc"
+  },
+  {
+    "id": "org.springframework.boot:spring-boot-starter-jersey"
+  },
+  {
+    "id": "org.springframework.boot:spring-boot-starter-jetty"
+  },
+  {
+    "id": "org.springframework.boot:spring-boot-starter-jooq"
+  },
+  {
+    "id": "org.springframework.boot:spring-boot-starter-json"
+  },
+  {
+    "id": "org.springframework.boot:spring-boot-starter-log4j2"
+  },
+  {
+    "id": "org.springframework.boot:spring-boot-starter-logging"
+  },
+  {
+    "id": "org.springframework.boot:spring-boot-starter-mail"
+  },
+  {
+    "id": "org.springframework.boot:spring-boot-starter-mustache"
+  },
+  {
+    "id": "org.springframework.boot:spring-boot-starter-oauth2-authorization-server"
+  },
+  {
+    "id": "org.springframework.boot:spring-boot-starter-oauth2-client"
+  },
+  {
+    "id": "org.springframework.boot:spring-boot-starter-oauth2-resource-server"
+  },
+  {
+    "id": "org.springframework.boot:spring-boot-starter-pulsar"
+  },
+  {
+    "id": "org.springframework.boot:spring-boot-starter-pulsar-reactive"
+  },
+  {
+    "id": "org.springframework.boot:spring-boot-starter-quartz"
+  },
+  {
+    "id": "org.springframework.boot:spring-boot-starter-reactor-netty"
+  },
+  {
+    "id": "org.springframework.boot:spring-boot-starter-rsocket"
+  },
+  {
+    "id": "org.springframework.boot:spring-boot-starter-security"
+  },
+  {
+    "id": "org.springframework.boot:spring-boot-starter-test"
+  },
+  {
+    "id": "org.springframework.boot:spring-boot-starter-thymeleaf"
+  },
+  {
+    "id": "org.springframework.boot:spring-boot-starter-tomcat"
+  },
+  {
+    "id": "org.springframework.boot:spring-boot-starter-undertow"
+  },
+  {
+    "id": "org.springframework.boot:spring-boot-starter-web-services"
+  },
+  {
+    "id": "org.springframework.boot:spring-boot-starter-webflux"
+  },
+  {
+    "id": "org.springframework.boot:spring-boot-starter-websocket"
+  },
+  {
+    "id": "org.springframework.boot:spring-boot-testcontainers"
+  },
+  {
+    "id": "com.sun.xml.messaging.saaj:saaj-impl"
+  },
+  {
+    "id": "org.seleniumhq.selenium:htmlunit3-driver"
+  },
+  {
+    "id": "com.sendgrid:sendgrid-java"
+  },
+  {
+    "id": "org.slf4j:jcl-over-slf4j"
+  },
+  {
+    "id": "org.slf4j:jul-to-slf4j"
+  },
+  {
+    "id": "org.slf4j:log4j-over-slf4j"
+  },
+  {
+    "id": "org.slf4j:slf4j-api"
+  },
+  {
+    "id": "org.slf4j:slf4j-ext"
+  },
+  {
+    "id": "org.slf4j:slf4j-jdk-platform-logging"
+  },
+  {
+    "id": "org.slf4j:slf4j-jdk14"
+  },
+  {
+    "id": "org.slf4j:slf4j-log4j12"
+  },
+  {
+    "id": "org.slf4j:slf4j-nop"
+  },
+  {
+    "id": "org.slf4j:slf4j-reload4j"
+  },
+  {
+    "id": "org.slf4j:slf4j-simple"
+  },
+  {
+    "id": "org.yaml:snakeyaml"
+  },
+  {
+    "id": "org.springframework.security:spring-security-oauth2-authorization-server"
+  },
+  {
+    "id": "org.springframework.graphql:spring-graphql"
+  },
+  {
+    "id": "org.springframework.graphql:spring-graphql-test"
+  },
+  {
+    "id": "org.springframework.hateoas:spring-hateoas"
+  },
+  {
+    "id": "org.springframework.kafka:spring-kafka"
+  },
+  {
+    "id": "org.springframework.kafka:spring-kafka-test"
+  },
+  {
+    "id": "org.springframework.ldap:spring-ldap-core"
+  },
+  {
+    "id": "org.springframework.ldap:spring-ldap-ldif-core"
+  },
+  {
+    "id": "org.springframework.ldap:spring-ldap-odm"
+  },
+  {
+    "id": "org.springframework.ldap:spring-ldap-test"
+  },
+  {
+    "id": "org.springframework.retry:spring-retry"
+  },
+  {
+    "id": "org.xerial:sqlite-jdbc"
+  },
+  {
+    "id": "com.redis:testcontainers-redis"
+  },
+  {
+    "id": "org.thymeleaf:thymeleaf"
+  },
+  {
+    "id": "org.thymeleaf:thymeleaf-spring6"
+  },
+  {
+    "id": "com.github.mxab.thymeleaf.extras:thymeleaf-extras-data-attribute"
+  },
+  {
+    "id": "org.thymeleaf.extras:thymeleaf-extras-springsecurity6"
+  },
+  {
+    "id": "nz.net.ultraq.thymeleaf:thymeleaf-layout-dialect"
+  },
+  {
+    "id": "org.apache.tomcat:tomcat-annotations-api"
+  },
+  {
+    "id": "org.apache.tomcat:tomcat-jdbc"
+  },
+  {
+    "id": "org.apache.tomcat:tomcat-jsp-api"
+  },
+  {
+    "id": "org.apache.tomcat.embed:tomcat-embed-core"
+  },
+  {
+    "id": "org.apache.tomcat.embed:tomcat-embed-el"
+  },
+  {
+    "id": "org.apache.tomcat.embed:tomcat-embed-jasper"
+  },
+  {
+    "id": "org.apache.tomcat.embed:tomcat-embed-websocket"
+  },
+  {
+    "id": "com.unboundid:unboundid-ldapsdk"
+  },
+  {
+    "id": "io.undertow:undertow-core"
+  },
+  {
+    "id": "io.undertow:undertow-servlet"
+  },
+  {
+    "id": "io.undertow:undertow-websockets-jsr"
+  },
+  {
+    "id": "org.vibur:vibur-dbcp"
+  },
+  {
+    "id": "org.vibur:vibur-object-pool"
+  },
+  {
+    "id": "org.webjars:webjars-locator-core"
+  },
+  {
+    "id": "org.webjars:webjars-locator-lite"
+  },
+  {
+    "id": "wsdl4j:wsdl4j"
+  },
+  {
+    "id": "org.xmlunit:xmlunit-assertj"
+  },
+  {
+    "id": "org.xmlunit:xmlunit-assertj3"
+  },
+  {
+    "id": "org.xmlunit:xmlunit-core"
+  },
+  {
+    "id": "org.xmlunit:xmlunit-jakarta-jaxb-impl"
+  },
+  {
+    "id": "org.xmlunit:xmlunit-legacy"
+  },
+  {
+    "id": "org.xmlunit:xmlunit-matchers"
+  },
+  {
+    "id": "org.xmlunit:xmlunit-placeholders"
+  },
+  {
+    "id": "org.eclipse:yasson"
+  },
+  {
+    "id": "io.prometheus:simpleclient_bom"
+  },
+  {
+    "id": "org.apache.commons:commons-text"
+  },
+  {
+    "id": "commons-io:commons-io"
+  },
+  {
+    "id": "org.apache.commons:commons-compress"
+  },
+  {
+    "id": "org.apache.commons:commons-collections4"
+  },
+  {
+    "id": "org.apache.commons:commons-lang3"
+  },
+  {
+    "id": "org.apache.commons:commons-math3"
+  },
+  {
+    "id": "com.it-surmann:springify-basicauth"
+  },
+  {
+    "id": "com.it-surmann:springify-multiconfig"
+  },
+  {
+    "id": "com.google.guava:guava"
+  },
+  {
+    "id": "com.amazonaws:aws-java-sdk-s3"
+  },
+  {
+    "id": "software.amazon.awssdk:s3"
+  },
+  {
+    "id": "org.joda:joda-money"
+  },
+  {
+    "id": "org.javamoney:moneta"
+  },
+  {
+    "id": "io.github.wimdeblauwe:htmx-spring-boot-thymeleaf"
+  }
+]

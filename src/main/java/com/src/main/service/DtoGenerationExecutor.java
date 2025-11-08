@@ -176,7 +176,7 @@ public class DtoGenerationExecutor implements StepExecutor {
 		String messagesBody = tpl.render(AppConstants.TPL_VALIDATION_MESSAGES, Map.of("dtos", dtosForMessages));
 		Path resDir = root.resolve("src/main/resources");
 		Files.createDirectories(resDir);
-		Files.writeString(resDir.resolve("ValidationMessages.properties"), messagesBody, StandardCharsets.UTF_8);
+		Files.writeString(resDir.resolve("messages.properties"), messagesBody, StandardCharsets.UTF_8);
 
 		Map<String, Object> output = Map.of("status", "Success");
 		return StepResult.ok(output);

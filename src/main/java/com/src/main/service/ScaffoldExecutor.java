@@ -141,8 +141,6 @@ public class ScaffoldExecutor implements StepExecutor {
 	private void writeResources(Path root, String appName) throws Exception {
 		Path resDir = root.resolve("src/main/resources");
 		Files.createDirectories(resDir);
-		String messagesRendered = tpl.render(AppConstants.TPL_MESSAGES, Map.of());
-		Files.writeString(resDir.resolve("messages.properties"), messagesRendered, UTF_8);
 	}
 
 	private void writeDocsAndGitignore(Path root, String appName) throws Exception {
