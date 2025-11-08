@@ -74,6 +74,7 @@ public class ProjectServiceImpl implements ProjectService {
 			String artifact = String.valueOf(app.getOrDefault("artifactId", AppConstants.DEFAULT_ARTIFACT));
 			String groupId = String.valueOf(app.getOrDefault("groupId", AppConstants.DEFAULT_GROUP));
 			String version = String.valueOf(app.getOrDefault("version", AppConstants.DEFAULT_VERSION));
+			String buildTool = String.valueOf(app.getOrDefault("buildTool", AppConstants.DEFAULT_BUILD_TOOL));
 			if (artifact == null || artifact.isBlank())
 				throw new IllegalArgumentException("app.artifact must be provided");
 			if (groupId == null || groupId.isBlank())
@@ -90,7 +91,8 @@ public class ProjectServiceImpl implements ProjectService {
 			p.setArtifact(artifact);
 			p.setGroupId(groupId);
 			p.setVersion(version);
-			Map<String, Object> yaml = (Map<String, Object>) new org.yaml.snakeyaml.Yaml().load(p.getYaml());
+			p.setBuildTool(buildTool);
+			Map<String, Object> yaml = (Map<String, Object>) new Yaml().load(p.getYaml());
 			repo.save(p);
 			byte[] data = runner.run(p, yaml);
 			p.setZip(data);

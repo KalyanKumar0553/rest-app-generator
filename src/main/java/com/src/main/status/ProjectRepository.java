@@ -18,10 +18,6 @@ import jakarta.persistence.QueryHint;
 
 public interface ProjectRepository extends JpaRepository<ProjectEntity, UUID> {
 
-    /**
-     * Pessimistically lock QUEUED projects when claiming them for processing.
-     * The "lock.timeout = 0" hint emulates SKIP LOCKED behaviour (instant fail if locked).
-     */
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @QueryHints(@QueryHint(name = "jakarta.persistence.lock.timeout", value = "0"))
     @Query("SELECT p FROM ProjectEntity p WHERE p.status = :status ORDER BY p.createdAt ASC")
@@ -29,4 +25,5 @@ public interface ProjectRepository extends JpaRepository<ProjectEntity, UUID> {
             @Param("status") ProjectStatus status,
             Pageable pageable
     );
+
 }

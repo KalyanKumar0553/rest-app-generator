@@ -41,6 +41,7 @@ public class WorkflowRunner {
 
 		Path temp = Files.createTempDirectory("genp_");
 		String groupId = project.getGroupId();
+		String buildTool = project.getBuildTool();
 		String artifact = project.getArtifact();
 		String version = project.getVersion();
 		sm.getExtendedState().getVariables().put("autostart", true);
@@ -48,6 +49,7 @@ public class WorkflowRunner {
 		sm.getExtendedState().getVariables().put("groupId", groupId);
 		sm.getExtendedState().getVariables().put("artifact", artifact);
 		sm.getExtendedState().getVariables().put("version", version);
+		sm.getExtendedState().getVariables().put("buildTool", buildTool);
 		sm.getExtendedState().getVariables().put("yaml", yaml);
 		sm.getExtendedState().getVariables().put("autostart", Boolean.TRUE);
 		CountDownLatch done = new CountDownLatch(1);
