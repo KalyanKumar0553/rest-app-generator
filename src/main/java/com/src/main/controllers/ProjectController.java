@@ -28,35 +28,39 @@ import jakarta.validation.constraints.NotBlank;
 @Validated
 public class ProjectController {
 
-  private final ProjectService service;
+	private final ProjectService service;
 
-  public ProjectController(ProjectService service){ this.service = service; }
+	public ProjectController(ProjectService service) {
+		this.service = service;
+	}
 
-  @PostMapping(consumes = { "text/yaml", "application/x-yaml", MediaType.TEXT_PLAIN_VALUE })
-  public ProjectCreateResponse create(@RequestBody @NotBlank String yamlText) {
-    return service.create(yamlText);
-  }
+	@PostMapping(consumes = { "text/yaml", "application/x-yaml", MediaType.TEXT_PLAIN_VALUE })
+	public ProjectCreateResponse create(@RequestBody @NotBlank String yamlText) {
+		return service.create(yamlText);
+	}
 
-  @GetMapping(AppConstants.PATH_ID)
-  public ResponseEntity<ProjectStatusResponse> status(@Parameter(description="Project ID", required=true, schema=@Schema(format="uuid")) @PathVariable("id") String id){
-    try {
-      return ResponseEntity.ok(service.status(UUID.fromString(id)));
-    } catch (NoSuchElementException e) {
-      return ResponseEntity.notFound().build();
-    }
-  }
+	@GetMapping(AppConstants.PATH_ID)
+	public ResponseEntity<ProjectStatusResponse> status(
+			@Parameter(description = "Project ID", required = true, schema = @Schema(format = "uuid")) @PathVariable("id") String id) {
+		try {
+			return ResponseEntity.ok(service.status(UUID.fromString(id)));
+		} catch (NoSuchElementException e) {
+			return ResponseEntity.notFound().build();
+		}
+	}
 
-  @GetMapping(AppConstants.PATH_ID + AppConstants.PATH_DOWNLOAD)
-  public ResponseEntity<byte[]> download(@Parameter(description="Project ID", required=true, schema=@Schema(format="uuid")) @PathVariable("id") String id){
-    try {
-      return service.download(UUID.fromString(id));
-    } catch (NoSuchElementException e) {
-      return ResponseEntity.notFound().build();
-    }
-  }
+	@GetMapping(AppConstants.PATH_ID + AppConstants.PATH_DOWNLOAD)
+	public ResponseEntity<byte[]> download(
+			@Parameter(description = "Project ID", required = true, schema = @Schema(format = "uuid")) @PathVariable("id") String id) {
+		try {
+			return service.download(UUID.fromString(id));
+		} catch (NoSuchElementException e) {
+			return ResponseEntity.notFound().build();
+		}
+	}
 
-  @GetMapping
-  public java.util.List<ProjectSummary> list(){
-    return service.list();
-  }
+	@GetMapping
+	public java.util.List<ProjectSummary> list() {
+		return service.list();
+	}
 }

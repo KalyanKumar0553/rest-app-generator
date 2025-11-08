@@ -4,8 +4,10 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -23,10 +25,7 @@ public class DtoGenerationExecutor implements StepExecutor {
 
 	private static final Pattern LIST_PATTERN = Pattern.compile("^List\\s*<\\s*([A-Za-z0-9_$.]+)\\s*>$");
 
-	private static final Set<String> SIMPLE_TYPES = Set.of("String", "Integer", "Long", "Boolean", "Double", "Float",
-			"BigDecimal", "UUID", "Instant", "LocalDate", "LocalDateTime", "OffsetDateTime", "Date", "Time",
-			"ZonedDateTime", "Byte", "Short");
-
+	
 	private final TemplateEngine tpl;
 
 	public DtoGenerationExecutor(TemplateEngine tpl) {
@@ -45,7 +44,6 @@ public class DtoGenerationExecutor implements StepExecutor {
 		@SuppressWarnings("unchecked")
 		Map<String, Object> yaml = (Map<String, Object>) data.getVariables().get("yaml");
 
-		// Prefer YAML's basePackage if provided; otherwise fallback to groupId + artifact
 		String basePkg = (yaml != null) ? str(yaml.get("basePackage")) : null;
 		if (basePkg == null || basePkg.isBlank()) {
 			basePkg = groupId + "." + artifact.replace('-', '_');
@@ -53,10 +51,10 @@ public class DtoGenerationExecutor implements StepExecutor {
 		@SuppressWarnings("unchecked")
 		List<Map<String, Object>> dtos = (List<Map<String, Object>>) yaml.getOrDefault("dtos", List.of());
 		if (dtos.isEmpty()) {
-			throw new RuntimeException("Unable To generate DTO: 'dtos' is empty or missing.");
+			Map<String, Object> output = Map.of("status", "Success");
+			return StepResult.ok(output);
 		}
 
-		// NEW: provision cross-field helper classes ONLY if at least one DTO uses classConstraints
 		if (dtos.stream().anyMatch(d -> hasNonEmpty(d.get("classConstraints")))) {
 			ensureCrossFieldValidationHelpers(root, basePkg);
 		}
@@ -90,6 +88,8 @@ public class DtoGenerationExecutor implements StepExecutor {
 			List<Map<String, Object>> fieldModels = new ArrayList<>();
 			List<Map<String, Object>> fieldsForMessages = new ArrayList<>();
 
+			Set<String> imports = new LinkedHashSet<>();
+
 			for (Map<String, Object> f : fields) {
 				String fname = String.valueOf(f.get("name"));
 				String ftype = String.valueOf(f.get("type"));
@@ -113,7 +113,7 @@ public class DtoGenerationExecutor implements StepExecutor {
 					String ann = toValidationAnnotation(kind, c, key, fname);
 					if (ann != null && !ann.isBlank()) {
 						annotations.add(ann);
-
+						collectImportFromAnnotation(ann, imports);
 						Map<String, Object> cm = new LinkedHashMap<>();
 						cm.put("key", key);
 						cm.put("defaultMessage", c.getOrDefault("message", defaultMessage(kind, fname)));
@@ -125,24 +125,31 @@ public class DtoGenerationExecutor implements StepExecutor {
 				if (f.containsKey("jsonProperty")) {
 					String jp = str(f.get("jsonProperty"));
 					if (jp != null && !jp.isBlank()) {
-						annotations.add("@com.fasterxml.jackson.annotation.JsonProperty(\"" + escapeJava(jp) + "\")");
+						String ann = "@com.fasterxml.jackson.annotation.JsonProperty(\"" + escapeJava(jp) + "\")";
+						annotations.add(ann);
+						collectImportFromAnnotation(ann, imports); // will import com.fasterxml.jackson.annotation.JsonProperty
 					}
 				}
 
 				// Nested DTO or List<DTO> => @Valid
 				if (isNested(ftype)) {
-					annotations.add("@jakarta.validation.Valid");
+					String ann = "@jakarta.validation.Valid";
+					annotations.add(ann);
+					collectImportFromAnnotation(ann, imports);
 				}
 
-				fm.put("annotations", annotations);
+				// Convert any fully-qualified annotations on this field to simple names
+				List<String> simplified = simplifyAnnotations(annotations, imports);
+
+				fm.put("annotations", simplified);
 				fieldModels.add(fm);
 
 				Map<String, Object> msgField = new LinkedHashMap<>();
 				msgField.put("constraints", constraintsForMessages);
 				fieldsForMessages.add(msgField);
 			}
-
-			// Render DTO source file (includes class-level annotations)
+			classAnnotations.forEach(a -> collectImportFromAnnotation(a, imports));
+			classAnnotations = simplifyAnnotations(classAnnotations, imports);
 			String code = tpl.render(
 				AppConstants.TPL_DTO,
 				Map.of(
@@ -153,11 +160,11 @@ public class DtoGenerationExecutor implements StepExecutor {
 					"fields", fieldModels
 				)
 			);
+			code = injectImportsAfterPackage(code, imports, basePkg);
+
 			Path dir = root.resolve("src/main/java/" + basePkg.replace('.', '/') + "/dto/" + sub);
 			Files.createDirectories(dir);
 			Files.writeString(dir.resolve(name + ".java"), code, StandardCharsets.UTF_8);
-
-			// Collect messages
 			Map<String, Object> dtoMsg = new LinkedHashMap<>();
 			dtoMsg.put("name", name);
 			dtoMsg.put("fields", fieldsForMessages);
@@ -166,8 +173,6 @@ public class DtoGenerationExecutor implements StepExecutor {
 			}
 			dtosForMessages.add(dtoMsg);
 		}
-
-		// Render ValidationMessages.properties
 		String messagesBody = tpl.render(AppConstants.TPL_VALIDATION_MESSAGES, Map.of("dtos", dtosForMessages));
 		Path resDir = root.resolve("src/main/resources");
 		Files.createDirectories(resDir);
@@ -176,8 +181,6 @@ public class DtoGenerationExecutor implements StepExecutor {
 		Map<String, Object> output = Map.of("status", "Success");
 		return StepResult.ok(output);
 	}
-
-	// ---------- Only generate helpers when needed ----------
 
 	private static boolean hasNonEmpty(Object raw) {
 		if (raw == null) return false;
@@ -204,7 +207,6 @@ public class DtoGenerationExecutor implements StepExecutor {
 
 				String templatePath = e.getValue();
 				if (templatePath == null || templatePath.isBlank()) {
-					// template not configured; skip silently
 					continue;
 				}
 
@@ -212,7 +214,6 @@ public class DtoGenerationExecutor implements StepExecutor {
 				try {
 					body = tpl.render(templatePath, Map.of("basePkg", basePkg));
 				} catch (Exception renderErr) {
-					// template not found/unregistered; skip without failing the whole run
 					continue;
 				}
 				Files.writeString(target, body, StandardCharsets.UTF_8);
@@ -222,11 +223,6 @@ public class DtoGenerationExecutor implements StepExecutor {
 		}
 	}
 
-	// -------------------------- CLASS-LEVEL (CROSS-FIELD) --------------------------
-
-	/**
-	 * Accepts list- or map-style class constraints. Message key is optional here.
-	 */
 	private List<Map<String, Object>> normalizeClassConstraints(Object raw) {
 		List<Map<String, Object>> out = new ArrayList<>();
 		if (raw == null) return out;
@@ -234,6 +230,7 @@ public class DtoGenerationExecutor implements StepExecutor {
 		if (raw instanceof List) {
 			for (Object n : (List<?>) raw) {
 				if (n instanceof Map) {
+					@SuppressWarnings("unchecked")
 					Map<String, Object> m = new HashMap<>((Map<String, Object>) n);
 					copyMessageKey(n, m); // puts 'key' if messageKey exists
 					if (!m.containsKey("kind") && m.containsKey("type")) {
@@ -306,11 +303,6 @@ public class DtoGenerationExecutor implements StepExecutor {
 		return raw.trim().toLowerCase().replaceAll("[-_]", "");
 	}
 
-	// ------------------------------ FIELD-LEVEL ------------------------------
-
-	/**
-	 * Normalizes constraints accepting either a list-of-maps or a map-of-maps.
-	 */
 	private List<Map<String, Object>> normalizeConstraints(Object raw, String fieldName) {
 		List<Map<String, Object>> out = new ArrayList<>();
 		if (raw == null) return out;
@@ -318,6 +310,7 @@ public class DtoGenerationExecutor implements StepExecutor {
 		if (raw instanceof List) {
 			for (Object n : (List<?>) raw) {
 				if (n instanceof Map) {
+					@SuppressWarnings("unchecked")
 					Map<String, Object> m = new HashMap<>((Map<String, Object>) n);
 					copyMessageKey(n, m);
 					if (m.get("kind") != null && m.get("key") != null) out.add(m);
@@ -333,7 +326,7 @@ public class DtoGenerationExecutor implements StepExecutor {
 				if (v instanceof Map) {
 					Map<String, Object> spec = new HashMap<>((Map<String, Object>) v);
 					copyMessageKey(v, spec);
-					spec.put("kind", k); // normalize key name to kind
+					spec.put("kind", k);
 					if (isTruthy(spec.get("value")) || hasParameters(spec)) {
 						if (spec.get("key") != null) out.add(spec);
 					}
@@ -376,9 +369,6 @@ public class DtoGenerationExecutor implements StepExecutor {
 		}
 	}
 
-	/**
-	 * Maps a normalized constraint into a fully-qualified annotation string.
-	 */
 	private static String toValidationAnnotation(String kind, Map<String, Object> c, String key, String fieldName) {
 		if (key == null || key.isBlank()) return null;
 
@@ -547,5 +537,113 @@ public class DtoGenerationExecutor implements StepExecutor {
 
 	private static String escapeJava(String s) {
 		return s.replace("\\", "\\\\").replace("\"", "\\\"");
+	}
+
+	private static void collectImportFromAnnotation(String annotation, Set<String> imports) {
+		if (annotation == null) return;
+		int at = annotation.indexOf('@');
+		if (at < 0) return;
+		int start = at + 1;
+		int end = start;
+		while (end < annotation.length()) {
+			char ch = annotation.charAt(end);
+			if (ch == '(' || Character.isWhitespace(ch)) break;
+			end++;
+		}
+		if (end <= start) return;
+		String name = annotation.substring(start, end).trim();
+		if (name.contains(".")) {
+			// do not import same-package class annotations (none expected here), but keep rule generic
+			imports.add(name);
+		}
+	}
+
+	private static List<String> simplifyAnnotations(List<String> annotations, Set<String> imports) {
+		List<String> out = new ArrayList<>(annotations.size());
+		for (String a : annotations) {
+			if (a == null || a.isBlank()) {
+				out.add(a);
+				continue;
+			}
+			int at = a.indexOf('@');
+			if (at < 0) { out.add(a); continue; }
+
+			int start = at + 1;
+			int end = start;
+			while (end < a.length()) {
+				char ch = a.charAt(end);
+				if (ch == '(' || Character.isWhitespace(ch)) break;
+				end++;
+			}
+			if (end <= start) { out.add(a); continue; }
+
+			String fq = a.substring(start, end).trim();
+			String simple = fq.contains(".") ? fq.substring(fq.lastIndexOf('.') + 1) : fq;
+			if (!fq.equals(simple) && imports.contains(fq)) {
+				out.add(a.substring(0, start) + simple + a.substring(end));
+			} else {
+				out.add(a);
+			}
+		}
+		return out;
+	}
+
+	private static String injectImportsAfterPackage(String code, Set<String> imports, String basePkg) {
+		if (imports == null || imports.isEmpty()) return code;
+
+		// De-duplicate & sort each group
+		List<String> javaJakarta = new ArrayList<>();
+		List<String> lombok = new ArrayList<>();
+		List<String> thirdParty = new ArrayList<>();
+		List<String> project = new ArrayList<>();
+
+		for (String fq : imports) {
+			if (fq.startsWith("java.") || fq.startsWith("javax.") || fq.startsWith("jakarta.")) {
+				javaJakarta.add(fq);
+			} else if (fq.startsWith("lombok.")) {
+				lombok.add(fq);
+			} else if (fq.startsWith("com.src.main.")) {
+				project.add(fq);
+			} else {
+				thirdParty.add(fq);
+			}
+		}
+
+		Comparator<String> cmp = Comparator.naturalOrder();
+		javaJakarta.sort(cmp);
+		lombok.sort(cmp);
+		thirdParty.sort(cmp);
+		project.sort(cmp);
+
+		StringBuilder importBlock = new StringBuilder();
+		appendImports(importBlock, javaJakarta);
+		if (importBlock.length() > 0 && (!lombok.isEmpty() || !thirdParty.isEmpty() || !project.isEmpty())) importBlock.append('\n');
+		appendImports(importBlock, lombok);
+		if (!lombok.isEmpty() && (!thirdParty.isEmpty() || !project.isEmpty())) importBlock.append('\n');
+		appendImports(importBlock, thirdParty);
+		if (!thirdParty.isEmpty() && !project.isEmpty()) importBlock.append('\n');
+		appendImports(importBlock, project);
+
+		if (importBlock.length() == 0) return code;
+		int pkgIdx = code.indexOf("package ");
+		if (pkgIdx < 0) {
+			return importBlock.append('\n').append(code).toString();
+		}
+		int semi = code.indexOf(';', pkgIdx);
+		if (semi < 0) {
+			return importBlock.append('\n').append(code).toString();
+		}
+		int lineEnd = code.indexOf('\n', semi);
+		if (lineEnd < 0) lineEnd = semi + 1;
+
+		String prefix = code.substring(0, lineEnd + 1);
+		String suffix = code.substring(lineEnd + 1);
+		return prefix + "\n" + importBlock + "\n" + suffix;
+	}
+
+	private static void appendImports(StringBuilder sb, List<String> fqcns) {
+		for (String fq : fqcns) {
+			sb.append("import ").append(fq).append(";\n");
+		}
 	}
 }

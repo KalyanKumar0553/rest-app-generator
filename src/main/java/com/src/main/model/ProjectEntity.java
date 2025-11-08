@@ -25,14 +25,22 @@ public class ProjectEntity {
 	@Enumerated(EnumType.STRING)
 	@Column(nullable = false)
 	private ProjectStatus status;
+	
 	@Column(name = "artifact_id", nullable = false)
 	private String artifact;
+	
 	@Column(name = "group_id", nullable = false)
 	private String groupId;
+	
+	@Column(name = "build_tool", nullable = false)
+	private String buildTool;
+	
 	@Column(nullable = false)
 	private String version;
+	
 	@Column(name = "created_at", nullable = false)
 	private OffsetDateTime createdAt;
+	
 	@Column(name = "updated_at", nullable = false)
 	private OffsetDateTime updatedAt;
 

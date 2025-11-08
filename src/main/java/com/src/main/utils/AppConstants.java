@@ -24,12 +24,34 @@ public interface AppConstants {
   
   String TPL_POM = "templates/project/pom.mustache";
   String TPL_APP_YML = "templates/project/application.yml.mustache";
-  String TPL_MAIN = "templates/project/mainApp.java.mustache";
+  String TPL_MAIN = "templates/project/main.mustache";
   String TPL_DTO = "templates/dto/class.java.mustache";
-  String TPL_VALIDATION_MESSAGES = "templates/project/messages.mustache";
-  String TPL_VALIDATION_FIELD_MATCH = "validation/field_match.mustache";
+  String TPL_VALIDATION_MESSAGES = "templates/project/messages.properties.mustache";
+  String TPL_VALIDATION_FIELD_MATCH = "templates/validation/field_match.mustache";
   String TPL_VALIDATION_FIELD_MATCH_VALIDATOR = "templates/validation/field_match_validator.mustache";
   String TPL_VALIDATION_CONDITIONAL_REQUIRED = "templates/validation/conditional_required.mustache";
   String TPL_VALIDATION_CONDITIONAL_REQUIRED_VALIDATOR = "templates/validation/conditional_required_validator.mustache";
+  
+  String ROOT_DIR = "rootDir";
+  String GROUP_ID = "groupId";
+  String ARTIFACT_ID = "artifactId";
+  String NAME = "name";
+  String DESCRIPTION = "description";
+  String PACKAGE_NAME = "packageName";
+  String BOOT_VERSION = "bootVersion";
+  String VERSION = "version";
+  String JDK_VERSION = "jdkVersion";
+  String PACKAGING = "packaging";
+  String DEPENDENCIES = "dependencies";
+  String EXTRAS_OPENAPI = "extras.openapi";
+  String EXTRAS_ANGULAR_INTEGRATION = "extras.angularIntegration";
+  String BUILD_TOOL = "buildTool"; // "maven" | "gradle"
+  String DEFAULT_BUILD_TOOL = "maven";
+  String MAVEN_URL =  "/solrsearch/select?q=%s&rows=1&wt=json";
+  String TPL_MESSAGES = "templates/project/messages.properties.mustache";
+  String GRADLE_MUSTACHE = "/templates/project/build.gradle.kts.mustache";
+  String TPL_README = "templates/project/README.md.mustache";
+  String TPL_GITIGNORE = "templates/project/gitignore.mustache";
+
 
 }

@@ -1,0 +1,56 @@
+{{! 
+  Mustache template for build.gradle.kts generation 
+  Variables available:
+    bootVersion, jdkVersion, groupId, version, description,
+    isWar, angularIntegration, dependencies (list)
+}}
+
+import org.gradle.api.tasks.testing.Test
+import org.gradle.api.tasks.Copy
+import org.gradle.jvm.toolchain.JavaLanguageVersion
+
+plugins {
+    id("org.springframework.boot") version "{{{bootVersion}}}"
+    id("io.spring.dependency-management") version "1.1.6"
+    {{#isWar}}id("war"){{/isWar}}
+    java
+}
+
+group = "{{{groupId}}}"
+version = "{{{version}}}"
+description = "{{{description}}}"
+
+java {
+    toolchain {
+        languageVersion.set(JavaLanguageVersion.of({{{jdkVersion}}}))
+    }
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    compileOnly("org.projectlombok:lombok")
+    annotationProcessor("org.projectlombok:lombok")
+{{#isWar}}
+    providedRuntime("org.springframework.boot:spring-boot-starter-tomcat")
+{{/isWar}}
+{{#dependencies}}
+{{{.}}}
+{{/dependencies}}
+}
+
+tasks.withType<Test> {
+    useJUnitPlatform()
+}
+
+{{#angularIntegration}}
+tasks.register<Copy>("copyAngularStatic") {
+    from(layout.projectDirectory.dir("browser"))
+    into(layout.buildDirectory.dir("resources/main/static"))
+}
+tasks.named("processResources") {
+    dependsOn("copyAngularStatic")
+}
+{{/angularIntegration}}
