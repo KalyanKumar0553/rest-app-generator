@@ -5,8 +5,7 @@ import lombok.*;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class ProjectSummary {
-	private String projectId;
-	private String artifact;
+public class RetryResponseDTO {
+	private Long executionId;
 	private String status;
 }

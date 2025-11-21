@@ -19,26 +19,19 @@ import org.springframework.stereotype.Component;
 
 import com.src.main.exceptions.GenericException;
 import com.src.main.model.ProjectEntity;
-import com.src.main.service.DtoGenerationExecutor;
-import com.src.main.service.ScaffoldExecutor;
 
 @Component
 public class WorkflowRunner {
 
 	private final StateMachineFactory<States, Events> factory;
-	private final ScaffoldExecutor scaffold;
-	private final DtoGenerationExecutor dto;
-
-	public WorkflowRunner(StateMachineFactory<States, Events> f, ScaffoldExecutor s, DtoGenerationExecutor d) {
+	
+	public WorkflowRunner(StateMachineFactory<States, Events> f) {
 		this.factory = f;
-		this.scaffold = s;
-		this.dto = d;
 	}
 
 	@SuppressWarnings("unchecked")
 	public byte[] run(ProjectEntity project, Map<String, Object> yaml) throws Exception {
 		StateMachine<States, Events> sm = factory.getStateMachine();
-
 		Path temp = Files.createTempDirectory("genp_");
 		String groupId = project.getGroupId();
 		String buildTool = project.getBuildTool();
@@ -65,7 +58,7 @@ public class WorkflowRunner {
 		done.await(10, TimeUnit.MINUTES);
 		if (sm.getExtendedState().getVariables().containsKey("error")) {
 			String errorMsg = (String)sm.getExtendedState().getVariables().get("error");
-			throw new GenericException(HttpStatus.INTERNAL_SERVER_ERROR,(String)sm.getExtendedState().getVariables().get("error"));
+			throw new GenericException(HttpStatus.INTERNAL_SERVER_ERROR,errorMsg);
 		}
 		ByteArrayOutputStream out = new ByteArrayOutputStream();
 		try (ZipOutputStream zos = new ZipOutputStream(out)) {

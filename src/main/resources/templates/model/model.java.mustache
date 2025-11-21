@@ -1,0 +1,60 @@
+{{#packageName}}
+package {{packageName}};
+{{/packageName}}
+
+{{! ===== Imports ===== }}
+{{#imports}}
+import {{{.}}};
+{{/imports}}
+
+{{! ===== Class Annotations ===== }}
+{{#classAnnotations}}
+{{{.}}}
+{{/classAnnotations}}
+public class {{className}}{{#implementsClause}} implements {{{implementsClause}}}{{/implementsClause}} {
+
+  {{! Keep this if you often implement Serializable; harmless otherwise }}
+  private static final long serialVersionUID = 1L;
+
+  {{! ---- ID Block ---- }}
+  {{#idBlock}}
+  {{#annotations}}
+  {{{.}}}
+  {{/annotations}}
+  private {{type}} {{name}};
+  {{/idBlock}}
+
+  {{! ---- Fields ---- }}
+  {{#fields}}
+  {{#annotations}}
+  {{{.}}}
+  {{/annotations}}
+  private {{type}} {{name}};
+  {{/fields}}
+
+  {{! ---- Relations ---- }}
+  {{#relations}}
+  {{#annotations}}
+  {{{.}}}
+  {{/annotations}}
+  private {{declarationType}} {{name}};
+  {{/relations}}
+
+  {{! ---- Auditing ---- }}
+  {{#auditing}}
+  {{#enabled}}
+  {{#annotations}}
+  {{{.}}}
+  {{/annotations}}
+  private java.time.OffsetDateTime createdAt;
+  private java.time.OffsetDateTime updatedAt;
+  {{/enabled}}
+  {{/auditing}}
+
+  {{! ---- Soft Delete ---- }}
+  {{#softDelete}}
+  {{#enabled}}
+  private java.time.OffsetDateTime deletedAt;
+  {{/enabled}}
+  {{/softDelete}}
+}

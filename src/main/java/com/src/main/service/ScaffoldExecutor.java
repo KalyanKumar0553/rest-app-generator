@@ -60,7 +60,8 @@ public class ScaffoldExecutor implements StepExecutor {
 
 		final boolean openapi = boolOr(data, AppConstants.EXTRAS_OPENAPI, true);
 		final boolean angular = boolOr(data, AppConstants.EXTRAS_ANGULAR_INTEGRATION, false);
-
+		final String generator = strOr(data, AppConstants.GENERATOR, "generator", "groovy");
+		
 		final String packageName = strOr(data, AppConstants.PACKAGE_NAME, null, groupId);
 		final Path root = resolveRoot(data);
 		final Map<String, Object> yaml = (Map<String, Object>) data.getVariables().get("yaml");
@@ -71,29 +72,24 @@ public class ScaffoldExecutor implements StepExecutor {
 				groupId, artifactId, bootVersion, jdkVersion, packaging, depReq);
 
 		createMinimalLayout(root, packageName, buildTool);
+		List<MavenDependency> deps = dependencyResolver.resolveForMaven(depReq, bootVersion, openapi);
+		
 		if ("gradle".equalsIgnoreCase(buildTool)) {
-			var model = new InitializrProjectModel(groupId, artifactId, version, name, description, packaging,
+			InitializrProjectModel model = new InitializrProjectModel(groupId, artifactId, version, name, description, packaging,generator,
 					jdkVersion, bootVersion, openapi, angular);
-
-			var gradleDeps = dependencyResolver.resolveForGradle(depReq, bootVersion, openapi);
-			String settings = gradleGenerator.settingsGradleKts(artifactId);
-			String build = gradleGenerator.buildGradleKts(model, gradleDeps);
-
-			Files.writeString(root.resolve("settings.gradle.kts"), settings, UTF_8);
-			Files.writeString(root.resolve("build.gradle.kts"), build, UTF_8);
-			gradleWrapperInstaller.installWrapper(root, GradleVersionResolver.forBoot(model.bootVersion()));
+			InitializrGradleGenerator.GradleFiles files = gradleGenerator.generateFiles(model,deps);
+			Files.writeString(root.resolve(files.getBuildFileName()), files.getBuildContent(), UTF_8);
+			Files.writeString(root.resolve(files.getSettingsFileName()), files.getSettingsContent(), UTF_8);
+			gradleWrapperInstaller.installWrapper(root, GradleVersionResolver.forBoot(model.getBootVersion()));
 		} else {
-			var model = new InitializrProjectModel(groupId, artifactId, version, name, description, packaging,
+			InitializrProjectModel model = new InitializrProjectModel(groupId, artifactId, version, name, description, packaging, generator,
 					jdkVersion, bootVersion, openapi, angular);
-
-			List<MavenDependency> deps = dependencyResolver.resolveForMaven(depReq, bootVersion, openapi);
 			String pom = pomGenerator.generatePom(model, deps);
 			Files.writeString(root.resolve("pom.xml"), pom, UTF_8);
 		}
-
 		String mainClassName = toPascal(artifactId) + "Application";
 		writeMainClass(root, packageName, mainClassName);
-		writeResources(root, name);
+		writeResources(root, name, yaml);
 		writeDocsAndGitignore(root, name);
 		return StepResult.ok(Map.of("status", "Success", "root", root.toAbsolutePath().toString(), "groupId", groupId,
 				"artifactId", artifactId, "package", packageName, "version", version, "buildTool", buildTool));
@@ -138,9 +134,10 @@ public class ScaffoldExecutor implements StepExecutor {
 		Files.writeString(target, rendered, UTF_8);
 	}
 
-	private void writeResources(Path root, String appName) throws Exception {
+	private void writeResources(Path root, String appName, Map<String, Object> yaml) throws Exception {
 		Path resDir = root.resolve("src/main/resources");
 		Files.createDirectories(resDir);
+		writeMessagesIfAny(root, yaml);
 	}
 
 	private void writeDocsAndGitignore(Path root, String appName) throws Exception {
@@ -171,5 +168,101 @@ public class ScaffoldExecutor implements StepExecutor {
 				b.append(Character.toUpperCase(p.charAt(0))).append(p.substring(1));
 		}
 		return b.append("").toString();
+	}
+
+	@SuppressWarnings("unchecked")
+	private void writeMessagesIfAny(Path root, Map<String, Object> yaml) {
+		try {
+			Path resDir = root.resolve("src/main/resources");
+			Files.createDirectories(resDir);
+			Path target = resDir.resolve("messages.properties");
+
+			// don't overwrite if something else already created it
+			if (Files.exists(target)) {
+				log.debug("messages.properties exists; skipping scaffold write");
+				return;
+			}
+
+			// collect messages from YAML
+			List<Map<String, String>> entries = List.of();
+			if (yaml != null && yaml.get("messages") instanceof Map<?, ?> msgs) {
+				entries = ((Map<String, Object>) msgs).entrySet().stream().sorted(Map.Entry.comparingByKey())
+						.map(e -> Map.of("key", String.valueOf(e.getKey()), "value",
+								e.getValue() == null ? "" : String.valueOf(e.getValue())))
+						.toList();
+			}
+
+			// 1) Try Mustache
+			String body = null;
+			try {
+				body = tpl.render(AppConstants.TPL_VALIDATION_MESSAGES, Map.of("entries", entries, "messages", entries));
+			} catch (Exception renderEx) {
+				log.debug("TPL_MESSAGES render failed, will fallback: {}", renderEx.getMessage());
+			}
+
+			// 2) Fallback if Mustache missing/blank
+			if (body == null || body.isBlank()) {
+				body = buildMessagesProperties(entries);
+			}			
+			Files.writeString(target, body, UTF_8);
+		} catch (Exception ex) {
+			log.warn("Failed to write messages.properties: {}", ex.getMessage());
+			// last-ditch: at least create a tiny placeholder
+			try {
+				Path target = root.resolve("src/main/resources/messages.properties");
+				if (!Files.exists(target)) {
+					Files.writeString(target, "# messages (scaffold fallback)\n", UTF_8);
+				}
+			} catch (Exception ignored) {
+			}
+		}
+	}
+
+	/** Builds a valid .properties body from key/value pairs. */
+	private static String buildMessagesProperties(List<Map<String, String>> entries) {
+		StringBuilder sb = new StringBuilder();
+		sb.append("# Application messages").append(System.lineSeparator());
+		if (entries != null) {
+			for (Map<String, String> e : entries) {
+				String k = e.get("key");
+				String v = e.get("value");
+				if (k == null)
+					continue;
+				sb.append(escapePropKey(k)).append('=').append(escapePropValue(v == null ? "" : v))
+						.append(System.lineSeparator());
+			}
+		}
+		return sb.toString();
+	}
+
+	/** Minimal .properties escaping for keys. */
+	private static String escapePropKey(String s) {
+		StringBuilder b = new StringBuilder(s.length() + 8);
+		for (char c : s.toCharArray()) {
+			switch (c) {
+			case ' ', '\t', '\f', '=', ':', '#', '!' -> {
+				b.append('\\').append(c);
+			}
+			case '\\' -> b.append("\\\\");
+			case '\n' -> b.append("\\n");
+			case '\r' -> b.append("\\r");
+			default -> b.append(c);
+			}
+		}
+		return b.toString();
+	}
+
+	/** Minimal .properties escaping for values. */
+	private static String escapePropValue(String s) {
+		StringBuilder b = new StringBuilder(s.length() + 8);
+		for (char c : s.toCharArray()) {
+			switch (c) {
+			case '\\' -> b.append("\\\\");
+			case '\n' -> b.append("\\n");
+			case '\r' -> b.append("\\r");
+			default -> b.append(c);
+			}
+		}
+		return b.toString();
 	}
 }

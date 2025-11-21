@@ -5,7 +5,9 @@ import lombok.*;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class ProjectCreateResponse {
+public class ProjectStatusResponseDTO {
 	private String projectId;
+	private String artifact;
 	private String status;
+	private String error;
 }

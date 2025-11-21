@@ -20,20 +20,18 @@ public class InitializrGeneratorConfig {
 
 	private final MavenCentralProperties props;
 
-    public InitializrGeneratorConfig(MavenCentralProperties props) {
-        this.props = props;
-    }
-    
-	@Bean
-	public WebClient mavenCentralWebClient() {
-		 return WebClient.builder()
-	                .baseUrl(props.getBaseUrl())
-	                .exchangeStrategies(ExchangeStrategies.builder()
-	                        .codecs(c -> c.defaultCodecs().maxInMemorySize(256 * 1024))
-	                        .build())
-	                .build();
+	public InitializrGeneratorConfig(MavenCentralProperties props) {
+		this.props = props;
 	}
 
+	@Bean
+	public WebClient mavenCentralWebClient() {
+		return WebClient.builder().baseUrl(props.getBaseUrl())
+				.exchangeStrategies(
+						ExchangeStrategies.builder().codecs(c -> c.defaultCodecs().maxInMemorySize(256 * 1024)).build())
+				.build();
+	}
+	
 	@Bean
 	CaffeineCacheManager cacheManager(CacheProperties cacheProperties) {
 		CaffeineCacheManager mgr = new CaffeineCacheManager("depLookup");

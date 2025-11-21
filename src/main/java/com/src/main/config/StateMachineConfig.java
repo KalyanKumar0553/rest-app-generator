@@ -37,22 +37,38 @@ public class StateMachineConfig extends EnumStateMachineConfigurerAdapter<States
 	public void configure(StateMachineStateConfigurer<States, Events> states) throws Exception {
 		states.withStates().initial(States.DTO_GENERATION, fireStartOnEntry())
 				.stateEntry(States.DTO_GENERATION, runStep(States.DTO_GENERATION, Events.DTO_DONE, Events.DTO_FAIL))
-				.stateEntry(States.APPLICATION_FILES,runStep(States.APPLICATION_FILES, Events.APPFILES_DONE, Events.APPFILES_FAIL))
+				.stateEntry(States.MODEL_GENERATION,
+						runStep(States.MODEL_GENERATION, Events.MODEL_DONE, Events.MODEL_FAIL))
+				.stateEntry(States.APPLICATION_FILES,
+						runStep(States.APPLICATION_FILES, Events.APPFILES_DONE, Events.APPFILES_FAIL))
 				.stateEntry(States.SCAFFOLD, runStep(States.SCAFFOLD, Events.SCAFFOLD_DONE, Events.SCAFFOLD_FAIL))
 				.state(States.DONE).state(States.ERROR);
 	}
 
 	@Override
 	public void configure(StateMachineTransitionConfigurer<States, Events> t) throws Exception {
-		t.withExternal().source(States.DTO_GENERATION).target(States.APPLICATION_FILES).event(Events.DTO_DONE)
-				.and()
-				.withExternal().source(States.DTO_GENERATION).target(States.ERROR).event(Events.DTO_FAIL).and()
+		t
+				// DTO → MODEL on success; DTO → ERROR on fail
+				.withExternal().source(States.DTO_GENERATION).target(States.MODEL_GENERATION).event(Events.DTO_DONE)
+				.and().withExternal().source(States.DTO_GENERATION).target(States.ERROR).event(Events.DTO_FAIL).and()
+
+				// MODEL → APP FILES on success; MODEL → ERROR on fail
+				.withExternal().source(States.MODEL_GENERATION).target(States.APPLICATION_FILES)
+				.event(Events.MODEL_DONE).and().withExternal().source(States.MODEL_GENERATION).target(States.ERROR)
+				.event(Events.MODEL_FAIL).and()
+
+				// APP FILES → SCAFFOLD / ERROR
 				.withExternal().source(States.APPLICATION_FILES).target(States.SCAFFOLD).event(Events.APPFILES_DONE)
+				.and().withExternal().source(States.APPLICATION_FILES).target(States.ERROR).event(Events.APPFILES_FAIL)
 				.and()
-				.withExternal().source(States.APPLICATION_FILES).target(States.ERROR).event(Events.APPFILES_FAIL).and()
+
+				// SCAFFOLD → DONE / ERROR
 				.withExternal().source(States.SCAFFOLD).target(States.DONE).event(Events.SCAFFOLD_DONE).and()
 				.withExternal().source(States.SCAFFOLD).target(States.ERROR).event(Events.SCAFFOLD_FAIL).and()
+
+				// Global FAIL shortcuts → ERROR
 				.withExternal().source(States.DTO_GENERATION).target(States.ERROR).event(Events.FAIL).and()
+				.withExternal().source(States.MODEL_GENERATION).target(States.ERROR).event(Events.FAIL).and()
 				.withExternal().source(States.APPLICATION_FILES).target(States.ERROR).event(Events.FAIL).and()
 				.withExternal().source(States.SCAFFOLD).target(States.ERROR).event(Events.FAIL);
 	}
