@@ -2,6 +2,7 @@ package com.src.main.http;
 
 import java.util.Optional;
 
+import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.cache.annotation.Cacheable;
@@ -36,7 +37,7 @@ public class MavenCentralLookupAPI implements RemoteDependencyLookup {
 			return Optional.empty();
 		String query = AppConstants.MAVEN_URL.formatted(keyword.trim());
 		try {
-			var root = client.get().uri(query).retrieve().bodyToMono(org.json.JSONObject.class)
+			var root = client.get().uri(query).retrieve().bodyToMono(JSONObject.class)
 					.block(props.getReadTimeout());
 			if (root == null)
 				return Optional.empty();

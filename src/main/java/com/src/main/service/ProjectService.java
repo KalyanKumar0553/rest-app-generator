@@ -1,17 +1,20 @@
 package com.src.main.service;
 
-import org.springframework.http.ResponseEntity;
-
-import com.src.main.dto.*;
-import java.util.*;
+import java.util.List;
 import java.util.UUID;
 
-public interface ProjectService {
-	ProjectCreateResponse create(String yamlText);
+import org.springframework.http.ResponseEntity;
 
-	ProjectStatusResponse status(UUID id);
+import com.src.main.dto.ProjectCreateResponseDTO;
+import com.src.main.dto.ProjectStatusResponseDTO;
+import com.src.main.dto.ProjectSummaryDTO;
+
+public interface ProjectService {
+	ProjectCreateResponseDTO create(String yamlText);
+
+	ProjectStatusResponseDTO status(UUID id);
 
 	ResponseEntity<byte[]> download(UUID id);
 
-	List<ProjectSummary> list();
+	List<ProjectSummaryDTO> list();
 }

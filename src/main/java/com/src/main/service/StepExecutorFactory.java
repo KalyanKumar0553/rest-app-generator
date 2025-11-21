@@ -12,10 +12,14 @@ public class StepExecutorFactory {
 
  private final Map<States, StepExecutor> registry = new EnumMap<>(States.class);
 
- public StepExecutorFactory(DtoGenerationExecutor dtoGenerationExecutor,ScaffoldExecutor scaffoldExecutor,ApplicationFileGenerationExecutor appFileExecutor) {
+ public StepExecutorFactory(DtoGenerationExecutor dtoGenerationExecutor,ScaffoldExecutor scaffoldExecutor,
+		 ApplicationFileGenerationExecutor appFileExecutor,
+		 ModelGenerationExecutor modelExecutor
+		 ) {
      registry.put(States.DTO_GENERATION, dtoGenerationExecutor);
      registry.put(States.SCAFFOLD, scaffoldExecutor);
      registry.put(States.APPLICATION_FILES, appFileExecutor);
+     registry.put(States.MODEL_GENERATION, modelExecutor);
  }
 
  public StepExecutor forState(States state) {

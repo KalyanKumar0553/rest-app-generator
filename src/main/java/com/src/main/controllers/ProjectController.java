@@ -13,15 +13,14 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.src.main.dto.ProjectCreateResponse;
-import com.src.main.dto.ProjectStatusResponse;
-import com.src.main.dto.ProjectSummary;
+import com.src.main.dto.ProjectCreateResponseDTO;
+import com.src.main.dto.ProjectStatusResponseDTO;
+import com.src.main.dto.ProjectSummaryDTO;
 import com.src.main.service.ProjectService;
 import com.src.main.utils.AppConstants;
 
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Schema;
-import jakarta.validation.constraints.NotBlank;
 
 @RestController
 @RequestMapping(AppConstants.API_PROJECTS)
@@ -34,13 +33,14 @@ public class ProjectController {
 		this.service = service;
 	}
 
-	@PostMapping(consumes = { "text/yaml", "application/x-yaml", MediaType.TEXT_PLAIN_VALUE })
-	public ProjectCreateResponse create(@RequestBody @NotBlank String yamlText) {
+	@PostMapping(consumes = { "text/yaml", "application/x-yaml",
+			MediaType.TEXT_PLAIN_VALUE }, produces = MediaType.APPLICATION_JSON_VALUE)
+	public ProjectCreateResponseDTO create(@RequestBody String yamlText) {
 		return service.create(yamlText);
 	}
 
 	@GetMapping(AppConstants.PATH_ID)
-	public ResponseEntity<ProjectStatusResponse> status(
+	public ResponseEntity<ProjectStatusResponseDTO> status(
 			@Parameter(description = "Project ID", required = true, schema = @Schema(format = "uuid")) @PathVariable("id") String id) {
 		try {
 			return ResponseEntity.ok(service.status(UUID.fromString(id)));
@@ -60,7 +60,7 @@ public class ProjectController {
 	}
 
 	@GetMapping
-	public java.util.List<ProjectSummary> list() {
+	public java.util.List<ProjectSummaryDTO> list() {
 		return service.list();
 	}
 }

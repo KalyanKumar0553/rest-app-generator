@@ -26,7 +26,6 @@ public interface AppConstants {
   String TPL_APP_YML = "templates/project/application.yml.mustache";
   String TPL_MAIN = "templates/project/main.mustache";
   String TPL_DTO = "templates/dto/class.java.mustache";
-  String TPL_VALIDATION_MESSAGES = "templates/project/messages.properties.mustache";
   String TPL_VALIDATION_FIELD_MATCH = "templates/validation/field_match.mustache";
   String TPL_VALIDATION_FIELD_MATCH_VALIDATOR = "templates/validation/field_match_validator.mustache";
   String TPL_VALIDATION_CONDITIONAL_REQUIRED = "templates/validation/conditional_required.mustache";
@@ -40,6 +39,7 @@ public interface AppConstants {
   String PACKAGE_NAME = "packageName";
   String BOOT_VERSION = "bootVersion";
   String VERSION = "version";
+  String GENERATOR = "generator";
   String JDK_VERSION = "jdkVersion";
   String PACKAGING = "packaging";
   String DEPENDENCIES = "dependencies";
@@ -48,7 +48,7 @@ public interface AppConstants {
   String BUILD_TOOL = "buildTool"; // "maven" | "gradle"
   String DEFAULT_BUILD_TOOL = "maven";
   String MAVEN_URL =  "/solrsearch/select?q=%s&rows=1&wt=json";
-  String TPL_MESSAGES = "templates/project/messages.properties.mustache";
+  String TPL_VALIDATION_MESSAGES = "templates/project/messages.properties.mustache";
   String GRADLE_MUSTACHE = "/templates/project/build.gradle.kts.mustache";
   String TPL_README = "templates/project/README.md.mustache";
   String TPL_GITIGNORE = "templates/project/gitignore.mustache";

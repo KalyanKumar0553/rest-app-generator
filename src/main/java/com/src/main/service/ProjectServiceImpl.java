@@ -10,13 +10,13 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.yaml.snakeyaml.Yaml;
 
-import com.src.main.dto.ProjectCreateResponse;
-import com.src.main.dto.ProjectStatusResponse;
-import com.src.main.dto.ProjectSummary;
+import com.src.main.dto.ProjectCreateResponseDTO;
+import com.src.main.dto.ProjectStatusResponseDTO;
+import com.src.main.dto.ProjectSummaryDTO;
 import com.src.main.exceptions.GenericException;
 import com.src.main.model.ProjectEntity;
+import com.src.main.repository.ProjectRepository;
 import com.src.main.sm.WorkflowRunner;
-import com.src.main.status.ProjectRepository;
 import com.src.main.utils.AppConstants;
 import com.src.main.utils.ProjectStatus;
 
@@ -53,7 +53,7 @@ public class ProjectServiceImpl implements ProjectService {
 
 	@Override
 	@Transactional
-	public ProjectCreateResponse create(String yamlText) {
+	public ProjectCreateResponseDTO create(String yamlText) {
 		try {
 			var violations = validator.validate(new Input(yamlText));
 			if (!violations.isEmpty())
@@ -99,16 +99,16 @@ public class ProjectServiceImpl implements ProjectService {
 			p.setStatus(ProjectStatus.SUCCESS);
 			p.setUpdatedAt(OffsetDateTime.now());
 			repo.saveAndFlush(p);
-			return new ProjectCreateResponse(p.getId().toString(), p.getStatus().name());	
+			return new ProjectCreateResponseDTO(p.getId().toString(), p.getStatus().name());	
 		} catch (Exception e) {
 			throw new GenericException(HttpStatus.INTERNAL_SERVER_ERROR,e.getMessage());
 		}
 	}
 
 	@Override
-	public ProjectStatusResponse status(java.util.UUID id) {
+	public ProjectStatusResponseDTO status(java.util.UUID id) {
 		return repo.findById(id)
-				.map(p -> new ProjectStatusResponse(p.getId().toString(), p.getArtifact(), p.getStatus().name(),
+				.map(p -> new ProjectStatusResponseDTO(p.getId().toString(), p.getArtifact(), p.getStatus().name(),
 						p.getErrorMessage()))
 				.orElseThrow(() -> new java.util.NoSuchElementException("Project not found"));
 	}
@@ -126,11 +126,11 @@ public class ProjectServiceImpl implements ProjectService {
 	}
 
 	@Override
-	public java.util.List<ProjectSummary> list() {
+	public java.util.List<ProjectSummaryDTO> list() {
 		java.util.List<ProjectEntity> all = repo.findAll();
-		java.util.List<ProjectSummary> out = new java.util.ArrayList<>();
+		java.util.List<ProjectSummaryDTO> out = new java.util.ArrayList<>();
 		for (ProjectEntity p : all) {
-			out.add(new ProjectSummary(p.getId().toString(), p.getArtifact(), p.getStatus().name()));
+			out.add(new ProjectSummaryDTO(p.getId().toString(), p.getArtifact(), p.getStatus().name()));
 		}
 		return out;
 	}

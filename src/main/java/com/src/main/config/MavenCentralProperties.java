@@ -19,12 +19,12 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @Validated
 public class MavenCentralProperties {
-    @NotBlank
-    private String baseUrl;
+	@NotBlank
+	private String baseUrl;
 
-    @NotNull
-    private Duration connectTimeout = Duration.ofSeconds(3);
+	@NotNull
+	private Duration connectTimeout = Duration.ofSeconds(3);
 
-    @NotNull
-    private Duration readTimeout = Duration.ofSeconds(4);
+	@NotNull
+	private Duration readTimeout = Duration.ofSeconds(4);
 }
