@@ -8,6 +8,7 @@ import org.springframework.stereotype.Component;
 
 import com.src.main.dto.StepResult;
 import com.src.main.utils.AppConstants;
+import com.src.main.utils.ProjectMetaDataConstants;
 
 /**
  * State executor for MODEL_GENERATION step.
@@ -30,17 +31,11 @@ public class ModelGenerationExecutor implements StepExecutor {
     @SuppressWarnings("unchecked")
     public StepResult execute(ExtendedState data) {
         try {
-    		Path root = Path.of((String) data.getVariables().get("root"));
-    		String groupId = (String) data.getVariables().get("groupId");
-    		String artifact = (String) data.getVariables().get("artifact");
-    		
+    		Path root = Path.of((String) data.getVariables().get(ProjectMetaDataConstants.ROOT_DIR));
     		Map<String, Object> yaml = (Map<String, Object>) data.getVariables().get("yaml");
-
     		String basePkg = (yaml != null) ? str(yaml.get("basePackage")) : null;
-    		
             ModelGenerator generator = new ModelGenerator(tpl, basePkg);
             generator.generate(yaml, root);
-
             Map<String, Object> output = Map.of("status", "Success");
     		return StepResult.ok(output);
         } catch (Exception ex) {

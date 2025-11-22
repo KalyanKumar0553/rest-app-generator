@@ -17,6 +17,7 @@ import org.yaml.snakeyaml.Yaml;
 import org.yaml.snakeyaml.representer.Representer;
 
 import com.src.main.dto.StepResult;
+import com.src.main.utils.ProjectMetaDataConstants;
 
 @Component
 public class ApplicationFileGenerationExecutor implements StepExecutor {
@@ -24,8 +25,8 @@ public class ApplicationFileGenerationExecutor implements StepExecutor {
 	@Override
 	@SuppressWarnings("unchecked")
 	public StepResult execute(ExtendedState data) throws Exception {
-		Path root = Path.of((String) data.getVariables().get("root"));
-		Map<String, Object> yaml = (Map<String, Object>) data.getVariables().get("yaml");
+		Path root = Path.of((String) data.getVariables().get(ProjectMetaDataConstants.ROOT_DIR));
+		Map<String, Object> yaml = (Map<String, Object>) data.getVariables().get(ProjectMetaDataConstants.YAML);
 		if (yaml == null) {
 			return StepResult.error("YAML_NOT_FOUND", "YAML not found in ExtendedState");
 		}
@@ -113,7 +114,7 @@ public class ApplicationFileGenerationExecutor implements StepExecutor {
 		}
 		out.put(prefix, String.valueOf(node));
 	}
-
+	  
 	@SuppressWarnings("unchecked")
 	private static Map<String, Object> castMap(Object obj) {
 		if (obj instanceof Map) {

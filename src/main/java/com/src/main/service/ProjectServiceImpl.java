@@ -18,8 +18,10 @@ import com.src.main.model.ProjectEntity;
 import com.src.main.repository.ProjectRepository;
 import com.src.main.sm.WorkflowRunner;
 import com.src.main.utils.AppConstants;
+import com.src.main.utils.ProjectMetaDataConstants;
 import com.src.main.utils.ProjectStatus;
 
+import jakarta.persistence.Column;
 import jakarta.transaction.Transactional;
 import jakarta.validation.ConstraintViolationException;
 import jakarta.validation.Validator;
@@ -71,10 +73,19 @@ public class ProjectServiceImpl implements ProjectService {
 			Map<String, Object> app = (Map<String, Object>) spec.get("app");
 			if (app == null)
 				throw new IllegalArgumentException("Missing required 'app' section");
-			String artifact = String.valueOf(app.getOrDefault("artifactId", AppConstants.DEFAULT_ARTIFACT));
-			String groupId = String.valueOf(app.getOrDefault("groupId", AppConstants.DEFAULT_GROUP));
-			String version = String.valueOf(app.getOrDefault("version", AppConstants.DEFAULT_VERSION));
-			String buildTool = String.valueOf(app.getOrDefault("buildTool", AppConstants.DEFAULT_BUILD_TOOL));
+			
+			String artifact = String.valueOf(app.getOrDefault(ProjectMetaDataConstants.ARTIFACT_ID, ProjectMetaDataConstants.DEFAULT_ARTIFACT));
+			String groupId = String.valueOf(app.getOrDefault(ProjectMetaDataConstants.GROUP_ID, ProjectMetaDataConstants.DEFAULT_GROUP));
+			String version = String.valueOf(app.getOrDefault(ProjectMetaDataConstants.VERSION, ProjectMetaDataConstants.DEFAULT_VERSION));
+			String buildTool = String.valueOf(app.getOrDefault(ProjectMetaDataConstants.BUILD_TOOL, ProjectMetaDataConstants.DEFAULT_BUILD_TOOL));
+			String packaging = String.valueOf(app.getOrDefault(ProjectMetaDataConstants.PACKAGING, ProjectMetaDataConstants.DEFAULT_PACKAGING));
+			String generator = String.valueOf(app.getOrDefault(ProjectMetaDataConstants.GENERATOR, ProjectMetaDataConstants.DEFAULT_GRADLE_GENERATOR));
+			String name = String.valueOf(app.getOrDefault(ProjectMetaDataConstants.NAME, ProjectMetaDataConstants.DEFAULT_NAME));
+			String description = String.valueOf(app.getOrDefault(ProjectMetaDataConstants.DESCRIPTION, ProjectMetaDataConstants.DEFAULT_DESCRIPTION));
+			String springBootVersion = String.valueOf(app.getOrDefault(ProjectMetaDataConstants.SPRING_BOOT_VERSION, ProjectMetaDataConstants.DEFAULT_BOOT_VERSION));
+			String jdkVersion = String.valueOf(app.getOrDefault(ProjectMetaDataConstants.JDK_VERSION, ProjectMetaDataConstants.DEFAULT_JDK));
+			
+			
 			if (artifact == null || artifact.isBlank())
 				throw new IllegalArgumentException("app.artifact must be provided");
 			if (groupId == null || groupId.isBlank())
@@ -84,14 +95,23 @@ public class ProjectServiceImpl implements ProjectService {
 
 			ProjectEntity p = new ProjectEntity();
 			p.setId(java.util.UUID.randomUUID());
-			p.setYaml(yamlText);
-			p.setStatus(ProjectStatus.QUEUED);
-			p.setCreatedAt(OffsetDateTime.now());
-			p.setUpdatedAt(OffsetDateTime.now());
+			
 			p.setArtifact(artifact);
 			p.setGroupId(groupId);
 			p.setVersion(version);
 			p.setBuildTool(buildTool);
+			p.setPackaging(packaging);
+			p.setGenerator(generator);
+			p.setName(name);
+			p.setDescription(description);
+			p.setSpringBootVersion(springBootVersion);
+			p.setJdkVersion(jdkVersion);
+			
+			p.setYaml(yamlText);
+			p.setStatus(ProjectStatus.QUEUED);
+			p.setCreatedAt(OffsetDateTime.now());
+			p.setUpdatedAt(OffsetDateTime.now());
+			
 			Map<String, Object> yaml = (Map<String, Object>) new Yaml().load(p.getYaml());
 			repo.save(p);
 			byte[] data = runner.run(p, yaml);

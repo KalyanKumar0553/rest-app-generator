@@ -1,15 +1,20 @@
 package com.src.main.model;
 
-import jakarta.persistence.*;
-import lombok.Data;
+import java.time.OffsetDateTime;
+import java.util.UUID;
 
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
 import com.src.main.utils.ProjectStatus;
 
-import java.time.OffsetDateTime;
-import java.util.UUID;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+import lombok.Data;
 
 @Entity
 @Table(name = "projects")
@@ -23,20 +28,45 @@ public class ProjectEntity {
 	private String yaml;
 
 	@Enumerated(EnumType.STRING)
-	@Column(nullable = false)
+	@Column
 	private ProjectStatus status;
 	
-	@Column(name = "artifact_id", nullable = false)
+	@Column
 	private String artifact;
 	
-	@Column(name = "group_id", nullable = false)
+	@Column
 	private String groupId;
 	
-	@Column(name = "build_tool", nullable = false)
+	@Column
 	private String buildTool;
 	
-	@Column(nullable = false)
+	@Column
 	private String version;
+	
+	@Column
+	String packaging;
+	
+	@Column
+	String generator;
+	
+	@Column
+	String name;
+	
+	@Column
+	String description;
+	
+	@Column
+	String springBootVersion;
+	
+	@Column
+    private String jdkVersion;
+    
+	@Column
+	private boolean includeOpenapi;
+    
+	@Column
+	private boolean angularIntegration;
+    
 	
 	@Column(name = "created_at", nullable = false)
 	private OffsetDateTime createdAt;

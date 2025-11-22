@@ -19,12 +19,18 @@ import org.springframework.stereotype.Component;
 
 import com.src.main.dto.StepResult;
 import com.src.main.utils.AppConstants;
+import com.src.main.utils.ProjectMetaDataConstants;
 
 @Component
 public class DtoGenerationExecutor implements StepExecutor {
 
 	private static final Pattern LIST_PATTERN = Pattern.compile("^List\\s*<\\s*([A-Za-z0-9_$.]+)\\s*>$");
-
+	private static final String TPL_DTO = "templates/dto/class.java.mustache";
+	private static final String TPL_VALIDATION_FIELD_MATCH = "templates/validation/field_match.mustache";
+	private static final String TPL_VALIDATION_FIELD_MATCH_VALIDATOR = "templates/validation/field_match_validator.mustache";
+	private static final String TPL_VALIDATION_CONDITIONAL_REQUIRED = "templates/validation/conditional_required.mustache";
+	private static final String TPL_VALIDATION_CONDITIONAL_REQUIRED_VALIDATOR = "templates/validation/conditional_required_validator.mustache";
+	
 	private final TemplateEngine tpl;
 
 	public DtoGenerationExecutor(TemplateEngine tpl) {
@@ -38,10 +44,10 @@ public class DtoGenerationExecutor implements StepExecutor {
 	@Override
 	@SuppressWarnings("unchecked")
 	public StepResult execute(ExtendedState data) throws Exception {
-		Path root = Path.of((String) data.getVariables().get("root"));
-		String groupId = (String) data.getVariables().get("groupId");
-		String artifact = (String) data.getVariables().get("artifact");
-		Map<String, Object> yaml = (Map<String, Object>) data.getVariables().get("yaml");
+		Path root = Path.of((String) data.getVariables().get(ProjectMetaDataConstants.ROOT_DIR));
+		String groupId = (String) data.getVariables().get(ProjectMetaDataConstants.GROUP_ID);
+		String artifact = (String) data.getVariables().get(ProjectMetaDataConstants.ARTIFACT_ID);
+		Map<String, Object> yaml = (Map<String, Object>) data.getVariables().get(ProjectMetaDataConstants.YAML);
 
 		String basePkg = (yaml != null) ? str(yaml.get("basePackage")) : null;
 		if (basePkg == null || basePkg.isBlank()) {
@@ -152,7 +158,7 @@ public class DtoGenerationExecutor implements StepExecutor {
 			classAnnotations.forEach(a -> collectImportFromAnnotation(a, imports));
 			classAnnotations = simplifyAnnotations(classAnnotations, imports);
 
-			String code = tpl.render(AppConstants.TPL_DTO, Map.of("basePkg", basePkg, "sub", sub, "name", name,
+			String code = tpl.render(TPL_DTO, Map.of("basePkg", basePkg, "sub", sub, "name", name,
 					"classAnnotations", String.join("\n", classAnnotations), "fields", fieldModels));
 			code = injectImportsAfterPackage(code, imports, basePkg);
 
@@ -187,10 +193,10 @@ public class DtoGenerationExecutor implements StepExecutor {
 			Path baseDir = root.resolve("src/main/java/" + basePkg.replace('.', '/') + "/validation");
 			Files.createDirectories(baseDir);
 
-			Map<String, String> files = Map.of("FieldMatch.java", AppConstants.TPL_VALIDATION_FIELD_MATCH,
-					"FieldMatchValidator.java", AppConstants.TPL_VALIDATION_FIELD_MATCH_VALIDATOR,
-					"ConditionalRequired.java", AppConstants.TPL_VALIDATION_CONDITIONAL_REQUIRED,
-					"ConditionalRequiredValidator.java", AppConstants.TPL_VALIDATION_CONDITIONAL_REQUIRED_VALIDATOR);
+			Map<String, String> files = Map.of("FieldMatch.java", TPL_VALIDATION_FIELD_MATCH,
+					"FieldMatchValidator.java", TPL_VALIDATION_FIELD_MATCH_VALIDATOR,
+					"ConditionalRequired.java", TPL_VALIDATION_CONDITIONAL_REQUIRED,
+					"ConditionalRequiredValidator.java", TPL_VALIDATION_CONDITIONAL_REQUIRED_VALIDATOR);
 
 			for (Map.Entry<String, String> e : files.entrySet()) {
 				Path target = baseDir.resolve(e.getKey());
