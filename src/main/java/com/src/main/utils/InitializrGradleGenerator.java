@@ -23,13 +23,6 @@ import io.spring.initializr.generator.version.VersionReference;
 @Component
 public class InitializrGradleGenerator {
 
-	private static final String DEFAULT_BOOT_VERSION = "3.3.5";
-	private static final String DEFAULT_APP_VERSION = "0.0.1-SNAPSHOT";
-	private static final String DEFAULT_PACKAGING = "jar";
-	private static final String DEFAULT_JDK = "21";
-	private static final String DEFAULT_GRADLE_GENERATOR = "groovy";
-	private static final String DEP_MGMT_PLUGIN_VERSION = "1.1.6";
-
 	private final GroovyDslGradleBuildWriter groovyBuildWriter = new GroovyDslGradleBuildWriter();
 	private final GroovyDslGradleSettingsWriter groovySettingsWriter = new GroovyDslGradleSettingsWriter();
 	private final KotlinDslGradleBuildWriter kotlinBuildWriter = new KotlinDslGradleBuildWriter();
@@ -37,13 +30,13 @@ public class InitializrGradleGenerator {
 
 	public GradleFiles generateFiles(InitializrProjectModel model, List<MavenDependency> deps) {
 		Objects.requireNonNull(model, "model must not be null");
-		String groupId = req(model.getGroupId(), "groupId");
-		String artifact = req(model.getArtifactId(), "artifactId");
-		String bootVer = nz(model.getBootVersion(), DEFAULT_BOOT_VERSION);
-		String appVer = nz(model.getVersion(), DEFAULT_APP_VERSION);
-		String packaging = nz(model.getPackaging(), DEFAULT_PACKAGING);
-		String jdk = nz(model.getJdkVersion(), DEFAULT_JDK);
-		boolean kotlin = isKotlinDsl(nz(model.getGenerator(),DEFAULT_GRADLE_GENERATOR));
+		String groupId = model.getGroupId();
+		String artifact = model.getArtifactId();
+		String bootVer = model.getBootVersion();
+		String appVer = model.getVersion();
+		String packaging = model.getPackaging();
+		String jdk = model.getJdkVersion();
+		boolean kotlin = isKotlinDsl(model.getGenerator());
 
 		GradleBuild build = createBaseBuild(groupId, artifact, bootVer, appVer, packaging, jdk);
 		addModelDependencies(build, deps);
@@ -74,7 +67,7 @@ public class InitializrGradleGenerator {
 
 		// plugins
 		build.plugins().add("org.springframework.boot", plugin -> plugin.setVersion(bootVersion));
-		build.plugins().add("io.spring.dependency-management", plugin -> plugin.setVersion(DEP_MGMT_PLUGIN_VERSION));
+		build.plugins().add("io.spring.dependency-management", plugin -> plugin.setVersion(ProjectMetaDataConstants.DEP_MGMT_PLUGIN_VERSION));
 		build.plugins().add("java");
 		if (isWarPackaged(packaging)) {
 			build.plugins().add("war");
