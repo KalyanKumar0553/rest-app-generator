@@ -1,6 +1,6 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { HeroComponent } from './hero/hero.component';
+import { BannerComponent } from './banner/banner.component';
 import { FeaturesComponent } from './features/features.component';
 import { BenefitsComponent } from './benefits/benefits.component';
 import { CtaComponent } from './cta/cta.component';
@@ -11,7 +11,7 @@ import { SignupComponent } from './signup/signup.component';
   standalone: true,
   imports: [
     CommonModule,
-    HeroComponent,
+    BannerComponent,
     FeaturesComponent,
     BenefitsComponent,
     CtaComponent,
