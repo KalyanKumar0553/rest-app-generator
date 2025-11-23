@@ -3,14 +3,13 @@ import { RouterOutlet, Router, NavigationEnd } from '@angular/router';
 import { IonApp, IonRouterOutlet, IonContent } from '@ionic/angular/standalone';
 import { HeaderComponent } from './components/header/header.component';
 import { FooterComponent } from './components/footer/footer.component';
-import { FloatingContactComponent } from './components/floating-contact/floating-contact.component';
 import { CommonModule } from '@angular/common';
 import { filter, delay } from 'rxjs/operators';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [CommonModule, IonApp, IonRouterOutlet, IonContent, RouterOutlet, HeaderComponent, FooterComponent, FloatingContactComponent],
+  imports: [CommonModule, IonApp, IonRouterOutlet, IonContent, RouterOutlet, HeaderComponent, FooterComponent],
   template: `
     <ion-app>
       <ion-content class="app-content">
@@ -22,7 +21,6 @@ import { filter, delay } from 'rxjs/operators';
           <router-outlet></router-outlet>
         </main>
         <app-footer></app-footer>
-        <app-floating-contact></app-floating-contact>
       </ion-content>
     </ion-app>
   `,
