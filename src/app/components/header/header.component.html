@@ -1,0 +1,56 @@
+<!-- Bootstrap Header -->
+<header class="header fixed-top">
+  <nav class="navbar navbar-expand-lg navbar-light">
+    <div class="container-fluid">
+      <!-- Brand -->
+      <a class="navbar-brand" (click)="navigateToHome()" style="cursor: pointer;">
+        <img 
+          src="assets/icon/qs-logo copy.png"
+          alt="QS - Quality Solutions" 
+          class="logo-img"
+        />
+        <div class="brand-container">
+          <span class="brand-text">QuadProSol</span>
+          <div class="brand-slogan">QUALITY ★ PERFORMANCE ★ SECURITY</div>
+        </div>
+      </a>
+
+      <!-- Mobile Toggle Button -->
+      <button 
+        class="navbar-toggler d-lg-none p-2"
+        type="button"
+        (click)="toggleMenu()"
+        [attr.aria-expanded]="isMenuOpen"
+        aria-label="Toggle navigation"
+      >
+        <i class="bi bi-list fs-4" *ngIf="!isMenuOpen"></i>
+        <i class="bi bi-x-lg fs-4" *ngIf="isMenuOpen"></i>
+      </button>
+
+      <!-- Navigation Menu -->
+      <div class="collapse navbar-collapse" [class.show]="isMenuOpen" [class.collapsing]="isTransitioning">
+        <ul class="navbar-nav ms-auto align-items-lg-center">
+          <li class="nav-item" *ngFor="let item of navigationItems">
+            <a 
+              class="nav-link"
+              [class.active]="currentRoute === '/' && activeSection === item.id"
+              (click)="onNavClick($event, item.id)"
+              [href]="'#' + item.id"
+            >
+              {{ item.label }}
+            </a>
+          </li>
+          <li class="nav-item ms-lg-3">
+            <button 
+              class="btn contact-btn"
+              (click)="navigateToIntake()"
+              aria-label="Contact us"
+            >
+              CONTACT
+            </button>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+</header>

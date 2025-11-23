@@ -13,9 +13,9 @@ import org.springframework.statemachine.config.builders.StateMachineStateConfigu
 import org.springframework.statemachine.config.builders.StateMachineTransitionConfigurer;
 
 import com.src.main.dto.StepResult;
-import com.src.main.service.StepExecutorFactory;
-import com.src.main.sm.Events;
-import com.src.main.sm.States;
+import com.src.main.sm.config.Events;
+import com.src.main.sm.config.States;
+import com.src.main.sm.config.StepExecutorFactory;
 
 @Configuration
 @EnableStateMachineFactory
