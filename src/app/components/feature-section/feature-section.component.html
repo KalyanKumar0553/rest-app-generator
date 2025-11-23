@@ -1,0 +1,46 @@
+<section class="feature-section">
+  <div class="container">
+    <h2 class="section-title">Jumpstart your development</h2>
+
+    <div class="feature-grid">
+      <div class="feature-card" *ngFor="let feature of features" [class.reverse]="feature.reverse">
+        <div class="feature-visual">
+          <div *ngIf="feature.visual === 'mockup'" class="visual-mockup">
+            <div class="mockup-sidebar"></div>
+            <div class="mockup-content">
+              <div class="mockup-line"></div>
+              <div class="mockup-line short"></div>
+              <div class="mockup-line"></div>
+            </div>
+          </div>
+
+          <div *ngIf="feature.visual === 'schema'" class="visual-mockup schema">
+            <div class="schema-item"></div>
+            <div class="schema-item"></div>
+            <div class="schema-item"></div>
+          </div>
+
+          <div *ngIf="feature.visual === 'code'" class="code-preview">
+            <div class="code-line"></div>
+            <div class="code-line short"></div>
+            <div class="code-line"></div>
+          </div>
+
+          <div *ngIf="feature.visual === 'icon'" class="advanced-icon">⚙</div>
+        </div>
+
+        <div class="feature-text">
+          <div class="feature-number">{{ feature.number }}</div>
+          <h3 class="feature-title">{{ feature.title }}</h3>
+          <p class="feature-description">{{ feature.description }}</p>
+          <button *ngIf="feature.hasButton && feature.buttonType === 'primary'" class="cta-button small">
+            {{ feature.buttonText }}
+          </button>
+          <button *ngIf="feature.hasButton && feature.buttonType === 'secondary'" class="cta-button-secondary">
+            {{ feature.buttonText }}
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
