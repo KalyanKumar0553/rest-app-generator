@@ -35,7 +35,6 @@ import { filter, delay } from 'rxjs/operators';
     
     .main-content {
       min-height: calc(100vh - 160px);
-      padding-top: 80px;
       position: relative;
       transition: opacity 0.3s ease;
     }
