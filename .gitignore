@@ -91,3 +91,4 @@ node/
 Thumbs.db
 
 /bin/
+.env
