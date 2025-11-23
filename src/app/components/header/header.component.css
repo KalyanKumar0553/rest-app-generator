@@ -41,22 +41,38 @@
 .nav {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 32px;
 }
 
 .nav-link {
   color: #6b7280;
   text-decoration: none;
   font-size: 15px;
-  padding: 8px 16px;
-  border-radius: 6px;
-  transition: all 0.2s ease;
   font-weight: 400;
+  position: relative;
+  transition: all 0.3s ease;
+  display: inline-block;
+}
+
+.nav-link::after {
+  content: '';
+  position: absolute;
+  width: 0;
+  height: 2px;
+  bottom: -4px;
+  left: 50%;
+  background-color: currentColor;
+  transition: all 0.3s ease;
+  transform: translateX(-50%);
 }
 
 .nav-link:hover {
   color: #1f2937;
-  background-color: #e5e7eb;
+  transform: scale(1.05);
+}
+
+.nav-link:hover::after {
+  width: 100%;
 }
 
 .nav-link.start-project {
@@ -65,7 +81,7 @@
 }
 
 .nav-link.start-project:hover {
-  background-color: #fee2e2;
+  color: #b91c1c;
 }
 
 @media (max-width: 768px) {
