@@ -1,11 +1,17 @@
 <header class="header">
   <div class="container">
     <div class="header-content">
-      <div class="logo" (click)="navigateToHome()">Bootify</div>
+      <div class="logo" (click)="navigateToHome()">
+        <span class="logo-text">Bootify</span>
+        <svg class="logo-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M20 4L12 12L4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M4 20L12 12L20 20" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
       <nav class="nav">
-        <a href="#" class="nav-link">Docs</a>
+        <a href="#" class="nav-link">Learn</a>
         <a href="#" class="nav-link">Pricing</a>
-        <a href="#" class="nav-link">Changelog</a>
+        <a href="#" class="nav-link start-project">Start Project</a>
         <a href="#" class="nav-link">Account</a>
       </nav>
     </div>
