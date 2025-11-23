@@ -8,6 +8,13 @@
           <path d="M4 20L12 12L20 20" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
       </div>
+
+      <button class="menu-toggle" (click)="toggleMenu()" aria-label="Toggle menu">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M3 12H21M3 6H21M3 18H21" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+
       <nav class="nav">
         <a href="#" class="nav-link">Learn</a>
         <a href="#" class="nav-link">Pricing</a>
@@ -17,3 +24,22 @@
     </div>
   </div>
 </header>
+
+<div class="sidenav-overlay" [class.active]="isMenuOpen" (click)="closeMenu()"></div>
+
+<aside class="sidenav" [class.active]="isMenuOpen">
+  <div class="sidenav-header">
+    <span class="sidenav-title">Menu</span>
+    <button class="close-btn" (click)="closeMenu()" aria-label="Close menu">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </button>
+  </div>
+  <nav class="sidenav-nav">
+    <a href="#" class="sidenav-link" (click)="closeMenu()">Learn</a>
+    <a href="#" class="sidenav-link" (click)="closeMenu()">Pricing</a>
+    <a href="#" class="sidenav-link start-project" (click)="closeMenu()">Start Project</a>
+    <a href="#" class="sidenav-link" (click)="closeMenu()">Account</a>
+  </nav>
+</aside>

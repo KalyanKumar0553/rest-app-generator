@@ -10,9 +10,25 @@ import { Router } from '@angular/router';
   styleUrls: ['./header.component.css']
 })
 export class HeaderComponent {
+  isMenuOpen = false;
+
   constructor(private router: Router) {}
 
   navigateToHome(): void {
     this.router.navigate(['/']);
+  }
+
+  toggleMenu(): void {
+    this.isMenuOpen = !this.isMenuOpen;
+    if (this.isMenuOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+  }
+
+  closeMenu(): void {
+    this.isMenuOpen = false;
+    document.body.style.overflow = '';
   }
 }
