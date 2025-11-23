@@ -39,7 +39,10 @@
             			"main": "src/main.ts",
 						"assets": [
 							"src/assets",
-							"src/favicon.ico"
+							{
+								"glob": "**/*",
+								"input": "public"
+							}
 						],
 						"allowedCommonJsDependencies": []
 					},
