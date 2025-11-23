@@ -6,7 +6,7 @@ import org.springframework.core.env.Environment;
 import org.springframework.core.task.TaskExecutor;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
-import com.src.main.utils.AppConstants;
+import com.src.main.util.AppConstants;
 
 @Configuration
 public class AsyncBatchConfig {

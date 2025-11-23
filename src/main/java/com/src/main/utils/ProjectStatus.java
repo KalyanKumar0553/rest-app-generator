@@ -1,1 +1,0 @@
-package com.src.main.utils; public enum ProjectStatus { QUEUED, INPROGRESS, ERROR, SUCCESS }

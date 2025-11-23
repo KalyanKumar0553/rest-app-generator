@@ -1,6 +1,10 @@
 package com.src.main.dto;
 
-import lombok.*;
+import java.util.UUID;
+
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Data
 @NoArgsConstructor
@@ -8,5 +12,5 @@ import lombok.*;
 public class ProjectSummaryDTO {
 	private String projectId;
 	private String artifact;
-	private String status;
+	private UUID id;
 }

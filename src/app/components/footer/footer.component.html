@@ -1,0 +1,28 @@
+<footer class="footer">
+  <div class="footer-container">
+    <div class="footer-content">
+      <div class="footer-left">
+        <!-- Theme toggle disabled for now -->
+      </div>
+      
+      <div class="footer-right">
+      <div class="footer-links">
+        <a 
+          *ngFor="let link of footerData.links" 
+          [href]="link.href" 
+          class="footer-link"
+          (click)="onLinkClick($event, link)"
+        >
+          {{ link.text }}
+        </a>
+      </div>
+      </div>
+    </div>
+    
+    <div class="footer-bottom">
+      <p class="copyright">
+        &copy; {{ currentYear }} {{ footerData.companyName }}. All rights reserved.
+      </p>
+    </div>
+  </div>
+</footer>

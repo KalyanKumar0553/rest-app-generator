@@ -13,7 +13,7 @@ import org.springframework.web.reactive.function.client.WebClient;
 
 import com.src.main.config.MavenCentralProperties;
 import com.src.main.dto.MavenDependency;
-import com.src.main.utils.AppConstants;
+import com.src.main.util.AppConstants;
 
 import reactor.netty.http.client.HttpClient;
 

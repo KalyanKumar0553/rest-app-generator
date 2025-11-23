@@ -6,7 +6,7 @@ import java.util.UUID;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
-import com.src.main.utils.ProjectStatus;
+import com.src.main.util.ProjectRunStatus;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -27,10 +27,6 @@ public class ProjectEntity {
 	@Column(nullable = false, columnDefinition = "text")
 	private String yaml;
 
-	@Enumerated(EnumType.STRING)
-	@Column
-	private ProjectStatus status;
-	
 	@Column
 	private String artifact;
 	
@@ -45,6 +41,9 @@ public class ProjectEntity {
 	
 	@Column
 	String packaging;
+	
+	@Column(name = "owner_id", nullable = false, length = 100)
+    private String ownerId;
 	
 	@Column
 	String generator;
@@ -73,10 +72,6 @@ public class ProjectEntity {
 	
 	@Column(name = "updated_at", nullable = false)
 	private OffsetDateTime updatedAt;
-
-	@JdbcTypeCode(SqlTypes.LONGVARBINARY)
-	@Column(columnDefinition = "bytea")
-	private byte[] zip;
 
 	@Column(name = "error_message")
 	private String errorMessage;

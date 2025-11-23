@@ -1,0 +1,15 @@
+<div class="floating-contact-container">
+  <div class="contact-icons-wrapper">
+    <div 
+      class="contact-icon"
+      *ngFor="let icon of contactIcons; let i = index"
+      [style.background-color]="icon.backgroundColor"
+      [style.animation-delay]="(i * 0.1) + 's'"
+      (click)="openLink(icon.url)"
+      [attr.aria-label]="'Visit our ' + icon.name + ' page'"
+      [attr.title]="icon.name"
+    >
+      <i [class]="icon.icon"></i>
+    </div>
+  </div>
+</div>

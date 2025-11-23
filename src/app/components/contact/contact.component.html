@@ -1,0 +1,159 @@
+<section id="contact" class="contact-section py-5">
+  <div class="container">
+    <div class="row">
+      <div class="col-12">
+        <div class="contact-header text-center animate-on-scroll mb-5">
+          <span class="section-label d-block">{{ sectionData.label }}</span>
+          <h2 class="contact-title">{{ sectionData.title }}</h2>
+        </div>
+      </div>
+    </div>
+
+    <div class="row g-4">
+      <!-- Contact Form -->
+      <div class="col-lg-8 col-12">
+        <div class="contact-form-wrapper animate-on-scroll">
+          <form class="contact-form" (ngSubmit)="onSubmit()" #contactFormRef="ngForm">
+            <div class="row g-3">
+              <div class="col-md-6">
+                <div class="form-group">
+                  <label for="name" class="form-label">Name *</label>
+                  <input 
+                    type="text" 
+                    id="name"
+                    name="name"
+                    class="form-control form-input"
+                    placeholder="John Smith"
+                    [(ngModel)]="contactForm.name"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div class="col-md-6">
+                <div class="form-group">
+                  <label for="email" class="form-label">Email address *</label>
+                  <input 
+                    type="email" 
+                    id="email"
+                    name="email"
+                    class="form-control form-input"
+                    placeholder="email@example.com"
+                    [(ngModel)]="contactForm.email"
+                    required
+                    email
+                  />
+                </div>
+              </div>
+
+              <div class="col-12">
+                <div class="form-group">
+                  <label for="phone" class="form-label">Phone number</label>
+                  <input 
+                    type="tel" 
+                    id="phone"
+                    name="phone"
+                    class="form-control form-input"
+                    placeholder="555-555-5555"
+                    [(ngModel)]="contactForm.phone"
+                  />
+                </div>
+              </div>
+
+              <div class="col-12">
+                <div class="form-group">
+                  <label for="message" class="form-label">Message *</label>
+                  <textarea 
+                    id="message"
+                    name="message"
+                    class="form-control form-textarea"
+                    rows="5"
+                    placeholder="Tell us about your project..."
+                    [(ngModel)]="contactForm.message"
+                    required
+                  ></textarea>
+                </div>
+              </div>
+
+              <!-- Honeypot field - hidden from users -->
+              <div class="honeypot-field">
+                <label for="website" class="visually-hidden">Website (leave blank)</label>
+                <input 
+                  type="text" 
+                  id="website"
+                  name="website"
+                  class="form-control"
+                  [(ngModel)]="contactForm.honeypot"
+                  tabindex="-1"
+                  autocomplete="off"
+                />
+              </div>
+
+              <div class="col-12">
+                <div class="form-check checkbox-group">
+                  <input 
+                    type="checkbox" 
+                    class="form-check-input"
+                    id="agreeToTerms"
+                    name="agreeToTerms"
+                    [(ngModel)]="contactForm.agreeToTerms"
+                    required
+                  />
+                  <label class="form-check-label" for="agreeToTerms">
+                    I allow this website to store my submission so they can respond to my inquiry.
+                  </label>
+                </div>
+              </div>
+
+              <div class="col-12">
+                <button 
+                  type="submit" 
+                  class="btn submit-btn"
+                  [disabled]="isSubmitDisabled()"
+                  [class.loading]="isSubmitting"
+                >
+                  {{ getButtonText() }}
+                </button>
+
+                <div class="submit-message mt-3" *ngIf="submitMessage" [class.success]="!isSubmitting">
+                  {{ submitMessage }}
+                </div>
+              </div>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- Contact Info -->
+      <div class="col-lg-4 col-12">
+        <div class="contact-info animate-on-scroll">
+          <div class="contact-card mb-4">
+            <h3 class="contact-info-title">Get in touch</h3>
+            
+            <div class="info-item d-flex align-items-center mb-3">
+              <i class="bi bi-envelope info-icon me-3"></i>
+              <a [href]="'mailto:' + contactInfo.email" class="info-link">
+                {{ contactInfo.email }}
+              </a>
+            </div>
+
+            <div class="info-item d-flex align-items-center">
+              <i class="bi bi-geo-alt info-icon me-3"></i>
+              <span class="info-text">{{ contactInfo.location }}</span>
+            </div>
+          </div>
+
+          <div class="hours-card">
+            <h4 class="hours-title">Hours</h4>
+            <div class="hours-list">
+              <div class="hours-item d-flex justify-content-between align-items-center" *ngFor="let hour of contactInfo.hours">
+                <span class="day">{{ hour.day }}</span>
+                <span class="time">{{ hour.time }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>

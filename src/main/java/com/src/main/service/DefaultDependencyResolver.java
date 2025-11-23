@@ -85,14 +85,11 @@ public class DefaultDependencyResolver implements DependencyResolver {
 			}
 		}
 
-		// if the caller uses the flag, they’ll add springdoc in the generator;
-		// otherwise handle here:
 		if (includeOpenApi && LOGICAL.get("springdoc") == null) {
 			// do nothing here; InitializrPomGenerator handles springdoc via
 			// model.includeOpenapi()
 		}
 
-		// FILTER: no nulls
 		return out.stream().filter(Objects::nonNull).filter(d -> d.groupId() != null && !d.groupId().isBlank())
 				.filter(d -> d.artifactId() != null && !d.artifactId().isBlank()).toList();
 	}
