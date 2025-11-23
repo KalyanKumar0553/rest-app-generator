@@ -2,13 +2,13 @@ import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
 @Component({
-  selector: 'app-feature-section',
+  selector: 'app-features',
   standalone: true,
   imports: [CommonModule],
-  templateUrl: './feature-section.component.html',
-  styleUrls: ['./feature-section.component.css']
+  templateUrl: './features.component.html',
+  styleUrls: ['./features.component.css']
 })
-export class FeatureSectionComponent {
+export class FeaturesComponent {
   features = [
     {
       number: '1.',

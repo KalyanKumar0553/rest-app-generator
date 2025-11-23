@@ -1,21 +1,21 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { HeroSectionComponent } from '../hero-section/hero-section.component';
-import { FeatureSectionComponent } from '../feature-section/feature-section.component';
-import { BenefitsSectionComponent } from '../benefits-section/benefits-section.component';
-import { CtaSectionComponent } from '../cta-section/cta-section.component';
-import { SignupSectionComponent } from '../signup-section/signup-section.component';
+import { HeroComponent } from './hero/hero.component';
+import { FeaturesComponent } from './features/features.component';
+import { BenefitsComponent } from './benefits/benefits.component';
+import { CtaComponent } from './cta/cta.component';
+import { SignupComponent } from './signup/signup.component';
 
 @Component({
   selector: 'app-home',
   standalone: true,
   imports: [
     CommonModule,
-    HeroSectionComponent,
-    FeatureSectionComponent,
-    BenefitsSectionComponent,
-    CtaSectionComponent,
-    SignupSectionComponent
+    HeroComponent,
+    FeaturesComponent,
+    BenefitsComponent,
+    CtaComponent,
+    SignupComponent
   ],
   templateUrl: './home.component.html',
   styleUrls: ['./home.component.css']

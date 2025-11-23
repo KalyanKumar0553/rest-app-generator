@@ -2,13 +2,13 @@ import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
 @Component({
-  selector: 'app-benefits-section',
+  selector: 'app-benefits',
   standalone: true,
   imports: [CommonModule],
-  templateUrl: './benefits-section.component.html',
-  styleUrls: ['./benefits-section.component.css']
+  templateUrl: './benefits.component.html',
+  styleUrls: ['./benefits.component.css']
 })
-export class BenefitsSectionComponent {
+export class BenefitsComponent {
   benefits = [
     {
       icon: '⏱',
