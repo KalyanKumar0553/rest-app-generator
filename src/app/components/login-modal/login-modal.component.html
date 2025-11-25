@@ -7,15 +7,21 @@
     </button>
 
     <div class="modal-header">
-      <h2>{{ isSignupMode ? 'Create new account' : 'Log in' }}</h2>
+      <h2>{{ isForgotPasswordMode ? 'Reset Password' : (isSignupMode ? 'Create new account' : 'Log in') }}</h2>
     </div>
 
     <div class="modal-body">
-      <p class="modal-description" *ngIf="isSignupMode">
+      <p class="modal-description" *ngIf="isForgotPasswordMode">
+        Enter your email address and we'll send you a link to reset your password.
+        <a href="#" (click)="backToLogin(); $event.preventDefault()" class="link">Back to login</a>
+      </p>
+
+      <p class="modal-description" *ngIf="isSignupMode && !isForgotPasswordMode">
         Creating an account is not required, but helps you organizing your projects.
         Already have an account? <a href="#" (click)="toggleMode(); $event.preventDefault()" class="link">Log in</a>
       </p>
-      <p class="modal-description" *ngIf="!isSignupMode">
+
+      <p class="modal-description" *ngIf="!isSignupMode && !isForgotPasswordMode">
         Welcome back! Don't have an account? <a href="#" (click)="toggleMode(); $event.preventDefault()" class="link">Create new account</a>
       </p>
 
@@ -32,11 +38,12 @@
             placeholder="Enter your email"
             class="form-control"
             [class.error]="emailError"
+            [disabled]="isLoading"
           />
           <span class="error-message" *ngIf="emailError">{{ emailError }}</span>
         </div>
 
-        <div class="form-group">
+        <div class="form-group" *ngIf="!isForgotPasswordMode">
           <label for="password">Your Password</label>
           <input
             type="password"
@@ -46,26 +53,33 @@
             required
             placeholder="Enter your password"
             class="form-control"
+            [disabled]="isLoading"
           />
         </div>
 
-        <div class="checkbox-group" *ngIf="isSignupMode">
+        <div class="forgot-password-link" *ngIf="!isSignupMode && !isForgotPasswordMode">
+          <a href="#" (click)="showForgotPassword(); $event.preventDefault()" class="link">Forgot password?</a>
+        </div>
+
+        <div class="checkbox-group" *ngIf="isSignupMode && !isForgotPasswordMode">
           <label class="checkbox-label">
             <input
               type="checkbox"
               name="acceptTerms"
               [(ngModel)]="acceptTerms"
+              [disabled]="isLoading"
             />
             <span>I confirm the <a href="#" (click)="navigateToTerms($event)" class="link">terms</a> and <a href="#" (click)="navigateToPrivacy($event)" class="link">privacy</a>.</span>
           </label>
         </div>
 
-        <div class="checkbox-group" *ngIf="isSignupMode">
+        <div class="checkbox-group" *ngIf="isSignupMode && !isForgotPasswordMode">
           <label class="checkbox-label">
             <input
               type="checkbox"
               name="receiveUpdates"
               [(ngModel)]="receiveUpdates"
+              [disabled]="isLoading"
             />
             <span>Yes, I would like to receive product updates once in a while.</span>
           </label>
@@ -74,9 +88,18 @@
         <button
           type="submit"
           class="btn-submit"
-          [disabled]="!isFormValid()"
+          [disabled]="!isFormValid() || isLoading"
         >
-          {{ isSignupMode ? 'Create account' : 'Log in' }}
+          <span *ngIf="!isLoading">
+            {{ isForgotPasswordMode ? 'Send Reset Link' : (isSignupMode ? 'Create account' : 'Log in') }}
+          </span>
+          <span *ngIf="isLoading" class="loading-spinner">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+              <circle cx="10" cy="10" r="8" stroke="currentColor" stroke-width="2" opacity="0.25"/>
+              <path d="M10 2C5.58172 2 2 5.58172 2 10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+            Sending...
+          </span>
         </button>
       </form>
     </div>
