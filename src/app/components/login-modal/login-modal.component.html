@@ -1,0 +1,81 @@
+<div class="modal-overlay" (click)="closeModal()">
+  <div class="modal-container" (click)="$event.stopPropagation()">
+    <button class="close-btn" (click)="closeModal()" aria-label="Close modal">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </button>
+
+    <div class="modal-header">
+      <h2>{{ isSignupMode ? 'Create new account' : 'Log in' }}</h2>
+    </div>
+
+    <div class="modal-body">
+      <p class="modal-description" *ngIf="isSignupMode">
+        Creating an account is not required, but helps you organizing your projects.
+        Already have an account? <a href="#" (click)="toggleMode(); $event.preventDefault()" class="link">Log in</a>
+      </p>
+      <p class="modal-description" *ngIf="!isSignupMode">
+        Welcome back! Don't have an account? <a href="#" (click)="toggleMode(); $event.preventDefault()" class="link">Create new account</a>
+      </p>
+
+      <form (ngSubmit)="onSubmit()">
+        <div class="form-group">
+          <label for="email">Your E-Mail</label>
+          <input
+            type="email"
+            id="email"
+            name="email"
+            [(ngModel)]="email"
+            required
+            placeholder="Enter your email"
+            class="form-control"
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="password">Your Password</label>
+          <input
+            type="password"
+            id="password"
+            name="password"
+            [(ngModel)]="password"
+            required
+            placeholder="Enter your password"
+            class="form-control"
+          />
+        </div>
+
+        <div class="checkbox-group" *ngIf="isSignupMode">
+          <label class="checkbox-label">
+            <input
+              type="checkbox"
+              name="acceptTerms"
+              [(ngModel)]="acceptTerms"
+            />
+            <span>I confirm the <a href="#" class="link">terms</a> and <a href="#" class="link">privacy</a>.</span>
+          </label>
+        </div>
+
+        <div class="checkbox-group" *ngIf="isSignupMode">
+          <label class="checkbox-label">
+            <input
+              type="checkbox"
+              name="receiveUpdates"
+              [(ngModel)]="receiveUpdates"
+            />
+            <span>Yes, I would like to receive product updates once in a while.</span>
+          </label>
+        </div>
+
+        <button
+          type="submit"
+          class="btn-submit"
+          [disabled]="!email || !password || (isSignupMode && !acceptTerms)"
+        >
+          {{ isSignupMode ? 'Create account' : 'Log in' }}
+        </button>
+      </form>
+    </div>
+  </div>
+</div>

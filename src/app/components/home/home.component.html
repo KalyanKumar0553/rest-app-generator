@@ -5,3 +5,5 @@
   <app-cta></app-cta>
   <app-signup></app-signup>
 </div>
+
+<app-login-modal *ngIf="showLoginModal" (close)="closeLoginModal()"></app-login-modal>

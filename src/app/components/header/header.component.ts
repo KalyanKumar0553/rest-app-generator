@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { LocalStorageService } from '../../services/local-storage.service';
 import { AuthService } from '../../services/auth.service';
+import { ModalService } from '../../services/modal.service';
 
 @Component({
   selector: 'app-header',
@@ -17,7 +18,8 @@ export class HeaderComponent {
   constructor(
     private router: Router,
     private localStorageService: LocalStorageService,
-    private authService: AuthService
+    private authService: AuthService,
+    private modalService: ModalService
   ) {}
 
   navigateToHome(): void {
@@ -45,14 +47,22 @@ export class HeaderComponent {
     const userDetails = this.localStorageService.get('userDetails');
 
     if (!userDetails) {
-      console.log('No user details found in localStorage');
+      this.localStorageService.clear();
+      this.router.navigate(['/']);
+      setTimeout(() => {
+        this.modalService.openLoginModal();
+      }, 100);
       return;
     }
 
     const token = userDetails.token;
 
     if (!token) {
-      console.log('No JWT token found in user details');
+      this.localStorageService.clear();
+      this.router.navigate(['/']);
+      setTimeout(() => {
+        this.modalService.openLoginModal();
+      }, 100);
       return;
     }
 
@@ -61,13 +71,20 @@ export class HeaderComponent {
         if (isValid) {
           this.router.navigate(['/dashboard']);
         } else {
-          console.log('Token validation failed');
           this.localStorageService.clear();
+          this.router.navigate(['/']);
+          setTimeout(() => {
+            this.modalService.openLoginModal();
+          }, 100);
         }
       },
       error: (error) => {
         console.error('Error validating token:', error);
         this.localStorageService.clear();
+        this.router.navigate(['/']);
+        setTimeout(() => {
+          this.modalService.openLoginModal();
+        }, 100);
       }
     });
   }
