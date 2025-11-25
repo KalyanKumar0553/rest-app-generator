@@ -137,6 +137,21 @@ form {
   color: #9ca3af;
 }
 
+.form-control.error {
+  border-color: #ef4444;
+}
+
+.form-control.error:focus {
+  border-color: #ef4444;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+}
+
+.error-message {
+  color: #ef4444;
+  font-size: 13px;
+  margin-top: -4px;
+}
+
 .checkbox-group {
   display: flex;
   align-items: flex-start;
