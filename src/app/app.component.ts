@@ -5,11 +5,12 @@ import { HeaderComponent } from './components/header/header.component';
 import { FooterComponent } from './components/footer/footer.component';
 import { CommonModule } from '@angular/common';
 import { filter } from 'rxjs/operators';
+import { HttpClientModule } from '@angular/common/http';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [CommonModule, IonApp, IonRouterOutlet, IonContent, RouterOutlet, HeaderComponent, FooterComponent],
+  imports: [CommonModule, IonApp, IonRouterOutlet, IonContent, RouterOutlet, HeaderComponent, FooterComponent, HttpClientModule],
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.css']
 })
