@@ -152,6 +152,36 @@ form {
   margin-top: -4px;
 }
 
+.forgot-password-link {
+  text-align: right;
+  margin-top: -12px;
+  margin-bottom: 8px;
+}
+
+.forgot-password-link .link {
+  font-size: 14px;
+}
+
+.loading-spinner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: center;
+}
+
+.loading-spinner svg {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .checkbox-group {
   display: flex;
   align-items: flex-start;
