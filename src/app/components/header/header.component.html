@@ -19,7 +19,7 @@
         <a href="#" class="nav-link">Learn</a>
         <a href="#" class="nav-link">Pricing</a>
         <a href="#" class="nav-link start-project">Start Project</a>
-        <a href="#" class="nav-link">Account</a>
+        <a href="#" class="nav-link" (click)="handleAccountClick($event)">Account</a>
       </nav>
     </div>
   </div>
@@ -40,6 +40,6 @@
     <a href="#" class="sidenav-link" (click)="closeMenu()">Learn</a>
     <a href="#" class="sidenav-link" (click)="closeMenu()">Pricing</a>
     <a href="#" class="sidenav-link start-project" (click)="closeMenu()">Start Project</a>
-    <a href="#" class="sidenav-link" (click)="closeMenu()">Account</a>
+    <a href="#" class="sidenav-link" (click)="handleAccountClick($event)">Account</a>
   </nav>
 </aside>
