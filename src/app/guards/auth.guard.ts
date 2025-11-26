@@ -18,24 +18,31 @@ export class AuthGuard implements CanActivate {
     route: ActivatedRouteSnapshot,
     state: RouterStateSnapshot
   ): Observable<boolean | UrlTree> | Promise<boolean | UrlTree> | boolean | UrlTree {
-    if (this.authService.isLoggedIn()) {
-      const token = this.authService.getAccessToken();
+    const token = this.authService.getAccessToken();
 
-      if (token && this.isTokenValid(token)) {
-        return true;
-      } else if (token) {
-        this.authService.clearExpiredSession();
-        this.toastService.error('Your session has expired. Please login again.');
-        return this.router.createUrlTree(['/'], {
-          queryParams: { returnUrl: state.url }
-        });
-      }
+    if (!token) {
+      this.toastService.error('Please login to access this page');
+      return this.router.createUrlTree(['/'], {
+        queryParams: { returnUrl: state.url }
+      });
     }
 
-    this.toastService.error('Please login to access this page');
-    return this.router.createUrlTree(['/'], {
-      queryParams: { returnUrl: state.url }
-    });
+    if (!this.isTokenValid(token)) {
+      this.authService.clearExpiredSession();
+      this.toastService.error('Your session has expired. Please login again.');
+      return this.router.createUrlTree(['/'], {
+        queryParams: { returnUrl: state.url }
+      });
+    }
+
+    if (!this.authService.currentUserValue) {
+      this.toastService.error('Please login to access this page');
+      return this.router.createUrlTree(['/'], {
+        queryParams: { returnUrl: state.url }
+      });
+    }
+
+    return true;
   }
 
   private isTokenValid(token: string): boolean {
