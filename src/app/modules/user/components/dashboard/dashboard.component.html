@@ -23,7 +23,7 @@
     <div class="spacer"></div>
   </div>
 
-  <div class="sidebar-overlay" *ngIf="isSidebarOpen" (click)="closeSidebar()"></div>
+  <div class="sidebar-overlay" [class.show]="isSidebarOpen" (click)="closeSidebar()"></div>
 
   <aside class="sidebar" [class.open]="isSidebarOpen">
     <div class="sidebar-header">
@@ -41,7 +41,7 @@
     </div>
 
     <nav class="sidebar-nav">
-      <a href="#" class="nav-item active">
+      <button class="nav-item active" (click)="closeSidebar()">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
           <rect x="3" y="3" width="7" height="7" rx="1" stroke="currentColor" stroke-width="2"/>
           <rect x="14" y="3" width="7" height="7" rx="1" stroke="currentColor" stroke-width="2"/>
@@ -49,27 +49,27 @@
           <rect x="3" y="14" width="7" height="7" rx="1" stroke="currentColor" stroke-width="2"/>
         </svg>
         <span>Projects</span>
-      </a>
-      <a href="#" class="nav-item" (click)="navigateToAccount()">
+      </button>
+      <button class="nav-item" (click)="navigateToAccount(); closeSidebar()">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
           <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2"/>
           <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z" fill="currentColor"/>
         </svg>
         <span>Account</span>
-      </a>
-      <a href="#" class="nav-item" (click)="navigateToPlan()">
+      </button>
+      <button class="nav-item" (click)="navigateToPlan(); closeSidebar()">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
           <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
           <path d="M12 6v6l4 2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
         </svg>
         <span>Your Plan</span>
-      </a>
-      <a href="#" class="nav-item" (click)="logout()">
+      </button>
+      <button class="nav-item" (click)="logout(); closeSidebar()">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
           <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
         <span>Logout</span>
-      </a>
+      </button>
     </nav>
   </aside>
 
