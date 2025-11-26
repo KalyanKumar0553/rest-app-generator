@@ -17,7 +17,8 @@ export class OTPModalComponent implements OnInit, OnDestroy {
   @Output() close = new EventEmitter<void>();
   @Output() verified = new EventEmitter<void>();
 
-  otpDigits: string[] = ['', '', '', '', '', ''];
+  otpValue: string = '';
+  otpError: string = '';
   isLoading = false;
   timeLeft: number = 180;
   canResend: boolean = false;
@@ -63,58 +64,47 @@ export class OTPModalComponent implements OnInit, OnDestroy {
     return `${minutes}:${seconds.toString().padStart(2, '0')}`;
   }
 
-  onOtpInput(event: any, index: number): void {
-    const input = event.target;
-    const value = input.value;
-
-    if (value.length > 1) {
-      input.value = value.charAt(0);
-      this.otpDigits[index] = value.charAt(0);
-    } else {
-      this.otpDigits[index] = value;
-    }
-
-    if (value && index < 5) {
-      const nextInput = document.getElementById(`otp-${index + 1}`);
-      if (nextInput) {
-        (nextInput as HTMLInputElement).focus();
-      }
-    }
-  }
-
-  onOtpKeyDown(event: KeyboardEvent, index: number): void {
-    if (event.key === 'Backspace' && !this.otpDigits[index] && index > 0) {
-      const prevInput = document.getElementById(`otp-${index - 1}`);
-      if (prevInput) {
-        (prevInput as HTMLInputElement).focus();
-      }
-    }
-  }
-
-  onOtpPaste(event: ClipboardEvent): void {
-    event.preventDefault();
-    const pastedData = event.clipboardData?.getData('text');
-
-    if (pastedData && /^\d{6}$/.test(pastedData)) {
-      this.otpDigits = pastedData.split('');
-      const lastInput = document.getElementById('otp-5');
-      if (lastInput) {
-        (lastInput as HTMLInputElement).focus();
-      }
-    }
-  }
-
-  get otpValue(): string {
-    return this.otpDigits.join('');
-  }
-
   get isOtpComplete(): boolean {
-    return this.otpDigits.every(digit => digit !== '');
+    return this.otpValue.length === 6 && !this.otpError;
+  }
+
+  onOtpInput(): void {
+    this.otpValue = this.otpValue.replace(/[^a-zA-Z0-9]/g, '');
+
+    if (this.otpValue.length > 6) {
+      this.otpValue = this.otpValue.substring(0, 6);
+    }
+
+    this.otpError = '';
+  }
+
+  onOtpBlur(): void {
+    this.validateOtp();
+  }
+
+  validateOtp(): boolean {
+    this.otpError = '';
+
+    if (!this.otpValue || this.otpValue.trim() === '') {
+      this.otpError = 'OTP is required';
+      return false;
+    }
+
+    if (this.otpValue.length !== 6) {
+      this.otpError = 'OTP must be exactly 6 characters';
+      return false;
+    }
+
+    if (!/^[a-zA-Z0-9]{6}$/.test(this.otpValue)) {
+      this.otpError = 'OTP must contain only alphanumeric characters';
+      return false;
+    }
+
+    return true;
   }
 
   verifyOTP(): void {
-    if (!this.isOtpComplete) {
-      this.toastService.error('Please enter the complete OTP');
+    if (!this.validateOtp()) {
       return;
     }
 
@@ -134,18 +124,14 @@ export class OTPModalComponent implements OnInit, OnDestroy {
       error: (error) => {
         this.isLoading = false;
         const errorMessage = error.message || 'Invalid OTP. Please try again.';
+        this.otpError = errorMessage;
         this.toastService.error(errorMessage);
-        this.otpDigits = ['', '', '', '', '', ''];
-        const firstInput = document.getElementById('otp-0');
-        if (firstInput) {
-          (firstInput as HTMLInputElement).focus();
-        }
       }
     });
   }
 
   resendOTP(): void {
-    if (!this.canResend) {
+    if (!this.canResend || this.isLoading) {
       return;
     }
 
@@ -154,13 +140,10 @@ export class OTPModalComponent implements OnInit, OnDestroy {
     this.authService.sendOTP({ email: this.email }).subscribe({
       next: (response: any) => {
         this.isLoading = false;
-        this.toastService.success(response.message || 'OTP has been resent to your email');
+        this.toastService.success('OTP has been resent to your email!');
         this.startCountdown();
-        this.otpDigits = ['', '', '', '', '', ''];
-        const firstInput = document.getElementById('otp-0');
-        if (firstInput) {
-          (firstInput as HTMLInputElement).focus();
-        }
+        this.otpValue = '';
+        this.otpError = '';
       },
       error: (error) => {
         this.isLoading = false;
@@ -171,7 +154,6 @@ export class OTPModalComponent implements OnInit, OnDestroy {
   }
 
   closeModal(): void {
-    this.clearCountdown();
     this.close.emit();
   }
 }

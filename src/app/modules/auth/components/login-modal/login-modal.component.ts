@@ -184,7 +184,17 @@ export class LoginModalComponent {
       error: (error) => {
         this.isLoading = false;
         const errorMessage = error.message || 'Failed to create account. Please try again.';
-        this.toastService.error(errorMessage);
+
+        if (errorMessage.toLowerCase().includes('already exists') || errorMessage.toLowerCase().includes('already registered')) {
+          this.toastService.error(errorMessage + ' Please login instead.');
+          setTimeout(() => {
+            this.isSignupMode = false;
+            this.isForgotPasswordMode = false;
+            this.resetForm();
+          }, 2000);
+        } else {
+          this.toastService.error(errorMessage);
+        }
       }
     });
   }
