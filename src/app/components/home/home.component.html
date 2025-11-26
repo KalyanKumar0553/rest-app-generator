@@ -1,7 +1,9 @@
-<div class="home-page">
-  <app-hero></app-hero>
-  <app-about></app-about>
-  <app-services></app-services>
-  <app-testimonials></app-testimonials>
-  <app-contact></app-contact>
+<div class="home-container">
+  <app-banner></app-banner>
+  <app-features></app-features>
+  <app-benefits></app-benefits>
+  <app-cta></app-cta>
+  <app-signup></app-signup>
 </div>
+
+<app-login-modal *ngIf="showLoginModal" (close)="closeLoginModal()"></app-login-modal>

@@ -1,0 +1,13 @@
+<ion-app>
+  <ion-content class="app-content">
+    <app-header></app-header>
+    <main class="main-content" [class.loading]="isNavigating">
+      <div class="loading-overlay" *ngIf="isNavigating">
+        <div class="loading-spinner"></div>
+      </div>
+      <router-outlet></router-outlet>
+    </main>
+    <app-footer></app-footer>
+    <app-toast></app-toast>
+  </ion-content>
+</ion-app>

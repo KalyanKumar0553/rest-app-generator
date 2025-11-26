@@ -1,13 +1,13 @@
 import { Routes } from '@angular/router';
 import { HomeComponent } from './components/home/home.component';
-import { IntakeFormComponent } from './components/intake-form/intake-form.component';
-import { CustomSoftwareComponent } from './components/custom-software/custom-software.component';
-import { SchedulingComponent } from './components/scheduling/scheduling.component';
+import { DashboardComponent } from './components/dashboard/dashboard.component';
+import { TermsComponent } from './components/terms/terms.component';
+import { PrivacyComponent } from './components/privacy/privacy.component';
 
 export const routes: Routes = [
   { path: '', component: HomeComponent },
-  { path: 'intake', component: IntakeFormComponent },
-  { path: 'custom-software', component: CustomSoftwareComponent },
-  { path: 'scheduling', component: SchedulingComponent },
+  { path: 'dashboard', component: DashboardComponent },
+  { path: 'terms', component: TermsComponent },
+  { path: 'privacy', component: PrivacyComponent },
   { path: '**', redirectTo: '' }
 ];
