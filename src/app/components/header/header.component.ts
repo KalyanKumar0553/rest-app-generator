@@ -44,48 +44,13 @@ export class HeaderComponent {
     event.preventDefault();
     this.closeMenu();
 
-    const userDetails = this.localStorageService.get('userDetails');
-
-    if (!userDetails) {
-      this.localStorageService.clear();
+    if (this.authService.isLoggedIn()) {
+      this.router.navigate(['/dashboard']);
+    } else {
       this.router.navigate(['/']);
       setTimeout(() => {
         this.modalService.openLoginModal();
       }, 100);
-      return;
     }
-
-    const token = userDetails.token;
-
-    if (!token) {
-      this.localStorageService.clear();
-      this.router.navigate(['/']);
-      setTimeout(() => {
-        this.modalService.openLoginModal();
-      }, 100);
-      return;
-    }
-
-    this.authService.validateToken(token).subscribe({
-      next: (isValid) => {
-        if (isValid) {
-          this.router.navigate(['/dashboard']);
-        } else {
-          this.localStorageService.clear();
-          this.router.navigate(['/']);
-          setTimeout(() => {
-            this.modalService.openLoginModal();
-          }, 100);
-        }
-      },
-      error: (error) => {
-        console.error('Error validating token:', error);
-        this.localStorageService.clear();
-        this.router.navigate(['/']);
-        setTimeout(() => {
-          this.modalService.openLoginModal();
-        }, 100);
-      }
-    });
   }
 }
