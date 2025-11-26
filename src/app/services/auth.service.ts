@@ -110,7 +110,7 @@ export class AuthService {
 
   logout(): Observable<any> {
     const url = `${API_CONFIG.BASE_URL}${API_ENDPOINTS.AUTH.LOGOUT}`;
-    return this.http.post(url, {}).pipe(
+    return this.mockApiService.post(url, {}, '/assets/mock/logout-response.json').pipe(
       tap(() => this.handleLogout()),
       catchError(error => {
         this.handleLogout();

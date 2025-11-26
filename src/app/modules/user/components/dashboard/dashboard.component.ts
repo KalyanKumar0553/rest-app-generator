@@ -5,11 +5,12 @@ import { LocalStorageService } from '../../../../services/local-storage.service'
 import { AuthService, UserData } from '../../../../services/auth.service';
 import { UserService, UserRoles } from '../../../../services/user.service';
 import { ToastService } from '../../../../services/toast.service';
+import { ConfirmationModalComponent } from '../../../../components/confirmation-modal/confirmation-modal.component';
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, ConfirmationModalComponent],
   templateUrl: './dashboard.component.html',
   styleUrls: ['./dashboard.component.css']
 })
@@ -19,6 +20,8 @@ export class DashboardComponent implements OnInit {
   userRoles: string[] = [];
   userPermissions: string[] = [];
   isLoadingRoles: boolean = false;
+  showLogoutConfirmation: boolean = false;
+  isLoggingOut: boolean = false;
 
   constructor(
     private router: Router,
@@ -66,16 +69,32 @@ export class DashboardComponent implements OnInit {
   }
 
   logout(): void {
+    this.showLogoutConfirmation = true;
+  }
+
+  confirmLogout(): void {
+    this.isLoggingOut = true;
+
     this.authService.logout().subscribe({
       next: () => {
+        this.isLoggingOut = false;
+        this.showLogoutConfirmation = false;
+        this.localStorageService.clear();
         this.toastService.success('Logged out successfully');
         this.router.navigate(['/']);
       },
       error: (error) => {
+        this.isLoggingOut = false;
+        this.showLogoutConfirmation = false;
+        this.localStorageService.clear();
         console.error('Logout error:', error);
         this.router.navigate(['/']);
       }
     });
+  }
+
+  cancelLogout(): void {
+    this.showLogoutConfirmation = false;
   }
 
   navigateToAccount(): void {
