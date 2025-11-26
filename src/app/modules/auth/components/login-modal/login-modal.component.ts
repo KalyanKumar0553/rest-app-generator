@@ -221,7 +221,9 @@ export class LoginModalComponent {
         this.isLoading = false;
         this.toastService.success(response.message || 'Login successful!');
         this.closeModal();
-        this.router.navigate(['/user/dashboard']);
+        setTimeout(() => {
+          this.router.navigate(['/user/dashboard']);
+        }, 100);
       },
       error: (error) => {
         this.isLoading = false;
