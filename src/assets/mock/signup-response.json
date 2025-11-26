@@ -1,0 +1,10 @@
+{
+  "success": true,
+  "message": "Account created successfully. Please verify your email with the OTP sent to your inbox.",
+  "data": {
+    "userId": "user-12345",
+    "email": "user@example.com",
+    "otpSent": true,
+    "otpExpiresIn": 180
+  }
+}

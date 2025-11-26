@@ -2,6 +2,9 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { LocalStorageService } from '../../services/local-storage.service';
+import { AuthService, UserData } from '../../services/auth.service';
+import { UserService, UserRoles } from '../../services/user.service';
+import { ToastService } from '../../services/toast.service';
 
 @Component({
   selector: 'app-dashboard',
@@ -12,22 +15,67 @@ import { LocalStorageService } from '../../services/local-storage.service';
 })
 export class DashboardComponent implements OnInit {
   userEmail: string = '';
+  userName: string = '';
+  userRoles: string[] = [];
+  userPermissions: string[] = [];
+  isLoadingRoles: boolean = false;
 
   constructor(
     private router: Router,
-    private localStorageService: LocalStorageService
+    private localStorageService: LocalStorageService,
+    private authService: AuthService,
+    private userService: UserService,
+    private toastService: ToastService
   ) {}
 
   ngOnInit(): void {
-    const userDetails = this.localStorageService.get('userDetails');
-    if (userDetails && userDetails.email) {
-      this.userEmail = userDetails.email;
+    const userData = this.authService.getUserData();
+    if (userData) {
+      this.userEmail = userData.email;
+      this.userName = userData.name || 'User';
     }
+
+    this.loadUserRoles();
+  }
+
+  loadUserRoles(): void {
+    this.isLoadingRoles = true;
+
+    this.userService.getUserRoles().subscribe({
+      next: (rolesData: UserRoles) => {
+        this.isLoadingRoles = false;
+        this.userRoles = rolesData.roles || [];
+        this.userPermissions = rolesData.permissions || [];
+        console.log('User roles loaded:', this.userRoles);
+        console.log('User permissions loaded:', this.userPermissions);
+      },
+      error: (error) => {
+        this.isLoadingRoles = false;
+        console.error('Failed to load user roles:', error);
+        this.toastService.error('Failed to load user roles');
+      }
+    });
+  }
+
+  hasRole(role: string): boolean {
+    return this.userRoles.includes(role);
+  }
+
+  hasPermission(permission: string): boolean {
+    return this.userPermissions.includes(permission);
   }
 
   logout(): void {
-    this.localStorageService.clear();
-    this.router.navigate(['/']);
+    this.authService.logout().subscribe({
+      next: () => {
+        this.toastService.success('Logged out successfully');
+        this.router.navigate(['/']);
+      },
+      error: (error) => {
+        console.error('Logout error:', error);
+        this.router.navigate(['/']);
+      }
+    });
   }
 
   navigateToAccount(): void {
