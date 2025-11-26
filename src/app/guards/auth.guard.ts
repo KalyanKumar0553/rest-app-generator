@@ -23,6 +23,12 @@ export class AuthGuard implements CanActivate {
 
       if (token && this.isTokenValid(token)) {
         return true;
+      } else if (token) {
+        this.authService.clearExpiredSession();
+        this.toastService.error('Your session has expired. Please login again.');
+        return this.router.createUrlTree(['/'], {
+          queryParams: { returnUrl: state.url }
+        });
       }
     }
 
