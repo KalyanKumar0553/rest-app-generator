@@ -222,4 +222,12 @@ export class AuthService {
     const userData = this.localStorageService.getItem(STORAGE_KEYS.USER_DATA);
     return userData ? JSON.parse(userData) : null;
   }
+
+  clearExpiredSession(): void {
+    this.localStorageService.removeItem(STORAGE_KEYS.ACCESS_TOKEN);
+    this.localStorageService.removeItem(STORAGE_KEYS.REFRESH_TOKEN);
+    this.localStorageService.removeItem(STORAGE_KEYS.USER_DATA);
+    this.currentUserSubject.next(null);
+    this.isAuthenticatedSubject.next(false);
+  }
 }
