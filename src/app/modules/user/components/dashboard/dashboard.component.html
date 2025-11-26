@@ -11,7 +11,21 @@
 ></app-confirmation-modal>
 
 <div class="dashboard-container">
-  <aside class="sidebar">
+  <div class="mobile-header">
+    <button class="menu-toggle" (click)="toggleSidebar()" aria-label="Toggle menu">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M3 12h18M3 6h18M3 18h18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+      </svg>
+    </button>
+    <div class="logo">
+      <span class="logo-text">Bootify</span>
+    </div>
+    <div class="spacer"></div>
+  </div>
+
+  <div class="sidebar-overlay" *ngIf="isSidebarOpen" (click)="closeSidebar()"></div>
+
+  <aside class="sidebar" [class.open]="isSidebarOpen">
     <div class="sidebar-header">
       <div class="logo">
         <span class="logo-text">Bootify</span>
