@@ -1,34 +1,56 @@
-import { Component, AfterViewInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { HeaderComponent } from '../header/header.component';
-import { HeroComponent } from '../hero/hero.component';
-import { AboutComponent } from '../about/about.component';
-import { ServicesComponent } from '../services/services.component';
-import { TestimonialsComponent } from '../testimonials/testimonials.component';
-import { ContactComponent } from '../contact/contact.component';
-import { FooterComponent } from '../footer/footer.component';
-import { AnimationService } from '../../services/animation.service';
+import { BannerComponent } from './banner/banner.component';
+import { FeaturesComponent } from './features/features.component';
+import { BenefitsComponent } from './benefits/benefits.component';
+import { CtaComponent } from './cta/cta.component';
+import { SignupComponent } from './signup/signup.component';
+import { LoginModalComponent } from '../login-modal/login-modal.component';
+import { ModalService } from '../../services/modal.service';
+import { Subscription } from 'rxjs';
 
 @Component({
   selector: 'app-home',
   standalone: true,
   imports: [
     CommonModule,
-    HeroComponent,
-    AboutComponent,
-    ServicesComponent,
-    TestimonialsComponent,
-    ContactComponent
+    BannerComponent,
+    FeaturesComponent,
+    BenefitsComponent,
+    CtaComponent,
+    SignupComponent,
+    LoginModalComponent
   ],
   templateUrl: './home.component.html',
   styleUrls: ['./home.component.css']
 })
-export class HomeComponent implements AfterViewInit {
+export class HomeComponent implements OnInit, OnDestroy {
+  showLoginModal = false;
+  private modalSubscription?: Subscription;
 
-  constructor(private animationService: AnimationService) {}
+  constructor(private modalService: ModalService) {}
 
-  ngAfterViewInit(): void {
-    // Setup scroll animations after view initialization
-    this.animationService.setupScrollAnimations();
+  ngOnInit(): void {
+    this.modalSubscription = this.modalService.showLoginModal$.subscribe(
+      (show) => {
+        this.showLoginModal = show;
+        if (show) {
+          document.body.style.overflow = 'hidden';
+        } else {
+          document.body.style.overflow = '';
+        }
+      }
+    );
+  }
+
+  ngOnDestroy(): void {
+    if (this.modalSubscription) {
+      this.modalSubscription.unsubscribe();
+    }
+    document.body.style.overflow = '';
+  }
+
+  closeLoginModal(): void {
+    this.modalService.closeLoginModal();
   }
 }

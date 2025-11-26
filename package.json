@@ -4,7 +4,9 @@
   "scripts": {
     "ng": "ng",
     "start": "ng serve",
-    "build": "ng build",
+    "build": "ng build --configuration production",
+    "build:dev": "ng build",
+    "postinstall": "ng version || true",
     "cap:init": "cap init",
     "cap:add:android": "cap add android",
     "cap:add:ios": "cap add ios",
@@ -36,5 +38,9 @@
     "@angular/compiler-cli": "^20.0.0",
     "typescript": "^5.8.2",
     "zone.js": "^0.15.1"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
   }
 }

@@ -1,56 +1,45 @@
-<!-- Bootstrap Header -->
-<header class="header fixed-top">
-  <nav class="navbar navbar-expand-lg navbar-light">
-    <div class="container-fluid">
-      <!-- Brand -->
-      <a class="navbar-brand" (click)="navigateToHome()" style="cursor: pointer;">
-        <img 
-          src="assets/icon/qs-logo copy.png"
-          alt="QS - Quality Solutions" 
-          class="logo-img"
-        />
-        <div class="brand-container">
-          <span class="brand-text">QuadProSol</span>
-          <div class="brand-slogan">QUALITY ★ PERFORMANCE ★ SECURITY</div>
-        </div>
-      </a>
+<header class="header">
+  <div class="container">
+    <div class="header-content">
+      <div class="logo" (click)="navigateToHome()">
+        <span class="logo-text">Bootify</span>
+        <svg class="logo-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M20 4L12 12L4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M4 20L12 12L20 20" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
 
-      <!-- Mobile Toggle Button -->
-      <button 
-        class="navbar-toggler d-lg-none p-2"
-        type="button"
-        (click)="toggleMenu()"
-        [attr.aria-expanded]="isMenuOpen"
-        aria-label="Toggle navigation"
-      >
-        <i class="bi bi-list fs-4" *ngIf="!isMenuOpen"></i>
-        <i class="bi bi-x-lg fs-4" *ngIf="isMenuOpen"></i>
+      <button class="menu-toggle" (click)="toggleMenu()" aria-label="Toggle menu">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M3 12H21M3 6H21M3 18H21" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
       </button>
 
-      <!-- Navigation Menu -->
-      <div class="collapse navbar-collapse" [class.show]="isMenuOpen" [class.collapsing]="isTransitioning">
-        <ul class="navbar-nav ms-auto align-items-lg-center">
-          <li class="nav-item" *ngFor="let item of navigationItems">
-            <a 
-              class="nav-link"
-              [class.active]="currentRoute === '/' && activeSection === item.id"
-              (click)="onNavClick($event, item.id)"
-              [href]="'#' + item.id"
-            >
-              {{ item.label }}
-            </a>
-          </li>
-          <li class="nav-item ms-lg-3">
-            <button 
-              class="btn contact-btn"
-              (click)="navigateToIntake()"
-              aria-label="Contact us"
-            >
-              CONTACT
-            </button>
-          </li>
-        </ul>
-      </div>
+      <nav class="nav">
+        <a href="#" class="nav-link">Learn</a>
+        <a href="#" class="nav-link">Pricing</a>
+        <a href="#" class="nav-link start-project">Start Project</a>
+        <a href="#" class="nav-link" (click)="handleAccountClick($event)">Account</a>
+      </nav>
     </div>
-  </nav>
+  </div>
 </header>
+
+<div class="sidenav-overlay" [class.active]="isMenuOpen" (click)="closeMenu()"></div>
+
+<aside class="sidenav" [class.active]="isMenuOpen">
+  <div class="sidenav-header">
+    <span class="sidenav-title">Menu</span>
+    <button class="close-btn" (click)="closeMenu()" aria-label="Close menu">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </button>
+  </div>
+  <nav class="sidenav-nav">
+    <a href="#" class="sidenav-link" (click)="closeMenu()">Learn</a>
+    <a href="#" class="sidenav-link" (click)="closeMenu()">Pricing</a>
+    <a href="#" class="sidenav-link start-project" (click)="closeMenu()">Start Project</a>
+    <a href="#" class="sidenav-link" (click)="handleAccountClick($event)">Account</a>
+  </nav>
+</aside>
