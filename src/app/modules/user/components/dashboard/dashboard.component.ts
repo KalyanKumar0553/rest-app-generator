@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { LocalStorageService } from '../../../../services/local-storage.service';
@@ -31,7 +31,21 @@ export class DashboardComponent implements OnInit {
     private toastService: ToastService
   ) {}
 
+  @HostListener('window:pageshow', ['$event'])
+  onPageShow(event: PageTransitionEvent): void {
+    if (event.persisted || !this.authService.getAccessToken()) {
+      this.checkAuthentication();
+    }
+  }
+
+  @HostListener('window:popstate', ['$event'])
+  onPopState(event: PopStateEvent): void {
+    this.checkAuthentication();
+  }
+
   ngOnInit(): void {
+    this.checkAuthentication();
+
     const userData = this.authService.getUserData();
     if (userData) {
       this.userEmail = userData.email;
@@ -39,6 +53,13 @@ export class DashboardComponent implements OnInit {
     }
 
     this.loadUserRoles();
+  }
+
+  private checkAuthentication(): void {
+    const token = this.authService.getAccessToken();
+    if (!token || !this.authService.currentUserValue) {
+      this.router.navigate(['/'], { replaceUrl: true });
+    }
   }
 
   loadUserRoles(): void {
@@ -81,14 +102,12 @@ export class DashboardComponent implements OnInit {
         this.showLogoutConfirmation = false;
         this.localStorageService.clear();
         this.toastService.success('Logged out successfully');
-        this.router.navigate(['/']);
       },
       error: (error) => {
         this.isLoggingOut = false;
         this.showLogoutConfirmation = false;
         this.localStorageService.clear();
         console.error('Logout error:', error);
-        this.router.navigate(['/']);
       }
     });
   }

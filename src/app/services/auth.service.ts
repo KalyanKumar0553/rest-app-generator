@@ -207,7 +207,11 @@ export class AuthService {
     this.localStorageService.removeItem(STORAGE_KEYS.USER_DATA);
     this.currentUserSubject.next(null);
     this.isAuthenticatedSubject.next(false);
-    this.router.navigate(['/']);
+    this.router.navigate(['/'], { replaceUrl: true }).then(() => {
+      if (typeof window !== 'undefined') {
+        window.history.pushState(null, '', window.location.href);
+      }
+    });
   }
 
   private handleAuthError(error: any): Observable<never> {
