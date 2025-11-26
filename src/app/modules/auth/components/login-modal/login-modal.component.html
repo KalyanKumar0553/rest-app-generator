@@ -1,6 +1,7 @@
 <app-otp-modal
   *ngIf="showOtpModal"
   [email]="email"
+  [password]="password"
   (close)="onOtpModalClose()"
   (verified)="onOtpVerified()"
 ></app-otp-modal>

@@ -2,10 +2,10 @@ import { Component, EventEmitter, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
-import { ModalService } from '../../services/modal.service';
-import { ToastService } from '../../services/toast.service';
-import { AuthService, SignupRequest, LoginRequest } from '../../services/auth.service';
-import { FormValidator, ValidationErrors, CommonValidationRules } from '../../validators/form-validator';
+import { ModalService } from '../../../../services/modal.service';
+import { ToastService } from '../../../../services/toast.service';
+import { AuthService, SignupRequest, LoginRequest } from '../../../../services/auth.service';
+import { FormValidator, ValidationErrors, CommonValidationRules } from '../../../../validators/form-validator';
 import { OTPModalComponent } from '../otp-modal/otp-modal.component';
 
 @Component({
@@ -184,7 +184,17 @@ export class LoginModalComponent {
       error: (error) => {
         this.isLoading = false;
         const errorMessage = error.message || 'Failed to create account. Please try again.';
-        this.toastService.error(errorMessage);
+
+        if (errorMessage.toLowerCase().includes('already exists') || errorMessage.toLowerCase().includes('already registered')) {
+          this.toastService.error(errorMessage + ' Please login instead.');
+          setTimeout(() => {
+            this.isSignupMode = false;
+            this.isForgotPasswordMode = false;
+            this.resetForm();
+          }, 2000);
+        } else {
+          this.toastService.error(errorMessage);
+        }
       }
     });
   }
@@ -211,7 +221,7 @@ export class LoginModalComponent {
         this.isLoading = false;
         this.toastService.success(response.message || 'Login successful!');
         this.closeModal();
-        this.router.navigate(['/dashboard']);
+        this.router.navigate(['/user/dashboard']);
       },
       error: (error) => {
         this.isLoading = false;

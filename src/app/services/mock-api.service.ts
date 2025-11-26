@@ -2,12 +2,13 @@ import { Injectable } from '@angular/core';
 import { Observable, of, throwError } from 'rxjs';
 import { delay } from 'rxjs/operators';
 import { HttpClient } from '@angular/common/http';
+import { environment } from '../../environments/environment';
 
 @Injectable({
   providedIn: 'root'
 })
 export class MockApiService {
-  private useMockData = true;
+  private useMockData = environment.useMockApi;
 
   constructor(private http: HttpClient) {}
 
