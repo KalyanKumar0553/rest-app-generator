@@ -14,6 +14,7 @@ import { Router } from '@angular/router';
 })
 export class OTPModalComponent implements OnInit, OnDestroy {
   @Input() email: string = '';
+  @Input() password: string = '';
   @Output() close = new EventEmitter<void>();
   @Output() verified = new EventEmitter<void>();
 
@@ -115,16 +116,41 @@ export class OTPModalComponent implements OnInit, OnDestroy {
       otp: this.otpValue
     }).subscribe({
       next: (response: any) => {
-        this.isLoading = false;
         this.toastService.success(response.message || 'OTP verified successfully!');
         this.verified.emit();
-        this.closeModal();
-        this.router.navigate(['/user/dashboard']);
+        this.performAutoLogin();
       },
       error: (error) => {
         this.isLoading = false;
         const errorMessage = error.message || 'Invalid OTP. Please try again.';
         this.otpError = errorMessage;
+        this.toastService.error(errorMessage);
+      }
+    });
+  }
+
+  performAutoLogin(): void {
+    if (!this.password) {
+      this.isLoading = false;
+      this.closeModal();
+      this.toastService.info('Please login with your credentials.');
+      return;
+    }
+
+    this.authService.login({
+      email: this.email,
+      password: this.password
+    }).subscribe({
+      next: (response: any) => {
+        this.isLoading = false;
+        this.closeModal();
+        this.toastService.success('Login successful! Welcome back.');
+        this.router.navigate(['/user/dashboard']);
+      },
+      error: (error) => {
+        this.isLoading = false;
+        this.closeModal();
+        const errorMessage = error.message || 'Auto-login failed. Please login manually.';
         this.toastService.error(errorMessage);
       }
     });
