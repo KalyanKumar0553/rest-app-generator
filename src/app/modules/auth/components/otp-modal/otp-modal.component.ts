@@ -1,8 +1,8 @@
 import { Component, EventEmitter, Input, Output, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ToastService } from '../../services/toast.service';
-import { AuthService } from '../../services/auth.service';
+import { ToastService } from '../../../../services/toast.service';
+import { AuthService } from '../../../../services/auth.service';
 import { Router } from '@angular/router';
 
 @Component({
@@ -129,7 +129,7 @@ export class OTPModalComponent implements OnInit, OnDestroy {
         this.toastService.success(response.message || 'OTP verified successfully!');
         this.verified.emit();
         this.closeModal();
-        this.router.navigate(['/dashboard']);
+        this.router.navigate(['/user/dashboard']);
       },
       error: (error) => {
         this.isLoading = false;

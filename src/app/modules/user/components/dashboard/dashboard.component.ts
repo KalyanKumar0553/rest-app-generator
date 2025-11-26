@@ -1,10 +1,10 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
-import { LocalStorageService } from '../../services/local-storage.service';
-import { AuthService, UserData } from '../../services/auth.service';
-import { UserService, UserRoles } from '../../services/user.service';
-import { ToastService } from '../../services/toast.service';
+import { LocalStorageService } from '../../../../services/local-storage.service';
+import { AuthService, UserData } from '../../../../services/auth.service';
+import { UserService, UserRoles } from '../../../../services/user.service';
+import { ToastService } from '../../../../services/toast.service';
 
 @Component({
   selector: 'app-dashboard',

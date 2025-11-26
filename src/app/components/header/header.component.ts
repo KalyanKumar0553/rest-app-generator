@@ -45,7 +45,7 @@ export class HeaderComponent {
     this.closeMenu();
 
     if (this.authService.isLoggedIn()) {
-      this.router.navigate(['/dashboard']);
+      this.router.navigate(['/user/dashboard']);
     } else {
       this.router.navigate(['/']);
       setTimeout(() => {
