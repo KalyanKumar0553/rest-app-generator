@@ -50,11 +50,14 @@
             id="password"
             name="password"
             [(ngModel)]="password"
+            (blur)="onPasswordBlur()"
             required
             placeholder="Enter your password"
             class="form-control"
+            [class.error]="passwordError"
             [disabled]="isLoading"
           />
+          <span class="error-message" *ngIf="passwordError">{{ passwordError }}</span>
         </div>
 
         <div class="forgot-password-link" *ngIf="!isSignupMode && !isForgotPasswordMode">

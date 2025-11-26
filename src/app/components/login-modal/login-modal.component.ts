@@ -4,7 +4,8 @@ import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { ModalService } from '../../services/modal.service';
 import { ToastService } from '../../services/toast.service';
-import { HttpClient } from '@angular/common/http';
+import { AuthService, SignupRequest, LoginRequest } from '../../services/auth.service';
+import { FormValidator, ValidationErrors, CommonValidationRules } from '../../validators/form-validator';
 
 @Component({
   selector: 'app-login-modal',
@@ -22,15 +23,23 @@ export class LoginModalComponent {
   password = '';
   acceptTerms = false;
   receiveUpdates = false;
-  emailError = '';
+  validationErrors: ValidationErrors = {};
   isLoading = false;
 
   constructor(
     private router: Router,
     private modalService: ModalService,
     private toastService: ToastService,
-    private http: HttpClient
+    private authService: AuthService
   ) {}
+
+  get emailError(): string {
+    return this.validationErrors['email'] || '';
+  }
+
+  get passwordError(): string {
+    return this.validationErrors['password'] || '';
+  }
 
   toggleMode(): void {
     this.isSignupMode = !this.isSignupMode;
@@ -55,33 +64,62 @@ export class LoginModalComponent {
     this.password = '';
     this.acceptTerms = false;
     this.receiveUpdates = false;
-    this.emailError = '';
+    this.validationErrors = {};
     this.isLoading = false;
   }
 
-  validateEmail(): boolean {
-    const emailPattern = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-    if (!this.email) {
-      this.emailError = 'Email is required';
-      return false;
+  validateForm(): boolean {
+    const formData = {
+      email: this.email,
+      password: this.password
+    };
+
+    const rules: any = {};
+
+    if (this.isForgotPasswordMode) {
+      rules.email = CommonValidationRules.email;
+    } else {
+      rules.email = CommonValidationRules.email;
+      rules.password = CommonValidationRules.password;
     }
-    if (!emailPattern.test(this.email)) {
-      this.emailError = 'Please enter a valid email address';
-      return false;
-    }
-    this.emailError = '';
-    return true;
+
+    this.validationErrors = FormValidator.validate(formData, rules);
+    return !FormValidator.hasErrors(this.validationErrors);
   }
 
   onEmailBlur(): void {
     if (this.email) {
-      this.validateEmail();
+      const error = FormValidator.validateSingleField(
+        this.email,
+        CommonValidationRules.email,
+        'email'
+      );
+      if (error) {
+        this.validationErrors['email'] = error;
+      } else {
+        this.validationErrors = FormValidator.clearErrors(this.validationErrors, 'email');
+      }
+    }
+  }
+
+  onPasswordBlur(): void {
+    if (this.password && !this.isForgotPasswordMode) {
+      const error = FormValidator.validateSingleField(
+        this.password,
+        CommonValidationRules.password,
+        'password'
+      );
+      if (error) {
+        this.validationErrors['password'] = error;
+      } else {
+        this.validationErrors = FormValidator.clearErrors(this.validationErrors, 'password');
+      }
     }
   }
 
   isFormValid(): boolean {
     if (this.isForgotPasswordMode) {
-      return this.email && this.emailError === '';
+      return this.email && !this.emailError;
     }
     if (!this.email || !this.password) {
       return false;
@@ -89,7 +127,7 @@ export class LoginModalComponent {
     if (this.isSignupMode && !this.acceptTerms) {
       return false;
     }
-    return this.emailError === '';
+    return !this.emailError && !this.passwordError;
   }
 
   navigateToTerms(event: Event): void {
@@ -109,7 +147,7 @@ export class LoginModalComponent {
   }
 
   onSubmit(): void {
-    if (!this.validateEmail()) {
+    if (!this.validateForm()) {
       return;
     }
 
@@ -119,26 +157,74 @@ export class LoginModalComponent {
     }
 
     if (this.isSignupMode) {
-      console.log('Signup:', { email: this.email, password: this.password, acceptTerms: this.acceptTerms, receiveUpdates: this.receiveUpdates });
+      this.handleSignup();
     } else {
-      console.log('Login:', { email: this.email, password: this.password });
+      this.handleLogin();
     }
+  }
+
+  handleSignup(): void {
+    this.isLoading = true;
+
+    const signupData: SignupRequest = {
+      email: this.email,
+      password: this.password,
+      acceptTerms: this.acceptTerms,
+      receiveUpdates: this.receiveUpdates
+    };
+
+    this.authService.signup(signupData).subscribe({
+      next: (response) => {
+        this.isLoading = false;
+        this.toastService.success(response.message || 'Account created successfully!');
+        this.closeModal();
+        this.router.navigate(['/dashboard']);
+      },
+      error: (error) => {
+        this.isLoading = false;
+        const errorMessage = error.message || 'Failed to create account. Please try again.';
+        this.toastService.error(errorMessage);
+      }
+    });
+  }
+
+  handleLogin(): void {
+    this.isLoading = true;
+
+    const loginData: LoginRequest = {
+      email: this.email,
+      password: this.password
+    };
+
+    this.authService.login(loginData).subscribe({
+      next: (response) => {
+        this.isLoading = false;
+        this.toastService.success(response.message || 'Login successful!');
+        this.closeModal();
+        this.router.navigate(['/dashboard']);
+      },
+      error: (error) => {
+        this.isLoading = false;
+        const errorMessage = error.message || 'Invalid email or password.';
+        this.toastService.error(errorMessage);
+      }
+    });
   }
 
   handleForgotPassword(): void {
     this.isLoading = true;
 
-    this.http.post('/api/auth/forgot-password', { email: this.email }).subscribe({
-      next: (response: any) => {
+    this.authService.forgotPassword({ email: this.email }).subscribe({
+      next: (response) => {
         this.isLoading = false;
-        this.toastService.success('Password reset link has been sent to your email.');
+        this.toastService.success(response.message || 'Password reset link has been sent to your email.');
         setTimeout(() => {
           this.backToLogin();
         }, 2000);
       },
       error: (error) => {
         this.isLoading = false;
-        const errorMessage = error.error?.message || 'Failed to send password reset link. Please try again.';
+        const errorMessage = error.message || 'Failed to send password reset link. Please try again.';
         this.toastService.error(errorMessage);
       }
     });
