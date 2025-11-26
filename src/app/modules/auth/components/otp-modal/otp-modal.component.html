@@ -1,0 +1,80 @@
+<div class="modal-overlay" (click)="closeModal()">
+  <div class="modal-container" (click)="$event.stopPropagation()">
+    <button class="close-btn" (click)="closeModal()" aria-label="Close modal">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </button>
+
+    <div class="modal-header">
+      <h2>Verify OTP</h2>
+    </div>
+
+    <div class="modal-body">
+      <p class="modal-description">
+        Please enter the OTP (One-Time Password) sent to your registered email/phone number to complete your verification.
+      </p>
+
+      <form (ngSubmit)="verifyOTP()">
+        <div class="form-group">
+          <label for="otp">Enter 6-digit OTP</label>
+          <input
+            type="text"
+            id="otp"
+            name="otp"
+            [(ngModel)]="otpValue"
+            (input)="onOtpInput()"
+            (blur)="onOtpBlur()"
+            maxlength="6"
+            placeholder="Enter OTP"
+            class="form-control"
+            [class.error]="otpError"
+            [disabled]="isLoading"
+            inputmode="numeric"
+          />
+          <span class="error-message" *ngIf="otpError">{{ otpError }}</span>
+        </div>
+
+        <div class="resend-section">
+          <p class="resend-text">
+            Didn't receive the code?
+            <button
+              type="button"
+              class="link resend-link"
+              (click)="resendOTP()"
+              [disabled]="!canResend || isLoading"
+            >
+              {{ canResend ? 'Resend OTP' : 'Resend in ' + formattedTime }}
+            </button>
+          </p>
+        </div>
+      </form>
+    </div>
+
+    <div class="modal-footer">
+      <button
+        type="button"
+        class="btn btn-secondary"
+        (click)="closeModal()"
+        [disabled]="isLoading"
+      >
+        Cancel
+      </button>
+      <button
+        type="button"
+        class="btn btn-primary"
+        (click)="verifyOTP()"
+        [disabled]="!isOtpComplete || isLoading"
+      >
+        <span *ngIf="!isLoading">Verify OTP</span>
+        <span *ngIf="isLoading" class="loading-spinner">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+            <circle cx="10" cy="10" r="8" stroke="currentColor" stroke-width="2" opacity="0.25"/>
+            <path d="M10 2C5.58172 2 2 5.58172 2 10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+          Verifying...
+        </span>
+      </button>
+    </div>
+  </div>
+</div>
