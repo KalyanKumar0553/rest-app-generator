@@ -47,12 +47,12 @@ export class HttpRequestInterceptor implements HttpInterceptor {
 
   private isPublicEndpoint(url: string): boolean {
     const publicEndpoints = [
-      '/auth/login',
-      '/auth/signup',
-      '/auth/forgot-password',
-      '/auth/send-otp',
-      '/auth/verify-otp',
-      '/auth/reset-password-with-otp'
+      '/api/auth/login',
+      '/api/auth/signup',
+      '/api/auth/forgot-password',
+      '/api/auth/send-otp',
+      '/api/auth/verify-otp',
+      '/api/auth/reset-password-with-otp'
     ];
     return publicEndpoints.some(endpoint => url.includes(endpoint));
   }

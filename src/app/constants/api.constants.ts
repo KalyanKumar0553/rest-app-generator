@@ -1,7 +1,14 @@
 import { environment } from '../../environments/environment';
 
+const getBaseUrl = (): string => {
+  if (typeof window !== 'undefined') {
+    return `${window.location.protocol}//${window.location.hostname}${window.location.port ? ':' + window.location.port : ''}`;
+  }
+  return 'http://localhost:8080';
+};
+
 export const API_CONFIG = {
-  BASE_URL: environment.apiUrl || 'http://localhost:8080/api',
+  BASE_URL: getBaseUrl(),
   TIMEOUT: 30000,
   RETRY_ATTEMPTS: 3,
   RETRY_DELAY: 1000
@@ -9,25 +16,25 @@ export const API_CONFIG = {
 
 export const API_ENDPOINTS = {
   AUTH: {
-    SIGNUP: '/auth/signup',
-    LOGIN: '/auth/login',
-    LOGOUT: '/auth/logout',
-    REFRESH_TOKEN: '/auth/refresh-token',
-    SEND_OTP: '/auth/send-otp',
-    VERIFY_OTP: '/auth/verify-otp',
-    FORGOT_PASSWORD: '/auth/forgot-password',
-    RESET_PASSWORD_WITH_OTP: '/auth/reset-password-with-otp'
+    SIGNUP: '/api/auth/signup',
+    LOGIN: '/api/auth/login',
+    LOGOUT: '/api/auth/logout',
+    REFRESH_TOKEN: '/api/auth/refresh-token',
+    SEND_OTP: '/api/auth/send-otp',
+    VERIFY_OTP: '/api/auth/verify-otp',
+    FORGOT_PASSWORD: '/api/auth/forgot-password',
+    RESET_PASSWORD_WITH_OTP: '/api/auth/reset-password-with-otp'
   },
   USER: {
-    PROFILE: '/user/profile',
-    UPDATE_PROFILE: '/user/profile/update'
+    PROFILE: '/api/user/profile',
+    UPDATE_PROFILE: '/api/user/profile/update'
   },
   PROJECT: {
-    LIST: '/projects',
-    CREATE: '/projects/create',
-    GET: (id: string) => `/projects/${id}`,
-    UPDATE: (id: string) => `/projects/${id}/update`,
-    DELETE: (id: string) => `/projects/${id}/delete`
+    LIST: '/api/projects',
+    CREATE: '/api/projects/create',
+    GET: (id: string) => `/api/projects/${id}`,
+    UPDATE: (id: string) => `/api/projects/${id}/update`,
+    DELETE: (id: string) => `/api/projects/${id}/delete`
   }
 };
 
