@@ -22,6 +22,7 @@ export class DashboardComponent implements OnInit {
   isLoadingRoles: boolean = false;
   showLogoutConfirmation: boolean = false;
   isLoggingOut: boolean = false;
+  isSidebarOpen: boolean = false;
 
   constructor(
     private router: Router,
@@ -95,17 +96,20 @@ export class DashboardComponent implements OnInit {
 
   confirmLogout(): void {
     this.isLoggingOut = true;
-    this.showLogoutConfirmation = false;
 
     console.log('[DASHBOARD] Starting logout...');
 
     this.authService.logout().subscribe({
       next: () => {
         console.log('[DASHBOARD] Logout success callback');
+        this.isLoggingOut = false;
+        this.showLogoutConfirmation = false;
         this.toastService.success('Logged out successfully');
       },
       error: (error) => {
         console.log('[DASHBOARD] Logout error callback:', error);
+        this.isLoggingOut = false;
+        this.showLogoutConfirmation = false;
       }
     });
   }
@@ -120,5 +124,13 @@ export class DashboardComponent implements OnInit {
 
   navigateToPlan(): void {
     console.log('Navigate to Plan');
+  }
+
+  toggleSidebar(): void {
+    this.isSidebarOpen = !this.isSidebarOpen;
+  }
+
+  closeSidebar(): void {
+    this.isSidebarOpen = false;
   }
 }
