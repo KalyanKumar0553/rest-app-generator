@@ -202,12 +202,37 @@ export class AuthService {
   }
 
   private handleLogout(): void {
+    console.log('[AUTH] Starting logout - before clear:', {
+      accessToken: localStorage.getItem('access_token'),
+      refreshToken: localStorage.getItem('refresh_token'),
+      userData: localStorage.getItem('user_data')
+    });
+
     this.localStorageService.removeItem(STORAGE_KEYS.ACCESS_TOKEN);
     this.localStorageService.removeItem(STORAGE_KEYS.REFRESH_TOKEN);
     this.localStorageService.removeItem(STORAGE_KEYS.USER_DATA);
+
+    if (typeof window !== 'undefined' && window.localStorage) {
+      window.localStorage.removeItem('access_token');
+      window.localStorage.removeItem('refresh_token');
+      window.localStorage.removeItem('user_data');
+    }
+
+    console.log('[AUTH] After removeItem calls:', {
+      accessToken: localStorage.getItem('access_token'),
+      refreshToken: localStorage.getItem('refresh_token'),
+      userData: localStorage.getItem('user_data')
+    });
+
     this.currentUserSubject.next(null);
     this.isAuthenticatedSubject.next(false);
+
     this.router.navigate(['/'], { replaceUrl: true }).then(() => {
+      console.log('[AUTH] After navigation - final check:', {
+        accessToken: localStorage.getItem('access_token'),
+        refreshToken: localStorage.getItem('refresh_token'),
+        userData: localStorage.getItem('user_data')
+      });
       if (typeof window !== 'undefined') {
         window.history.pushState(null, '', window.location.href);
       }

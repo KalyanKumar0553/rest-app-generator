@@ -95,19 +95,17 @@ export class DashboardComponent implements OnInit {
 
   confirmLogout(): void {
     this.isLoggingOut = true;
+    this.showLogoutConfirmation = false;
+
+    console.log('[DASHBOARD] Starting logout...');
 
     this.authService.logout().subscribe({
       next: () => {
-        this.isLoggingOut = false;
-        this.showLogoutConfirmation = false;
-        this.localStorageService.clear();
+        console.log('[DASHBOARD] Logout success callback');
         this.toastService.success('Logged out successfully');
       },
       error: (error) => {
-        this.isLoggingOut = false;
-        this.showLogoutConfirmation = false;
-        this.localStorageService.clear();
-        console.error('Logout error:', error);
+        console.log('[DASHBOARD] Logout error callback:', error);
       }
     });
   }
