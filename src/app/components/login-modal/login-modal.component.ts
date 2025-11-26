@@ -6,11 +6,12 @@ import { ModalService } from '../../services/modal.service';
 import { ToastService } from '../../services/toast.service';
 import { AuthService, SignupRequest, LoginRequest } from '../../services/auth.service';
 import { FormValidator, ValidationErrors, CommonValidationRules } from '../../validators/form-validator';
+import { OTPModalComponent } from '../otp-modal/otp-modal.component';
 
 @Component({
   selector: 'app-login-modal',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, OTPModalComponent],
   templateUrl: './login-modal.component.html',
   styleUrls: ['./login-modal.component.css']
 })
@@ -19,6 +20,7 @@ export class LoginModalComponent {
 
   isSignupMode = true;
   isForgotPasswordMode = false;
+  showOtpModal = false;
   email = '';
   password = '';
   acceptTerms = false;
@@ -176,9 +178,8 @@ export class LoginModalComponent {
     this.authService.signup(signupData).subscribe({
       next: (response) => {
         this.isLoading = false;
-        this.toastService.success(response.message || 'Account created successfully!');
-        this.closeModal();
-        this.router.navigate(['/dashboard']);
+        this.toastService.success('Account created successfully! Please verify your email with the OTP sent to your inbox.');
+        this.showOtpModal = true;
       },
       error: (error) => {
         this.isLoading = false;
@@ -186,6 +187,15 @@ export class LoginModalComponent {
         this.toastService.error(errorMessage);
       }
     });
+  }
+
+  onOtpVerified(): void {
+    this.showOtpModal = false;
+    this.closeModal();
+  }
+
+  onOtpModalClose(): void {
+    this.showOtpModal = false;
   }
 
   handleLogin(): void {
