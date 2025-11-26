@@ -71,12 +71,9 @@ export class DashboardComponent implements OnInit {
         this.isLoadingRoles = false;
         this.userRoles = rolesData.roles || [];
         this.userPermissions = rolesData.permissions || [];
-        console.log('User roles loaded:', this.userRoles);
-        console.log('User permissions loaded:', this.userPermissions);
       },
-      error: (error) => {
+      error: () => {
         this.isLoadingRoles = false;
-        console.error('Failed to load user roles:', error);
         this.toastService.error('Failed to load user roles');
       }
     });
@@ -97,17 +94,13 @@ export class DashboardComponent implements OnInit {
   confirmLogout(): void {
     this.isLoggingOut = true;
 
-    console.log('[DASHBOARD] Starting logout...');
-
     this.authService.logout().subscribe({
       next: () => {
-        console.log('[DASHBOARD] Logout success callback');
         this.isLoggingOut = false;
         this.showLogoutConfirmation = false;
         this.toastService.success('Logged out successfully');
       },
-      error: (error) => {
-        console.log('[DASHBOARD] Logout error callback:', error);
+      error: () => {
         this.isLoggingOut = false;
         this.showLogoutConfirmation = false;
       }
@@ -119,11 +112,9 @@ export class DashboardComponent implements OnInit {
   }
 
   navigateToAccount(): void {
-    console.log('Navigate to Account');
   }
 
   navigateToPlan(): void {
-    console.log('Navigate to Plan');
   }
 
   toggleSidebar(): void {
