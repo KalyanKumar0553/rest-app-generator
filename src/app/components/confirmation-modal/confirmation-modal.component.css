@@ -65,8 +65,12 @@
   font-size: 18px;
   font-weight: 400;
   color: var(--neutral-700, #374151);
-  margin: 0;
+  margin: 0 0 16px 0;
   line-height: 1.6;
+}
+
+.modal-message:last-child {
+  margin-bottom: 0;
 }
 
 .modal-footer {
