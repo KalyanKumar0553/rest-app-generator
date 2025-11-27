@@ -67,36 +67,45 @@
 .modal-footer {
   padding: 32px 48px 48px;
   display: flex;
-  gap: 6px;
+  gap: 16px;
   justify-content: center;
-  border-top: 1px solid #e5e7eb;
+  border-top: 1px solid var(--neutral-200, #e5e7eb);
 }
 
 .btn-cancel,
 .btn-action {
-  padding: 6px;
-  margin: 6px;
+  padding: 14px 40px;
   border-radius: 8px;
   font-size: 17px;
   font-weight: 500;
   cursor: pointer;
+  transition: all 0.2s ease;
   border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-width: 140px;
 }
 
 .btn-cancel {
-  background-color: #ffffff;
-  color: #374151;
-  border: 2px solid #d1d5db;
+  background-color: var(--color-background-white, #ffffff);
+  color: var(--neutral-700, #374151);
+  border: 2px solid var(--neutral-300, #d1d5db);
 }
 
 .btn-cancel:hover:not(:disabled) {
-  background-color: #f9fafb;
-  border-color: #9ca3af;
+  background-color: var(--neutral-50, #f9fafb);
+  border-color: var(--neutral-400, #9ca3af);
 }
 
 .btn-cancel:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+.btn-action {
+  min-width: 140px;
 }
 
 .btn-confirm {
@@ -114,12 +123,12 @@
 }
 
 .btn-primary {
-  background-color: #e89b8e;
+  background-color: var(--brand-accent, #e89b8e);
   color: #ffffff;
 }
 
 .btn-primary:hover:not(:disabled) {
-  background-color: #d17d6e;
+  background-color: var(--brand-accent-hover, #d17d6e);
 }
 
 .btn-primary:disabled {
