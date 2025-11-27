@@ -2,15 +2,18 @@
   <div class="modal-container" (click)="$event.stopPropagation()">
     <div class="modal-header">
       <div class="icon-wrapper">
-        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
           <path d="M12 9V13M12 17H12.01M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
       </div>
       <h2>{{ title }}</h2>
+    </div>
+
+    <div class="modal-body">
       <p class="message">{{ message }}</p>
     </div>
 
-    <div class="modal-actions">
+    <div class="modal-footer">
       <button
         class="btn-cancel"
         (click)="onCancel()"
@@ -27,7 +30,7 @@
         <span *ngIf="isLoading" class="loading-spinner">
           <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
             <circle cx="10" cy="10" r="8" stroke="currentColor" stroke-width="2" opacity="0.25"/>
-            <path d="M10 2C5.58172 2 2 5.58172 2 10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            <path d="M10 2C5.58172 2 2 10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
           </svg>
           Processing...
         </span>

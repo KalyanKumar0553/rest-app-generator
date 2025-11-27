@@ -4,14 +4,13 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
+  background-color: rgba(0, 0, 0, 0.6);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 10000;
   padding: 20px;
-  backdrop-filter: blur(4px);
-  animation: fadeIn 0.2s ease-out;
+  animation: fadeIn 0.2s ease;
 }
 
 @keyframes fadeIn {
@@ -24,18 +23,19 @@
 }
 
 .modal-container {
-  background-color: white;
-  border-radius: 16px;
-  max-width: 420px;
+  background-color: #ffffff;
+  border-radius: 8px;
+  max-width: 480px;
   width: 100%;
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-  animation: slideUp 0.3s ease-out;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  animation: slideUp 0.3s ease;
+  overflow: hidden;
 }
 
 @keyframes slideUp {
   from {
     opacity: 0;
-    transform: translateY(20px);
+    transform: translateY(30px);
   }
   to {
     opacity: 1;
@@ -44,39 +44,52 @@
 }
 
 .modal-header {
-  padding: 32px 32px 24px;
-  text-align: center;
-  border-bottom: 1px solid #e5e7eb;
+  background-color: var(--brand-secondary, #8b9fa6);
+  padding: 24px 32px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
 }
 
 .icon-wrapper {
-  display: inline-flex;
-  padding: 12px;
-  background-color: #fef2f2;
-  border-radius: 12px;
-  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  background-color: rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+  flex-shrink: 0;
 }
 
 .icon-wrapper svg {
-  color: #ef4444;
+  color: #ffffff;
+  width: 28px;
+  height: 28px;
 }
 
 .modal-header h2 {
-  font-size: 20px;
+  font-size: 22px;
   font-weight: 600;
-  color: #1f2937;
-  margin: 0 0 8px 0;
+  color: #ffffff;
+  margin: 0;
+}
+
+.modal-body {
+  padding: 32px;
 }
 
 .message {
-  font-size: 14px;
-  color: #6b7280;
+  font-size: 15px;
+  color: var(--neutral-600, #4b5563);
   margin: 0;
-  line-height: 1.5;
+  line-height: 1.6;
 }
 
-.modal-actions {
-  padding: 24px 32px;
+.modal-footer {
+  padding: 20px 32px;
+  background-color: var(--neutral-50, #f9fafb);
+  border-top: 1px solid var(--color-border, #e5e7eb);
   display: flex;
   gap: 12px;
   justify-content: flex-end;
@@ -84,10 +97,10 @@
 
 .btn-cancel,
 .btn-action {
-  padding: 12px 24px;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 600;
+  padding: 12px 28px;
+  border-radius: 6px;
+  font-size: 15px;
+  font-weight: 500;
   cursor: pointer;
   transition: all 0.2s ease;
   border: none;
@@ -95,15 +108,18 @@
   align-items: center;
   justify-content: center;
   gap: 8px;
+  min-width: 100px;
 }
 
 .btn-cancel {
-  background-color: #f3f4f6;
-  color: #374151;
+  background-color: var(--color-background-white, #ffffff);
+  color: var(--neutral-700, #374151);
+  border: 1px solid var(--color-border, #e5e7eb);
 }
 
 .btn-cancel:hover:not(:disabled) {
-  background-color: #e5e7eb;
+  background-color: var(--neutral-50, #f9fafb);
+  border-color: var(--neutral-300, #d1d5db);
 }
 
 .btn-cancel:disabled {
@@ -116,35 +132,31 @@
 }
 
 .btn-confirm {
-  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-  color: white;
+  background-color: #dc2626;
+  color: #ffffff;
 }
 
 .btn-confirm:hover:not(:disabled) {
-  transform: translateY(-1px);
-  box-shadow: 0 10px 15px -3px rgba(239, 68, 68, 0.3);
+  background-color: #b91c1c;
 }
 
 .btn-confirm:disabled {
   opacity: 0.7;
   cursor: not-allowed;
-  transform: none;
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
-  color: white;
+  background-color: var(--brand-accent, #e89b8e);
+  color: #ffffff;
 }
 
 .btn-primary:hover:not(:disabled) {
-  transform: translateY(-1px);
-  box-shadow: 0 10px 15px -3px rgba(37, 99, 235, 0.3);
+  background-color: var(--brand-accent-hover, #d17d6e);
 }
 
 .btn-primary:disabled {
   opacity: 0.7;
   cursor: not-allowed;
-  transform: none;
 }
 
 .loading-spinner {
@@ -172,11 +184,15 @@
   }
 
   .modal-header {
-    padding: 24px 24px 20px;
+    padding: 20px 24px;
   }
 
-  .modal-actions {
-    padding: 20px 24px;
+  .modal-body {
+    padding: 24px;
+  }
+
+  .modal-footer {
+    padding: 16px 24px;
     flex-direction: column-reverse;
   }
 
