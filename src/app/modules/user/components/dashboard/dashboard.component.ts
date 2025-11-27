@@ -5,7 +5,17 @@ import { LocalStorageService } from '../../../../services/local-storage.service'
 import { AuthService, UserData } from '../../../../services/auth.service';
 import { UserService, UserRoles } from '../../../../services/user.service';
 import { ToastService } from '../../../../services/toast.service';
+import { MockApiService } from '../../../../services/mock-api.service';
 import { ConfirmationModalComponent, ModalButton } from '../../../../components/confirmation-modal/confirmation-modal.component';
+
+export interface Project {
+  id: string;
+  name: string;
+  description: string;
+  createdAt: string;
+  updatedAt: string;
+  status: string;
+}
 
 @Component({
   selector: 'app-dashboard',
@@ -23,6 +33,8 @@ export class DashboardComponent implements OnInit {
   showLogoutConfirmation: boolean = false;
   isLoggingOut: boolean = false;
   isSidebarOpen: boolean = false;
+  projects: Project[] = [];
+  isLoadingProjects: boolean = false;
 
   logoutModalConfig = {
     title: 'Logout Confirmation',
@@ -41,7 +53,8 @@ export class DashboardComponent implements OnInit {
     private localStorageService: LocalStorageService,
     private authService: AuthService,
     private userService: UserService,
-    private toastService: ToastService
+    private toastService: ToastService,
+    private mockApiService: MockApiService
   ) {}
 
   @HostListener('window:pageshow', ['$event'])
@@ -66,6 +79,7 @@ export class DashboardComponent implements OnInit {
     }
 
     this.loadUserRoles();
+    this.loadProjects();
   }
 
   private checkAuthentication(): void {
@@ -135,5 +149,36 @@ export class DashboardComponent implements OnInit {
 
   closeSidebar(): void {
     this.isSidebarOpen = false;
+  }
+
+  loadProjects(): void {
+    this.isLoadingProjects = true;
+
+    this.mockApiService.get<any>('', 'assets/mock/projects-response.json').subscribe({
+      next: (response) => {
+        this.isLoadingProjects = false;
+        this.projects = response.data.projects || [];
+      },
+      error: () => {
+        this.isLoadingProjects = false;
+        this.toastService.error('Failed to load projects');
+      }
+    });
+  }
+
+  formatDate(dateString: string): string {
+    const date = new Date(dateString);
+    return date.toLocaleString('en-US', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false
+    }).replace(',', '');
+  }
+
+  openProject(project: Project): void {
+    console.log('Opening project:', project);
   }
 }
