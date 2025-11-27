@@ -44,9 +44,9 @@
 }
 
 .modal-header {
-  padding: 48px 48px 0;
-  text-align: left;
-  border-bottom: 1px solid var(--neutral-200, #e5e7eb);
+    padding: 23px 23px;
+    text-align: left;
+    border-bottom: 1px solid var(--neutral-200, #e5e7eb);
 }
 
 .modal-title {
@@ -58,7 +58,7 @@
 }
 
 .modal-content {
-  padding: 32px 48px;
+  padding: 12px 24px;
   text-align: left;
 }
 
@@ -71,10 +71,10 @@
 }
 
 .modal-footer {
-  padding: 32px 48px 48px;
+  padding: 12px 20px;
   display: flex;
   gap: 16px;
-  justify-content: center;
+  justify-content: right;
 }
 
 .btn-cancel,
