@@ -61,7 +61,7 @@
   font-weight: 400;
   color: var(--neutral-700, #374151);
   margin: 0;
-  line-height: 1.6;
+  line-height: 0.8;
 }
 
 .modal-footer {
