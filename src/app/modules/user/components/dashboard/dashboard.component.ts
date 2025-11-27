@@ -5,7 +5,7 @@ import { LocalStorageService } from '../../../../services/local-storage.service'
 import { AuthService, UserData } from '../../../../services/auth.service';
 import { UserService, UserRoles } from '../../../../services/user.service';
 import { ToastService } from '../../../../services/toast.service';
-import { ConfirmationModalComponent } from '../../../../components/confirmation-modal/confirmation-modal.component';
+import { ConfirmationModalComponent, ModalButton } from '../../../../components/confirmation-modal/confirmation-modal.component';
 
 @Component({
   selector: 'app-dashboard',
@@ -23,6 +23,18 @@ export class DashboardComponent implements OnInit {
   showLogoutConfirmation: boolean = false;
   isLoggingOut: boolean = false;
   isSidebarOpen: boolean = false;
+
+  logoutModalConfig = {
+    title: 'Logout Confirmation',
+    message: [
+      'Are you sure you want to logout?',
+      'You will need to login again to access your dashboard.'
+    ],
+    buttons: [
+      { text: 'Cancel', type: 'cancel' as const, action: 'cancel' as const },
+      { text: 'Logout', type: 'danger' as const, action: 'confirm' as const }
+    ]
+  };
 
   constructor(
     private router: Router,

@@ -1,10 +1,8 @@
 <app-confirmation-modal
   *ngIf="showLogoutConfirmation"
-  title="Confirm Logout"
-  message="Are you sure you want to logout? You will need to login again to access your dashboard."
-  confirmText="Logout"
-  cancelText="Cancel"
-  confirmButtonClass="btn-confirm"
+  [title]="logoutModalConfig.title"
+  [message]="logoutModalConfig.message"
+  [buttons]="logoutModalConfig.buttons"
   [isLoading]="isLoggingOut"
   (confirm)="confirmLogout()"
   (cancel)="cancelLogout()"
