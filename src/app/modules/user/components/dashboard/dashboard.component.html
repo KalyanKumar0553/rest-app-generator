@@ -81,6 +81,13 @@
     </div>
 
     <div class="content-body">
+      <app-search-sort
+        *ngIf="!isLoadingProjects && projects.length > 0"
+        [searchConfig]="searchConfig"
+        [sortOptions]="sortOptions"
+        (searchSortChange)="onSearchSortChange($event)"
+      ></app-search-sort>
+
       <div *ngIf="isLoadingProjects" class="loading-state">
         <div class="spinner"></div>
         <p>Loading projects...</p>
@@ -90,8 +97,12 @@
         <p>No projects found. Create your first project to get started.</p>
       </div>
 
-      <div class="projects-grid" *ngIf="!isLoadingProjects && projects.length > 0">
-        <div class="project-card" *ngFor="let project of projects">
+      <div *ngIf="!isLoadingProjects && projects.length > 0 && filteredProjects.length === 0" class="empty-state">
+        <p>No projects match your search criteria.</p>
+      </div>
+
+      <div class="projects-grid" *ngIf="!isLoadingProjects && filteredProjects.length > 0">
+        <div class="project-card" *ngFor="let project of filteredProjects">
           <div class="project-header">
             <div class="project-meta">
               <span class="project-status">{{ project.id }}</span>

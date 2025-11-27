@@ -7,6 +7,7 @@ import { UserService, UserRoles } from '../../../../services/user.service';
 import { ToastService } from '../../../../services/toast.service';
 import { MockApiService } from '../../../../services/mock-api.service';
 import { ConfirmationModalComponent, ModalButton } from '../../../../components/confirmation-modal/confirmation-modal.component';
+import { SearchSortComponent, SearchConfig, SortOption, SearchSortEvent } from '../../../../components/search-sort/search-sort.component';
 
 export interface Project {
   id: string;
@@ -20,7 +21,7 @@ export interface Project {
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, ConfirmationModalComponent],
+  imports: [CommonModule, ConfirmationModalComponent, SearchSortComponent],
   templateUrl: './dashboard.component.html',
   styleUrls: ['./dashboard.component.css']
 })
@@ -34,7 +35,22 @@ export class DashboardComponent implements OnInit {
   isLoggingOut: boolean = false;
   isSidebarOpen: boolean = false;
   projects: Project[] = [];
+  filteredProjects: Project[] = [];
   isLoadingProjects: boolean = false;
+
+  searchConfig: SearchConfig = {
+    placeholder: 'Search projects by name or description...',
+    properties: ['name', 'description', 'id']
+  };
+
+  sortOptions: SortOption[] = [
+    { label: 'Name (A-Z)', property: 'name', direction: 'asc' },
+    { label: 'Name (Z-A)', property: 'name', direction: 'desc' },
+    { label: 'Created Date (Newest)', property: 'createdAt', direction: 'desc' },
+    { label: 'Created Date (Oldest)', property: 'createdAt', direction: 'asc' },
+    { label: 'Last Modified (Newest)', property: 'updatedAt', direction: 'desc' },
+    { label: 'Last Modified (Oldest)', property: 'updatedAt', direction: 'asc' }
+  ];
 
   logoutModalConfig = {
     title: 'Logout Confirmation',
@@ -158,12 +174,42 @@ export class DashboardComponent implements OnInit {
       next: (response) => {
         this.isLoadingProjects = false;
         this.projects = response.data.projects || [];
+        this.filteredProjects = [...this.projects];
       },
       error: () => {
         this.isLoadingProjects = false;
         this.toastService.error('Failed to load projects');
       }
     });
+  }
+
+  onSearchSortChange(event: SearchSortEvent): void {
+    let filtered = [...this.projects];
+
+    if (event.searchTerm) {
+      const searchLower = event.searchTerm.toLowerCase();
+      filtered = filtered.filter(project => {
+        return this.searchConfig.properties.some(prop => {
+          const value = (project as any)[prop];
+          return value && value.toString().toLowerCase().includes(searchLower);
+        });
+      });
+    }
+
+    if (event.sortOption) {
+      filtered.sort((a, b) => {
+        const aValue = (a as any)[event.sortOption!.property];
+        const bValue = (b as any)[event.sortOption!.property];
+
+        let comparison = 0;
+        if (aValue < bValue) comparison = -1;
+        if (aValue > bValue) comparison = 1;
+
+        return event.sortOption!.direction === 'asc' ? comparison : -comparison;
+      });
+    }
+
+    this.filteredProjects = filtered;
   }
 
   formatDate(dateString: string): string {

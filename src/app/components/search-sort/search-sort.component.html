@@ -1,0 +1,64 @@
+<div class="search-sort-container">
+  <div class="search-box">
+    <svg class="search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="11" cy="11" r="8" stroke="currentColor" stroke-width="2"/>
+      <path d="M21 21l-4.35-4.35" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+    </svg>
+    <input
+      type="text"
+      class="search-input"
+      [placeholder]="searchConfig.placeholder"
+      [(ngModel)]="searchTerm"
+      (ngModelChange)="onSearchChange()"
+    />
+    <button
+      *ngIf="searchTerm"
+      class="clear-btn"
+      (click)="clearSearch()"
+      aria-label="Clear search"
+    >
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+      </svg>
+    </button>
+  </div>
+
+  <div class="sort-container">
+    <button
+      class="sort-button"
+      [class.active]="selectedSortOption"
+      (click)="toggleDropdown()"
+      aria-label="Sort options"
+    >
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M3 6h18M3 12h15M3 18h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+      </svg>
+      <span>{{ getSortLabel() }}</span>
+      <svg class="chevron" [class.open]="isDropdownOpen" width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </button>
+
+    <div class="dropdown" *ngIf="isDropdownOpen">
+      <div class="dropdown-overlay" (click)="closeDropdown()"></div>
+      <div class="dropdown-menu">
+        <button
+          *ngFor="let option of sortOptions"
+          class="dropdown-item"
+          [class.selected]="selectedSortOption?.property === option.property && selectedSortOption?.direction === option.direction"
+          (click)="onSortSelect(option)"
+        >
+          <span>{{ option.label }}</span>
+          <span class="direction-icon">
+            <svg *ngIf="option.direction === 'asc'" width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M12 19V5M5 12l7-7 7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <svg *ngIf="option.direction === 'desc'" width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M12 5v14M5 12l7 7 7-7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
