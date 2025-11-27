@@ -1,4 +1,4 @@
-<header class="header">
+<header class="header" *ngIf="!isDashboardRoute">
   <div class="container">
     <div class="header-content">
       <div class="logo" (click)="navigateToHome()">
@@ -25,9 +25,9 @@
   </div>
 </header>
 
-<div class="sidenav-overlay" [class.active]="isMenuOpen" (click)="closeMenu()"></div>
+<div class="sidenav-overlay" *ngIf="!isDashboardRoute" [class.active]="isMenuOpen" (click)="closeMenu()"></div>
 
-<aside class="sidenav" [class.active]="isMenuOpen">
+<aside class="sidenav" *ngIf="!isDashboardRoute" [class.active]="isMenuOpen">
   <div class="sidenav-header">
     <span class="sidenav-title">Menu</span>
     <button class="close-btn" (click)="closeMenu()" aria-label="Close menu">
