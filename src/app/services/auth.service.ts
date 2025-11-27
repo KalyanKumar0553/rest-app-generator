@@ -205,9 +205,21 @@ export class AuthService {
     this.localStorageService.removeItem(STORAGE_KEYS.ACCESS_TOKEN);
     this.localStorageService.removeItem(STORAGE_KEYS.REFRESH_TOKEN);
     this.localStorageService.removeItem(STORAGE_KEYS.USER_DATA);
+
+    if (typeof window !== 'undefined' && window.localStorage) {
+      window.localStorage.removeItem('access_token');
+      window.localStorage.removeItem('refresh_token');
+      window.localStorage.removeItem('user_data');
+    }
+
     this.currentUserSubject.next(null);
     this.isAuthenticatedSubject.next(false);
-    this.router.navigate(['/']);
+
+    this.router.navigate(['/'], { replaceUrl: true }).then(() => {
+      if (typeof window !== 'undefined') {
+        window.history.pushState(null, '', window.location.href);
+      }
+    });
   }
 
   private handleAuthError(error: any): Observable<never> {
@@ -221,5 +233,13 @@ export class AuthService {
   getUserData(): UserData | null {
     const userData = this.localStorageService.getItem(STORAGE_KEYS.USER_DATA);
     return userData ? JSON.parse(userData) : null;
+  }
+
+  clearExpiredSession(): void {
+    this.localStorageService.removeItem(STORAGE_KEYS.ACCESS_TOKEN);
+    this.localStorageService.removeItem(STORAGE_KEYS.REFRESH_TOKEN);
+    this.localStorageService.removeItem(STORAGE_KEYS.USER_DATA);
+    this.currentUserSubject.next(null);
+    this.isAuthenticatedSubject.next(false);
   }
 }

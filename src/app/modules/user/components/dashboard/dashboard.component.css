@@ -71,6 +71,11 @@
   font-size: 15px;
   transition: all 0.2s ease;
   cursor: pointer;
+  background: none;
+  border: none;
+  width: 100%;
+  text-align: left;
+  font-family: inherit;
 }
 
 .nav-item:hover {
@@ -86,6 +91,7 @@
 .nav-item svg {
   width: 20px;
   height: 20px;
+  flex-shrink: 0;
 }
 
 .main-content {
@@ -230,16 +236,110 @@
   color: #6b7280;
 }
 
-@media (max-width: 768px) {
+.mobile-header {
+  display: none;
+}
+
+.sidebar-overlay {
+  display: none;
+}
+
+.menu-toggle {
+  display: none;
+}
+
+@media (max-width: 1024px) {
+  .mobile-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    background-color: #ffffff;
+    border-bottom: 1px solid #e5e7eb;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 100;
+  }
+
+  .menu-toggle {
+    display: flex;
+    background: none;
+    border: none;
+    padding: 8px;
+    cursor: pointer;
+    color: #1f2937;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    transition: background-color 0.2s ease;
+  }
+
+  .menu-toggle:hover {
+    background-color: #f3f4f6;
+  }
+
+  .menu-toggle svg {
+    width: 24px;
+    height: 24px;
+  }
+
+  .mobile-header .logo {
+    margin: 0;
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+  }
+
+  .mobile-header .logo-text {
+    font-size: 20px;
+    font-weight: 600;
+  }
+
+  .mobile-header .spacer {
+    width: 40px;
+  }
+
+  .sidebar-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 998;
+    backdrop-filter: blur(2px);
+  }
+
+  .sidebar-overlay.show {
+    display: block;
+  }
+
   .sidebar {
-    width: 200px;
+    position: fixed;
+    transform: translateX(-100%);
+    transition: transform 0.3s ease;
+    z-index: 999;
+    top: 0;
+    left: 0;
+    height: 100vh;
+    width: 280px;
+  }
+
+  .sidebar.open {
+    transform: translateX(0);
   }
 
   .main-content {
-    margin-left: 200px;
+    margin-left: 0;
     padding: 24px 16px;
+    padding-top: 80px;
   }
+}
 
+@media (max-width: 768px) {
   .content-header h1 {
     font-size: 24px;
   }
@@ -258,13 +358,20 @@
 }
 
 @media (max-width: 480px) {
-  .sidebar {
-    width: 100%;
-    height: auto;
-    position: relative;
+  .mobile-header {
+    padding: 12px 16px;
   }
 
   .main-content {
-    margin-left: 0;
+    padding: 16px 12px;
+    padding-top: 70px;
+  }
+
+  .content-header h1 {
+    font-size: 20px;
+  }
+
+  .content-body {
+    padding: 20px 12px;
   }
 }

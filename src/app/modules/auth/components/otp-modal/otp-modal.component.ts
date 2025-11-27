@@ -145,7 +145,9 @@ export class OTPModalComponent implements OnInit, OnDestroy {
         this.isLoading = false;
         this.closeModal();
         this.toastService.success('Login successful! Welcome back.');
-        this.router.navigate(['/user/dashboard']);
+        setTimeout(() => {
+          this.router.navigate(['/user/dashboard']);
+        }, 100);
       },
       error: (error) => {
         this.isLoading = false;

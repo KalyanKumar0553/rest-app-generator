@@ -1,6 +1,7 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router } from '@angular/router';
+import { Router, NavigationEnd } from '@angular/router';
+import { filter } from 'rxjs/operators';
 import { LocalStorageService } from '../../services/local-storage.service';
 import { AuthService } from '../../services/auth.service';
 import { ModalService } from '../../services/modal.service';
@@ -12,8 +13,9 @@ import { ModalService } from '../../services/modal.service';
   templateUrl: './header.component.html',
   styleUrls: ['./header.component.css']
 })
-export class HeaderComponent {
+export class HeaderComponent implements OnInit {
   isMenuOpen = false;
+  isDashboardRoute = false;
 
   constructor(
     private router: Router,
@@ -21,6 +23,20 @@ export class HeaderComponent {
     private authService: AuthService,
     private modalService: ModalService
   ) {}
+
+  ngOnInit(): void {
+    this.checkRoute(this.router.url);
+
+    this.router.events.pipe(
+      filter(event => event instanceof NavigationEnd)
+    ).subscribe((event: any) => {
+      this.checkRoute(event.url);
+    });
+  }
+
+  private checkRoute(url: string): void {
+    this.isDashboardRoute = url.includes('/user/dashboard');
+  }
 
   navigateToHome(): void {
     this.router.navigate(['/']);

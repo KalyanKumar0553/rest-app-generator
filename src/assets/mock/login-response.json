@@ -2,7 +2,7 @@
   "success": true,
   "message": "Login successful",
   "data": {
-    "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJ1c2VyLTEyMzQ1IiwiZW1haWwiOiJ1c2VyQGV4YW1wbGUuY29tIiwiaWF0IjoxNjM0NTY3ODkwLCJleHAiOjE2MzQ1NzE0OTB9.abc123def456",
+    "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiAidXNlci0xMjM0NSIsICJlbWFpbCI6ICJ1c2VyQGV4YW1wbGUuY29tIiwgImlhdCI6IDE3NjQxNjQ4MTUsICJleHAiOiAxNzk1NzAwODE1fQ.abc123def456",
     "refreshToken": "refresh-token-xyz789",
     "user": {
       "id": "user-12345",
