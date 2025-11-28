@@ -41,7 +41,7 @@
     </button>
 
     <div class="dropdown-overlay" *ngIf="isDropdownOpen" (click)="closeDropdown()"></div>
-    <div class="dropdown-menu" *ngIf="isDropdownOpen" [style.top]="dropdownPosition.top" [style.right]="dropdownPosition.right">
+    <div class="dropdown-menu" [class.open]="isDropdownOpen" [style.top]="dropdownPosition.top" [style.right]="dropdownPosition.right">
       <button
         *ngFor="let option of sortOptions"
         class="dropdown-item"
