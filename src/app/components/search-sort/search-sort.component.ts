@@ -61,26 +61,31 @@ export class SearchSortComponent implements OnInit {
     this.emitChange();
   }
 
-  onSortSelect(property: string, direction: 'asc' | 'desc'): void {
+  selectProperty(property: string): void {
     const option = this.sortOptions.find(
-      opt => opt.property === property && opt.direction === direction
+      opt => opt.property === property && opt.direction === 'asc'
     );
 
     if (option) {
-      if (this.selectedSortOption?.property === property &&
-          this.selectedSortOption?.direction === direction) {
-        this.selectedSortOption = null;
-      } else {
-        this.selectedSortOption = option;
-      }
+      this.selectedSortOption = option;
       this.isDropdownOpen = false;
       this.emitChange();
     }
   }
 
-  isDirectionSelected(property: string, direction: 'asc' | 'desc'): boolean {
-    return this.selectedSortOption?.property === property &&
-           this.selectedSortOption?.direction === direction;
+  toggleDirection(event: Event, direction: 'asc' | 'desc'): void {
+    event.stopPropagation();
+
+    if (!this.selectedSortOption) return;
+
+    const option = this.sortOptions.find(
+      opt => opt.property === this.selectedSortOption!.property && opt.direction === direction
+    );
+
+    if (option) {
+      this.selectedSortOption = option;
+      this.emitChange();
+    }
   }
 
   toggleDropdown(): void {
@@ -129,7 +134,6 @@ export class SearchSortComponent implements OnInit {
     if (!this.selectedSortOption) {
       return 'Sort by';
     }
-    const direction = this.selectedSortOption.direction === 'asc' ? '↑' : '↓';
-    return `${this.selectedSortOption.label} ${direction}`;
+    return this.selectedSortOption.label;
   }
 }
