@@ -89,6 +89,8 @@ const DEFAULT_THEME: ComponentTheme = {
   neutralText: '#6b7280',
   neutralBorder: '#e5e7eb',
   neutralBg: '#f3f4f6',
+
+  plaintText: '#f8f9fa',
 };
 
 @Injectable({
@@ -222,6 +224,9 @@ export class ComponentThemeService {
     root.style.setProperty('--theme-neutral-text', theme.neutralText);
     root.style.setProperty('--theme-neutral-border', theme.neutralBorder);
     root.style.setProperty('--theme-neutral-bg', theme.neutralBg);
+
+    // Plain Text
+    root.style.setProperty('--theme-plain-text', theme.plaintText);
   }
 
   /**
