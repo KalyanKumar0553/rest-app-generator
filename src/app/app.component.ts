@@ -19,6 +19,7 @@ import { AuthService } from './services/auth.service';
 export class AppComponent implements OnInit {
   title = 'QuadProSol - IT Solutions';
   isNavigating = false;
+  isDashboardRoute = false;
 
   constructor(
     private router: Router,
@@ -27,8 +28,9 @@ export class AppComponent implements OnInit {
     // Handle navigation loading state and scroll to top
     this.router.events.pipe(
       filter(event => event instanceof NavigationEnd)
-    ).subscribe(() => {
+    ).subscribe((event: NavigationEnd) => {
       this.isNavigating = true;
+      this.isDashboardRoute = event.urlAfterRedirects.includes('/user/dashboard');
 
       // Hide loading after a short delay to ensure smooth transition
       setTimeout(() => {
