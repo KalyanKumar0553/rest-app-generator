@@ -83,6 +83,11 @@ export class SearchSortComponent {
     this.emitChange();
   }
 
+  clearSort(): void {
+    this.selectedSortOption = null;
+    this.emitChange();
+  }
+
   private emitChange(): void {
     this.searchSortChange.emit({
       searchTerm: this.searchTerm,
