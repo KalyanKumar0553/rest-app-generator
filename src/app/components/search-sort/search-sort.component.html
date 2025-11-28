@@ -1,9 +1,6 @@
 <div class="search-sort-container">
   <div class="search-box">
-    <svg class="search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <circle cx="11" cy="11" r="8" stroke="currentColor" stroke-width="2"/>
-      <path d="M21 21l-4.35-4.35" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-    </svg>
+    <i class="bi bi-search search-icon"></i>
     <input
       type="text"
       class="search-input"
@@ -17,9 +14,7 @@
       (click)="clearSearch()"
       aria-label="Clear search"
     >
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-      </svg>
+      <i class="bi bi-x-lg"></i>
     </button>
   </div>
 
@@ -31,9 +26,7 @@
         (click)="toggleDropdown()"
         aria-label="Sort options"
       >
-        <svg class="sort-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M3 6h18M3 12h15M3 18h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-        </svg>
+        <i class="bi bi-funnel sort-icon"></i>
         <span class="sort-label">{{ getSortLabel() }}</span>
       </button>
       <div *ngIf="selectedSortOption" class="direction-controls">
@@ -43,9 +36,7 @@
           (click)="toggleDirection($event, 'asc')"
           aria-label="Sort ascending"
         >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M12 19V5M5 12l7-7 7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
+          <i class="bi bi-arrow-up"></i>
         </button>
         <button
           class="direction-btn"
@@ -53,18 +44,14 @@
           (click)="toggleDirection($event, 'desc')"
           aria-label="Sort descending"
         >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M12 5v14M5 12l7 7 7-7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
+          <i class="bi bi-arrow-down"></i>
         </button>
         <button
           class="clear-sort-btn"
           (click)="clearSort($event)"
           aria-label="Clear sort"
         >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-          </svg>
+          <i class="bi bi-x-lg"></i>
         </button>
       </div>
     </div>

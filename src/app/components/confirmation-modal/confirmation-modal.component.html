@@ -16,10 +16,7 @@
       >
         <span *ngIf="!isLoading || button.action === 'cancel'">{{ button.text }}</span>
         <span *ngIf="isLoading && button.action === 'confirm'" class="loading-spinner">
-          <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-            <circle cx="10" cy="10" r="8" stroke="currentColor" stroke-width="2" opacity="0.25"/>
-            <path d="M10 2C5.58172 2 2 10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-          </svg>
+          <i class="bi bi-arrow-repeat spinner-icon"></i>
           Processing...
         </span>
       </button>
