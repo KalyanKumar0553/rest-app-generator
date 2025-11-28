@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, Output, ElementRef, ViewChild } from '@angular/core';
+import { Component, EventEmitter, Input, Output, ElementRef, ViewChild, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 
@@ -25,7 +25,7 @@ export interface SearchSortEvent {
   templateUrl: './search-sort.component.html',
   styleUrls: ['./search-sort.component.css']
 })
-export class SearchSortComponent {
+export class SearchSortComponent implements OnInit {
   @Input() searchConfig: SearchConfig = {
     placeholder: 'Search...',
     properties: []
@@ -38,20 +38,49 @@ export class SearchSortComponent {
   selectedSortOption: SortOption | null = null;
   isDropdownOpen: boolean = false;
   dropdownPosition = { top: '0px', right: '0px' };
+  uniqueSortProperties: Array<{property: string, label: string}> = [];
+
+  ngOnInit(): void {
+    this.extractUniqueProperties();
+  }
+
+  private extractUniqueProperties(): void {
+    const propertyMap = new Map<string, string>();
+    this.sortOptions.forEach(option => {
+      if (!propertyMap.has(option.property)) {
+        propertyMap.set(option.property, option.label);
+      }
+    });
+    this.uniqueSortProperties = Array.from(propertyMap.entries()).map(([property, label]) => ({
+      property,
+      label
+    }));
+  }
 
   onSearchChange(): void {
     this.emitChange();
   }
 
-  onSortSelect(option: SortOption): void {
-    if (this.selectedSortOption?.property === option.property &&
-        this.selectedSortOption?.direction === option.direction) {
-      this.selectedSortOption = null;
-    } else {
-      this.selectedSortOption = option;
+  onSortSelect(property: string, direction: 'asc' | 'desc'): void {
+    const option = this.sortOptions.find(
+      opt => opt.property === property && opt.direction === direction
+    );
+
+    if (option) {
+      if (this.selectedSortOption?.property === property &&
+          this.selectedSortOption?.direction === direction) {
+        this.selectedSortOption = null;
+      } else {
+        this.selectedSortOption = option;
+      }
+      this.isDropdownOpen = false;
+      this.emitChange();
     }
-    this.isDropdownOpen = false;
-    this.emitChange();
+  }
+
+  isDirectionSelected(property: string, direction: 'asc' | 'desc'): boolean {
+    return this.selectedSortOption?.property === property &&
+           this.selectedSortOption?.direction === direction;
   }
 
   toggleDropdown(): void {
