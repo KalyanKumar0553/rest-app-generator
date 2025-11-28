@@ -242,7 +242,7 @@ form {
   .modal-container {
     max-width: 100%;
     margin: 0;
-    border-radius: 0;
+    border-radius: 8px 8px 0 0;
   }
 
   .modal-header {
