@@ -1,5 +1,6 @@
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { Component, EventEmitter, Input, Output, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { ComponentThemeService } from '../../services/component-theme.service';
 
 export interface ModalButton {
   text: string;
@@ -14,7 +15,7 @@ export interface ModalButton {
   templateUrl: './confirmation-modal.component.html',
   styleUrls: ['./confirmation-modal.component.css']
 })
-export class ConfirmationModalComponent {
+export class ConfirmationModalComponent implements OnInit {
   @Input() title: string = 'Confirm Action';
   @Input() message: string | string[] = 'Are you sure you want to proceed?';
   @Input() buttons: ModalButton[] = [
@@ -25,6 +26,12 @@ export class ConfirmationModalComponent {
 
   @Output() confirm = new EventEmitter<void>();
   @Output() cancel = new EventEmitter<void>();
+
+  constructor(public themeService: ComponentThemeService) {}
+
+  ngOnInit(): void {
+    // Theme service is initialized and CSS variables are applied
+  }
 
   get messageLines(): string[] {
     return Array.isArray(this.message) ? this.message : [this.message];
