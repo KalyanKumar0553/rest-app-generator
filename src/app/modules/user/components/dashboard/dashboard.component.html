@@ -78,15 +78,15 @@
         <button class="btn btn-primary">Create new project</button>
         <button class="btn btn-secondary">Link existing project</button>
       </div>
-    </div>
-
-    <div class="content-body">
       <app-search-sort
         *ngIf="!isLoadingProjects && projects.length > 0"
         [searchConfig]="searchConfig"
         [sortOptions]="sortOptions"
         (searchSortChange)="onSearchSortChange($event)"
       ></app-search-sort>
+    </div>
+
+    <div class="content-body">
 
       <div *ngIf="isLoadingProjects" class="loading-state">
         <div class="spinner"></div>
