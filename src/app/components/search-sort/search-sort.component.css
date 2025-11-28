@@ -115,19 +115,18 @@
   left: 0;
   right: 0;
   bottom: 0;
-  z-index: 100;
+  z-index: 999;
+  background-color: transparent;
 }
 
 .dropdown-menu {
-  position: absolute;
-  top: calc(100% + 8px);
-  right: 0;
+  position: fixed;
   min-width: 220px;
   background-color: #ffffff;
   border: 1px solid #e5e7eb;
   border-radius: 8px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  z-index: 101;
+  z-index: 1000;
   overflow: hidden;
 }
 
