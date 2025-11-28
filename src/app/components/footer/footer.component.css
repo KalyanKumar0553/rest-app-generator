@@ -137,9 +137,10 @@
 }
 
 .copyright {
-  color: var(--neutral-400);
-  font-size: 0.875rem;
+  color: var(--color-text-inverse);
+  font-size: 1rem;
   margin: 0;
+  opacity: 0.8;
 }
 
 /* Mobile Responsive */
