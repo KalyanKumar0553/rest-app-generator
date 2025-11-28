@@ -11,9 +11,7 @@
 <div class="dashboard-container">
   <div class="mobile-header">
     <button class="menu-toggle" (click)="toggleSidebar()" aria-label="Toggle menu">
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M3 12h18M3 6h18M3 18h18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-      </svg>
+      <i class="bi bi-list"></i>
     </button>
     <div class="logo">
       <span class="logo-text">Bootify</span>
@@ -27,10 +25,7 @@
     <div class="sidebar-header">
       <div class="logo">
         <span class="logo-text">Bootify</span>
-        <svg class="logo-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M20 4L12 12L4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-          <path d="M4 20L12 12L20 20" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
+        <i class="bi bi-code-slash logo-icon"></i>
       </div>
       <div class="user-info">
         <p class="welcome">Welcome,</p>
@@ -40,25 +35,15 @@
 
     <nav class="sidebar-nav">
       <button class="nav-item active" (click)="closeSidebar()">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <rect x="3" y="3" width="7" height="7" rx="1" stroke="currentColor" stroke-width="2"/>
-          <rect x="14" y="3" width="7" height="7" rx="1" stroke="currentColor" stroke-width="2"/>
-          <rect x="14" y="14" width="7" height="7" rx="1" stroke="currentColor" stroke-width="2"/>
-          <rect x="3" y="14" width="7" height="7" rx="1" stroke="currentColor" stroke-width="2"/>
-        </svg>
+        <i class="bi bi-grid-3x3-gap"></i>
         <span>Projects</span>
       </button>
       <button class="nav-item" (click)="navigateToAccount(); closeSidebar()">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2"/>
-          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z" fill="currentColor"/>
-        </svg>
+        <i class="bi bi-person-circle"></i>
         <span>Account</span>
       </button>
       <button class="nav-item" (click)="logout(); closeSidebar()">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
+        <i class="bi bi-box-arrow-right"></i>
         <span>Logout</span>
       </button>
     </nav>
@@ -110,15 +95,10 @@
             <button class="btn-open" (click)="openProject(project)">Open</button>
             <div class="action-icons">
               <button class="icon-btn" aria-label="Archive">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" stroke-width="2"/>
-                  <path d="M9 9h6M9 13h6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                </svg>
+                <i class="bi bi-archive"></i>
               </button>
               <button class="icon-btn" aria-label="Add">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                </svg>
+                <i class="bi bi-plus-lg"></i>
               </button>
             </div>
           </div>

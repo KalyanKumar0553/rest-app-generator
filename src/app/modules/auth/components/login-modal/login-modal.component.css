@@ -171,8 +171,9 @@ form {
   justify-content: center;
 }
 
-.loading-spinner svg {
+.loading-spinner .spinner-icon {
   animation: spin 1s linear infinite;
+  display: inline-block;
 }
 
 @keyframes spin {
