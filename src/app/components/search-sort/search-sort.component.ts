@@ -83,7 +83,8 @@ export class SearchSortComponent {
     this.emitChange();
   }
 
-  clearSort(): void {
+  clearSort(event: Event): void {
+    event.stopPropagation();
     this.selectedSortOption = null;
     this.emitChange();
   }

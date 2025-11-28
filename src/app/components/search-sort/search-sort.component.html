@@ -24,31 +24,31 @@
   </div>
 
   <div class="sort-container">
-    <button
-      #sortButton
-      class="sort-button"
-      [class.active]="selectedSortOption"
-      (click)="toggleDropdown()"
-      aria-label="Sort options"
-    >
-      <svg class="sort-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M3 6h18M3 12h15M3 18h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-      </svg>
-      <span class="sort-label">{{ getSortLabel() }}</span>
-      <svg class="chevron" [class.open]="isDropdownOpen" width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-      </svg>
-    </button>
-    <button
-      *ngIf="selectedSortOption"
-      class="clear-sort-btn"
-      (click)="clearSort()"
-      aria-label="Clear sort"
-    >
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-      </svg>
-    </button>
+    <div #sortButton class="sort-button" [class.active]="selectedSortOption">
+      <button
+        class="sort-main-btn"
+        (click)="toggleDropdown()"
+        aria-label="Sort options"
+      >
+        <svg class="sort-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M3 6h18M3 12h15M3 18h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+        <span class="sort-label">{{ getSortLabel() }}</span>
+        <svg class="chevron" [class.open]="isDropdownOpen" width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+      <button
+        *ngIf="selectedSortOption"
+        class="clear-sort-btn"
+        (click)="clearSort($event)"
+        aria-label="Clear sort"
+      >
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+      </button>
+    </div>
 
     <div class="dropdown-overlay" *ngIf="isDropdownOpen" (click)="closeDropdown()"></div>
     <div class="dropdown-menu" [class.open]="isDropdownOpen" [style.top]="dropdownPosition.top" [style.right]="dropdownPosition.right">
