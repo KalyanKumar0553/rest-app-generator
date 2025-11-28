@@ -108,7 +108,7 @@
   background-color: #f5f5f5;
   position: sticky;
   top: 0;
-  z-index: 10;
+  z-index: 50;
   flex-shrink: 0;
 }
 
@@ -122,6 +122,7 @@
 .action-buttons {
   display: flex;
   gap: 16px;
+  margin-bottom: 24px;
 }
 
 .content-body {
@@ -400,6 +401,7 @@
 
   .content-header {
     padding: 24px 16px 20px;
+    z-index: 50;
   }
 
   .content-body {
