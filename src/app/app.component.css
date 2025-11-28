@@ -19,7 +19,8 @@
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
-  margin-top: 65px;
+  margin-top: 24px;
+  margin-bottom: 24px;
   position: relative;
   transition: opacity 0.3s ease;
 }
