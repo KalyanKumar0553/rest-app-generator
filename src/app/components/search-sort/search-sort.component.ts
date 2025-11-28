@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { Component, EventEmitter, Input, Output, ElementRef, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 
@@ -32,10 +32,12 @@ export class SearchSortComponent {
   };
   @Input() sortOptions: SortOption[] = [];
   @Output() searchSortChange = new EventEmitter<SearchSortEvent>();
+  @ViewChild('sortButton', { read: ElementRef }) sortButton!: ElementRef;
 
   searchTerm: string = '';
   selectedSortOption: SortOption | null = null;
   isDropdownOpen: boolean = false;
+  dropdownPosition = { top: '0px', right: '0px' };
 
   onSearchChange(): void {
     this.emitChange();
@@ -54,6 +56,22 @@ export class SearchSortComponent {
 
   toggleDropdown(): void {
     this.isDropdownOpen = !this.isDropdownOpen;
+    if (this.isDropdownOpen && this.sortButton) {
+      this.calculateDropdownPosition();
+    }
+  }
+
+  private calculateDropdownPosition(): void {
+    if (this.sortButton && this.sortButton.nativeElement) {
+      const rect = this.sortButton.nativeElement.getBoundingClientRect();
+      const viewportWidth = window.innerWidth;
+      const rightSpace = viewportWidth - rect.right;
+
+      this.dropdownPosition = {
+        top: `${rect.bottom + 8}px`,
+        right: `${rightSpace}px`
+      };
+    }
   }
 
   closeDropdown(): void {

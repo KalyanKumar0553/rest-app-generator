@@ -25,6 +25,7 @@
 
   <div class="sort-container">
     <button
+      #sortButton
       class="sort-button"
       [class.active]="selectedSortOption"
       (click)="toggleDropdown()"
@@ -40,7 +41,7 @@
     </button>
 
     <div class="dropdown-overlay" *ngIf="isDropdownOpen" (click)="closeDropdown()"></div>
-    <div class="dropdown-menu" *ngIf="isDropdownOpen">
+    <div class="dropdown-menu" *ngIf="isDropdownOpen" [style.top]="dropdownPosition.top" [style.right]="dropdownPosition.right">
       <button
         *ngFor="let option of sortOptions"
         class="dropdown-item"
