@@ -406,6 +406,7 @@
 
   .content-body {
     padding: 20px 16px 32px;
+    padding-top: 0px;
   }
 
   .projects-grid {
@@ -452,6 +453,7 @@
 
   .content-body {
     padding: 16px 12px 24px;
+    padding-top: 0px;
   }
 
   .projects-grid {
