@@ -44,6 +44,9 @@ export interface ComponentTheme {
   neutralText: string;
   neutralBorder: string;
   neutralBg: string;
+
+  // Plain colors
+  plaintText: string;
 }
 
 const DEFAULT_THEME: ComponentTheme = {
