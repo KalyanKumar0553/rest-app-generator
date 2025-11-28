@@ -1,7 +1,7 @@
 .footer {
   background: var(--color-text-primary);
   color: var(--color-text-inverse);
-  padding: 3rem 0 2rem;
+  padding: 1rem 0 1rem;
 }
 
 .footer-container {
