@@ -52,22 +52,33 @@
 
     <div class="dropdown-overlay" *ngIf="isDropdownOpen" (click)="closeDropdown()"></div>
     <div class="dropdown-menu" [class.open]="isDropdownOpen" [style.top]="dropdownPosition.top" [style.right]="dropdownPosition.right">
-      <button
-        *ngFor="let option of sortOptions"
-        class="dropdown-item"
-        [class.selected]="selectedSortOption?.property === option.property && selectedSortOption?.direction === option.direction"
-        (click)="onSortSelect(option)"
-      >
-        <span>{{ option.label }}</span>
-        <span class="direction-icon">
-          <svg *ngIf="option.direction === 'asc'" width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M12 19V5M5 12l7-7 7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
-          <svg *ngIf="option.direction === 'desc'" width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M12 5v14M5 12l7 7 7-7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
-        </span>
-      </button>
+      <div *ngFor="let prop of uniqueSortProperties" class="dropdown-group">
+        <div class="dropdown-item-wrapper">
+          <span class="property-label">{{ prop.label }}</span>
+          <div class="direction-buttons">
+            <button
+              class="direction-btn"
+              [class.selected]="isDirectionSelected(prop.property, 'asc')"
+              (click)="onSortSelect(prop.property, 'asc')"
+              aria-label="Sort ascending"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 19V5M5 12l7-7 7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </button>
+            <button
+              class="direction-btn"
+              [class.selected]="isDirectionSelected(prop.property, 'desc')"
+              (click)="onSortSelect(prop.property, 'desc')"
+              aria-label="Sort descending"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 5v14M5 12l7 7 7-7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </div>
