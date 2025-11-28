@@ -1,7 +1,7 @@
 <ion-app>
   <div class="app-container">
     <app-header class="app-header-fixed"></app-header>
-    <main class="main-content-scrollable" [class.loading]="isNavigating">
+    <main class="main-content-scrollable" [class.loading]="isNavigating" [class.no-margins]="isDashboardRoute">
       <div class="loading-overlay" *ngIf="isNavigating">
         <div class="loading-spinner"></div>
       </div>
