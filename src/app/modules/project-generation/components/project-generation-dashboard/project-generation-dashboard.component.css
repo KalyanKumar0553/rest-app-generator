@@ -44,6 +44,7 @@
   align-items: center;
   gap: 8px;
   cursor: pointer;
+  padding-left: 13px;
 }
 
 .logo-text {
