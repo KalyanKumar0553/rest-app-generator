@@ -225,6 +225,12 @@ export class DashboardComponent implements OnInit {
   }
 
   openProject(project: Project): void {
-    console.log('Opening project:', project);
+    this.router.navigate(['/project-generation'], {
+      queryParams: { projectId: project.id }
+    });
+  }
+
+  createNewProject(): void {
+    this.router.navigate(['/project-generation']);
   }
 }

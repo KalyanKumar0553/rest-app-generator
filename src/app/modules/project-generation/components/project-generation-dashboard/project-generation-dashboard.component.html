@@ -1,0 +1,349 @@
+<app-confirmation-modal
+  *ngIf="showBackConfirmation"
+  [title]="backConfirmationConfig.title"
+  [message]="backConfirmationConfig.message"
+  [buttons]="backConfirmationConfig.buttons"
+  (confirm)="confirmBack()"
+  (cancel)="cancelBack()"
+></app-confirmation-modal>
+
+<div class="project-dashboard-container">
+  <div class="mobile-header">
+    <button class="back-btn" (click)="handleBack()" aria-label="Go back">
+      <i class="bi bi-arrow-left"></i>
+    </button>
+    <div class="logo">
+      <span class="logo-text">Bootify</span>
+      <i class="bi bi-code-slash logo-icon"></i>
+    </div>
+    <button class="menu-toggle" (click)="toggleSidebar()" aria-label="Toggle menu">
+      <i class="bi bi-list"></i>
+    </button>
+  </div>
+
+  <div class="sidebar-overlay" [class.show]="isSidebarOpen" (click)="closeSidebar()"></div>
+
+  <aside class="sidebar" [class.open]="isSidebarOpen">
+    <div class="sidebar-header">
+      <div class="logo">
+        <span class="logo-text">Bootify</span>
+        <i class="bi bi-code-slash logo-icon"></i>
+      </div>
+    </div>
+
+    <nav class="sidebar-nav">
+      <button class="nav-item active" (click)="navigateToSection('general')">
+        <i class="bi bi-globe"></i>
+        <span>General</span>
+      </button>
+      <button class="nav-item" (click)="navigateToSection('entities')">
+        <i class="bi bi-database"></i>
+        <span>Entities</span>
+      </button>
+      <button class="nav-item" (click)="navigateToSection('data-objects')">
+        <i class="bi bi-diagram-3"></i>
+        <span>Data Objects</span>
+      </button>
+      <button class="nav-item" (click)="navigateToSection('collaborate')">
+        <i class="bi bi-people"></i>
+        <span>Collaborate</span>
+      </button>
+      <button class="nav-item" (click)="navigateToSection('explore')">
+        <i class="bi bi-search"></i>
+        <span>Explore</span>
+      </button>
+      <button class="nav-item" (click)="navigateToSection('download')">
+        <i class="bi bi-download"></i>
+        <span>Download</span>
+      </button>
+    </nav>
+
+    <div class="sidebar-footer">
+      <p class="plan-text">You are in the <strong>Free</strong> plan.</p>
+      <button class="btn-upgrade">Upgrade</button>
+    </div>
+  </aside>
+
+  <main class="main-content">
+    <div class="content-header">
+      <button class="back-btn-desktop" (click)="handleBack()" aria-label="Go back">
+        <i class="bi bi-arrow-left"></i>
+        Back
+      </button>
+    </div>
+
+    <div class="content-body" id="general">
+      <div class="info-banner">
+        <p>
+          Define global project settings. Learn more <a href="#" class="info-link">in the docs</a>.
+        </p>
+        <p>
+          Please save your project URL to come back later. It is stored in a cookie as well.
+        </p>
+      </div>
+
+      <section class="form-section">
+        <h2 class="section-title">Project settings</h2>
+
+        <div class="form-row">
+          <label class="form-label">Project group</label>
+          <input
+            type="text"
+            class="form-input"
+            [(ngModel)]="projectSettings.projectGroup"
+            placeholder="io.bootify"
+          />
+        </div>
+
+        <div class="form-row">
+          <label class="form-label">Project name</label>
+          <input
+            type="text"
+            class="form-input"
+            [(ngModel)]="projectSettings.projectName"
+            placeholder="my-app"
+          />
+        </div>
+
+        <div class="form-row">
+          <label class="form-label">Build type</label>
+          <div class="radio-group">
+            <label class="radio-label">
+              <input
+                type="radio"
+                name="buildType"
+                value="gradle"
+                [(ngModel)]="projectSettings.buildType"
+              />
+              <span class="radio-text">Gradle</span>
+            </label>
+            <label class="radio-label">
+              <input
+                type="radio"
+                name="buildType"
+                value="maven"
+                [(ngModel)]="projectSettings.buildType"
+              />
+              <span class="radio-text">Maven</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <label class="form-label">Language</label>
+          <div class="radio-group">
+            <label class="radio-label">
+              <input
+                type="radio"
+                name="language"
+                value="java"
+                [(ngModel)]="projectSettings.language"
+              />
+              <span class="radio-text">Java</span>
+            </label>
+            <label class="radio-label">
+              <input
+                type="radio"
+                name="language"
+                value="kotlin"
+                [(ngModel)]="projectSettings.language"
+              />
+              <span class="radio-text">Kotlin</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <label class="form-label">
+            Frontend
+            <i class="bi bi-info-circle info-icon"></i>
+          </label>
+          <select class="form-select" [(ngModel)]="projectSettings.frontend">
+            <option *ngFor="let option of frontendOptions" [value]="option.toLowerCase()">
+              {{ option }}
+            </option>
+          </select>
+        </div>
+      </section>
+
+      <section class="form-section">
+        <h2 class="section-title">Database settings</h2>
+
+        <div class="form-row">
+          <label class="form-label">Database</label>
+          <select class="form-select" [(ngModel)]="databaseSettings.database">
+            <option *ngFor="let option of databaseOptions" [value]="option">
+              {{ option }}
+            </option>
+          </select>
+        </div>
+
+        <div class="form-row">
+          <label class="form-label">DB Generation</label>
+          <select class="form-select" [(ngModel)]="databaseSettings.dbGeneration">
+            <option *ngFor="let option of dbGenerationOptions" [value]="option">
+              {{ option }}
+            </option>
+          </select>
+        </div>
+
+        <div class="form-row">
+          <label class="checkbox-label">
+            <input
+              type="checkbox"
+              [(ngModel)]="databaseSettings.pluralizeTableNames"
+            />
+            <span>Pluralize table names <i class="bi bi-info-circle info-icon"></i></span>
+          </label>
+        </div>
+
+        <div class="form-row">
+          <label class="checkbox-label">
+            <input
+              type="checkbox"
+              [(ngModel)]="databaseSettings.addDateCreatedLastUpdated"
+            />
+            <span>Add dateCreated/lastUpdated to entities <i class="bi bi-info-circle info-icon"></i></span>
+          </label>
+        </div>
+      </section>
+
+      <section class="form-section">
+        <h2 class="section-title">Developer preferences</h2>
+
+        <div class="form-row">
+          <label class="form-label">Appl. format</label>
+          <div class="radio-group">
+            <label class="radio-label">
+              <input
+                type="radio"
+                name="applFormat"
+                value="yaml"
+                [(ngModel)]="developerPreferences.applFormat"
+              />
+              <span class="radio-text">Yaml</span>
+            </label>
+            <label class="radio-label">
+              <input
+                type="radio"
+                name="applFormat"
+                value="properties"
+                [(ngModel)]="developerPreferences.applFormat"
+              />
+              <span class="radio-text">Properties</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <label class="form-label">
+            Packages
+            <i class="bi bi-info-circle info-icon"></i>
+          </label>
+          <div class="radio-group">
+            <label class="radio-label">
+              <input
+                type="radio"
+                name="packages"
+                value="technical"
+                [(ngModel)]="developerPreferences.packages"
+              />
+              <span class="radio-text">Technical</span>
+            </label>
+            <label class="radio-label">
+              <input
+                type="radio"
+                name="packages"
+                value="domain"
+                [(ngModel)]="developerPreferences.packages"
+              />
+              <span class="radio-text">Domain driven</span>
+            </label>
+            <label class="radio-label">
+              <input
+                type="radio"
+                name="packages"
+                value="mixed"
+                [(ngModel)]="developerPreferences.packages"
+              />
+              <span class="radio-text">Mixed</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <label class="checkbox-label">
+            <input
+              type="checkbox"
+              [(ngModel)]="developerPreferences.enableOpenAPI"
+            />
+            <span>Enable OpenAPI/Swagger UI <i class="bi bi-info-circle info-icon"></i></span>
+          </label>
+        </div>
+
+        <div class="form-row">
+          <label class="checkbox-label">
+            <input
+              type="checkbox"
+              [(ngModel)]="developerPreferences.useDockerCompose"
+            />
+            <span>Use Docker compose for development <i class="bi bi-info-circle info-icon"></i></span>
+          </label>
+        </div>
+
+        <div class="form-row">
+          <label class="form-label">Java version</label>
+          <div class="radio-group">
+            <label class="radio-label" *ngFor="let version of javaVersionOptions">
+              <input
+                type="radio"
+                name="javaVersion"
+                [value]="version"
+                [(ngModel)]="developerPreferences.javaVersion"
+              />
+              <span class="radio-text">{{ version }}</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <label class="form-label">Deployment</label>
+          <select class="form-select" [(ngModel)]="developerPreferences.deployment">
+            <option *ngFor="let option of deploymentOptions" [value]="option">
+              {{ option }}
+            </option>
+          </select>
+        </div>
+      </section>
+
+      <section class="form-section">
+        <h2 class="section-title">Further dependencies</h2>
+
+        <div class="form-row">
+          <textarea
+            class="form-textarea"
+            [(ngModel)]="dependencies"
+            placeholder="Type to filter, for example starter, devtools, commons"
+            rows="3"
+          ></textarea>
+          <p class="help-text">
+            Bootify.io already adds required dependencies. Add your custom dependencies here.
+          </p>
+        </div>
+      </section>
+
+      <div class="action-section">
+        <button class="btn btn-primary" (click)="setupEntities()" [disabled]="isLoading">
+          <span *ngIf="!isLoading">Setup Entities</span>
+          <span *ngIf="isLoading" class="loading-spinner">
+            <i class="bi bi-arrow-repeat spinner-icon"></i>
+            Loading...
+          </span>
+        </button>
+        <button class="btn btn-secondary" (click)="saveProject()" [disabled]="isLoading">
+          Save Project
+        </button>
+      </div>
+    </div>
+  </main>
+</div>
