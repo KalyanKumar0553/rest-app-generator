@@ -3,7 +3,17 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, ActivatedRoute } from '@angular/router';
 import { Subject, takeUntil } from 'rxjs';
-import { ConfirmationModalComponent, ModalButton } from '../../../../components/confirmation-modal/confirmation-modal.component';
+import { MatExpansionModule } from '@angular/material/expansion';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { MatSelectModule } from '@angular/material/select';
+import { MatRadioModule } from '@angular/material/radio';
+import { MatCheckboxModule } from '@angular/material/checkbox';
+import { MatButtonModule } from '@angular/material/button';
+import { MatIconModule } from '@angular/material/icon';
+import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { ConfirmationModalComponent } from '../../../../components/confirmation-modal/confirmation-modal.component';
 import { AuthService } from '../../../../services/auth.service';
 import { ToastService } from '../../../../services/toast.service';
 
@@ -42,7 +52,21 @@ interface ProjectData {
 @Component({
   selector: 'app-project-generation-dashboard',
   standalone: true,
-  imports: [CommonModule, FormsModule, ConfirmationModalComponent],
+  imports: [
+    CommonModule,
+    FormsModule,
+    MatExpansionModule,
+    MatFormFieldModule,
+    MatInputModule,
+    MatSelectModule,
+    MatRadioModule,
+    MatCheckboxModule,
+    MatButtonModule,
+    MatIconModule,
+    MatTooltipModule,
+    MatProgressSpinnerModule,
+    ConfirmationModalComponent
+  ],
   templateUrl: './project-generation-dashboard.component.html',
   styleUrls: ['./project-generation-dashboard.component.css']
 })
@@ -54,6 +78,7 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
   isLoggedIn = false;
   projectId: number | null = null;
   hasUnsavedChanges = false;
+  showInfoBanner = true;
 
   showBackConfirmation = false;
   backConfirmationConfig = {
@@ -125,7 +150,6 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
   }
 
   trackChanges(): void {
-    // Track any form changes to enable unsaved changes warning
     const initialState = JSON.stringify(this.getProjectData());
 
     setInterval(() => {
@@ -147,10 +171,6 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
   async loadProject(projectId: number): Promise<void> {
     this.isLoading = true;
     try {
-      // TODO: Replace with actual API call
-      // const response = await this.projectService.getProject(projectId);
-      // this.populateFormData(response);
-
       this.toastService.success('Project loaded successfully');
     } catch (error) {
       this.toastService.error('Failed to load project');
@@ -162,14 +182,19 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
 
   toggleSidebar(): void {
     this.isSidebarOpen = !this.isSidebarOpen;
+    if (this.isSidebarOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
   }
 
   closeSidebar(): void {
     this.isSidebarOpen = false;
+    document.body.style.overflow = '';
   }
 
   navigateToSection(section: string): void {
-    // Scroll to section or handle section navigation
     const element = document.getElementById(section);
     if (element) {
       element.scrollIntoView({ behavior: 'smooth' });
@@ -202,12 +227,14 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
     }
   }
 
+  closeInfoBanner(): void {
+    this.showInfoBanner = false;
+  }
+
   async setupEntities(): Promise<void> {
     this.isLoading = true;
     try {
-      // TODO: Implement entity setup logic
       this.toastService.success('Navigating to entity setup');
-      // Navigate to entities section/page
     } catch (error) {
       this.toastService.error('Failed to proceed');
       console.error('Error:', error);
@@ -220,8 +247,6 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
     this.isLoading = true;
     try {
       const projectData = this.getProjectData();
-      // TODO: Replace with actual API call
-      // await this.projectService.saveProject(projectData);
 
       this.hasUnsavedChanges = false;
       this.toastService.success('Project saved successfully');

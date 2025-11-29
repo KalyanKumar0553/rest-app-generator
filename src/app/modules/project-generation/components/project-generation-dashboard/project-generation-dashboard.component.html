@@ -9,16 +9,14 @@
 
 <div class="project-dashboard-container">
   <div class="mobile-header">
-    <button class="back-btn" (click)="handleBack()" aria-label="Go back">
-      <i class="bi bi-arrow-left"></i>
+    <button class="menu-toggle" (click)="toggleSidebar()" aria-label="Toggle menu">
+      <i class="bi bi-list"></i>
     </button>
     <div class="logo">
       <span class="logo-text">Bootify</span>
       <i class="bi bi-code-slash logo-icon"></i>
     </div>
-    <button class="menu-toggle" (click)="toggleSidebar()" aria-label="Toggle menu">
-      <i class="bi bi-list"></i>
-    </button>
+    <div class="spacer"></div>
   </div>
 
   <div class="sidebar-overlay" [class.show]="isSidebarOpen" (click)="closeSidebar()"></div>
@@ -65,282 +63,207 @@
   </aside>
 
   <main class="main-content">
-    <div class="content-header">
-      <button class="back-btn-desktop" (click)="handleBack()" aria-label="Go back">
-        <i class="bi bi-arrow-left"></i>
-        Back
-      </button>
-    </div>
-
     <div class="content-body" id="general">
-      <div class="info-banner">
-        <p>
-          Define global project settings. Learn more <a href="#" class="info-link">in the docs</a>.
-        </p>
-        <p>
-          Please save your project URL to come back later. It is stored in a cookie as well.
-        </p>
+      <div class="top-actions">
+        <button class="back-btn-desktop" (click)="handleBack()" aria-label="Go back" mat-stroked-button>
+          <mat-icon>arrow_back</mat-icon>
+          Back
+        </button>
       </div>
 
-      <section class="form-section">
-        <h2 class="section-title">Project settings</h2>
-
-        <div class="form-row">
-          <label class="form-label">Project group</label>
-          <input
-            type="text"
-            class="form-input"
-            [(ngModel)]="projectSettings.projectGroup"
-            placeholder="io.bootify"
-          />
-        </div>
-
-        <div class="form-row">
-          <label class="form-label">Project name</label>
-          <input
-            type="text"
-            class="form-input"
-            [(ngModel)]="projectSettings.projectName"
-            placeholder="my-app"
-          />
-        </div>
-
-        <div class="form-row">
-          <label class="form-label">Build type</label>
-          <div class="radio-group">
-            <label class="radio-label">
-              <input
-                type="radio"
-                name="buildType"
-                value="gradle"
-                [(ngModel)]="projectSettings.buildType"
-              />
-              <span class="radio-text">Gradle</span>
-            </label>
-            <label class="radio-label">
-              <input
-                type="radio"
-                name="buildType"
-                value="maven"
-                [(ngModel)]="projectSettings.buildType"
-              />
-              <span class="radio-text">Maven</span>
-            </label>
-          </div>
-        </div>
-
-        <div class="form-row">
-          <label class="form-label">Language</label>
-          <div class="radio-group">
-            <label class="radio-label">
-              <input
-                type="radio"
-                name="language"
-                value="java"
-                [(ngModel)]="projectSettings.language"
-              />
-              <span class="radio-text">Java</span>
-            </label>
-            <label class="radio-label">
-              <input
-                type="radio"
-                name="language"
-                value="kotlin"
-                [(ngModel)]="projectSettings.language"
-              />
-              <span class="radio-text">Kotlin</span>
-            </label>
-          </div>
-        </div>
-
-        <div class="form-row">
-          <label class="form-label">
-            Frontend
-            <i class="bi bi-info-circle info-icon"></i>
-          </label>
-          <select class="form-select" [(ngModel)]="projectSettings.frontend">
-            <option *ngFor="let option of frontendOptions" [value]="option.toLowerCase()">
-              {{ option }}
-            </option>
-          </select>
-        </div>
-      </section>
-
-      <section class="form-section">
-        <h2 class="section-title">Database settings</h2>
-
-        <div class="form-row">
-          <label class="form-label">Database</label>
-          <select class="form-select" [(ngModel)]="databaseSettings.database">
-            <option *ngFor="let option of databaseOptions" [value]="option">
-              {{ option }}
-            </option>
-          </select>
-        </div>
-
-        <div class="form-row">
-          <label class="form-label">DB Generation</label>
-          <select class="form-select" [(ngModel)]="databaseSettings.dbGeneration">
-            <option *ngFor="let option of dbGenerationOptions" [value]="option">
-              {{ option }}
-            </option>
-          </select>
-        </div>
-
-        <div class="form-row">
-          <label class="checkbox-label">
-            <input
-              type="checkbox"
-              [(ngModel)]="databaseSettings.pluralizeTableNames"
-            />
-            <span>Pluralize table names <i class="bi bi-info-circle info-icon"></i></span>
-          </label>
-        </div>
-
-        <div class="form-row">
-          <label class="checkbox-label">
-            <input
-              type="checkbox"
-              [(ngModel)]="databaseSettings.addDateCreatedLastUpdated"
-            />
-            <span>Add dateCreated/lastUpdated to entities <i class="bi bi-info-circle info-icon"></i></span>
-          </label>
-        </div>
-      </section>
-
-      <section class="form-section">
-        <h2 class="section-title">Developer preferences</h2>
-
-        <div class="form-row">
-          <label class="form-label">Appl. format</label>
-          <div class="radio-group">
-            <label class="radio-label">
-              <input
-                type="radio"
-                name="applFormat"
-                value="yaml"
-                [(ngModel)]="developerPreferences.applFormat"
-              />
-              <span class="radio-text">Yaml</span>
-            </label>
-            <label class="radio-label">
-              <input
-                type="radio"
-                name="applFormat"
-                value="properties"
-                [(ngModel)]="developerPreferences.applFormat"
-              />
-              <span class="radio-text">Properties</span>
-            </label>
-          </div>
-        </div>
-
-        <div class="form-row">
-          <label class="form-label">
-            Packages
-            <i class="bi bi-info-circle info-icon"></i>
-          </label>
-          <div class="radio-group">
-            <label class="radio-label">
-              <input
-                type="radio"
-                name="packages"
-                value="technical"
-                [(ngModel)]="developerPreferences.packages"
-              />
-              <span class="radio-text">Technical</span>
-            </label>
-            <label class="radio-label">
-              <input
-                type="radio"
-                name="packages"
-                value="domain"
-                [(ngModel)]="developerPreferences.packages"
-              />
-              <span class="radio-text">Domain driven</span>
-            </label>
-            <label class="radio-label">
-              <input
-                type="radio"
-                name="packages"
-                value="mixed"
-                [(ngModel)]="developerPreferences.packages"
-              />
-              <span class="radio-text">Mixed</span>
-            </label>
-          </div>
-        </div>
-
-        <div class="form-row">
-          <label class="checkbox-label">
-            <input
-              type="checkbox"
-              [(ngModel)]="developerPreferences.enableOpenAPI"
-            />
-            <span>Enable OpenAPI/Swagger UI <i class="bi bi-info-circle info-icon"></i></span>
-          </label>
-        </div>
-
-        <div class="form-row">
-          <label class="checkbox-label">
-            <input
-              type="checkbox"
-              [(ngModel)]="developerPreferences.useDockerCompose"
-            />
-            <span>Use Docker compose for development <i class="bi bi-info-circle info-icon"></i></span>
-          </label>
-        </div>
-
-        <div class="form-row">
-          <label class="form-label">Java version</label>
-          <div class="radio-group">
-            <label class="radio-label" *ngFor="let version of javaVersionOptions">
-              <input
-                type="radio"
-                name="javaVersion"
-                [value]="version"
-                [(ngModel)]="developerPreferences.javaVersion"
-              />
-              <span class="radio-text">{{ version }}</span>
-            </label>
-          </div>
-        </div>
-
-        <div class="form-row">
-          <label class="form-label">Deployment</label>
-          <select class="form-select" [(ngModel)]="developerPreferences.deployment">
-            <option *ngFor="let option of deploymentOptions" [value]="option">
-              {{ option }}
-            </option>
-          </select>
-        </div>
-      </section>
-
-      <section class="form-section">
-        <h2 class="section-title">Further dependencies</h2>
-
-        <div class="form-row">
-          <textarea
-            class="form-textarea"
-            [(ngModel)]="dependencies"
-            placeholder="Type to filter, for example starter, devtools, commons"
-            rows="3"
-          ></textarea>
-          <p class="help-text">
-            Bootify.io already adds required dependencies. Add your custom dependencies here.
+      <div class="info-banner" *ngIf="showInfoBanner">
+        <div class="info-content">
+          <p>
+            Define global project settings. Learn more <a href="#" class="info-link">in the docs</a>.
+          </p>
+          <p>
+            Please save your project URL to come back later. It is stored in a cookie as well.
           </p>
         </div>
-      </section>
+        <button class="close-banner-btn" (click)="closeInfoBanner()" aria-label="Close banner">
+          <mat-icon>close</mat-icon>
+        </button>
+      </div>
+
+      <mat-accordion class="expansion-panels">
+        <mat-expansion-panel [expanded]="true">
+          <mat-expansion-panel-header>
+            <mat-panel-title>
+              Project settings
+            </mat-panel-title>
+          </mat-expansion-panel-header>
+
+          <div class="panel-content">
+            <mat-form-field appearance="outline" class="full-width">
+              <mat-label>Project group</mat-label>
+              <input matInput [(ngModel)]="projectSettings.projectGroup" placeholder="io.bootify">
+            </mat-form-field>
+
+            <mat-form-field appearance="outline" class="full-width">
+              <mat-label>Project name</mat-label>
+              <input matInput [(ngModel)]="projectSettings.projectName" placeholder="my-app">
+            </mat-form-field>
+
+            <div class="form-row">
+              <label class="field-label">Build type</label>
+              <mat-radio-group [(ngModel)]="projectSettings.buildType" class="radio-group-horizontal">
+                <mat-radio-button value="gradle">Gradle</mat-radio-button>
+                <mat-radio-button value="maven">Maven</mat-radio-button>
+              </mat-radio-group>
+            </div>
+
+            <div class="form-row">
+              <label class="field-label">Language</label>
+              <mat-radio-group [(ngModel)]="projectSettings.language" class="radio-group-horizontal">
+                <mat-radio-button value="java">Java</mat-radio-button>
+                <mat-radio-button value="kotlin">Kotlin</mat-radio-button>
+              </mat-radio-group>
+            </div>
+
+            <mat-form-field appearance="outline" class="full-width">
+              <mat-label>Frontend</mat-label>
+              <mat-select [(ngModel)]="projectSettings.frontend">
+                <mat-option *ngFor="let option of frontendOptions" [value]="option.toLowerCase()">
+                  {{ option }}
+                </mat-option>
+              </mat-select>
+              <mat-icon matSuffix matTooltip="Select a frontend framework for your project">info</mat-icon>
+            </mat-form-field>
+          </div>
+        </mat-expansion-panel>
+
+        <mat-expansion-panel>
+          <mat-expansion-panel-header>
+            <mat-panel-title>
+              Database settings
+            </mat-panel-title>
+          </mat-expansion-panel-header>
+
+          <div class="panel-content">
+            <mat-form-field appearance="outline" class="full-width">
+              <mat-label>Database</mat-label>
+              <mat-select [(ngModel)]="databaseSettings.database">
+                <mat-option *ngFor="let option of databaseOptions" [value]="option">
+                  {{ option }}
+                </mat-option>
+              </mat-select>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline" class="full-width">
+              <mat-label>DB Generation</mat-label>
+              <mat-select [(ngModel)]="databaseSettings.dbGeneration">
+                <mat-option *ngFor="let option of dbGenerationOptions" [value]="option">
+                  {{ option }}
+                </mat-option>
+              </mat-select>
+            </mat-form-field>
+
+            <div class="form-row">
+              <mat-checkbox [(ngModel)]="databaseSettings.pluralizeTableNames">
+                Pluralize table names
+                <mat-icon class="inline-icon" matTooltip="Automatically pluralize table names">info</mat-icon>
+              </mat-checkbox>
+            </div>
+
+            <div class="form-row">
+              <mat-checkbox [(ngModel)]="databaseSettings.addDateCreatedLastUpdated">
+                Add dateCreated/lastUpdated to entities
+                <mat-icon class="inline-icon" matTooltip="Add timestamp fields to all entities">info</mat-icon>
+              </mat-checkbox>
+            </div>
+          </div>
+        </mat-expansion-panel>
+
+        <mat-expansion-panel>
+          <mat-expansion-panel-header>
+            <mat-panel-title>
+              Developer preferences
+            </mat-panel-title>
+          </mat-expansion-panel-header>
+
+          <div class="panel-content">
+            <div class="form-row">
+              <label class="field-label">Appl. format</label>
+              <mat-radio-group [(ngModel)]="developerPreferences.applFormat" class="radio-group-horizontal">
+                <mat-radio-button value="yaml">Yaml</mat-radio-button>
+                <mat-radio-button value="properties">Properties</mat-radio-button>
+              </mat-radio-group>
+            </div>
+
+            <div class="form-row">
+              <label class="field-label">Packages
+                <mat-icon class="inline-icon" matTooltip="Package organization structure">info</mat-icon>
+              </label>
+              <mat-radio-group [(ngModel)]="developerPreferences.packages" class="radio-group-horizontal">
+                <mat-radio-button value="technical">Technical</mat-radio-button>
+                <mat-radio-button value="domain">Domain driven</mat-radio-button>
+                <mat-radio-button value="mixed">Mixed</mat-radio-button>
+              </mat-radio-group>
+            </div>
+
+            <div class="form-row">
+              <mat-checkbox [(ngModel)]="developerPreferences.enableOpenAPI">
+                Enable OpenAPI/Swagger UI
+                <mat-icon class="inline-icon" matTooltip="Generate OpenAPI documentation">info</mat-icon>
+              </mat-checkbox>
+            </div>
+
+            <div class="form-row">
+              <mat-checkbox [(ngModel)]="developerPreferences.useDockerCompose">
+                Use Docker compose for development
+                <mat-icon class="inline-icon" matTooltip="Include Docker Compose configuration">info</mat-icon>
+              </mat-checkbox>
+            </div>
+
+            <div class="form-row">
+              <label class="field-label">Java version</label>
+              <mat-radio-group [(ngModel)]="developerPreferences.javaVersion" class="radio-group-horizontal">
+                <mat-radio-button *ngFor="let version of javaVersionOptions" [value]="version">
+                  {{ version }}
+                </mat-radio-button>
+              </mat-radio-group>
+            </div>
+
+            <mat-form-field appearance="outline" class="full-width">
+              <mat-label>Deployment</mat-label>
+              <mat-select [(ngModel)]="developerPreferences.deployment">
+                <mat-option *ngFor="let option of deploymentOptions" [value]="option">
+                  {{ option }}
+                </mat-option>
+              </mat-select>
+            </mat-form-field>
+          </div>
+        </mat-expansion-panel>
+
+        <mat-expansion-panel>
+          <mat-expansion-panel-header>
+            <mat-panel-title>
+              Further dependencies
+            </mat-panel-title>
+          </mat-expansion-panel-header>
+
+          <div class="panel-content">
+            <mat-form-field appearance="outline" class="full-width">
+              <mat-label>Dependencies</mat-label>
+              <textarea
+                matInput
+                [(ngModel)]="dependencies"
+                placeholder="Type to filter, for example starter, devtools, commons"
+                rows="4"
+              ></textarea>
+              <mat-hint>Bootify.io already adds required dependencies. Add your custom dependencies here.</mat-hint>
+            </mat-form-field>
+          </div>
+        </mat-expansion-panel>
+      </mat-accordion>
 
       <div class="action-section">
-        <button class="btn btn-primary" (click)="setupEntities()" [disabled]="isLoading">
+        <button mat-raised-button color="primary" (click)="setupEntities()" [disabled]="isLoading">
+          <mat-spinner *ngIf="isLoading" diameter="20" class="button-spinner"></mat-spinner>
           <span *ngIf="!isLoading">Setup Entities</span>
-          <span *ngIf="isLoading" class="loading-spinner">
-            <i class="bi bi-arrow-repeat spinner-icon"></i>
-            Loading...
-          </span>
+          <span *ngIf="isLoading">Loading...</span>
         </button>
-        <button class="btn btn-secondary" (click)="saveProject()" [disabled]="isLoading">
+        <button mat-raised-button (click)="saveProject()" [disabled]="isLoading">
           Save Project
         </button>
       </div>
