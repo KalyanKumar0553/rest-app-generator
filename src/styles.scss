@@ -183,8 +183,13 @@ body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif !important;
 }
 
+.mdc-notched-outline__leading {
+  border-width: 1px !important;
+  border-right: none !important;
+}
+
 .mat-mdc-text-field-wrapper.mdc-text-field--focused .mdc-notched-outline__leading {
-  border-left: 1px solid #97a9ae !important;
+  border-left-width: 1px !important;
   border-right: none !important;
 }
 
