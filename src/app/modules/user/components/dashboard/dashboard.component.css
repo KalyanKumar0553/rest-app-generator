@@ -314,9 +314,6 @@
 @media (max-width: 1024px) {
   .mobile-header {
     display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 16px;
     background-color: #f8f9fa;
     border-bottom: 1px solid #e5e7eb;
     position: fixed;
@@ -324,8 +321,20 @@
     left: 0;
     right: 0;
     z-index: 100;
-    height: 56px;
-    box-sizing: border-box;
+    padding: 16px 0;
+  }
+
+  .mobile-header .container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 16px;
+    width: 100%;
+  }
+
+  .mobile-header .header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
   }
 
   .menu-toggle {
@@ -441,9 +450,6 @@
 }
 
 @media (max-width: 480px) {
-  .mobile-header {
-    padding: 16px;
-  }
 
   .main-content {
     padding-top: 56px;

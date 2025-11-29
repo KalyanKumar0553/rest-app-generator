@@ -10,13 +10,17 @@
 
 <div class="dashboard-container">
   <div class="mobile-header">
-    <button class="menu-toggle" (click)="toggleSidebar()" aria-label="Toggle menu">
-      <i class="bi bi-list"></i>
-    </button>
-    <div class="logo">
-      <span class="logo-text">Bootify</span>
+    <div class="container">
+      <div class="header-content">
+        <button class="menu-toggle" (click)="toggleSidebar()" aria-label="Toggle menu">
+          <i class="bi bi-list"></i>
+        </button>
+        <div class="logo">
+          <span class="logo-text">Bootify</span>
+        </div>
+        <div class="spacer"></div>
+      </div>
     </div>
-    <div class="spacer"></div>
   </div>
 
   <div class="sidebar-overlay" [class.show]="isSidebarOpen" (click)="closeSidebar()"></div>
