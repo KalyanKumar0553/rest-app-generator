@@ -8,14 +8,18 @@
 ></app-confirmation-modal>
 
 <div class="mobile-header">
-  <div class="logo">
-    <span class="logo-text">Bootify</span>
-    <i class="bi bi-code-slash logo-icon"></i>
+  <div class="container">
+    <div class="header-content">
+      <div class="logo">
+        <span class="logo-text">Bootify</span>
+        <i class="bi bi-code-slash logo-icon"></i>
+      </div>
+      <div class="spacer"></div>
+      <button class="menu-toggle" (click)="toggleSidebar()" aria-label="Toggle menu">
+        <i class="bi bi-list"></i>
+      </button>
+    </div>
   </div>
-  <div class="spacer"></div>
-  <button class="menu-toggle" (click)="toggleSidebar()" aria-label="Toggle menu">
-    <i class="bi bi-list"></i>
-  </button>
 </div>
 
 <div class="sidebar-overlay" [class.show]="isSidebarOpen" (click)="closeSidebar()"></div>
