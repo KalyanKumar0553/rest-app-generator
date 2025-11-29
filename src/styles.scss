@@ -196,6 +196,7 @@ body {
 .mat-mdc-text-field-wrapper.mdc-text-field--focused .mdc-notched-outline__trailing {
   border-left: none !important;
 }
-.mat-mdc-notch-piece {
-  border-left: 0px !important;
+.mdc-notched-outline__notch
+{
+  border-right: none;
 }
