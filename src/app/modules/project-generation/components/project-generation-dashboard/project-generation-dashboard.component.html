@@ -94,12 +94,12 @@
           </mat-expansion-panel-header>
 
           <div class="panel-content">
-            <mat-form-field appearance="outline" class="full-width">
+            <mat-form-field appearance="fill" class="full-width">
               <mat-label>Project group</mat-label>
               <input matInput [(ngModel)]="projectSettings.projectGroup" placeholder="io.bootify">
             </mat-form-field>
 
-            <mat-form-field appearance="outline" class="full-width">
+            <mat-form-field appearance="fill" class="full-width">
               <mat-label>Project name</mat-label>
               <input matInput [(ngModel)]="projectSettings.projectName" placeholder="my-app">
             </mat-form-field>
@@ -120,7 +120,7 @@
               </mat-radio-group>
             </div>
 
-            <mat-form-field appearance="outline" class="full-width">
+            <mat-form-field appearance="fill" class="full-width">
               <mat-label>Frontend</mat-label>
               <mat-select [(ngModel)]="projectSettings.frontend">
                 <mat-option *ngFor="let option of frontendOptions" [value]="option.toLowerCase()">
@@ -140,7 +140,7 @@
           </mat-expansion-panel-header>
 
           <div class="panel-content">
-            <mat-form-field appearance="outline" class="full-width">
+            <mat-form-field appearance="fill" class="full-width">
               <mat-label>Database</mat-label>
               <mat-select [(ngModel)]="databaseSettings.database">
                 <mat-option *ngFor="let option of databaseOptions" [value]="option">
@@ -149,7 +149,7 @@
               </mat-select>
             </mat-form-field>
 
-            <mat-form-field appearance="outline" class="full-width">
+            <mat-form-field appearance="fill" class="full-width">
               <mat-label>DB Generation</mat-label>
               <mat-select [(ngModel)]="databaseSettings.dbGeneration">
                 <mat-option *ngFor="let option of dbGenerationOptions" [value]="option">
@@ -224,7 +224,7 @@
               </mat-radio-group>
             </div>
 
-            <mat-form-field appearance="outline" class="full-width">
+            <mat-form-field appearance="fill" class="full-width">
               <mat-label>Deployment</mat-label>
               <mat-select [(ngModel)]="developerPreferences.deployment">
                 <mat-option *ngFor="let option of deploymentOptions" [value]="option">
@@ -243,16 +243,32 @@
           </mat-expansion-panel-header>
 
           <div class="panel-content">
-            <mat-form-field appearance="outline" class="full-width">
+            <mat-form-field appearance="fill" class="full-width">
               <mat-label>Dependencies</mat-label>
-              <textarea
+              <input
                 matInput
-                [(ngModel)]="dependencies"
-                placeholder="Type to filter, for example starter, devtools, commons"
-                rows="4"
-              ></textarea>
+                [matAutocomplete]="auto"
+                [(ngModel)]="dependencyInput"
+                (ngModelChange)="filterDependencies($event)"
+                placeholder="Type to search dependencies"
+              />
+              <mat-icon matSuffix>search</mat-icon>
+              <mat-autocomplete #auto="matAutocomplete" (optionSelected)="addDependency($event)">
+                <mat-option *ngFor="let dep of filteredDependencies" [value]="dep">
+                  {{ dep }}
+                </mat-option>
+              </mat-autocomplete>
               <mat-hint>Bootify.io already adds required dependencies. Add your custom dependencies here.</mat-hint>
             </mat-form-field>
+
+            <div class="selected-dependencies" *ngIf="selectedDependencies.length > 0">
+              <div class="dependency-chip" *ngFor="let dep of selectedDependencies">
+                <span>{{ dep }}</span>
+                <button type="button" class="remove-chip" (click)="removeDependency(dep)" aria-label="Remove dependency">
+                  <mat-icon>close</mat-icon>
+                </button>
+              </div>
+            </div>
           </div>
         </mat-expansion-panel>
       </mat-accordion>

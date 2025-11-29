@@ -340,6 +340,56 @@
   color: #6b7280;
 }
 
+.selected-dependencies {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.dependency-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background-color: #e0f2f1;
+  color: #49565d;
+  padding: 6px 12px;
+  border-radius: 16px;
+  font-size: 14px;
+  font-weight: 500;
+  transition: background-color 0.2s;
+}
+
+.dependency-chip:hover {
+  background-color: #b2dfdb;
+}
+
+.dependency-chip span {
+  line-height: 1;
+}
+
+.remove-chip {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #49565d;
+  transition: color 0.2s;
+}
+
+.remove-chip:hover {
+  color: #d32f2f;
+}
+
+.remove-chip mat-icon {
+  font-size: 18px;
+  width: 18px;
+  height: 18px;
+}
+
 @media (max-width: 768px) {
   .mobile-header {
     display: flex;
