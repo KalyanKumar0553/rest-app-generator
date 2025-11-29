@@ -13,6 +13,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatAutocompleteModule } from '@angular/material/autocomplete';
 import { ConfirmationModalComponent } from '../../../../components/confirmation-modal/confirmation-modal.component';
 import { AuthService } from '../../../../services/auth.service';
 import { ToastService } from '../../../../services/toast.service';
@@ -65,6 +66,7 @@ interface ProjectData {
     MatIconModule,
     MatTooltipModule,
     MatProgressSpinnerModule,
+    MatAutocompleteModule,
     ConfirmationModalComponent
   ],
   templateUrl: './project-generation-dashboard.component.html',
@@ -115,6 +117,37 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
   };
 
   dependencies = '';
+  dependencyInput = '';
+  selectedDependencies: string[] = [];
+  filteredDependencies: string[] = [];
+  availableDependencies = [
+    'spring-boot-starter-web',
+    'spring-boot-starter-data-jpa',
+    'spring-boot-starter-security',
+    'spring-boot-starter-validation',
+    'spring-boot-starter-test',
+    'spring-boot-starter-actuator',
+    'spring-boot-devtools',
+    'lombok',
+    'mapstruct',
+    'commons-lang3',
+    'commons-collections4',
+    'guava',
+    'jackson-databind',
+    'hibernate-validator',
+    'flyway-core',
+    'liquibase-core',
+    'postgresql',
+    'mysql-connector-java',
+    'h2',
+    'mongodb-driver',
+    'redis',
+    'kafka',
+    'rabbitmq',
+    'jwt',
+    'swagger-ui',
+    'openapi'
+  ];
 
   frontendOptions = ['None', 'React', 'Vue', 'Angular'];
   databaseOptions = ['PostgreSQL', 'MySQL', 'H2', 'MongoDB'];
@@ -229,6 +262,39 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
 
   closeInfoBanner(): void {
     this.showInfoBanner = false;
+  }
+
+  filterDependencies(value: string): void {
+    if (!value || value.trim() === '') {
+      this.filteredDependencies = [];
+      return;
+    }
+
+    const filterValue = value.toLowerCase();
+    this.filteredDependencies = this.availableDependencies
+      .filter(dep =>
+        dep.toLowerCase().includes(filterValue) &&
+        !this.selectedDependencies.includes(dep)
+      )
+      .slice(0, 10);
+  }
+
+  addDependency(event: any): void {
+    const value = event.option.value;
+    if (value && !this.selectedDependencies.includes(value)) {
+      this.selectedDependencies.push(value);
+      this.dependencies = this.selectedDependencies.join(', ');
+    }
+    this.dependencyInput = '';
+    this.filteredDependencies = [];
+  }
+
+  removeDependency(dep: string): void {
+    const index = this.selectedDependencies.indexOf(dep);
+    if (index >= 0) {
+      this.selectedDependencies.splice(index, 1);
+      this.dependencies = this.selectedDependencies.join(', ');
+    }
   }
 
   async setupEntities(): Promise<void> {
