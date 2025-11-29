@@ -447,7 +447,7 @@
   }
 
   .info-link {
-    white-space: nowrap;
+    white-space: break-spaces;
   }
 
   .close-banner-btn {
