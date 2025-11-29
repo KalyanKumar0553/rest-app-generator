@@ -7,7 +7,7 @@
 .mobile-header {
   display: none;
   background-color: #ffffff;
-  padding: 16px 20px;
+  padding: 0px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
   align-items: center;
   gap: 16px;
