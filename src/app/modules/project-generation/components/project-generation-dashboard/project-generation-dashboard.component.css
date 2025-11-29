@@ -1,7 +1,7 @@
 .project-dashboard-container {
   display: flex;
   min-height: 100vh;
-  background-color: #f8f9fa;
+  background-color: #dff1ef;
 }
 
 .mobile-header {
@@ -47,7 +47,7 @@
 .logo-text {
   font-size: 20px;
   font-weight: 600;
-  color: #1f2937;
+  color: #49565d;
 }
 
 .logo-icon {
@@ -73,10 +73,10 @@
 
 .sidebar {
   width: 240px;
-  background-color: #f3f4f6;
+  background-color: #f5faf9;
   display: flex;
   flex-direction: column;
-  border-right: 1px solid #e5e7eb;
+  border-right: 1px solid #e5f0ee;
   position: sticky;
   top: 0;
   height: 100vh;
@@ -85,7 +85,7 @@
 
 .sidebar-header {
   padding: 24px 20px;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid #e5f0ee;
 }
 
 .sidebar-nav {
@@ -114,7 +114,7 @@
 }
 
 .nav-item.active {
-  background-color: #8b9fa6;
+  background-color: #97a9ae;
   color: #ffffff;
 }
 
@@ -125,7 +125,7 @@
 
 .sidebar-footer {
   padding: 20px;
-  border-top: 1px solid #e5e7eb;
+  border-top: 1px solid #e5f0ee;
 }
 
 .plan-text {
@@ -137,7 +137,7 @@
 .btn-upgrade {
   width: 100%;
   padding: 10px;
-  background-color: #dc6454;
+  background-color: #e89b8e;
   color: #ffffff;
   border: none;
   border-radius: 6px;
@@ -148,7 +148,7 @@
 }
 
 .btn-upgrade:hover {
-  background-color: #c55544;
+  background-color: #d17d6e;
 }
 
 .main-content {
@@ -178,7 +178,7 @@
 }
 
 .info-banner {
-  background-color: #8b9fa6;
+  background-color: #97a9ae;
   color: #ffffff;
   padding: 20px 24px;
   border-radius: 8px;
@@ -266,7 +266,7 @@
   gap: 6px;
   font-size: 14px;
   font-weight: 500;
-  color: #374151;
+  color: #49565d;
   margin-bottom: 12px;
 }
 
@@ -304,22 +304,22 @@
 
 ::ng-deep .mat-mdc-radio-button .mdc-radio .mdc-radio__native-control:enabled:checked+.mdc-radio__background .mdc-radio__outer-circle,
 ::ng-deep .mat-mdc-radio-button .mdc-radio .mdc-radio__native-control:enabled+.mdc-radio__background .mdc-radio__inner-circle {
-  border-color: #8b9fa6;
+  border-color: #97a9ae;
 }
 
 ::ng-deep .mat-mdc-radio-button .mdc-radio .mdc-radio__native-control:enabled:checked+.mdc-radio__background .mdc-radio__inner-circle {
-  border-color: #8b9fa6;
-  background-color: #8b9fa6;
+  border-color: #97a9ae;
+  background-color: #97a9ae;
 }
 
 ::ng-deep .mat-mdc-checkbox .mdc-checkbox .mdc-checkbox__native-control:enabled:checked~.mdc-checkbox__background {
-  background-color: #8b9fa6;
-  border-color: #8b9fa6;
+  background-color: #97a9ae;
+  border-color: #97a9ae;
 }
 
 ::ng-deep .mat-accent .mat-mdc-slider-thumb,
 ::ng-deep .mat-accent .mat-mdc-slider-track-fill {
-  background-color: #8b9fa6;
+  background-color: #97a9ae;
 }
 
 ::ng-deep .mat-mdc-outlined-button:not(:disabled) {
@@ -329,7 +329,7 @@
 ::ng-deep .mat-expansion-panel-header-title {
   font-size: 18px;
   font-weight: 600;
-  color: #1f2937;
+  color: #49565d;
 }
 
 ::ng-deep .mat-expansion-indicator::after {
