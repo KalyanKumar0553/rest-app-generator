@@ -235,8 +235,13 @@
           </mat-expansion-panel-header>
 
           <div class="panel-content">
+            <div class="form-row">
+              <label class="field-label">Dependencies
+                <mat-icon class="inline-icon" matTooltip="Bootify.io already adds required dependencies. Add your custom dependencies here.">info</mat-icon>
+              </label>
+            </div>
+
             <mat-form-field appearance="fill" class="full-width">
-              <mat-label>Dependencies</mat-label>
               <input
                 matInput
                 [matAutocomplete]="auto"
@@ -250,7 +255,6 @@
                   {{ dep }}
                 </mat-option>
               </mat-autocomplete>
-              <mat-hint>Bootify.io already adds required dependencies. Add your custom dependencies here.</mat-hint>
             </mat-form-field>
 
             <div class="selected-dependencies" *ngIf="selectedDependencies.length > 0">
