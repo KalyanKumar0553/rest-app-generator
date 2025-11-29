@@ -20,6 +20,7 @@ export class AppComponent implements OnInit {
   title = 'QuadProSol - IT Solutions';
   isNavigating = false;
   isDashboardRoute = false;
+  isProjectGenerationRoute = false;
 
   constructor(
     private router: Router,
@@ -31,6 +32,7 @@ export class AppComponent implements OnInit {
     ).subscribe((event: NavigationEnd) => {
       this.isNavigating = true;
       this.isDashboardRoute = event.urlAfterRedirects.includes('/user/dashboard');
+      this.isProjectGenerationRoute = event.urlAfterRedirects.includes('/project-generation');
 
       // Hide loading after a short delay to ensure smooth transition
       setTimeout(() => {
