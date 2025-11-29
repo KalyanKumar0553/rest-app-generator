@@ -7,20 +7,20 @@
   (cancel)="cancelBack()"
 ></app-confirmation-modal>
 
-<div class="project-dashboard-container">
-  <div class="mobile-header">
-    <button class="menu-toggle" (click)="toggleSidebar()" aria-label="Toggle menu">
-      <i class="bi bi-list"></i>
-    </button>
-    <div class="logo">
-      <span class="logo-text">Bootify</span>
-      <i class="bi bi-code-slash logo-icon"></i>
-    </div>
-    <div class="spacer"></div>
+<div class="mobile-header">
+  <button class="menu-toggle" (click)="toggleSidebar()" aria-label="Toggle menu">
+    <i class="bi bi-list"></i>
+  </button>
+  <div class="logo">
+    <span class="logo-text">Bootify</span>
+    <i class="bi bi-code-slash logo-icon"></i>
   </div>
+  <div class="spacer"></div>
+</div>
 
-  <div class="sidebar-overlay" [class.show]="isSidebarOpen" (click)="closeSidebar()"></div>
+<div class="sidebar-overlay" [class.show]="isSidebarOpen" (click)="closeSidebar()"></div>
 
+<div class="project-dashboard-container">
   <aside class="sidebar" [class.open]="isSidebarOpen">
     <div class="sidebar-header">
       <div class="logo">

@@ -11,8 +11,10 @@
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
   align-items: center;
   gap: 16px;
-  position: sticky;
+  position: fixed;
   top: 0;
+  left: 0;
+  right: 0;
   z-index: 100;
 }
 
@@ -60,7 +62,7 @@
   position: fixed;
   inset: 0;
   background-color: rgba(0, 0, 0, 0.5);
-  z-index: 200;
+  z-index: 250;
   opacity: 0;
   transition: opacity 0.3s;
   pointer-events: none;
@@ -69,6 +71,7 @@
 .sidebar-overlay.show {
   opacity: 1;
   pointer-events: auto;
+  display: block;
 }
 
 .sidebar {
@@ -341,8 +344,8 @@
     display: flex;
   }
 
-  .sidebar-overlay {
-    display: block;
+  .project-dashboard-container {
+    margin-top: 60px;
   }
 
   .sidebar {
@@ -351,10 +354,15 @@
     top: 0;
     z-index: 300;
     transition: left 0.3s ease;
+    height: 100vh;
   }
 
   .sidebar.open {
     left: 0;
+  }
+
+  .main-content {
+    width: 100%;
   }
 
   .content-body {
