@@ -434,20 +434,20 @@
   }
 
   .info-content {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    font-size: clamp(0.65rem, 2.5vw, 1rem);
+    line-height: 1.4;
   }
 
   .info-content p {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
     margin: 0;
   }
 
   .info-content p:not(:first-child) {
     display: none;
+  }
+
+  .info-link {
+    white-space: nowrap;
   }
 
   .close-banner-btn {
@@ -466,5 +466,11 @@
   .radio-group-horizontal {
     flex-direction: column;
     gap: 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  .info-content {
+    font-size: clamp(0.6rem, 3vw, 0.875rem);
   }
 }
