@@ -9,65 +9,39 @@
   margin-bottom: 16px;
 }
 
-.field-type-group {
+.field-type-select {
   width: 200px;
   flex-shrink: 0;
 }
 
-.field-type-select {
-  width: 100%;
-}
-
-.field-type-select ::ng-deep .mat-mdc-form-field-subscript-wrapper {
-  display: none;
-}
-
-.field-name-group {
+.field-name-input {
   flex: 1;
   min-width: 200px;
 }
 
-.field-max-length-group {
+.field-max-length-input {
   width: 180px;
   flex-shrink: 0;
 }
 
-.field-label {
-  display: block;
-  font-size: 14px;
-  font-weight: 500;
-  color: #374151;
-  margin-bottom: 8px;
+.field-type-select ::ng-deep .mat-mdc-form-field-subscript-wrapper,
+.field-name-input ::ng-deep .mat-mdc-form-field-subscript-wrapper,
+.field-max-length-input ::ng-deep .mat-mdc-form-field-subscript-wrapper {
+  display: none;
 }
 
-.field-input {
-  width: 100%;
-  padding: 10px 12px;
-  font-size: 14px;
-  border: 1px solid #d1d5db;
-  border-radius: 6px;
-  outline: none;
-  transition: border-color 0.2s ease;
+.field-type-select ::ng-deep .mat-mdc-text-field-wrapper,
+.field-name-input ::ng-deep .mat-mdc-text-field-wrapper,
+.field-max-length-input ::ng-deep .mat-mdc-text-field-wrapper {
+  padding: 0;
 }
 
-.field-input:focus {
-  border-color: #8b9fa6;
-}
-
-.field-input:disabled {
-  background-color: #f3f4f6;
-  color: #9ca3af;
-  cursor: not-allowed;
-}
-
-.field-input-small {
-  width: 100%;
-}
-
-.field-error {
-  color: #dc2626;
-  font-size: 12px;
-  margin-top: 4px;
+.field-type-select ::ng-deep .mat-mdc-form-field-infix,
+.field-name-input ::ng-deep .mat-mdc-form-field-infix,
+.field-max-length-input ::ng-deep .mat-mdc-form-field-infix {
+  padding-top: 12px;
+  padding-bottom: 12px;
+  min-height: 48px;
 }
 
 .field-constraints {
@@ -76,6 +50,7 @@
   gap: 12px;
   margin-left: auto;
   padding-right: 12px;
+  align-self: center;
 }
 
 .constraint-checkbox {
@@ -96,6 +71,7 @@
   flex-direction: column;
   gap: 4px;
   flex-shrink: 0;
+  align-self: center;
 }
 
 .action-btn {
@@ -140,15 +116,15 @@
     gap: 12px;
   }
 
-  .field-type-group {
+  .field-type-select {
     width: 100%;
   }
 
-  .field-name-group {
+  .field-name-input {
     width: 100%;
   }
 
-  .field-max-length-group {
+  .field-max-length-input {
     width: 100%;
   }
 
