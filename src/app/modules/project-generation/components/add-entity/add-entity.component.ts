@@ -137,6 +137,22 @@ export class AddEntityComponent implements OnChanges {
     return true;
   }
 
+  moveFieldUp(index: number): void {
+    if (index > 1) {
+      const temp = this.fields[index];
+      this.fields[index] = this.fields[index - 1];
+      this.fields[index - 1] = temp;
+    }
+  }
+
+  moveFieldDown(index: number): void {
+    if (index < this.fields.length - 1 && index > 0) {
+      const temp = this.fields[index];
+      this.fields[index] = this.fields[index + 1];
+      this.fields[index + 1] = temp;
+    }
+  }
+
   onSave(): void {
     if (!this.validateEntityName()) {
       return;

@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { ModalComponent } from '../../../../components/modal/modal.component';
 import { AddEntityComponent } from '../add-entity/add-entity.component';
 import { ConfirmationModalComponent, ModalButton } from '../../../../components/confirmation-modal/confirmation-modal.component';
+import { EntityDetailViewComponent } from '../entity-detail-view/entity-detail-view.component';
 
 interface Entity {
   name: string;
@@ -19,7 +20,7 @@ interface Relation {
 @Component({
   selector: 'app-entities',
   standalone: true,
-  imports: [CommonModule, ModalComponent, AddEntityComponent, ConfirmationModalComponent],
+  imports: [CommonModule, ModalComponent, AddEntityComponent, ConfirmationModalComponent, EntityDetailViewComponent],
   templateUrl: './entities.component.html',
   styleUrls: ['./entities.component.css']
 })
@@ -35,6 +36,8 @@ export class EntitiesComponent {
   showDeleteConfirmation = false;
   deletingEntityIndex: number | null = null;
   deletingEntityName: string = '';
+  showEntityDetailModal = false;
+  viewingEntity: Entity | null = null;
 
   deleteModalConfig = {
     title: 'Delete Entity',
@@ -113,5 +116,24 @@ export class EntitiesComponent {
 
   addRelation(): void {
     console.log('Add relation clicked');
+  }
+
+  getVisibleFields(entity: Entity): any[] {
+    if (!entity.fields) return [];
+    return entity.fields.slice(0, 5);
+  }
+
+  hasMoreFields(entity: Entity): boolean {
+    return entity.fields && entity.fields.length > 5;
+  }
+
+  showEntityDetail(entity: Entity): void {
+    this.viewingEntity = entity;
+    this.showEntityDetailModal = true;
+  }
+
+  closeEntityDetail(): void {
+    this.showEntityDetailModal = false;
+    this.viewingEntity = null;
   }
 }
