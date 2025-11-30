@@ -18,9 +18,30 @@ import { ConfirmationModalComponent } from '../../../../components/confirmation-
 import { EntitiesComponent } from '../entities/entities.component';
 import { AuthService } from '../../../../services/auth.service';
 import { ToastService } from '../../../../services/toast.service';
-import { ProjectDataService } from '../../../../services/project-data.service';
-import { SupabaseProjectService } from '../../../../services/supabase-project.service';
-import { ProjectSettings, DatabaseSettings, DeveloperPreferences, ProjectData, Entity, Relation } from '../../../../services/project-data.service';
+
+interface ProjectSettings {
+  projectGroup: string;
+  projectName: string;
+  buildType: 'gradle' | 'maven';
+  language: 'java' | 'kotlin';
+  frontend: string;
+}
+
+interface DatabaseSettings {
+  database: string;
+  dbGeneration: string;
+  pluralizeTableNames: boolean;
+  addDateCreatedLastUpdated: boolean;
+}
+
+interface DeveloperPreferences {
+  applFormat: 'yaml' | 'properties';
+  packages: 'technical' | 'domain' | 'mixed';
+  enableOpenAPI: boolean;
+  useDockerCompose: boolean;
+  javaVersion: string;
+  deployment: string;
+}
 
 @Component({
   selector: 'app-project-generation-dashboard',
@@ -136,9 +157,7 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
     private router: Router,
     private route: ActivatedRoute,
     private authService: AuthService,
-    private toastService: ToastService,
-    private projectDataService: ProjectDataService,
-    private supabaseProjectService: SupabaseProjectService
+    private toastService: ToastService
   ) {}
 
   ngOnInit(): void {
@@ -150,17 +169,6 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
         if (params['projectId']) {
           this.projectId = +params['projectId'];
           this.loadProject(this.projectId);
-        } else {
-          this.initializeProjectData();
-        }
-      });
-
-    this.projectDataService.projectData$
-      .pipe(takeUntil(this.destroy$))
-      .subscribe(data => {
-        if (data) {
-          this.entities = data.entities || [];
-          this.relations = data.relations || [];
         }
       });
 
@@ -181,56 +189,22 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
     }, 1000);
   }
 
-  initializeProjectData(): void {
-    const projectData: ProjectData = {
-      id: this.projectId || undefined,
-      settings: this.projectSettings,
-      database: this.databaseSettings,
-      preferences: this.developerPreferences,
-      dependencies: this.selectedDependencies,
-      entities: [],
-      relations: []
-    };
-    this.projectDataService.setProjectData(projectData);
-  }
-
-  getProjectData(): ProjectData {
+  getProjectData() {
     return {
       id: this.projectId || undefined,
       settings: this.projectSettings,
       database: this.databaseSettings,
       preferences: this.developerPreferences,
-      dependencies: this.selectedDependencies,
-      entities: this.entities,
-      relations: this.relations
+      dependencies: this.dependencies
     };
   }
 
   async loadProject(projectId: number): Promise<void> {
     this.isLoading = true;
     try {
-      const user = this.authService.getCurrentUser();
-      if (!user?.id) {
-        this.toastService.error('User not authenticated');
-        return;
-      }
-
-      const result = await this.supabaseProjectService.loadProject(projectId.toString(), user.id);
-
-      if (result.success && result.data) {
-        const projectData = result.data;
-        this.projectSettings = projectData.settings;
-        this.databaseSettings = projectData.database;
-        this.developerPreferences = projectData.preferences;
-        this.selectedDependencies = projectData.dependencies || [];
-        this.entities = projectData.entities || [];
-        this.relations = projectData.relations || [];
-
-        this.projectDataService.setProjectData(projectData);
-        this.toastService.success('Project loaded successfully');
-      } else {
-        this.toastService.error(result.error || 'Failed to load project');
-      }
+      this.entities = [];
+      this.relations = [];
+      this.toastService.success('Project loaded successfully');
     } catch (error) {
       this.toastService.error('Failed to load project');
       console.error('Error loading project:', error);
@@ -254,14 +228,8 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
   }
 
   navigateToSection(section: string): void {
-    this.saveCurrentFormData();
     this.activeSection = section;
     this.closeSidebar();
-  }
-
-  saveCurrentFormData(): void {
-    const projectData = this.getProjectData();
-    this.projectDataService.setProjectData(projectData);
   }
 
   handleBack(): void {
@@ -341,27 +309,10 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
   async saveProject(): Promise<void> {
     this.isLoading = true;
     try {
-      const user = this.authService.getCurrentUser();
-      if (!user?.id) {
-        this.toastService.error('User not authenticated');
-        return;
-      }
-
       const projectData = this.getProjectData();
-      const result = await this.supabaseProjectService.saveProject(projectData, user.id);
 
-      if (result.success) {
-        if (result.id && !this.projectId) {
-          this.projectId = parseInt(result.id);
-          projectData.id = parseInt(result.id);
-          this.projectDataService.setProjectData(projectData);
-        }
-
-        this.hasUnsavedChanges = false;
-        this.toastService.success('Project saved successfully');
-      } else {
-        this.toastService.error(result.error || 'Failed to save project');
-      }
+      this.hasUnsavedChanges = false;
+      this.toastService.success('Project saved successfully');
     } catch (error) {
       this.toastService.error('Failed to save project');
       console.error('Error saving project:', error);
