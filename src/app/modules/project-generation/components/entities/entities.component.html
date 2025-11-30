@@ -26,22 +26,15 @@
     </div>
 
     <div class="panel-body" *ngIf="entitiesExpanded">
-      <app-add-entity
-        *ngIf="showAddEntity"
-        [editEntity]="editingEntity"
-        (save)="onEntitySave($event)"
-        (cancel)="onEntityCancel()">
-      </app-add-entity>
-
-      <div class="entities-list" *ngIf="entities.length > 0 && !showAddEntity">
-        <div class="entity-card" *ngFor="let entity of entities">
+      <div class="entities-list" *ngIf="entities.length > 0">
+        <div class="entity-card" *ngFor="let entity of entities; let i = index">
           <div class="entity-header">
             <h3 class="entity-name">{{ entity.name }}</h3>
             <div class="entity-actions">
-              <button class="icon-btn" (click)="editEntity(entity)" aria-label="Edit entity">
+              <button class="icon-btn" (click)="editEntity(entity, i)" aria-label="Edit entity">
                 <i class="bi bi-pencil"></i>
               </button>
-              <button class="icon-btn" (click)="deleteEntity(entity)" aria-label="Delete entity">
+              <button class="icon-btn" (click)="deleteEntity(i)" aria-label="Delete entity">
                 <i class="bi bi-trash"></i>
               </button>
             </div>
@@ -55,7 +48,7 @@
         </div>
       </div>
 
-      <div class="empty-state" *ngIf="entities.length === 0 && !showAddEntity">
+      <div class="empty-state" *ngIf="entities.length === 0">
         <p>No entities created yet. Click the + button to add your first entity.</p>
       </div>
     </div>
@@ -100,4 +93,16 @@
       </div>
     </div>
   </div>
+
+  <app-modal
+    [isOpen]="showAddEntityModal"
+    [title]="editingEntity ? 'Edit Entity' : 'Add Entity'"
+    [size]="'large'"
+    (close)="closeModal()">
+    <app-add-entity
+      [editEntity]="editingEntity"
+      (save)="onEntitySave($event)"
+      (cancel)="onEntityCancel()">
+    </app-add-entity>
+  </app-modal>
 </div>

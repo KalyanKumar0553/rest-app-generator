@@ -10,5 +10,7 @@ export const environment = {
   API_ENDPOINT: `${getBaseUrl()}/api`,
   apiUrl: `${getBaseUrl()}/api`,
   baseUrl: getBaseUrl(),
-  useMockApi: true
+  useMockApi: true,
+  supabaseUrl: 'YOUR_SUPABASE_URL',
+  supabaseKey: 'YOUR_SUPABASE_ANON_KEY'
 };
