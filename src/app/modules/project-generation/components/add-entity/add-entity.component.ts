@@ -62,6 +62,8 @@ export class AddEntityComponent implements OnChanges {
     }
   ];
 
+  private tempFields: Field[] = [];
+
   fieldTypes = [
     'String',
     'Long',
@@ -85,6 +87,8 @@ export class AddEntityComponent implements OnChanges {
         } else {
           this.resetForm();
         }
+      } else {
+        this.tempFields = [];
       }
     }
 
@@ -115,6 +119,7 @@ export class AddEntityComponent implements OnChanges {
         unique: false
       }
     ];
+    this.tempFields = [];
   }
 
   addField(): void {
@@ -225,28 +230,36 @@ export class AddEntityComponent implements OnChanges {
     };
 
     this.save.emit(entity);
+    this.tempFields = [];
     this.resetForm();
   }
 
   onCancel(): void {
+    this.tempFields = [];
     this.resetForm();
     this.cancel.emit();
   }
 
   onMappedSuperclassChange(): void {
     if (this.mappedSuperclass) {
+      this.tempFields = JSON.parse(JSON.stringify(this.fields));
       this.fields = [];
       this.addRestEndpoints = false;
     } else {
-      this.fields = [
-        {
-          type: 'Long',
-          name: 'id',
-          primaryKey: true,
-          required: false,
-          unique: false
-        }
-      ];
+      if (this.tempFields.length > 0) {
+        this.fields = JSON.parse(JSON.stringify(this.tempFields));
+        this.tempFields = [];
+      } else {
+        this.fields = [
+          {
+            type: 'Long',
+            name: 'id',
+            primaryKey: true,
+            required: false,
+            unique: false
+          }
+        ];
+      }
     }
   }
 }
