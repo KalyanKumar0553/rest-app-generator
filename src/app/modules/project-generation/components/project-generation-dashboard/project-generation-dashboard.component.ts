@@ -16,6 +16,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatAutocompleteModule } from '@angular/material/autocomplete';
 import { ConfirmationModalComponent } from '../../../../components/confirmation-modal/confirmation-modal.component';
 import { EntitiesComponent } from '../entities/entities.component';
+import { SidenavComponent, NavItem } from '../../../../components/shared/sidenav/sidenav.component';
 import { AuthService } from '../../../../services/auth.service';
 import { ToastService } from '../../../../services/toast.service';
 
@@ -61,7 +62,8 @@ interface DeveloperPreferences {
     MatProgressSpinnerModule,
     MatAutocompleteModule,
     ConfirmationModalComponent,
-    EntitiesComponent
+    EntitiesComponent,
+    SidenavComponent
   ],
   templateUrl: './project-generation-dashboard.component.html',
   styleUrls: ['./project-generation-dashboard.component.css']
@@ -76,6 +78,13 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
   hasUnsavedChanges = false;
   showInfoBanner = true;
   activeSection = 'general';
+
+  navItems: NavItem[] = [
+    { icon: 'settings', label: 'General', value: 'general' },
+    { icon: 'storage', label: 'Database', value: 'database' },
+    { icon: 'category', label: 'Entities', value: 'entities' },
+    { icon: 'tune', label: 'Developer', value: 'developer' }
+  ];
 
   entities: any[] = [];
   relations: any[] = [];

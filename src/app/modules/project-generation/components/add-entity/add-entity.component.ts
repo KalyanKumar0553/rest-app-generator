@@ -7,16 +7,7 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatSelectModule } from '@angular/material/select';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
-
-interface Field {
-  type: string;
-  name: string;
-  maxLength?: number;
-  primaryKey?: boolean;
-  required?: boolean;
-  unique?: boolean;
-  nameError?: string;
-}
+import { FieldItemComponent, Field } from '../field-item/field-item.component';
 
 interface Entity {
   name: string;
@@ -36,7 +27,8 @@ interface Entity {
     MatCheckboxModule,
     MatSelectModule,
     MatButtonModule,
-    MatIconModule
+    MatIconModule,
+    FieldItemComponent
   ],
   templateUrl: './add-entity.component.html',
   styleUrls: ['./add-entity.component.css']

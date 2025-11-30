@@ -1,6 +1,7 @@
 import { Component, OnInit, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
+import { MatIconModule } from '@angular/material/icon';
 import { LocalStorageService } from '../../../../services/local-storage.service';
 import { AuthService, UserData } from '../../../../services/auth.service';
 import { UserService, UserRoles } from '../../../../services/user.service';
@@ -8,6 +9,7 @@ import { ToastService } from '../../../../services/toast.service';
 import { MockApiService } from '../../../../services/mock-api.service';
 import { ConfirmationModalComponent, ModalButton } from '../../../../components/confirmation-modal/confirmation-modal.component';
 import { SearchSortComponent, SearchConfig, SortOption, SearchSortEvent } from '../../../../components/search-sort/search-sort.component';
+import { SidenavComponent, NavItem } from '../../../../components/shared/sidenav/sidenav.component';
 
 export interface Project {
   id: string;
@@ -21,7 +23,7 @@ export interface Project {
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, ConfirmationModalComponent, SearchSortComponent],
+  imports: [CommonModule, MatIconModule, ConfirmationModalComponent, SearchSortComponent, SidenavComponent],
   templateUrl: './dashboard.component.html',
   styleUrls: ['./dashboard.component.css']
 })
@@ -37,6 +39,13 @@ export class DashboardComponent implements OnInit {
   projects: Project[] = [];
   filteredProjects: Project[] = [];
   isLoadingProjects: boolean = false;
+  activeSection: string = 'projects';
+
+  navItems: NavItem[] = [
+    { icon: 'folder', label: 'Projects', value: 'projects' },
+    { icon: 'person', label: 'Profile', value: 'profile' },
+    { icon: 'settings', label: 'Settings', value: 'settings' }
+  ];
 
   searchConfig: SearchConfig = {
     placeholder: 'Search projects by name or description...',
@@ -165,6 +174,11 @@ export class DashboardComponent implements OnInit {
 
   closeSidebar(): void {
     this.isSidebarOpen = false;
+  }
+
+  navigateToSection(section: string): void {
+    this.activeSection = section;
+    this.closeSidebar();
   }
 
   loadProjects(): void {
