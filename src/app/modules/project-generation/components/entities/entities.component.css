@@ -167,30 +167,55 @@
   color: #1f2937;
 }
 
+.entity-body {
+  padding-top: 12px;
+}
+
 .entity-fields {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
+  margin-bottom: 8px;
 }
 
 .field-item {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 8px 12px;
-  background-color: #ffffff;
-  border-radius: 4px;
-  font-size: 14px;
+  gap: 8px;
+  padding: 0;
+  font-size: 15px;
+  line-height: 1.5;
 }
 
 .field-name {
-  color: #1f2937;
-  font-weight: 500;
+  color: #6b7280;
+  font-weight: 400;
 }
 
 .field-type {
   color: #6b7280;
-  font-size: 13px;
+  font-weight: 400;
+}
+
+.view-more-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #6b7280;
+  font-size: 14px;
+  padding: 6px 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: color 0.2s ease;
+  font-weight: 500;
+}
+
+.view-more-btn:hover {
+  color: #1f2937;
+}
+
+.view-more-btn i {
+  font-size: 12px;
 }
 
 .empty-state {
