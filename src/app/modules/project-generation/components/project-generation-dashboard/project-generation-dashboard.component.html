@@ -274,12 +274,12 @@
       </mat-accordion>
 
       <div class="action-section">
-        <button mat-raised-button color="primary" (click)="setupEntities()" [disabled]="isLoading">
+        <button mat-raised-button color="primary" type="button" (click)="setupEntities()" [disabled]="isLoading">
           <mat-spinner *ngIf="isLoading" diameter="20" class="button-spinner"></mat-spinner>
           <span *ngIf="!isLoading">Setup Entities</span>
           <span *ngIf="isLoading">Loading...</span>
         </button>
-        <button mat-raised-button (click)="saveProject()" [disabled]="isLoading">
+        <button mat-raised-button type="button" (click)="saveProject()" [disabled]="isLoading">
           Save Project
         </button>
       </div>

@@ -297,7 +297,7 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
   async setupEntities(): Promise<void> {
     this.isLoading = true;
     try {
-      this.toastService.success('Navigating to entity setup');
+      this.toastService.success('Entity setup initialized');
     } catch (error) {
       this.toastService.error('Failed to proceed');
       console.error('Error:', error);
