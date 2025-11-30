@@ -190,7 +190,7 @@
 .scrollable-content {
   flex: 1;
   overflow-y: auto;
-  padding: 0 32px;
+  padding: 0 32px 24px 32px;
 }
 
 .sticky-footer {
@@ -198,9 +198,10 @@
   bottom: 0;
   background-color: #f5faf9;
   z-index: 10;
-  padding: 0 32px 32px 32px;
+  padding: 24px 32px 32px 32px;
   border-top: 1px solid #e5e7eb;
   box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.05);
+  margin-top: auto;
 }
 
 .top-actions {
@@ -332,7 +333,6 @@
 .action-section {
   display: flex;
   gap: 16px;
-  padding: 24px 0;
 }
 
 .button-spinner {

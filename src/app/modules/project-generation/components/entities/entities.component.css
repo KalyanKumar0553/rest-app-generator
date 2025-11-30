@@ -1,5 +1,18 @@
 .entities-container {
   width: 100%;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.entities-sticky-header {
+  flex-shrink: 0;
+}
+
+.entities-scrollable {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
 }
 
 .import-section {
