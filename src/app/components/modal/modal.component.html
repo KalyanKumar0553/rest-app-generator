@@ -1,0 +1,13 @@
+<div class="modal-backdrop" *ngIf="isOpen" (click)="onBackdropClick()">
+  <div class="modal-container" [ngClass]="'modal-' + size" (click)="$event.stopPropagation()">
+    <div class="modal-header" *ngIf="showHeader">
+      <h2 class="modal-title">{{ title }}</h2>
+      <button class="modal-close-btn" (click)="onClose()" aria-label="Close modal">
+        <i class="bi bi-x-lg"></i>
+      </button>
+    </div>
+    <div class="modal-content">
+      <ng-content></ng-content>
+    </div>
+  </div>
+</div>

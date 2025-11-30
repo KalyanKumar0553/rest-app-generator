@@ -1,70 +1,79 @@
-import { Component, Input } from '@angular/core';
+import { Component, Input, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { AddEntityComponent } from '../add-entity/add-entity.component';
-
-interface Entity {
-  name: string;
-  mappedSuperclass: boolean;
-  addRestEndpoints: boolean;
-  fields: any[];
-}
-
-interface Relation {
-  sourceEntity: string;
-  targetEntity: string;
-  relationType: string;
-  fieldName: string;
-}
+import { ModalComponent } from '../../../../components/modal/modal.component';
+import { ProjectDataService, Entity, Relation } from '../../../../services/project-data.service';
 
 @Component({
   selector: 'app-entities',
   standalone: true,
-  imports: [CommonModule, AddEntityComponent],
+  imports: [CommonModule, AddEntityComponent, ModalComponent],
   templateUrl: './entities.component.html',
   styleUrls: ['./entities.component.css']
 })
-export class EntitiesComponent {
+export class EntitiesComponent implements OnInit {
   @Input() entities: Entity[] = [];
   @Input() relations: Relation[] = [];
 
-  showAddEntity = false;
+  showAddEntityModal = false;
   entitiesExpanded = true;
   relationsExpanded = true;
   editingEntity?: Entity;
+  editingEntityIndex?: number;
+
+  constructor(private projectDataService: ProjectDataService) {}
+
+  ngOnInit(): void {
+    const projectData = this.projectDataService.getProjectData();
+    if (projectData) {
+      this.entities = projectData.entities || [];
+      this.relations = projectData.relations || [];
+    }
+  }
 
   addEntity(): void {
     this.editingEntity = undefined;
-    this.showAddEntity = true;
+    this.editingEntityIndex = undefined;
+    this.showAddEntityModal = true;
   }
 
-  editEntity(entity: Entity): void {
-    this.editingEntity = entity;
-    this.showAddEntity = true;
+  editEntity(entity: Entity, index: number): void {
+    this.editingEntity = { ...entity };
+    this.editingEntityIndex = index;
+    this.showAddEntityModal = true;
   }
 
-  deleteEntity(entity: Entity): void {
-    const index = this.entities.indexOf(entity);
-    if (index > -1) {
-      this.entities.splice(index, 1);
+  deleteEntity(index: number): void {
+    this.projectDataService.deleteEntity(index);
+    const projectData = this.projectDataService.getProjectData();
+    if (projectData) {
+      this.entities = projectData.entities;
     }
   }
 
   onEntitySave(entity: Entity): void {
-    if (this.editingEntity) {
-      const index = this.entities.indexOf(this.editingEntity);
-      if (index > -1) {
-        this.entities[index] = entity;
-      }
+    if (this.editingEntityIndex !== undefined) {
+      this.projectDataService.updateEntity(this.editingEntityIndex, entity);
     } else {
-      this.entities.push(entity);
+      this.projectDataService.addEntity(entity);
     }
-    this.showAddEntity = false;
-    this.editingEntity = undefined;
+
+    const projectData = this.projectDataService.getProjectData();
+    if (projectData) {
+      this.entities = projectData.entities;
+    }
+
+    this.closeModal();
   }
 
   onEntityCancel(): void {
-    this.showAddEntity = false;
+    this.closeModal();
+  }
+
+  closeModal(): void {
+    this.showAddEntityModal = false;
     this.editingEntity = undefined;
+    this.editingEntityIndex = undefined;
   }
 
   toggleEntitiesPanel(): void {
