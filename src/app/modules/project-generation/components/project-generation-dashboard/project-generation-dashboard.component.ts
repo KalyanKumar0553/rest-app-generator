@@ -15,6 +15,7 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatAutocompleteModule } from '@angular/material/autocomplete';
 import { ConfirmationModalComponent } from '../../../../components/confirmation-modal/confirmation-modal.component';
+import { EntitiesComponent } from '../entities/entities.component';
 import { AuthService } from '../../../../services/auth.service';
 import { ToastService } from '../../../../services/toast.service';
 
@@ -48,6 +49,8 @@ interface ProjectData {
   database: DatabaseSettings;
   preferences: DeveloperPreferences;
   dependencies: string;
+  entities?: any[];
+  relations?: any[];
 }
 
 @Component({
@@ -67,7 +70,8 @@ interface ProjectData {
     MatTooltipModule,
     MatProgressSpinnerModule,
     MatAutocompleteModule,
-    ConfirmationModalComponent
+    ConfirmationModalComponent,
+    EntitiesComponent
   ],
   templateUrl: './project-generation-dashboard.component.html',
   styleUrls: ['./project-generation-dashboard.component.css']
@@ -81,6 +85,10 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
   projectId: number | null = null;
   hasUnsavedChanges = false;
   showInfoBanner = true;
+  activeSection = 'general';
+
+  entities: any[] = [];
+  relations: any[] = [];
 
   showBackConfirmation = false;
   backConfirmationConfig = {
@@ -204,6 +212,8 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
   async loadProject(projectId: number): Promise<void> {
     this.isLoading = true;
     try {
+      this.entities = [];
+      this.relations = [];
       this.toastService.success('Project loaded successfully');
     } catch (error) {
       this.toastService.error('Failed to load project');
@@ -228,10 +238,7 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
   }
 
   navigateToSection(section: string): void {
-    const element = document.getElementById(section);
-    if (element) {
-      element.scrollIntoView({ behavior: 'smooth' });
-    }
+    this.activeSection = section;
     this.closeSidebar();
   }
 

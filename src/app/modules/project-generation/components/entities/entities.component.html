@@ -1,0 +1,49 @@
+<div class="entities-container">
+  <div class="import-section">
+    <a href="#" class="import-link">Import Schema</a>
+  </div>
+
+  <div class="info-banner">
+    <div class="info-content">
+      <p>
+        Create your custom database model here. Names are transformed to follow proper naming conventions - please use singular
+        table names. Relation types with examples <a href="#" class="info-link">are explained here</a>.
+      </p>
+    </div>
+  </div>
+
+  <div class="entities-panel">
+    <div class="panel-header">
+      <h2 class="panel-title">Entities</h2>
+      <button class="add-btn" (click)="addEntity()" aria-label="Add entity">
+        <i class="bi bi-plus-circle"></i>
+      </button>
+    </div>
+
+    <div class="entities-list" *ngIf="entities.length > 0">
+      <div class="entity-card" *ngFor="let entity of entities">
+        <div class="entity-header">
+          <h3 class="entity-name">{{ entity.name }}</h3>
+          <div class="entity-actions">
+            <button class="icon-btn" aria-label="Edit entity">
+              <i class="bi bi-pencil"></i>
+            </button>
+            <button class="icon-btn" aria-label="Delete entity">
+              <i class="bi bi-trash"></i>
+            </button>
+          </div>
+        </div>
+        <div class="entity-fields" *ngIf="entity.fields && entity.fields.length > 0">
+          <div class="field-item" *ngFor="let field of entity.fields">
+            <span class="field-name">{{ field.name }}</span>
+            <span class="field-type">{{ field.type }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="empty-state" *ngIf="entities.length === 0">
+      <p>No entities created yet. Click the + button to add your first entity.</p>
+    </div>
+  </div>
+</div>
