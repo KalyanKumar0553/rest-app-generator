@@ -95,6 +95,15 @@
   </div>
 </div>
 
+<app-confirmation-modal
+  *ngIf="showDeleteConfirmation"
+  [title]="deleteModalConfig.title"
+  [message]="deleteModalConfig.message"
+  [buttons]="deleteModalConfig.buttons"
+  (confirm)="confirmDelete()"
+  (cancel)="cancelDelete()"
+></app-confirmation-modal>
+
 <app-modal
   [isOpen]="showAddEntityModal"
   [title]="''"

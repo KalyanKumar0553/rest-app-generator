@@ -2,6 +2,7 @@ import { Component, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ModalComponent } from '../../../../components/modal/modal.component';
 import { AddEntityComponent } from '../add-entity/add-entity.component';
+import { ConfirmationModalComponent, ModalButton } from '../../../../components/confirmation-modal/confirmation-modal.component';
 
 interface Entity {
   name: string;
@@ -18,7 +19,7 @@ interface Relation {
 @Component({
   selector: 'app-entities',
   standalone: true,
-  imports: [CommonModule, ModalComponent, AddEntityComponent],
+  imports: [CommonModule, ModalComponent, AddEntityComponent, ConfirmationModalComponent],
   templateUrl: './entities.component.html',
   styleUrls: ['./entities.component.css']
 })
@@ -31,6 +32,18 @@ export class EntitiesComponent {
   showAddEntityModal = false;
   editingEntity: Entity | null = null;
   editingEntityIndex: number | null = null;
+  showDeleteConfirmation = false;
+  deletingEntityIndex: number | null = null;
+  deletingEntityName: string = '';
+
+  deleteModalConfig = {
+    title: 'Delete Entity',
+    message: [''],
+    buttons: [
+      { text: 'Cancel', type: 'cancel' as const, action: 'cancel' as const },
+      { text: 'Delete', type: 'danger' as const, action: 'confirm' as const }
+    ]
+  };
 
   addEntity(): void {
     this.editingEntity = null;
@@ -45,9 +58,26 @@ export class EntitiesComponent {
   }
 
   deleteEntity(index: number): void {
-    if (confirm('Are you sure you want to delete this entity?')) {
-      this.entities.splice(index, 1);
+    this.deletingEntityIndex = index;
+    this.deletingEntityName = this.entities[index].name;
+    this.deleteModalConfig.message = [
+      `Are you sure you want to delete the entity "${this.deletingEntityName}"?`,
+      'This action cannot be undone and all associated fields will be removed.'
+    ];
+    this.showDeleteConfirmation = true;
+  }
+
+  confirmDelete(): void {
+    if (this.deletingEntityIndex !== null) {
+      this.entities.splice(this.deletingEntityIndex, 1);
     }
+    this.cancelDelete();
+  }
+
+  cancelDelete(): void {
+    this.showDeleteConfirmation = false;
+    this.deletingEntityIndex = null;
+    this.deletingEntityName = '';
   }
 
   onEntitySave(entity: Entity): void {
