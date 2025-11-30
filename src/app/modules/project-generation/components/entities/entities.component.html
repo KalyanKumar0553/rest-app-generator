@@ -123,8 +123,8 @@
 
 <app-modal
   [isOpen]="showAddEntityModal"
-  [title]="''"
-  [size]="'large'"
+  [title]="editingEntity ? 'Edit entity' : 'Add entity'"
+  [size]="'xlarge'"
   (close)="closeModal()">
   <app-add-entity
     [editEntity]="editingEntity"
@@ -132,6 +132,10 @@
     (save)="onEntitySave($event)"
     (cancel)="onEntityCancel()">
   </app-add-entity>
+  <div modal-footer>
+    <button mat-raised-button type="button" (click)="onEntityCancel()">Cancel</button>
+    <button mat-raised-button color="primary" type="button" (click)="saveEntity()">Save</button>
+  </div>
 </app-modal>
 
 <app-modal

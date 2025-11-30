@@ -63,8 +63,32 @@
   background-color: #f3f4f6;
 }
 
-.modal-content {
+.modal-header {
+  padding: 24px 24px 0;
+  border-bottom: 1px solid #e5e7eb;
+  margin-bottom: 0;
+}
+
+.modal-title {
+  font-size: 20px;
+  font-weight: 600;
+  color: #111827;
+  margin: 0 0 16px 0;
+  padding-right: 40px;
+}
+
+.modal-body {
   padding: 24px;
+  overflow-y: auto;
+}
+
+.modal-footer {
+  padding: 16px 24px;
+  border-top: 1px solid #e5e7eb;
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  background-color: #f9fafb;
 }
 
 @media (max-width: 768px) {
@@ -83,8 +107,16 @@
     max-width: 100%;
   }
 
-  .modal-content {
+  .modal-header {
+    padding: 20px 20px 0;
+  }
+
+  .modal-body {
     padding: 20px;
+  }
+
+  .modal-footer {
+    padding: 12px 20px;
   }
 }
 
@@ -99,8 +131,21 @@
     height: 100vh;
   }
 
-  .modal-content {
-    padding: 60px 16px 16px;
+  .modal-header {
+    padding: 60px 16px 0 16px;
+  }
+
+  .modal-body {
+    padding: 16px;
+  }
+
+  .modal-footer {
+    padding: 12px 16px;
+    flex-direction: column;
+  }
+
+  .modal-footer ::ng-deep button {
+    width: 100%;
   }
 
   .modal-close-btn {

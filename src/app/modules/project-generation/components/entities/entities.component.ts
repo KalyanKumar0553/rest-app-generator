@@ -1,10 +1,11 @@
-import { Component, Input } from '@angular/core';
+import { Component, Input, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ModalComponent } from '../../../../components/modal/modal.component';
 import { AddEntityComponent } from '../add-entity/add-entity.component';
 import { ConfirmationModalComponent, ModalButton } from '../../../../components/confirmation-modal/confirmation-modal.component';
 import { EntityDetailViewComponent } from '../entity-detail-view/entity-detail-view.component';
 import { MatIconModule } from '@angular/material/icon';
+import { MatButtonModule } from '@angular/material/button';
 
 interface Entity {
   name: string;
@@ -21,13 +22,14 @@ interface Relation {
 @Component({
   selector: 'app-entities',
   standalone: true,
-  imports: [CommonModule, ModalComponent, AddEntityComponent, ConfirmationModalComponent, EntityDetailViewComponent, MatIconModule],
+  imports: [CommonModule, ModalComponent, AddEntityComponent, ConfirmationModalComponent, EntityDetailViewComponent, MatIconModule, MatButtonModule],
   templateUrl: './entities.component.html',
   styleUrls: ['./entities.component.css']
 })
 export class EntitiesComponent {
   @Input() entities: Entity[] = [];
   @Input() relations: Relation[] = [];
+  @ViewChild(AddEntityComponent) addEntityComponent!: AddEntityComponent;
 
   showInfoBanner = true;
 
@@ -107,6 +109,12 @@ export class EntitiesComponent {
     this.showAddEntityModal = false;
     this.editingEntity = null;
     this.editingEntityIndex = null;
+  }
+
+  saveEntity(): void {
+    if (this.addEntityComponent) {
+      this.addEntityComponent.onSave();
+    }
   }
 
   closeInfoBanner(): void {
