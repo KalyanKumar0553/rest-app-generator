@@ -196,7 +196,7 @@
 
 .sticky-footer {
   position: sticky;
-  bottom: 0;
+  bottom: 40px;
   background-color: #f5faf9;
   z-index: 10;
   padding: 24px 32px 32px 32px;
