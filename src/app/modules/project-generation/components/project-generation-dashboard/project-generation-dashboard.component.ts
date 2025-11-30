@@ -80,10 +80,11 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
   activeSection = 'general';
 
   navItems: NavItem[] = [
-    { icon: 'settings', label: 'General', value: 'general' },
-    { icon: 'storage', label: 'Database', value: 'database' },
-    { icon: 'category', label: 'Entities', value: 'entities' },
-    { icon: 'tune', label: 'Developer', value: 'developer' }
+    { icon: 'public', label: 'General', value: 'general' },
+    { icon: 'storage', label: 'Entities', value: 'entities' },
+    { icon: 'category', label: 'Data Objects', value: 'data-objects' },
+    { icon: 'search', label: 'Explore', value: 'explore' },
+    { icon: 'download', label: 'Download', value: 'download' }
   ];
 
   entities: any[] = [];

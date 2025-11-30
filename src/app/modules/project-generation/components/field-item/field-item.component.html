@@ -1,92 +1,79 @@
 <div class="field-item">
-  <div class="field-row-1">
-    <div class="field-order-controls" *ngIf="canDelete">
-      <button
-        mat-icon-button
-        class="order-btn"
-        type="button"
-        [disabled]="!canMoveUp"
-        (click)="onMoveUp()"
-        aria-label="Move field up">
-        <mat-icon>expand_less</mat-icon>
-      </button>
-      <button
-        mat-icon-button
-        class="order-btn"
-        type="button"
-        [disabled]="!canMoveDown"
-        (click)="onMoveDown()"
-        aria-label="Move field down">
-        <mat-icon>expand_more</mat-icon>
-      </button>
-    </div>
+  <mat-form-field appearance="outline" class="field-type-select">
+    <mat-select
+      [(ngModel)]="field.type"
+      (selectionChange)="onTypeChange()">
+      <mat-option *ngFor="let type of fieldTypes" [value]="type">{{ type }}</mat-option>
+    </mat-select>
+  </mat-form-field>
 
-    <mat-form-field appearance="outline" class="field-input-wrapper">
-      <mat-label>Field name</mat-label>
-      <input
-        matInput
-        [(ngModel)]="field.name"
-        (ngModelChange)="onNameChange()"
-        [disabled]="field.primaryKey"
-        placeholder="Field name">
-      <mat-error *ngIf="field.nameError">{{ field.nameError }}</mat-error>
-    </mat-form-field>
+  <div class="field-name-group">
+    <label class="field-label">Field name</label>
+    <input
+      class="field-input"
+      [(ngModel)]="field.name"
+      (ngModelChange)="onNameChange()"
+      [disabled]="field.primaryKey"
+      placeholder="Field name">
+    <div class="field-error" *ngIf="field.nameError">{{ field.nameError }}</div>
+  </div>
 
-    <mat-form-field appearance="outline" class="field-input-wrapper-small" *ngIf="field.type === 'String'">
-      <mat-label>Max length</mat-label>
-      <input
-        matInput
-        type="number"
-        [(ngModel)]="field.maxLength"
-        (ngModelChange)="onFieldUpdate()"
-        placeholder="255">
-    </mat-form-field>
+  <div class="field-max-length-group" *ngIf="field.type === 'String'">
+    <label class="field-label">Max length</label>
+    <input
+      class="field-input field-input-small"
+      type="number"
+      [(ngModel)]="field.maxLength"
+      (ngModelChange)="onFieldUpdate()"
+      placeholder="255">
+  </div>
 
+  <div class="field-constraints">
+    <mat-checkbox
+      *ngIf="field.primaryKey"
+      [(ngModel)]="field.primaryKey"
+      [disabled]="true"
+      color="primary"
+      class="constraint-checkbox">
+      Primary key
+    </mat-checkbox>
+
+    <mat-checkbox
+      *ngIf="!field.primaryKey"
+      [(ngModel)]="field.required"
+      (change)="onFieldUpdate()"
+      color="primary"
+      class="constraint-checkbox">
+      Required
+    </mat-checkbox>
+
+    <mat-checkbox
+      *ngIf="!field.primaryKey"
+      [(ngModel)]="field.unique"
+      (change)="onFieldUpdate()"
+      color="primary"
+      class="constraint-checkbox">
+      Unique
+    </mat-checkbox>
+  </div>
+
+  <div class="field-actions">
     <button
       mat-icon-button
-      class="delete-field-btn"
+      class="action-btn delete-btn"
       type="button"
       *ngIf="canDelete"
       (click)="onDelete()"
       aria-label="Delete field">
       <mat-icon>delete</mat-icon>
     </button>
-  </div>
-
-  <div class="field-row-2">
-    <mat-form-field appearance="outline" class="field-type-wrapper">
-      <mat-label>Type</mat-label>
-      <mat-select
-        [(ngModel)]="field.type"
-        (selectionChange)="onTypeChange()">
-        <mat-option *ngFor="let type of fieldTypes" [value]="type">{{ type }}</mat-option>
-      </mat-select>
-    </mat-form-field>
-
-    <div class="field-constraints">
-      <mat-checkbox
-        *ngIf="field.primaryKey"
-        [(ngModel)]="field.primaryKey"
-        [disabled]="true"
-        color="primary">
-        Primary key
-      </mat-checkbox>
-
-      <mat-checkbox
-        *ngIf="!field.primaryKey"
-        [(ngModel)]="field.required"
-        (change)="onFieldUpdate()"
-        color="primary">
-        Required
-      </mat-checkbox>
-
-      <mat-checkbox
-        *ngIf="!field.primaryKey"
-        [(ngModel)]="field.unique"
-        (change)="onFieldUpdate()"
-        color="primary">
-        Unique
-      </mat-checkbox>
-    </div>
+    <button
+      mat-icon-button
+      class="action-btn drag-btn"
+      type="button"
+      *ngIf="canDelete"
+      aria-label="Reorder field">
+      <mat-icon>drag_indicator</mat-icon>
+    </button>
   </div>
 </div>

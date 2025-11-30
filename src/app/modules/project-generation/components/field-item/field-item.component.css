@@ -1,131 +1,167 @@
 .field-item {
-  padding: 16px;
-  background-color: #f9fafb;
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 20px;
+  background-color: #ffffff;
   border: 1px solid #e5e7eb;
   border-radius: 8px;
+  margin-bottom: 16px;
 }
 
-.field-row-1 {
-  display: flex;
-  gap: 12px;
-  align-items: flex-start;
-  margin-bottom: 12px;
-}
-
-.field-row-2 {
-  display: flex;
-  gap: 12px;
-  align-items: center;
-  justify-content: flex-end;
-}
-
-.field-order-controls {
-  display: flex;
-  flex-direction: column;
-  gap: 0;
-  margin-right: 4px;
-  margin-top: 8px;
+.field-type-select {
+  width: 200px;
   flex-shrink: 0;
 }
 
-.order-btn {
-  width: 32px;
-  height: 32px;
-  padding: 0;
+.field-type-select ::ng-deep .mat-mdc-form-field-subscript-wrapper {
+  display: none;
 }
 
-.order-btn mat-icon {
-  font-size: 20px;
-  width: 20px;
-  height: 20px;
-  color: #6b7280;
-}
-
-.order-btn:disabled mat-icon {
-  color: #d1d5db;
-}
-
-.field-type-wrapper {
-  min-width: 140px;
-  flex-shrink: 0;
-}
-
-.field-input-wrapper {
+.field-name-group {
   flex: 1;
   min-width: 200px;
 }
 
-.field-input-wrapper-small {
-  width: 140px;
+.field-max-length-group {
+  width: 180px;
   flex-shrink: 0;
+}
+
+.field-label {
+  display: block;
+  font-size: 14px;
+  font-weight: 500;
+  color: #374151;
+  margin-bottom: 8px;
+}
+
+.field-input {
+  width: 100%;
+  padding: 10px 12px;
+  font-size: 14px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  outline: none;
+  transition: border-color 0.2s ease;
+}
+
+.field-input:focus {
+  border-color: #8b9fa6;
+}
+
+.field-input:disabled {
+  background-color: #f3f4f6;
+  color: #9ca3af;
+  cursor: not-allowed;
+}
+
+.field-input-small {
+  width: 100%;
+}
+
+.field-error {
+  color: #dc2626;
+  font-size: 12px;
+  margin-top: 4px;
 }
 
 .field-constraints {
   display: flex;
-  align-items: center;
-  gap: 16px;
-  flex-wrap: wrap;
-}
-
-.delete-field-btn {
-  width: 40px;
-  height: 40px;
-  flex-shrink: 0;
-  margin-top: 8px;
+  flex-direction: column;
+  gap: 12px;
   margin-left: auto;
+  padding-right: 12px;
 }
 
-.delete-field-btn mat-icon {
-  color: #9ca3af;
+.constraint-checkbox {
+  margin: 0;
+}
+
+.constraint-checkbox ::ng-deep .mdc-form-field {
+  padding: 0;
+}
+
+.constraint-checkbox ::ng-deep .mdc-label {
+  font-size: 14px;
+  color: #374151;
+}
+
+.field-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.action-btn {
+  width: 36px;
+  height: 36px;
+  padding: 0;
+}
+
+.action-btn mat-icon {
   font-size: 20px;
   width: 20px;
   height: 20px;
+  color: #9ca3af;
 }
 
-.delete-field-btn:hover mat-icon {
+.delete-btn:hover mat-icon {
   color: #dc2626;
 }
 
-@media (max-width: 768px) {
-  .field-row-1 {
+.drag-btn {
+  cursor: grab;
+}
+
+.drag-btn:active {
+  cursor: grabbing;
+}
+
+.drag-btn mat-icon {
+  color: #d1d5db;
+}
+
+@media (max-width: 1024px) {
+  .field-item {
     flex-wrap: wrap;
+    gap: 12px;
   }
 
-  .field-order-controls {
-    flex-direction: row;
-    width: 100%;
-    order: 3;
-    margin-top: 12px;
-    margin-right: 0;
-  }
-
-  .field-input-wrapper {
-    width: 100%;
-    min-width: 100%;
-  }
-
-  .field-input-wrapper-small {
+  .field-type-select {
     width: 100%;
   }
 
-  .delete-field-btn {
-    order: 1;
-    margin-left: auto;
-    margin-top: 0;
-  }
-
-  .field-row-2 {
-    flex-wrap: wrap;
-    justify-content: flex-start;
-  }
-
-  .field-type-wrapper {
+  .field-name-group {
     width: 100%;
-    min-width: 100%;
+  }
+
+  .field-max-length-group {
+    width: 100%;
   }
 
   .field-constraints {
     width: 100%;
-    justify-content: flex-start;
+    flex-direction: row;
+    margin-left: 0;
+    padding-right: 0;
+  }
+
+  .field-actions {
+    flex-direction: row;
+    width: 100%;
+    justify-content: flex-end;
+  }
+}
+
+@media (max-width: 768px) {
+  .field-item {
+    padding: 16px;
+  }
+
+  .field-constraints {
+    flex-direction: column;
+    align-items: flex-start;
   }
 }
