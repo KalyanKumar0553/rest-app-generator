@@ -1,6 +1,12 @@
 import { Component, EventEmitter, Input, Output, OnChanges, SimpleChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { MatCheckboxModule } from '@angular/material/checkbox';
+import { MatSelectModule } from '@angular/material/select';
+import { MatButtonModule } from '@angular/material/button';
+import { MatIconModule } from '@angular/material/icon';
 
 interface Field {
   type: string;
@@ -21,7 +27,16 @@ interface Entity {
 @Component({
   selector: 'app-add-entity',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [
+    CommonModule,
+    FormsModule,
+    MatFormFieldModule,
+    MatInputModule,
+    MatCheckboxModule,
+    MatSelectModule,
+    MatButtonModule,
+    MatIconModule
+  ],
   templateUrl: './add-entity.component.html',
   styleUrls: ['./add-entity.component.css']
 })
@@ -172,5 +187,22 @@ export class AddEntityComponent implements OnChanges {
   onCancel(): void {
     this.resetForm();
     this.cancel.emit();
+  }
+
+  onMappedSuperclassChange(): void {
+    if (this.mappedSuperclass) {
+      this.fields = [];
+      this.addRestEndpoints = false;
+    } else {
+      this.fields = [
+        {
+          type: 'Long',
+          name: 'id',
+          primaryKey: true,
+          required: false,
+          unique: false
+        }
+      ];
+    }
   }
 }

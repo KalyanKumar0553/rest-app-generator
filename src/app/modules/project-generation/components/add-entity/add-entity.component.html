@@ -4,53 +4,51 @@
   </div>
 
   <div class="entity-form">
-    <div class="form-group">
-      <label class="form-label">Name</label>
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Name</mat-label>
       <input
-        type="text"
-        class="form-input"
+        matInput
         [(ngModel)]="entityName"
-        [class.error]="!!nameError"
         placeholder="Entity name">
-      <span class="error-message" *ngIf="nameError">{{ nameError }}</span>
-    </div>
+      <mat-error *ngIf="nameError">{{ nameError }}</mat-error>
+    </mat-form-field>
 
     <div class="form-group checkbox-group">
-      <label class="checkbox-label">
-        <input
-          type="checkbox"
-          class="checkbox-input"
-          [(ngModel)]="mappedSuperclass">
-        <span class="checkbox-text">Mapped superclass</span>
-        <button class="help-btn" type="button" aria-label="Help">
-          <i class="bi bi-question-circle"></i>
-        </button>
-      </label>
+      <mat-checkbox
+        [(ngModel)]="mappedSuperclass"
+        (change)="onMappedSuperclassChange()"
+        color="primary">
+        Mapped superclass
+      </mat-checkbox>
+      <button class="help-btn" type="button" aria-label="Help">
+        <i class="bi bi-question-circle"></i>
+      </button>
     </div>
 
     <div class="section-divider"></div>
 
-    <h3 class="section-title">CRUD Options</h3>
-    <div class="form-group checkbox-group">
-      <label class="checkbox-label">
-        <input
-          type="checkbox"
-          class="checkbox-input"
-          [(ngModel)]="addRestEndpoints">
-        <span class="checkbox-text">Add REST endpoints</span>
+    <div class="crud-section" *ngIf="!mappedSuperclass">
+      <h3 class="section-title">CRUD Options</h3>
+      <div class="form-group checkbox-group">
+        <mat-checkbox
+          [(ngModel)]="addRestEndpoints"
+          [disabled]="mappedSuperclass"
+          color="primary">
+          Add REST endpoints
+        </mat-checkbox>
         <button class="help-btn" type="button" aria-label="Help">
           <i class="bi bi-question-circle"></i>
         </button>
-      </label>
+      </div>
+
+      <div class="section-divider"></div>
     </div>
 
-    <div class="section-divider"></div>
-
-    <div class="fields-section">
+    <div class="fields-section" *ngIf="!mappedSuperclass">
       <div class="fields-header">
         <h3 class="section-title">Fields</h3>
         <button class="add-field-btn" type="button" (click)="addField()" aria-label="Add field">
-          <i class="bi bi-plus-circle"></i>
+          <mat-icon>add_circle</mat-icon>
         </button>
       </div>
 
@@ -59,83 +57,84 @@
           <div class="field-main">
             <div class="field-order-controls" *ngIf="i > 0">
               <button
+                mat-icon-button
                 class="order-btn"
                 type="button"
                 [disabled]="i === 1"
                 (click)="moveFieldUp(i)"
                 aria-label="Move field up">
-                <i class="bi bi-chevron-up"></i>
+                <mat-icon>expand_less</mat-icon>
               </button>
               <button
+                mat-icon-button
                 class="order-btn"
                 type="button"
                 [disabled]="i === fields.length - 1"
                 (click)="moveFieldDown(i)"
                 aria-label="Move field down">
-                <i class="bi bi-chevron-down"></i>
+                <mat-icon>expand_more</mat-icon>
               </button>
             </div>
 
-            <div class="field-type-wrapper">
-              <select
-                class="field-select"
+            <mat-form-field appearance="outline" class="field-type-wrapper">
+              <mat-label>Type</mat-label>
+              <mat-select
                 [(ngModel)]="field.type"
-                (change)="onFieldTypeChange(field)">
-                <option *ngFor="let type of fieldTypes" [value]="type">{{ type }}</option>
-              </select>
-            </div>
+                (selectionChange)="onFieldTypeChange(field)">
+                <mat-option *ngFor="let type of fieldTypes" [value]="type">{{ type }}</mat-option>
+              </mat-select>
+            </mat-form-field>
 
-            <div class="field-input-wrapper">
+            <mat-form-field appearance="outline" class="field-input-wrapper">
+              <mat-label>Field name</mat-label>
               <input
-                type="text"
-                class="field-input"
+                matInput
                 [(ngModel)]="field.name"
                 [disabled]="field.primaryKey"
                 placeholder="Field name">
-            </div>
+            </mat-form-field>
 
-            <div class="field-input-wrapper" *ngIf="field.type === 'String'">
+            <mat-form-field appearance="outline" class="field-input-wrapper-small" *ngIf="field.type === 'String'">
+              <mat-label>Max length</mat-label>
               <input
+                matInput
                 type="number"
-                class="field-input field-input-small"
                 [(ngModel)]="field.maxLength"
                 placeholder="255">
-            </div>
+            </mat-form-field>
 
             <div class="field-constraints">
-              <label class="constraint-label" *ngIf="field.primaryKey">
-                <input
-                  type="checkbox"
-                  class="constraint-checkbox"
-                  [(ngModel)]="field.primaryKey"
-                  disabled>
-                <span>Primary key</span>
-              </label>
+              <mat-checkbox
+                *ngIf="field.primaryKey"
+                [(ngModel)]="field.primaryKey"
+                [disabled]="true"
+                color="primary">
+                Primary key
+              </mat-checkbox>
 
-              <label class="constraint-label" *ngIf="!field.primaryKey">
-                <input
-                  type="checkbox"
-                  class="constraint-checkbox"
-                  [(ngModel)]="field.required">
-                <span>Required</span>
-              </label>
+              <mat-checkbox
+                *ngIf="!field.primaryKey"
+                [(ngModel)]="field.required"
+                color="primary">
+                Required
+              </mat-checkbox>
 
-              <label class="constraint-label" *ngIf="!field.primaryKey">
-                <input
-                  type="checkbox"
-                  class="constraint-checkbox"
-                  [(ngModel)]="field.unique">
-                <span>Unique</span>
-              </label>
+              <mat-checkbox
+                *ngIf="!field.primaryKey"
+                [(ngModel)]="field.unique"
+                color="primary">
+                Unique
+              </mat-checkbox>
             </div>
 
             <button
+              mat-icon-button
               class="delete-field-btn"
               type="button"
               *ngIf="i > 0"
               (click)="removeField(i)"
               aria-label="Delete field">
-              <i class="bi bi-trash"></i>
+              <mat-icon>delete</mat-icon>
             </button>
           </div>
         </div>
@@ -143,8 +142,8 @@
     </div>
 
     <div class="form-actions">
-      <button class="btn btn-save" type="button" (click)="onSave()">Save</button>
-      <button class="btn btn-cancel" type="button" (click)="onCancel()">Cancel</button>
+      <button mat-raised-button color="primary" type="button" (click)="onSave()">Save</button>
+      <button mat-raised-button type="button" (click)="onCancel()">Cancel</button>
     </div>
   </div>
 </div>
