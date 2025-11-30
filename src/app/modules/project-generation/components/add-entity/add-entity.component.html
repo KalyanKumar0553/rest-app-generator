@@ -10,7 +10,7 @@
         type="text"
         class="form-input"
         [(ngModel)]="entityName"
-        [class.error]="nameError"
+        [class.error]="!!nameError"
         placeholder="Entity name">
       <span class="error-message" *ngIf="nameError">{{ nameError }}</span>
     </div>
@@ -109,7 +109,7 @@
                   class="constraint-checkbox"
                   [(ngModel)]="field.primaryKey"
                   disabled>
-                <span>PK</span>
+                <span>Primary key</span>
               </label>
 
               <label class="constraint-label" *ngIf="!field.primaryKey">
@@ -117,7 +117,7 @@
                   type="checkbox"
                   class="constraint-checkbox"
                   [(ngModel)]="field.required">
-                <span>Req</span>
+                <span>Required</span>
               </label>
 
               <label class="constraint-label" *ngIf="!field.primaryKey">
@@ -125,7 +125,7 @@
                   type="checkbox"
                   class="constraint-checkbox"
                   [(ngModel)]="field.unique">
-                <span>Uniq</span>
+                <span>Unique</span>
               </label>
             </div>
 
