@@ -94,3 +94,14 @@
     </div>
   </div>
 </div>
+
+<app-modal
+  [isOpen]="showAddEntityModal"
+  [title]="''"
+  [size]="'large'"
+  (close)="closeModal()">
+  <app-add-entity
+    (save)="onEntitySave($event)"
+    (cancel)="onEntityCancel()">
+  </app-add-entity>
+</app-modal>
