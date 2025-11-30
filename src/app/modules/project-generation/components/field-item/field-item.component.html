@@ -1,11 +1,14 @@
 <div class="field-item">
-  <mat-form-field appearance="outline" class="field-type-select">
-    <mat-select
-      [(ngModel)]="field.type"
-      (selectionChange)="onTypeChange()">
-      <mat-option *ngFor="let type of fieldTypes" [value]="type">{{ type }}</mat-option>
-    </mat-select>
-  </mat-form-field>
+  <div class="field-type-group">
+    <label class="field-label">Field Type</label>
+    <mat-form-field appearance="outline" class="field-type-select">
+      <mat-select
+        [(ngModel)]="field.type"
+        (selectionChange)="onTypeChange()">
+        <mat-option *ngFor="let type of fieldTypes" [value]="type">{{ type }}</mat-option>
+      </mat-select>
+    </mat-form-field>
+  </div>
 
   <div class="field-name-group">
     <label class="field-label">Field name</label>
@@ -67,13 +70,25 @@
       aria-label="Delete field">
       <mat-icon>delete</mat-icon>
     </button>
-    <button
-      mat-icon-button
-      class="action-btn drag-btn"
-      type="button"
-      *ngIf="canDelete"
-      aria-label="Reorder field">
-      <mat-icon>drag_indicator</mat-icon>
-    </button>
+    <div class="reorder-controls" *ngIf="canDelete">
+      <button
+        mat-icon-button
+        class="action-btn reorder-btn"
+        type="button"
+        [disabled]="!canMoveUp"
+        (click)="onMoveUp()"
+        aria-label="Move field up">
+        <mat-icon>keyboard_arrow_up</mat-icon>
+      </button>
+      <button
+        mat-icon-button
+        class="action-btn reorder-btn"
+        type="button"
+        [disabled]="!canMoveDown"
+        (click)="onMoveDown()"
+        aria-label="Move field down">
+        <mat-icon>keyboard_arrow_down</mat-icon>
+      </button>
+    </div>
   </div>
 </div>
