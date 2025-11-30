@@ -12,38 +12,92 @@
     </div>
   </div>
 
-  <div class="entities-panel">
-    <div class="panel-header">
-      <h2 class="panel-title">Entities</h2>
-      <button class="add-btn" (click)="addEntity()" aria-label="Add entity">
+  <div class="expansion-panel">
+    <div class="panel-header" (click)="toggleEntitiesPanel()">
+      <div class="panel-title-section">
+        <button class="expand-btn" [class.expanded]="entitiesExpanded">
+          <i class="bi" [ngClass]="entitiesExpanded ? 'bi-chevron-down' : 'bi-chevron-right'"></i>
+        </button>
+        <h2 class="panel-title">Entities</h2>
+      </div>
+      <button class="add-btn" (click)="addEntity(); $event.stopPropagation()" aria-label="Add entity">
         <i class="bi bi-plus-circle"></i>
       </button>
     </div>
 
-    <div class="entities-list" *ngIf="entities.length > 0">
-      <div class="entity-card" *ngFor="let entity of entities">
-        <div class="entity-header">
-          <h3 class="entity-name">{{ entity.name }}</h3>
-          <div class="entity-actions">
-            <button class="icon-btn" aria-label="Edit entity">
-              <i class="bi bi-pencil"></i>
-            </button>
-            <button class="icon-btn" aria-label="Delete entity">
-              <i class="bi bi-trash"></i>
-            </button>
+    <div class="panel-body" *ngIf="entitiesExpanded">
+      <app-add-entity
+        *ngIf="showAddEntity"
+        [editEntity]="editingEntity"
+        (save)="onEntitySave($event)"
+        (cancel)="onEntityCancel()">
+      </app-add-entity>
+
+      <div class="entities-list" *ngIf="entities.length > 0 && !showAddEntity">
+        <div class="entity-card" *ngFor="let entity of entities">
+          <div class="entity-header">
+            <h3 class="entity-name">{{ entity.name }}</h3>
+            <div class="entity-actions">
+              <button class="icon-btn" (click)="editEntity(entity)" aria-label="Edit entity">
+                <i class="bi bi-pencil"></i>
+              </button>
+              <button class="icon-btn" (click)="deleteEntity(entity)" aria-label="Delete entity">
+                <i class="bi bi-trash"></i>
+              </button>
+            </div>
           </div>
-        </div>
-        <div class="entity-fields" *ngIf="entity.fields && entity.fields.length > 0">
-          <div class="field-item" *ngFor="let field of entity.fields">
-            <span class="field-name">{{ field.name }}</span>
-            <span class="field-type">{{ field.type }}</span>
+          <div class="entity-fields" *ngIf="entity.fields && entity.fields.length > 0">
+            <div class="field-item" *ngFor="let field of entity.fields">
+              <span class="field-name">{{ field.name }}</span>
+              <span class="field-type">{{ field.type }}</span>
+            </div>
           </div>
         </div>
       </div>
+
+      <div class="empty-state" *ngIf="entities.length === 0 && !showAddEntity">
+        <p>No entities created yet. Click the + button to add your first entity.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="expansion-panel">
+    <div class="panel-header" (click)="toggleRelationsPanel()">
+      <div class="panel-title-section">
+        <button class="expand-btn" [class.expanded]="relationsExpanded">
+          <i class="bi" [ngClass]="relationsExpanded ? 'bi-chevron-down' : 'bi-chevron-right'"></i>
+        </button>
+        <h2 class="panel-title">Relations</h2>
+      </div>
+      <button class="add-btn" (click)="addRelation(); $event.stopPropagation()" aria-label="Add relation">
+        <i class="bi bi-plus-circle"></i>
+      </button>
     </div>
 
-    <div class="empty-state" *ngIf="entities.length === 0">
-      <p>No entities created yet. Click the + button to add your first entity.</p>
+    <div class="panel-body" *ngIf="relationsExpanded">
+      <div class="relations-list" *ngIf="relations.length > 0">
+        <div class="relation-card" *ngFor="let relation of relations">
+          <div class="relation-header">
+            <span class="relation-text">{{ relation.sourceEntity }} → {{ relation.targetEntity }}</span>
+            <div class="relation-actions">
+              <button class="icon-btn" aria-label="Edit relation">
+                <i class="bi bi-pencil"></i>
+              </button>
+              <button class="icon-btn" aria-label="Delete relation">
+                <i class="bi bi-trash"></i>
+              </button>
+            </div>
+          </div>
+          <div class="relation-details">
+            <span class="relation-type">{{ relation.relationType }}</span>
+            <span class="relation-field">{{ relation.fieldName }}</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="empty-state" *ngIf="relations.length === 0">
+        <p>No relations created yet. Click the + button to add your first relation.</p>
+      </div>
     </div>
   </div>
 </div>
