@@ -1,35 +1,33 @@
 <div class="field-item">
-  <div class="field-type-group">
-    <label class="field-label">Field Type</label>
-    <mat-form-field appearance="outline" class="field-type-select">
-      <mat-select
-        [(ngModel)]="field.type"
-        (selectionChange)="onTypeChange()">
-        <mat-option *ngFor="let type of fieldTypes" [value]="type">{{ type }}</mat-option>
-      </mat-select>
-    </mat-form-field>
-  </div>
+  <mat-form-field appearance="outline" class="field-type-select">
+    <mat-label>Field Type</mat-label>
+    <mat-select
+      [(ngModel)]="field.type"
+      (selectionChange)="onTypeChange()">
+      <mat-option *ngFor="let type of fieldTypes" [value]="type">{{ type }}</mat-option>
+    </mat-select>
+  </mat-form-field>
 
-  <div class="field-name-group">
-    <label class="field-label">Field name</label>
+  <mat-form-field appearance="outline" class="field-name-input">
+    <mat-label>Field name</mat-label>
     <input
-      class="field-input"
+      matInput
       [(ngModel)]="field.name"
       (ngModelChange)="onNameChange()"
       [disabled]="field.primaryKey"
       placeholder="Field name">
-    <div class="field-error" *ngIf="field.nameError">{{ field.nameError }}</div>
-  </div>
+    <mat-error *ngIf="field.nameError">{{ field.nameError }}</mat-error>
+  </mat-form-field>
 
-  <div class="field-max-length-group" *ngIf="field.type === 'String'">
-    <label class="field-label">Max length</label>
+  <mat-form-field appearance="outline" class="field-max-length-input" *ngIf="field.type === 'String'">
+    <mat-label>Max length</mat-label>
     <input
-      class="field-input field-input-small"
+      matInput
       type="number"
       [(ngModel)]="field.maxLength"
       (ngModelChange)="onFieldUpdate()"
       placeholder="255">
-  </div>
+  </mat-form-field>
 
   <div class="field-constraints">
     <mat-checkbox
