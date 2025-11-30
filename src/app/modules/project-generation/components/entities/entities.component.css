@@ -41,18 +41,47 @@
   opacity: 0.8;
 }
 
-.entities-panel {
+.expansion-panel {
   background-color: #ffffff;
   border-radius: 8px;
-  padding: 24px;
+  margin-bottom: 24px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
 }
 
 .panel-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 24px;
+  padding: 20px 24px;
+  cursor: pointer;
+  background-color: #ffffff;
+  border-bottom: 1px solid #e5e7eb;
+  transition: background-color 0.2s ease;
+}
+
+.panel-header:hover {
+  background-color: #f9fafb;
+}
+
+.panel-title-section {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.expand-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #6b7280;
+  font-size: 20px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s ease;
+  line-height: 1;
 }
 
 .panel-title {
@@ -60,6 +89,10 @@
   font-weight: 600;
   color: #1f2937;
   margin: 0;
+}
+
+.panel-body {
+  padding: 24px;
 }
 
 .add-btn {
@@ -167,8 +200,63 @@
   font-size: 15px;
 }
 
+.relations-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.relation-card {
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 20px;
+  background-color: #f9fafb;
+  transition: box-shadow 0.2s ease;
+}
+
+.relation-card:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.relation-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.relation-text {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.relation-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.relation-details {
+  display: flex;
+  gap: 16px;
+  font-size: 14px;
+}
+
+.relation-type {
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.relation-field {
+  color: #9ca3af;
+}
+
 @media (max-width: 768px) {
-  .entities-panel {
+  .expansion-panel {
+    margin-bottom: 20px;
+  }
+
+  .panel-body {
     padding: 20px 16px;
   }
 
@@ -204,7 +292,15 @@
 }
 
 @media (max-width: 480px) {
-  .entities-panel {
+  .expansion-panel {
+    margin-bottom: 16px;
+  }
+
+  .panel-header {
+    padding: 16px;
+  }
+
+  .panel-body {
     padding: 16px 12px;
   }
 
@@ -213,12 +309,17 @@
     font-size: 12px;
   }
 
-  .panel-header {
-    margin-bottom: 16px;
-  }
-
   .empty-state {
     padding: 40px 16px;
     font-size: 14px;
+  }
+
+  .relation-card {
+    padding: 16px;
+  }
+
+  .relation-details {
+    flex-direction: column;
+    gap: 8px;
   }
 }
