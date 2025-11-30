@@ -18,86 +18,40 @@
 
 .entity-form {
   max-width: 100%;
+  padding: 0 32px 32px 32px;
+}
+
+.full-width {
+  width: 100%;
+  margin-bottom: 8px;
 }
 
 .form-group {
   margin-bottom: 24px;
 }
 
-.form-label {
-  display: block;
-  font-size: 16px;
-  font-weight: 600;
-  color: #dc6454;
-  margin-bottom: 8px;
-}
-
-.form-input {
-  width: 100%;
-  padding: 12px 16px;
-  border: 2px solid #dc6454;
-  border-radius: 4px;
-  font-size: 15px;
-  color: #1f2937;
-  transition: border-color 0.2s ease;
-  box-sizing: border-box;
-}
-
-.form-input:focus {
-  outline: none;
-  border-color: #c55544;
-}
-
-.form-input.error {
-  border-color: #dc2626;
-}
-
-.error-message {
-  display: block;
-  color: #dc6454;
-  font-size: 14px;
-  margin-top: 6px;
-}
-
 .checkbox-group {
-  margin-bottom: 16px;
-}
-
-.checkbox-label {
   display: flex;
   align-items: center;
   gap: 12px;
-  cursor: pointer;
-  font-size: 16px;
-  color: #4b5563;
-}
-
-.checkbox-input {
-  width: 20px;
-  height: 20px;
-  cursor: pointer;
-  accent-color: #8b9fa6;
-}
-
-.checkbox-text {
-  flex: 1;
-  font-size: 16px;
+  margin-bottom: 16px;
 }
 
 .help-btn {
   background: none;
   border: none;
   cursor: pointer;
-  color: #9ca3af;
+  color: #6b7280;
   font-size: 18px;
   padding: 4px;
   display: flex;
   align-items: center;
+  justify-content: center;
   transition: color 0.2s ease;
 }
 
 .help-btn:hover {
-  color: #6b7280;
+  color: #1f2937;
 }
 
 .section-divider {
@@ -107,12 +61,10 @@
 }
 
 .section-title {
-  font-size: 18px;
+  font-size: 20px;
   font-weight: 600;
-  color: #4a5568;
+  color: #1f2937;
   margin: 0 0 20px 0;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
 }
 
 .fields-section {
@@ -131,17 +83,21 @@
   border: none;
   cursor: pointer;
   color: #8b9fa6;
-  font-size: 25px;
   padding: 0;
   display: flex;
   align-items: center;
   justify-content: center;
   transition: color 0.2s ease;
-  line-height: 1;
 }
 
 .add-field-btn:hover {
   color: #7a8e95;
+}
+
+.add-field-btn mat-icon {
+  font-size: 28px;
+  width: 28px;
+  height: 28px;
 }
 
 .fields-list {
@@ -160,233 +116,176 @@
 .field-main {
   display: flex;
   gap: 12px;
-  align-items: center;
+  align-items: flex-start;
 }
 
 .field-order-controls {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 0;
+  margin-right: 4px;
+  margin-top: 8px;
 }
 
 .order-btn {
-  background: none;
-  border: none;
-  cursor: pointer;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+}
+
+.order-btn mat-icon {
+  font-size: 20px;
+  width: 20px;
+  height: 20px;
   color: #6b7280;
-  font-size: 14px;
-  padding: 2px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: color 0.2s ease;
-  border-radius: 2px;
 }
 
-.order-btn:hover:not(:disabled) {
-  color: #1f2937;
-  background-color: #e5e7eb;
-}
-
-.order-btn:disabled {
+.order-btn:disabled mat-icon {
   color: #d1d5db;
-  cursor: not-allowed;
 }
 
 .field-type-wrapper {
   min-width: 140px;
-}
-
-.field-select {
-  width: 100%;
-  padding: 12px 16px;
-  padding-right: 40px;
-  border: 1px solid #d1d5db;
-  border-radius: 4px;
-  font-size: 15px;
-  color: #1f2937;
-  background-color: #ffffff;
-  cursor: pointer;
-  appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236b7280' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 12px center;
-  transition: border-color 0.2s ease;
-}
-
-.field-select:focus {
-  outline: none;
-  border-color: #8b9fa6;
+  flex-shrink: 0;
 }
 
 .field-input-wrapper {
   flex: 1;
-  min-width: 150px;
+  min-width: 180px;
 }
 
-.field-input {
-  width: 100%;
-  padding: 12px 16px;
-  border: 1px solid #d1d5db;
-  border-radius: 4px;
-  font-size: 15px;
-  color: #1f2937;
-  background-color: #ffffff;
-  transition: border-color 0.2s ease;
-  box-sizing: border-box;
-}
-
-.field-input-small {
-  max-width: 120px;
-}
-
-.field-input:focus {
-  outline: none;
-  border-color: #8b9fa6;
-}
-
-.field-input:disabled {
-  background-color: #f3f4f6;
-  cursor: not-allowed;
-  opacity: 0.6;
-}
-
-.delete-field-btn {
-  background: none;
-  border: none;
-  cursor: pointer;
-  color: #9ca3af;
-  font-size: 20px;
-  padding: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: color 0.2s ease;
-}
-
-.delete-field-btn:hover {
-  color: #dc2626;
+.field-input-wrapper-small {
+  max-width: 140px;
+  flex-shrink: 0;
 }
 
 .field-constraints {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 16px;
+  flex-shrink: 0;
+  margin-top: 12px;
 }
 
-.constraint-label {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  cursor: pointer;
-  font-size: 14px;
-  color: #4b5563;
-  white-space: nowrap;
+.delete-field-btn {
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  margin-top: 8px;
 }
 
-.constraint-checkbox {
-  width: 18px;
-  height: 18px;
-  cursor: pointer;
-  accent-color: #8b9fa6;
+.delete-field-btn mat-icon {
+  color: #9ca3af;
+  font-size: 20px;
+  width: 20px;
+  height: 20px;
 }
 
-.constraint-checkbox:disabled {
-  cursor: not-allowed;
+.delete-field-btn:hover mat-icon {
+  color: #dc2626;
 }
 
 .form-actions {
+  margin-top: 40px;
   display: flex;
   gap: 16px;
-  margin-top: 40px;
-  padding-top: 32px;
+  justify-content: flex-end;
+  padding-top: 24px;
   border-top: 1px solid #e5e7eb;
 }
 
-.btn {
-  padding: 14px 40px;
-  border: none;
-  border-radius: 6px;
+.form-actions button {
+  min-width: 120px;
   font-size: 16px;
   font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
 }
 
-.btn-save {
-  background-color: #dc6454;
-  color: #ffffff;
+.crud-section {
+  margin-bottom: 0;
 }
 
-.btn-save:hover {
-  background-color: #c55544;
+::ng-deep .mat-mdc-form-field {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
 }
 
-.btn-cancel {
+::ng-deep .mat-mdc-text-field-wrapper {
+  background-color: #ffffff;
+}
+
+::ng-deep .mat-mdc-form-field-subscript-wrapper {
+  height: 0;
+  margin-top: 4px;
+}
+
+::ng-deep .mat-mdc-checkbox {
+  margin-bottom: 0;
+}
+
+::ng-deep .mat-mdc-checkbox .mdc-checkbox__background {
+  border-color: #d1d5db;
+}
+
+::ng-deep .mat-mdc-checkbox.mat-primary.mat-mdc-checkbox-checked .mdc-checkbox__background {
   background-color: #8b9fa6;
-  color: #ffffff;
+  border-color: #8b9fa6;
 }
 
-.btn-cancel:hover {
-  background-color: #7a8e95;
+::ng-deep .mat-mdc-checkbox.mat-primary .mdc-checkbox__ripple {
+  background-color: rgba(139, 159, 166, 0.12);
+}
+
+::ng-deep .mdc-notched-outline__leading,
+::ng-deep .mdc-notched-outline__notch,
+::ng-deep .mdc-notched-outline__trailing {
+  border-color: #d1d5db !important;
+}
+
+::ng-deep .mat-mdc-form-field.mat-focused .mdc-notched-outline__leading,
+::ng-deep .mat-mdc-form-field.mat-focused .mdc-notched-outline__notch,
+::ng-deep .mat-mdc-form-field.mat-focused .mdc-notched-outline__trailing {
+  border-color: #8b9fa6 !important;
+  border-width: 2px !important;
 }
 
 @media (max-width: 768px) {
-  .entity-header {
-    padding: 16px 24px;
-    margin: -20px -20px 20px -20px;
-  }
-
-  .entity-title {
-    font-size: 20px;
+  .entity-form {
+    padding: 0 24px 24px 24px;
   }
 
   .field-main {
     flex-wrap: wrap;
   }
 
-  .field-type-wrapper {
+  .field-order-controls {
+    flex-direction: row;
     width: 100%;
-    min-width: auto;
+    order: 3;
+    margin-top: 12px;
   }
 
-  .field-inputs {
+  .field-type-wrapper,
+  .field-input-wrapper,
+  .field-input-wrapper-small {
+    min-width: 100%;
+    max-width: 100%;
+  }
+
+  .field-constraints {
     width: 100%;
-    flex-wrap: wrap;
+    order: 2;
+    margin-top: 12px;
   }
 
   .delete-field-btn {
-    margin-top: 0;
+    order: 1;
+    margin-left: auto;
   }
 
   .form-actions {
-    flex-direction: column;
+    flex-direction: column-reverse;
   }
 
-  .btn {
+  .form-actions button {
     width: 100%;
-  }
-}
-
-@media (max-width: 480px) {
-  .entity-header {
-    padding: 14px 16px;
-    margin: -16px -16px 16px -16px;
-  }
-
-  .entity-title {
-    font-size: 18px;
-  }
-
-  .field-row {
-    padding: 16px;
-  }
-
-  .field-main {
-    gap: 12px;
-  }
-
-  .field-inputs {
-    gap: 12px;
   }
 }
