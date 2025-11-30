@@ -192,6 +192,10 @@
   gap: 8px;
 }
 
+.back-btn-desktop i {
+  font-size: 18px;
+}
+
 .info-banner {
   background-color: #97a9ae;
   color: #ffffff;

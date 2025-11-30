@@ -4,6 +4,7 @@ import { ModalComponent } from '../../../../components/modal/modal.component';
 import { AddEntityComponent } from '../add-entity/add-entity.component';
 import { ConfirmationModalComponent, ModalButton } from '../../../../components/confirmation-modal/confirmation-modal.component';
 import { EntityDetailViewComponent } from '../entity-detail-view/entity-detail-view.component';
+import { MatIconModule } from '@angular/material/icon';
 
 interface Entity {
   name: string;
@@ -20,13 +21,15 @@ interface Relation {
 @Component({
   selector: 'app-entities',
   standalone: true,
-  imports: [CommonModule, ModalComponent, AddEntityComponent, ConfirmationModalComponent, EntityDetailViewComponent],
+  imports: [CommonModule, ModalComponent, AddEntityComponent, ConfirmationModalComponent, EntityDetailViewComponent, MatIconModule],
   templateUrl: './entities.component.html',
   styleUrls: ['./entities.component.css']
 })
 export class EntitiesComponent {
   @Input() entities: Entity[] = [];
   @Input() relations: Relation[] = [];
+
+  showInfoBanner = true;
 
   entitiesExpanded = true;
   relationsExpanded = true;
@@ -104,6 +107,10 @@ export class EntitiesComponent {
     this.showAddEntityModal = false;
     this.editingEntity = null;
     this.editingEntityIndex = null;
+  }
+
+  closeInfoBanner(): void {
+    this.showInfoBanner = false;
   }
 
   toggleEntitiesPanel(): void {

@@ -24,6 +24,33 @@
   border-radius: 8px;
   margin-bottom: 32px;
   line-height: 1.6;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+}
+
+.close-banner-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  transition: opacity 0.2s ease;
+  flex-shrink: 0;
+}
+
+.close-banner-btn:hover {
+  opacity: 0.8;
+}
+
+.close-banner-btn mat-icon {
+  font-size: 20px;
+  width: 20px;
+  height: 20px;
 }
 
 .info-content p {
