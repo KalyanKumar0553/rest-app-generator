@@ -33,28 +33,11 @@
       </div>
     </div>
 
-    <nav class="sidebar-nav">
-      <button class="nav-item" [class.active]="activeSection === 'general'" (click)="navigateToSection('general')">
-        <i class="bi bi-globe"></i>
-        <span>General</span>
-      </button>
-      <button class="nav-item" [class.active]="activeSection === 'entities'" (click)="navigateToSection('entities')">
-        <i class="bi bi-database"></i>
-        <span>Entities</span>
-      </button>
-      <button class="nav-item" [class.active]="activeSection === 'data-objects'" (click)="navigateToSection('data-objects')">
-        <i class="bi bi-diagram-3"></i>
-        <span>Data Objects</span>
-      </button>
-      <button class="nav-item" [class.active]="activeSection === 'explore'" (click)="navigateToSection('explore')">
-        <i class="bi bi-search"></i>
-        <span>Explore</span>
-      </button>
-      <button class="nav-item" [class.active]="activeSection === 'download'" (click)="navigateToSection('download')">
-        <i class="bi bi-download"></i>
-        <span>Download</span>
-      </button>
-    </nav>
+    <app-sidenav
+      [navItems]="navItems"
+      [activeItem]="activeSection"
+      (itemClick)="navigateToSection($event)">
+    </app-sidenav>
   </aside>
 
   <main class="main-content">

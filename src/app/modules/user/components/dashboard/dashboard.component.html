@@ -37,18 +37,16 @@
       </div>
     </div>
 
-    <nav class="sidebar-nav">
-      <button class="nav-item active" (click)="closeSidebar()">
-        <i class="bi bi-grid-3x3-gap"></i>
-        <span>Projects</span>
-      </button>
-      <button class="nav-item" (click)="navigateToAccount(); closeSidebar()">
-        <i class="bi bi-person-circle"></i>
-        <span>Account</span>
-      </button>
+    <app-sidenav
+      [navItems]="navItems"
+      [activeItem]="activeSection"
+      (itemClick)="navigateToSection($event)">
+    </app-sidenav>
+
+    <nav class="sidebar-nav sidebar-nav-footer">
       <button class="nav-item" (click)="logout(); closeSidebar()">
-        <i class="bi bi-box-arrow-right"></i>
-        <span>Logout</span>
+        <mat-icon class="nav-icon">logout</mat-icon>
+        <span class="nav-label">Logout</span>
       </button>
     </nav>
   </aside>

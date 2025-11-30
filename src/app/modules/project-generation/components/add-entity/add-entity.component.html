@@ -54,95 +54,21 @@
       </div>
 
       <div class="fields-list">
-        <div class="field-row" *ngFor="let field of fields; let i = index">
-          <div class="field-row-1">
-            <div class="field-order-controls" *ngIf="i > 0">
-              <button
-                mat-icon-button
-                class="order-btn"
-                type="button"
-                [disabled]="i === 1"
-                (click)="moveFieldUp(i)"
-                aria-label="Move field up">
-                <mat-icon>expand_less</mat-icon>
-              </button>
-              <button
-                mat-icon-button
-                class="order-btn"
-                type="button"
-                [disabled]="i === fields.length - 1"
-                (click)="moveFieldDown(i)"
-                aria-label="Move field down">
-                <mat-icon>expand_more</mat-icon>
-              </button>
-            </div>
-
-            <mat-form-field appearance="outline" class="field-input-wrapper">
-              <mat-label>Field name</mat-label>
-              <input
-                matInput
-                [(ngModel)]="field.name"
-                (ngModelChange)="onFieldNameChange(field)"
-                [disabled]="field.primaryKey"
-                placeholder="Field name">
-              <mat-error *ngIf="field.nameError">{{ field.nameError }}</mat-error>
-            </mat-form-field>
-
-            <mat-form-field appearance="outline" class="field-input-wrapper-small" *ngIf="field.type === 'String'">
-              <mat-label>Max length</mat-label>
-              <input
-                matInput
-                type="number"
-                [(ngModel)]="field.maxLength"
-                placeholder="255">
-            </mat-form-field>
-
-            <button
-              mat-icon-button
-              class="delete-field-btn"
-              type="button"
-              *ngIf="i > 0"
-              (click)="removeField(i)"
-              aria-label="Delete field">
-              <mat-icon>delete</mat-icon>
-            </button>
-          </div>
-
-          <div class="field-row-2">
-            <mat-form-field appearance="outline" class="field-type-wrapper">
-              <mat-label>Type</mat-label>
-              <mat-select
-                [(ngModel)]="field.type"
-                (selectionChange)="onFieldTypeChange(field)">
-                <mat-option *ngFor="let type of fieldTypes" [value]="type">{{ type }}</mat-option>
-              </mat-select>
-            </mat-form-field>
-
-            <div class="field-constraints">
-              <mat-checkbox
-                *ngIf="field.primaryKey"
-                [(ngModel)]="field.primaryKey"
-                [disabled]="true"
-                color="primary">
-                Primary key
-              </mat-checkbox>
-
-              <mat-checkbox
-                *ngIf="!field.primaryKey"
-                [(ngModel)]="field.required"
-                color="primary">
-                Required
-              </mat-checkbox>
-
-              <mat-checkbox
-                *ngIf="!field.primaryKey"
-                [(ngModel)]="field.unique"
-                color="primary">
-                Unique
-              </mat-checkbox>
-            </div>
-          </div>
-        </div>
+        <app-field-item
+          *ngFor="let field of fields; let i = index"
+          [field]="field"
+          [index]="i"
+          [totalFields]="fields.length"
+          [fieldTypes]="fieldTypes"
+          [canDelete]="i > 0"
+          [canMoveUp]="i > 1"
+          [canMoveDown]="i > 0 && i < fields.length - 1"
+          (fieldNameChange)="onFieldNameChange($event)"
+          (fieldTypeChange)="onFieldTypeChange($event)"
+          (deleteField)="removeField(i)"
+          (moveUp)="moveFieldUp(i)"
+          (moveDown)="moveFieldDown(i)">
+        </app-field-item>
       </div>
     </div>
 
