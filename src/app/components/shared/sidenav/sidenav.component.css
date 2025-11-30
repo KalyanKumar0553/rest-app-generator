@@ -54,24 +54,14 @@
 
 @media (max-width: 768px) {
   .sidenav {
-    border-right: none;
-    border-bottom: 1px solid #e5e7eb;
     padding: 16px 0;
   }
 
   .nav-list {
-    flex-direction: row;
-    overflow-x: auto;
-    padding: 0 16px;
+    gap: 2px;
   }
 
   .nav-item {
-    padding: 8px 16px;
-    white-space: nowrap;
-  }
-
-  .nav-item.active {
-    border-right: none;
-    border-bottom: 3px solid #8b9fa6;
+    padding: 12px 20px;
   }
 }
