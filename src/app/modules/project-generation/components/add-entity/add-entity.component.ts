@@ -15,6 +15,7 @@ interface Field {
   primaryKey?: boolean;
   required?: boolean;
   unique?: boolean;
+  nameError?: string;
 }
 
 interface Entity {
@@ -123,8 +124,21 @@ export class AddEntityComponent implements OnChanges {
       maxLength: 255,
       required: false,
       unique: false,
-      primaryKey: false
+      primaryKey: false,
+      nameError: ''
     });
+  }
+
+  onFieldNameChange(field: Field): void {
+    if (field.nameError) {
+      field.nameError = '';
+    }
+  }
+
+  onEntityNameChange(): void {
+    if (this.nameError) {
+      this.nameError = '';
+    }
   }
 
   removeField(index: number): void {
@@ -145,11 +159,37 @@ export class AddEntityComponent implements OnChanges {
 
   validateEntityName(): boolean {
     if (!this.entityName.trim()) {
-      this.nameError = 'Please provide a value.';
+      this.nameError = 'Entity name is required.';
       return false;
     }
     this.nameError = '';
     return true;
+  }
+
+  validateFieldName(field: Field): boolean {
+    if (!field.name.trim()) {
+      field.nameError = 'Field name is required.';
+      return false;
+    }
+
+    const alphanumericPattern = /^[a-zA-Z0-9]+$/;
+    if (!alphanumericPattern.test(field.name)) {
+      field.nameError = 'Field name must be alphanumeric without spaces.';
+      return false;
+    }
+
+    field.nameError = '';
+    return true;
+  }
+
+  validateAllFields(): boolean {
+    let isValid = true;
+    for (const field of this.fields) {
+      if (!field.primaryKey && !this.validateFieldName(field)) {
+        isValid = false;
+      }
+    }
+    return isValid;
   }
 
   moveFieldUp(index: number): void {
@@ -170,6 +210,10 @@ export class AddEntityComponent implements OnChanges {
 
   onSave(): void {
     if (!this.validateEntityName()) {
+      return;
+    }
+
+    if (!this.validateAllFields()) {
       return;
     }
 

@@ -9,6 +9,7 @@
       <input
         matInput
         [(ngModel)]="entityName"
+        (ngModelChange)="onEntityNameChange()"
         placeholder="Entity name">
       <mat-error *ngIf="nameError">{{ nameError }}</mat-error>
     </mat-form-field>
@@ -44,7 +45,7 @@
       <div class="section-divider"></div>
     </div>
 
-    <div class="fields-section" *ngIf="!mappedSuperclass">
+    <div class="fields-section">
       <div class="fields-header">
         <h3 class="section-title">Fields</h3>
         <button class="add-field-btn" type="button" (click)="addField()" aria-label="Add field">
@@ -90,8 +91,10 @@
               <input
                 matInput
                 [(ngModel)]="field.name"
+                (ngModelChange)="onFieldNameChange(field)"
                 [disabled]="field.primaryKey"
                 placeholder="Field name">
+              <mat-error *ngIf="field.nameError">{{ field.nameError }}</mat-error>
             </mat-form-field>
 
             <mat-form-field appearance="outline" class="field-input-wrapper-small" *ngIf="field.type === 'String'">
