@@ -232,24 +232,24 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
     this.closeSidebar();
   }
 
-  handleBack(): void {
+  handleHome(): void {
     if (this.hasUnsavedChanges) {
       this.showBackConfirmation = true;
     } else {
-      this.navigateBack();
+      this.navigateHome();
     }
   }
 
   confirmBack(): void {
     this.showBackConfirmation = false;
-    this.navigateBack();
+    this.navigateHome();
   }
 
   cancelBack(): void {
     this.showBackConfirmation = false;
   }
 
-  navigateBack(): void {
+  navigateHome(): void {
     if (this.isLoggedIn) {
       this.router.navigate(['/user/dashboard']);
     } else {

@@ -3,13 +3,16 @@
     <a href="#" class="import-link">Import Schema</a>
   </div>
 
-  <div class="info-banner">
+  <div class="info-banner" *ngIf="showInfoBanner">
     <div class="info-content">
       <p>
         Create your custom database model here. Names are transformed to follow proper naming conventions - please use singular
         table names. Relation types with examples <a href="#" class="info-link">are explained here</a>.
       </p>
     </div>
+    <button class="close-banner-btn" (click)="closeInfoBanner()" aria-label="Close banner">
+      <mat-icon>close</mat-icon>
+    </button>
   </div>
 
   <div class="expansion-panel">
