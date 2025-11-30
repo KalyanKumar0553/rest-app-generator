@@ -55,7 +55,7 @@
 
       <div class="fields-list">
         <div class="field-row" *ngFor="let field of fields; let i = index">
-          <div class="field-main">
+          <div class="field-row-1">
             <div class="field-order-controls" *ngIf="i > 0">
               <button
                 mat-icon-button
@@ -77,15 +77,6 @@
               </button>
             </div>
 
-            <mat-form-field appearance="outline" class="field-type-wrapper">
-              <mat-label>Type</mat-label>
-              <mat-select
-                [(ngModel)]="field.type"
-                (selectionChange)="onFieldTypeChange(field)">
-                <mat-option *ngFor="let type of fieldTypes" [value]="type">{{ type }}</mat-option>
-              </mat-select>
-            </mat-form-field>
-
             <mat-form-field appearance="outline" class="field-input-wrapper">
               <mat-label>Field name</mat-label>
               <input
@@ -104,6 +95,27 @@
                 type="number"
                 [(ngModel)]="field.maxLength"
                 placeholder="255">
+            </mat-form-field>
+
+            <button
+              mat-icon-button
+              class="delete-field-btn"
+              type="button"
+              *ngIf="i > 0"
+              (click)="removeField(i)"
+              aria-label="Delete field">
+              <mat-icon>delete</mat-icon>
+            </button>
+          </div>
+
+          <div class="field-row-2">
+            <mat-form-field appearance="outline" class="field-type-wrapper">
+              <mat-label>Type</mat-label>
+              <mat-select
+                [(ngModel)]="field.type"
+                (selectionChange)="onFieldTypeChange(field)">
+                <mat-option *ngFor="let type of fieldTypes" [value]="type">{{ type }}</mat-option>
+              </mat-select>
             </mat-form-field>
 
             <div class="field-constraints">
@@ -129,16 +141,6 @@
                 Unique
               </mat-checkbox>
             </div>
-
-            <button
-              mat-icon-button
-              class="delete-field-btn"
-              type="button"
-              *ngIf="i > 0"
-              (click)="removeField(i)"
-              aria-label="Delete field">
-              <mat-icon>delete</mat-icon>
-            </button>
           </div>
         </div>
       </div>

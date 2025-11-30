@@ -113,11 +113,18 @@
   border-radius: 8px;
 }
 
-.field-main {
+.field-row-1 {
   display: flex;
   gap: 12px;
   align-items: flex-start;
-  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+.field-row-2 {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: flex-end;
 }
 
 .field-order-controls {
@@ -126,6 +133,7 @@
   gap: 0;
   margin-right: 4px;
   margin-top: 8px;
+  flex-shrink: 0;
 }
 
 .order-btn {
@@ -147,17 +155,17 @@
 
 .field-type-wrapper {
   min-width: 140px;
-  flex: 0 0 auto;
+  flex-shrink: 0;
 }
 
 .field-input-wrapper {
-  flex: 1 1 200px;
-  min-width: 180px;
+  flex: 1;
+  min-width: 200px;
 }
 
 .field-input-wrapper-small {
-  flex: 0 0 auto;
   width: 140px;
+  flex-shrink: 0;
 }
 
 .field-constraints {
@@ -165,8 +173,6 @@
   align-items: center;
   gap: 16px;
   flex-wrap: wrap;
-  margin-top: 12px;
-  flex: 1 1 100%;
 }
 
 .delete-field-btn {
@@ -174,6 +180,7 @@
   height: 40px;
   flex-shrink: 0;
   margin-top: 8px;
+  margin-left: auto;
 }
 
 .delete-field-btn mat-icon {
@@ -254,7 +261,7 @@
     padding: 0 24px 24px 24px;
   }
 
-  .field-main {
+  .field-row-1 {
     flex-wrap: wrap;
   }
 
@@ -263,24 +270,37 @@
     width: 100%;
     order: 3;
     margin-top: 12px;
+    margin-right: 0;
   }
 
-  .field-type-wrapper,
-  .field-input-wrapper,
-  .field-input-wrapper-small {
-    min-width: 100%;
-    max-width: 100%;
-  }
-
-  .field-constraints {
+  .field-input-wrapper {
     width: 100%;
-    order: 2;
-    margin-top: 12px;
+    min-width: 100%;
+  }
+
+  .field-input-wrapper-small {
+    width: 100%;
   }
 
   .delete-field-btn {
     order: 1;
     margin-left: auto;
+    margin-top: 0;
+  }
+
+  .field-row-2 {
+    flex-wrap: wrap;
+    justify-content: flex-start;
+  }
+
+  .field-type-wrapper {
+    width: 100%;
+    min-width: 100%;
+  }
+
+  .field-constraints {
+    width: 100%;
+    justify-content: flex-start;
   }
 
   .form-actions {
