@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Output } from '@angular/core';
+import { Component, EventEmitter, Input, Output, OnChanges, SimpleChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 
@@ -11,6 +11,13 @@ interface Field {
   unique?: boolean;
 }
 
+interface Entity {
+  name: string;
+  mappedSuperclass: boolean;
+  addRestEndpoints: boolean;
+  fields: Field[];
+}
+
 @Component({
   selector: 'app-add-entity',
   standalone: true,
@@ -18,7 +25,9 @@ interface Field {
   templateUrl: './add-entity.component.html',
   styleUrls: ['./add-entity.component.css']
 })
-export class AddEntityComponent {
+export class AddEntityComponent implements OnChanges {
+  @Input() editEntity: Entity | null = null;
+  @Input() isOpen = false;
   @Output() save = new EventEmitter<any>();
   @Output() cancel = new EventEmitter<void>();
 
@@ -51,6 +60,46 @@ export class AddEntityComponent {
     'Enum',
     'byte[]'
   ];
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['isOpen']) {
+      if (this.isOpen) {
+        if (this.editEntity) {
+          this.loadEntityData(this.editEntity);
+        } else {
+          this.resetForm();
+        }
+      }
+    }
+
+    if (changes['editEntity'] && this.editEntity) {
+      this.loadEntityData(this.editEntity);
+    }
+  }
+
+  loadEntityData(entity: Entity): void {
+    this.entityName = entity.name;
+    this.mappedSuperclass = entity.mappedSuperclass;
+    this.addRestEndpoints = entity.addRestEndpoints;
+    this.fields = JSON.parse(JSON.stringify(entity.fields));
+    this.nameError = '';
+  }
+
+  resetForm(): void {
+    this.entityName = '';
+    this.mappedSuperclass = false;
+    this.addRestEndpoints = false;
+    this.nameError = '';
+    this.fields = [
+      {
+        type: 'Long',
+        name: 'id',
+        primaryKey: true,
+        required: false,
+        unique: false
+      }
+    ];
+  }
 
   addField(): void {
     this.fields.push({
@@ -97,13 +146,15 @@ export class AddEntityComponent {
       name: this.entityName,
       mappedSuperclass: this.mappedSuperclass,
       addRestEndpoints: this.addRestEndpoints,
-      fields: this.fields
+      fields: JSON.parse(JSON.stringify(this.fields))
     };
 
     this.save.emit(entity);
+    this.resetForm();
   }
 
   onCancel(): void {
+    this.resetForm();
     this.cancel.emit();
   }
 }

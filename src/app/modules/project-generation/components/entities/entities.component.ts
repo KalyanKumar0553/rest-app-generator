@@ -29,22 +29,48 @@ export class EntitiesComponent {
   entitiesExpanded = true;
   relationsExpanded = true;
   showAddEntityModal = false;
+  editingEntity: Entity | null = null;
+  editingEntityIndex: number | null = null;
 
   addEntity(): void {
+    this.editingEntity = null;
+    this.editingEntityIndex = null;
     this.showAddEntityModal = true;
   }
 
+  editEntity(entity: Entity, index: number): void {
+    this.editingEntity = JSON.parse(JSON.stringify(entity));
+    this.editingEntityIndex = index;
+    this.showAddEntityModal = true;
+  }
+
+  deleteEntity(index: number): void {
+    if (confirm('Are you sure you want to delete this entity?')) {
+      this.entities.splice(index, 1);
+    }
+  }
+
   onEntitySave(entity: Entity): void {
-    this.entities.push(entity);
+    if (this.editingEntityIndex !== null) {
+      this.entities[this.editingEntityIndex] = entity;
+    } else {
+      this.entities.push(entity);
+    }
     this.showAddEntityModal = false;
+    this.editingEntity = null;
+    this.editingEntityIndex = null;
   }
 
   onEntityCancel(): void {
     this.showAddEntityModal = false;
+    this.editingEntity = null;
+    this.editingEntityIndex = null;
   }
 
   closeModal(): void {
     this.showAddEntityModal = false;
+    this.editingEntity = null;
+    this.editingEntityIndex = null;
   }
 
   toggleEntitiesPanel(): void {
