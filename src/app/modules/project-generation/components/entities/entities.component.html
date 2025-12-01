@@ -32,34 +32,25 @@
     </div>
 
     <div class="panel-body" *ngIf="entitiesExpanded">
-      <div class="entities-list" *ngIf="entities.length > 0">
-        <div class="entity-card" *ngFor="let entity of entities; let i = index">
-          <div class="entity-header">
-            <h3 class="entity-name">{{ entity.name }}</h3>
-            <div class="entity-actions">
-              <button class="icon-btn" (click)="editEntity(entity, i)" aria-label="Edit entity">
+      <div class="entities-grid" *ngIf="entities.length > 0">
+        <div class="entity-box" *ngFor="let entity of entities; let i = index">
+          <div class="entity-box-header">
+            <h3 class="entity-box-title">{{ entity.name }}</h3>
+            <div class="entity-box-actions">
+              <button class="entity-action-btn" (click)="editEntity(entity, i)" aria-label="Edit entity">
                 <i class="bi bi-pencil"></i>
               </button>
-              <button class="icon-btn" (click)="deleteEntity(i)" aria-label="Delete entity">
+              <button class="entity-action-btn" (click)="deleteEntity(i)" aria-label="Delete entity">
                 <i class="bi bi-trash"></i>
               </button>
             </div>
           </div>
-          <div class="entity-body">
-            <div class="entity-fields" *ngIf="entity.fields && entity.fields.length > 0">
-              <div class="field-item" *ngFor="let field of getVisibleFields(entity)">
-                <span class="field-name">{{ field.name }}:</span>
-                <span class="field-type">{{ field.type }}<span *ngIf="field.maxLength">({{ field.maxLength }})</span><span *ngIf="field.required || field.primaryKey">*</span></span>
+          <div class="entity-box-body">
+            <div class="entity-box-fields" *ngIf="entity.fields && entity.fields.length > 0">
+              <div class="entity-field-row" *ngFor="let field of entity.fields">
+                <span class="entity-field-text">{{ field.name }}: {{ field.type }}<span *ngIf="field.maxLength">({{ field.maxLength }})</span></span>
               </div>
             </div>
-            <button
-              class="view-more-btn"
-              *ngIf="hasMoreFields(entity)"
-              (click)="showEntityDetail(entity)"
-              type="button">
-              View more
-              <i class="bi bi-chevron-down"></i>
-            </button>
           </div>
         </div>
       </div>
@@ -129,6 +120,7 @@
   <app-add-entity
     [editEntity]="editingEntity"
     [isOpen]="showAddEntityModal"
+    [existingEntities]="entities"
     (save)="onEntitySave($event)"
     (cancel)="onEntityCancel()">
   </app-add-entity>

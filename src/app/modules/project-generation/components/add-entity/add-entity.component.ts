@@ -36,6 +36,7 @@ interface Entity {
 export class AddEntityComponent implements OnChanges {
   @Input() editEntity: Entity | null = null;
   @Input() isOpen = false;
+  @Input() existingEntities: Entity[] = [];
   @Output() save = new EventEmitter<any>();
   @Output() cancel = new EventEmitter<void>();
 
@@ -159,6 +160,21 @@ export class AddEntityComponent implements OnChanges {
       this.nameError = 'Entity name is required.';
       return false;
     }
+
+    const duplicateEntity = this.existingEntities.find(
+      (entity, index) => {
+        if (this.editEntity && this.existingEntities[index] === this.editEntity) {
+          return false;
+        }
+        return entity.name.toLowerCase() === this.entityName.trim().toLowerCase();
+      }
+    );
+
+    if (duplicateEntity) {
+      this.nameError = `Entity "${this.entityName}" already exists.`;
+      return false;
+    }
+
     this.nameError = '';
     return true;
   }
@@ -172,6 +188,15 @@ export class AddEntityComponent implements OnChanges {
     const alphanumericPattern = /^[a-zA-Z0-9]+$/;
     if (!alphanumericPattern.test(field.name)) {
       field.nameError = 'Field name must be alphanumeric without spaces.';
+      return false;
+    }
+
+    const duplicateField = this.fields.filter(
+      f => f !== field && f.name.toLowerCase() === field.name.trim().toLowerCase()
+    );
+
+    if (duplicateField.length > 0) {
+      field.nameError = `Field "${field.name}" already exists in this entity.`;
       return false;
     }
 
