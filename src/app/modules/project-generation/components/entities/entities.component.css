@@ -312,17 +312,33 @@
 
 .relation-details {
   display: flex;
-  gap: 16px;
+  flex-wrap: wrap;
+  gap: 12px;
   font-size: 14px;
+  align-items: center;
 }
 
-.relation-type {
+.relation-type-badge {
+  background-color: #8b9fa6;
+  color: #ffffff;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-weight: 500;
+  font-size: 13px;
+}
+
+.relation-field {
   color: #6b7280;
   font-weight: 500;
 }
 
-.relation-field {
-  color: #9ca3af;
+.relation-required {
+  background-color: #dc6454;
+  color: #ffffff;
+  padding: 4px 10px;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 500;
 }
 
 @media (max-width: 768px) {

@@ -2,6 +2,7 @@ import { Component, Input, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ModalComponent } from '../../../../components/modal/modal.component';
 import { AddEntityComponent } from '../add-entity/add-entity.component';
+import { AddRelationComponent, Relation } from '../add-relation/add-relation.component';
 import { ConfirmationModalComponent, ModalButton } from '../../../../components/confirmation-modal/confirmation-modal.component';
 import { EntityDetailViewComponent } from '../entity-detail-view/entity-detail-view.component';
 import { MatIconModule } from '@angular/material/icon';
@@ -12,17 +13,11 @@ interface Entity {
   fields?: any[];
 }
 
-interface Relation {
-  sourceEntity: string;
-  targetEntity: string;
-  relationType: string;
-  fieldName: string;
-}
 
 @Component({
   selector: 'app-entities',
   standalone: true,
-  imports: [CommonModule, ModalComponent, AddEntityComponent, ConfirmationModalComponent, EntityDetailViewComponent, MatIconModule, MatButtonModule],
+  imports: [CommonModule, ModalComponent, AddEntityComponent, AddRelationComponent, ConfirmationModalComponent, EntityDetailViewComponent, MatIconModule, MatButtonModule],
   templateUrl: './entities.component.html',
   styleUrls: ['./entities.component.css']
 })
@@ -30,6 +25,7 @@ export class EntitiesComponent {
   @Input() entities: Entity[] = [];
   @Input() relations: Relation[] = [];
   @ViewChild(AddEntityComponent) addEntityComponent!: AddEntityComponent;
+  @ViewChild(AddRelationComponent) addRelationComponent!: AddRelationComponent;
 
   showInfoBanner = true;
 
@@ -43,6 +39,11 @@ export class EntitiesComponent {
   deletingEntityName: string = '';
   showEntityDetailModal = false;
   viewingEntity: Entity | null = null;
+
+  showAddRelationModal = false;
+  editingRelation: Relation | null = null;
+  editingRelationIndex: number | null = null;
+  deletingRelationIndex: number | null = null;
 
   deleteModalConfig = {
     title: 'Delete Entity',
@@ -78,6 +79,8 @@ export class EntitiesComponent {
   confirmDelete(): void {
     if (this.deletingEntityIndex !== null) {
       this.entities.splice(this.deletingEntityIndex, 1);
+    } else if (this.deletingRelationIndex !== null) {
+      this.relations.splice(this.deletingRelationIndex, 1);
     }
     this.cancelDelete();
   }
@@ -86,6 +89,7 @@ export class EntitiesComponent {
     this.showDeleteConfirmation = false;
     this.deletingEntityIndex = null;
     this.deletingEntityName = '';
+    this.deletingRelationIndex = null;
   }
 
   onEntitySave(entity: Entity): void {
@@ -130,7 +134,54 @@ export class EntitiesComponent {
   }
 
   addRelation(): void {
-    console.log('Add relation clicked');
+    this.editingRelation = null;
+    this.editingRelationIndex = null;
+    this.showAddRelationModal = true;
+  }
+
+  editRelation(relation: Relation, index: number): void {
+    this.editingRelation = JSON.parse(JSON.stringify(relation));
+    this.editingRelationIndex = index;
+    this.showAddRelationModal = true;
+  }
+
+  deleteRelation(index: number): void {
+    this.deletingRelationIndex = index;
+    this.deleteModalConfig.title = 'Delete Relation';
+    this.deleteModalConfig.message = [
+      `Are you sure you want to delete this relation?`,
+      'This action cannot be undone.'
+    ];
+    this.showDeleteConfirmation = true;
+  }
+
+  onRelationSave(relation: Relation): void {
+    if (this.editingRelationIndex !== null) {
+      this.relations[this.editingRelationIndex] = relation;
+    } else {
+      this.relations.push(relation);
+    }
+    this.showAddRelationModal = false;
+    this.editingRelation = null;
+    this.editingRelationIndex = null;
+  }
+
+  onRelationCancel(): void {
+    this.showAddRelationModal = false;
+    this.editingRelation = null;
+    this.editingRelationIndex = null;
+  }
+
+  closeRelationModal(): void {
+    this.showAddRelationModal = false;
+    this.editingRelation = null;
+    this.editingRelationIndex = null;
+  }
+
+  saveRelation(): void {
+    if (this.addRelationComponent) {
+      this.addRelationComponent.onSave();
+    }
   }
 
   getVisibleFields(entity: Entity): any[] {
