@@ -76,21 +76,22 @@
 
     <div class="panel-body" *ngIf="relationsExpanded">
       <div class="relations-list" *ngIf="relations.length > 0">
-        <div class="relation-card" *ngFor="let relation of relations">
+        <div class="relation-card" *ngFor="let relation of relations; let i = index">
           <div class="relation-header">
             <span class="relation-text">{{ relation.sourceEntity }} → {{ relation.targetEntity }}</span>
             <div class="relation-actions">
-              <button class="icon-btn" aria-label="Edit relation">
+              <button class="icon-btn" (click)="editRelation(relation, i)" aria-label="Edit relation">
                 <i class="bi bi-pencil"></i>
               </button>
-              <button class="icon-btn" aria-label="Delete relation">
+              <button class="icon-btn" (click)="deleteRelation(i)" aria-label="Delete relation">
                 <i class="bi bi-trash"></i>
               </button>
             </div>
           </div>
           <div class="relation-details">
-            <span class="relation-type">{{ relation.relationType }}</span>
-            <span class="relation-field">{{ relation.fieldName }}</span>
+            <span class="relation-type-badge">{{ relation.relationType }}</span>
+            <span class="relation-field">Field: {{ relation.sourceFieldName }}</span>
+            <span class="relation-required" *ngIf="relation.required">Required</span>
           </div>
         </div>
       </div>
@@ -139,4 +140,23 @@
     [entity]="viewingEntity"
     (close)="closeEntityDetail()">
   </app-entity-detail-view>
+</app-modal>
+
+<app-modal
+  [isOpen]="showAddRelationModal"
+  [title]="editingRelation ? 'Edit relation' : 'Add relation'"
+  [size]="'large'"
+  (close)="closeRelationModal()">
+  <app-add-relation
+    [editRelation]="editingRelation"
+    [isOpen]="showAddRelationModal"
+    [entities]="entities"
+    [existingRelations]="relations"
+    (save)="onRelationSave($event)"
+    (cancel)="onRelationCancel()">
+  </app-add-relation>
+  <div modal-footer>
+    <button mat-raised-button type="button" (click)="onRelationCancel()">Cancel</button>
+    <button mat-raised-button color="primary" type="button" (click)="saveRelation()">Save</button>
+  </div>
 </app-modal>

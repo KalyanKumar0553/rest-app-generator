@@ -205,22 +205,67 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
       settings: this.projectSettings,
       database: this.databaseSettings,
       preferences: this.developerPreferences,
-      dependencies: this.dependencies
+      dependencies: this.dependencies,
+      entities: this.entities,
+      relations: this.relations
     };
   }
 
   async loadProject(projectId: number): Promise<void> {
     this.isLoading = true;
     try {
-      this.entities = [];
-      this.relations = [];
-      this.toastService.success('Project loaded successfully');
+      const projectData = this.loadProjectFromStorage(projectId);
+
+      if (projectData) {
+        this.entities = projectData.entities || [];
+        this.relations = projectData.relations || [];
+        this.projectSettings = projectData.settings || this.projectSettings;
+        this.databaseSettings = projectData.database || this.databaseSettings;
+        this.developerPreferences = projectData.preferences || this.developerPreferences;
+        this.dependencies = projectData.dependencies || '';
+        this.toastService.success('Project loaded successfully');
+      } else {
+        this.entities = [];
+        this.relations = [];
+      }
     } catch (error) {
       this.toastService.error('Failed to load project');
       console.error('Error loading project:', error);
     } finally {
       this.isLoading = false;
     }
+  }
+
+  loadProjectFromStorage(projectId: number): any {
+    const savedProjects = localStorage.getItem('projects');
+    if (savedProjects) {
+      const projects = JSON.parse(savedProjects);
+      return projects.find((p: any) => p.id === projectId);
+    }
+    return null;
+  }
+
+  saveProject(): void {
+    const projectData = this.getProjectData();
+    const savedProjects = localStorage.getItem('projects');
+    let projects = savedProjects ? JSON.parse(savedProjects) : [];
+
+    if (this.projectId) {
+      const index = projects.findIndex((p: any) => p.id === this.projectId);
+      if (index !== -1) {
+        projects[index] = projectData;
+      } else {
+        projects.push(projectData);
+      }
+    } else {
+      projectData.id = Date.now();
+      this.projectId = projectData.id;
+      projects.push(projectData);
+    }
+
+    localStorage.setItem('projects', JSON.stringify(projects));
+    this.toastService.success('Project saved successfully');
+    this.hasUnsavedChanges = false;
   }
 
   toggleSidebar(): void {
@@ -330,18 +375,4 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
     }
   }
 
-  async saveProject(): Promise<void> {
-    this.isLoading = true;
-    try {
-      const projectData = this.getProjectData();
-
-      this.hasUnsavedChanges = false;
-      this.toastService.success('Project saved successfully');
-    } catch (error) {
-      this.toastService.error('Failed to save project');
-      console.error('Error saving project:', error);
-    } finally {
-      this.isLoading = false;
-    }
-  }
 }
