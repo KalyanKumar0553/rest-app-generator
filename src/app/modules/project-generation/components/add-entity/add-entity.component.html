@@ -1,12 +1,13 @@
 <div class="add-entity-container">
   <div class="entity-form">
-    <mat-form-field appearance="outline" class="full-width">
+    <mat-form-field appearance="fill" class="full-width">
       <mat-label>Name</mat-label>
       <input
         matInput
         [(ngModel)]="entityName"
         (ngModelChange)="onEntityNameChange()"
-        placeholder="Entity name">
+        placeholder="Entity name"
+        required>
       <mat-error *ngIf="nameError">{{ nameError }}</mat-error>
     </mat-form-field>
 

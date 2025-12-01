@@ -1,5 +1,5 @@
 <div class="field-item">
-  <mat-form-field appearance="outline" class="field-type-select">
+  <mat-form-field appearance="fill" class="field-type-select">
     <mat-label>Field Type</mat-label>
     <mat-select
       [(ngModel)]="field.type"
@@ -8,18 +8,19 @@
     </mat-select>
   </mat-form-field>
 
-  <mat-form-field appearance="outline" class="field-name-input">
+  <mat-form-field appearance="fill" class="field-name-input">
     <mat-label>Field name</mat-label>
     <input
       matInput
       [(ngModel)]="field.name"
       (ngModelChange)="onNameChange()"
       [disabled]="field.primaryKey"
-      placeholder="Field name">
+      placeholder="Field name"
+      required>
     <mat-error *ngIf="field.nameError">{{ field.nameError }}</mat-error>
   </mat-form-field>
 
-  <mat-form-field appearance="outline" class="field-max-length-input" *ngIf="field.type === 'String'">
+  <mat-form-field appearance="fill" class="field-max-length-input" *ngIf="field.type === 'String'">
     <mat-label>Max length</mat-label>
     <input
       matInput

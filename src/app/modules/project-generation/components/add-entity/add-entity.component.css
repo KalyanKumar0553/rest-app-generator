@@ -126,16 +126,27 @@
   background-color: rgba(139, 159, 166, 0.12);
 }
 
-::ng-deep .mdc-notched-outline__leading,
-::ng-deep .mdc-notched-outline__notch,
-::ng-deep .mdc-notched-outline__trailing {
-  border-color: #d1d5db !important;
+::ng-deep .mat-mdc-form-field.mat-form-field-appearance-fill .mat-mdc-text-field-wrapper {
+  background-color: #f3f4f6;
 }
 
-::ng-deep .mat-mdc-form-field.mat-focused .mdc-notched-outline__leading,
-::ng-deep .mat-mdc-form-field.mat-focused .mdc-notched-outline__notch,
-::ng-deep .mat-mdc-form-field.mat-focused .mdc-notched-outline__trailing {
-  border-color: #8b9fa6 !important;
-  border-width: 2px !important;
+::ng-deep .mat-mdc-form-field.mat-form-field-appearance-fill:hover .mat-mdc-text-field-wrapper {
+  background-color: #e5e7eb;
+}
+
+::ng-deep .mat-mdc-form-field.mat-form-field-appearance-fill.mat-focused .mat-mdc-text-field-wrapper {
+  background-color: #e5e7eb;
+}
+
+::ng-deep .mat-mdc-form-field.mat-form-field-appearance-fill .mdc-line-ripple::before {
+  border-bottom-color: #d1d5db;
+}
+
+::ng-deep .mat-mdc-form-field.mat-form-field-appearance-fill.mat-focused .mdc-line-ripple::after {
+  border-bottom-color: #8b9fa6;
+}
+
+::ng-deep .mat-mdc-form-field.mat-form-field-appearance-fill.mat-form-field-invalid .mdc-line-ripple::after {
+  border-bottom-color: #ef4444;
 }
 
