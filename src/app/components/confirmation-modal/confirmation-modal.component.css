@@ -4,7 +4,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
+  background-color: var(--theme-modal-overlay-bg, rgba(0, 0, 0, 0.5));
   display: flex;
   align-items: center;
   justify-content: center;
@@ -23,7 +23,7 @@
 }
 
 .modal-container {
-  background-color: #ffffff;
+  background-color: var(--theme-modal-container-bg, #ffffff);
   border-radius: 16px;
   max-width: 560px;
   width: 100%;
@@ -43,55 +43,68 @@
   }
 }
 
-.modal-content {
-  padding: 29px 29px 13px;
-  text-align: left;
+.modal-header {
+    padding: 23px 23px;
+    text-align: left;
+    border-bottom: 1px solid var(--theme-modal-border-color, #e5e7eb);
 }
 
 .modal-title {
   font-size: 28px;
   font-weight: 400;
-  color: var(--neutral-500, #6b7280);
-  margin: 0 0 24px 0;
+  color: var(--theme-neutral-text, #6b7280);
   line-height: 1.3;
+}
+
+.modal-content {
+  padding: 12px 24px;
+  text-align: left;
 }
 
 .modal-message {
   font-size: 18px;
   font-weight: 400;
-  color: var(--neutral-700, #374151);
-  margin: 0;
-  line-height: 0.8;
+  color: var(--theme-modal-body-text, #374151);
+  margin: 0 0 16px 0;
+  line-height: 1.6;
+}
+
+.modal-message:last-child {
+  margin-bottom: 0;
 }
 
 .modal-footer {
-  padding: 32px 48px 48px;
+  padding: 12px 20px;
   display: flex;
-  gap: 6px;
-  justify-content: center;
-  border-top: 1px solid #e5e7eb;
+  gap: 16px;
+  justify-content: right;
 }
 
 .btn-cancel,
 .btn-action {
-  padding: 6px;
-  margin: 6px;
+  padding: 14px 40px;
   border-radius: 8px;
   font-size: 17px;
   font-weight: 500;
   cursor: pointer;
+  transition: all 0.2s ease;
   border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-width: 140px;
 }
 
 .btn-cancel {
-  background-color: #ffffff;
-  color: #374151;
-  border: 2px solid #d1d5db;
+  background-color: var(--theme-cancel-btn-bg, #ffffff);
+  color: var(--theme-cancel-btn-text, #374151);
+  border: 2px solid var(--theme-cancel-btn-border, #d1d5db);
 }
 
 .btn-cancel:hover:not(:disabled) {
-  background-color: #f9fafb;
-  border-color: #9ca3af;
+  background-color: var(--theme-neutral-bg, #f9fafb);
+  border-color: var(--theme-neutral-border, #9ca3af);
 }
 
 .btn-cancel:disabled {
@@ -99,13 +112,17 @@
   cursor: not-allowed;
 }
 
+.btn-action {
+  min-width: 140px;
+}
+
 .btn-confirm {
-  background-color: #dc2626;
-  color: #ffffff;
+  background-color: var(--theme-confirm-btn-bg, #dc6454);
+  color: var(--theme-primary-btn-text, #ffffff);
 }
 
 .btn-confirm:hover:not(:disabled) {
-  background-color: #b91c1c;
+  background-color: var(--theme-confirm-btn-hover-bg, #b91c1c);
 }
 
 .btn-confirm:disabled {
@@ -114,12 +131,12 @@
 }
 
 .btn-primary {
-  background-color: #e89b8e;
-  color: #ffffff;
+  background-color: var(--theme-primary-btn-bg, #dc6454);
+  color: var(--theme-primary-btn-text, #ffffff);
 }
 
 .btn-primary:hover:not(:disabled) {
-  background-color: #d17d6e;
+  background-color: var(--theme-primary-btn-hover-bg, #c55544);
 }
 
 .btn-primary:disabled {
@@ -133,8 +150,9 @@
   gap: 8px;
 }
 
-.loading-spinner svg {
+.loading-spinner .spinner-icon {
   animation: spin 1s linear infinite;
+  display: inline-block;
 }
 
 @keyframes spin {
@@ -152,12 +170,16 @@
     max-width: calc(100% - 32px);
   }
 
-  .modal-content {
+  .modal-header {
     padding: 32px 24px 24px;
   }
 
   .modal-title {
     font-size: 22px;
+  }
+
+  .modal-content {
+    padding: 24px;
   }
 
   .modal-message {

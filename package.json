@@ -19,10 +19,12 @@
   },
   "dependencies": {
     "@angular/animations": "^20.0.0",
+    "@angular/cdk": "^20.2.14",
     "@angular/common": "^20.0.0",
     "@angular/compiler": "^20.0.0",
     "@angular/core": "^20.0.0",
     "@angular/forms": "^20.0.0",
+    "@angular/material": "^20.2.14",
     "@angular/platform-browser": "^20.0.0",
     "@angular/router": "^20.0.0",
     "@ionic/angular": "^8.7.5",
@@ -30,9 +32,9 @@
     "bootstrap-icons": "^1.13.1",
     "rxjs": "^7.8.1",
     "tslib": "^2.5.0",
+    "web-animations-js": "^2.3.2",
     "yargs": "^17.7.2",
-	"web-animations-js": "^2.3.2",
-	"zone.js": "~0.15.0"
+    "zone.js": "~0.15.0"
   },
   "devDependencies": {
     "@angular-devkit/build-angular": "^20.3.6",

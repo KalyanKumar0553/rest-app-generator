@@ -1,0 +1,12 @@
+<nav class="sidenav">
+  <ul class="nav-list">
+    <li
+      *ngFor="let item of navItems"
+      class="nav-item"
+      [class.active]="activeItem === item.value"
+      (click)="onItemClick(item.value)">
+      <mat-icon class="nav-icon">{{ item.icon }}</mat-icon>
+      <span class="nav-label">{{ item.label }}</span>
+    </li>
+  </ul>
+</nav>

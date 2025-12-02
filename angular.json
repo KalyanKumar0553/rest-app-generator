@@ -55,9 +55,7 @@
 									"minify": true,
 									"inlineCritical": true
 								},
-								"fonts": {
-									"inline": true
-								}
+								"fonts": false
 							},
 							"outputHashing": "all",
 							"sourceMap": false,

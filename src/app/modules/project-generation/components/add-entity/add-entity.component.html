@@ -1,0 +1,72 @@
+<div class="add-entity-container">
+  <div class="entity-form">
+    <mat-form-field appearance="fill" class="full-width">
+      <mat-label>Name</mat-label>
+      <input
+        matInput
+        [(ngModel)]="entityName"
+        (ngModelChange)="onEntityNameChange()"
+        placeholder="Entity name"
+        required>
+      <mat-error *ngIf="nameError">{{ nameError }}</mat-error>
+    </mat-form-field>
+
+    <div class="form-group checkbox-group">
+      <mat-checkbox
+        [(ngModel)]="mappedSuperclass"
+        (change)="onMappedSuperclassChange()"
+        color="primary">
+        Mapped superclass
+      </mat-checkbox>
+      <button class="help-btn" type="button" aria-label="Help">
+        <i class="bi bi-question-circle"></i>
+      </button>
+    </div>
+
+    <div class="section-divider"></div>
+
+    <div class="crud-section" *ngIf="!mappedSuperclass">
+      <h3 class="section-title">CRUD Options</h3>
+      <div class="form-group checkbox-group">
+        <mat-checkbox
+          [(ngModel)]="addRestEndpoints"
+          [disabled]="mappedSuperclass"
+          color="primary">
+          Add REST endpoints
+        </mat-checkbox>
+        <button class="help-btn" type="button" aria-label="Help">
+          <i class="bi bi-question-circle"></i>
+        </button>
+      </div>
+
+      <div class="section-divider"></div>
+    </div>
+
+    <div class="fields-section">
+      <div class="fields-header">
+        <h3 class="section-title">Fields</h3>
+        <button class="add-field-btn" type="button" (click)="addField()" aria-label="Add field">
+          <mat-icon>add_circle</mat-icon>
+        </button>
+      </div>
+
+      <div class="fields-list">
+        <app-field-item
+          *ngFor="let field of fields; let i = index"
+          [field]="field"
+          [index]="i"
+          [totalFields]="fields.length"
+          [fieldTypes]="fieldTypes"
+          [canDelete]="i > 0"
+          [canMoveUp]="i > 1"
+          [canMoveDown]="i > 0 && i < fields.length - 1"
+          (fieldNameChange)="onFieldNameChange($event)"
+          (fieldTypeChange)="onFieldTypeChange($event)"
+          (deleteField)="removeField(i)"
+          (moveUp)="moveFieldUp(i)"
+          (moveDown)="moveFieldDown(i)">
+        </app-field-item>
+      </div>
+    </div>
+  </div>
+</div>

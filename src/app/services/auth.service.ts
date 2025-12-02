@@ -230,6 +230,10 @@ export class AuthService {
     return !!this.getAccessToken() && !!this.currentUserValue;
   }
 
+  getCurrentUser(): UserData | null {
+    return this.currentUserValue;
+  }
+
   getUserData(): UserData | null {
     const userData = this.localStorageService.getItem(STORAGE_KEYS.USER_DATA);
     return userData ? JSON.parse(userData) : null;

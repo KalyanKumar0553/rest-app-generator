@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { RouterOutlet, Router, NavigationEnd } from '@angular/router';
-import { IonApp, IonRouterOutlet, IonContent } from '@ionic/angular/standalone';
+import { IonApp } from '@ionic/angular/standalone';
 import { HeaderComponent } from './components/header/header.component';
 import { FooterComponent } from './components/footer/footer.component';
 import { ToastComponent } from './components/toast/toast.component';
@@ -12,13 +12,15 @@ import { AuthService } from './services/auth.service';
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [CommonModule, IonApp, IonRouterOutlet, IonContent, RouterOutlet, HeaderComponent, FooterComponent, ToastComponent, HttpClientModule],
+  imports: [CommonModule, IonApp, RouterOutlet, HeaderComponent, FooterComponent, ToastComponent, HttpClientModule],
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.css']
 })
 export class AppComponent implements OnInit {
   title = 'QuadProSol - IT Solutions';
   isNavigating = false;
+  isDashboardRoute = false;
+  isProjectGenerationRoute = false;
 
   constructor(
     private router: Router,
@@ -27,8 +29,10 @@ export class AppComponent implements OnInit {
     // Handle navigation loading state and scroll to top
     this.router.events.pipe(
       filter(event => event instanceof NavigationEnd)
-    ).subscribe(() => {
+    ).subscribe((event: NavigationEnd) => {
       this.isNavigating = true;
+      this.isDashboardRoute = event.urlAfterRedirects.includes('/user/dashboard');
+      this.isProjectGenerationRoute = event.urlAfterRedirects.includes('/project-generation');
 
       // Hide loading after a short delay to ensure smooth transition
       setTimeout(() => {
@@ -64,20 +68,11 @@ export class AppComponent implements OnInit {
   }
 
   private scrollToTop(): void {
-    // Try multiple scroll methods to ensure compatibility
     if (typeof window !== 'undefined') {
-      // Method 1: Ionic content scroll
-      const ionContent = document.querySelector('ion-content');
-      if (ionContent) {
-        ionContent.scrollToTop(300);
+      const mainContent = document.querySelector('.main-content-scrollable');
+      if (mainContent) {
+        mainContent.scrollTo({ top: 0, behavior: 'smooth' });
       }
-      
-      // Method 2: Window scroll (fallback)
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-      
-      // Method 3: Document scroll (additional fallback)
-      document.documentElement.scrollTop = 0;
-      document.body.scrollTop = 0;
     }
   }
 }

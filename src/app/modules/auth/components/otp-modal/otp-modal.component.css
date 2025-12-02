@@ -4,7 +4,7 @@
   left: 0;
   width: 100%;
   height: 100%;
-  background-color: rgba(0, 0, 0, 0.6);
+  background-color: var(--theme-modal-overlay-bg, rgba(0, 0, 0, 0.6));
   display: flex;
   justify-content: center;
   align-items: center;
@@ -23,7 +23,7 @@
 }
 
 .modal-container {
-  background-color: #ffffff;
+  background-color: var(--theme-modal-container-bg, #ffffff);
   border-radius: 8px;
   max-width: 600px;
   width: 100%;
@@ -53,7 +53,7 @@
   border: none;
   cursor: pointer;
   padding: 8px;
-  color: #6b7280;
+  color: var(--theme-plain-text, #6b7280);
   transition: color 0.2s ease;
   display: flex;
   align-items: center;
@@ -62,11 +62,11 @@
 }
 
 .close-btn:hover {
-  color: #1f2937;
+  color: var(--theme-modal-body-text, #1f2937);
 }
 
 .modal-header {
-  background-color: #8b9fa6;
+  background-color: var(--theme-modal-header-bg, #8b9fa6);
   padding: 24px 32px;
   border-radius: 8px 8px 0 0;
 }
@@ -75,7 +75,7 @@
   margin: 0;
   font-size: 24px;
   font-weight: 600;
-  color: #ffffff;
+  color: var(--theme-modal-header-text, #ffffff);
 }
 
 .modal-body {
@@ -84,7 +84,7 @@
 
 .modal-description {
   margin: 0 0 24px 0;
-  color: #6b7280;
+  color: var(--theme-neutral-text, #6b7280);
   font-size: 15px;
   line-height: 1.6;
 }
@@ -96,7 +96,7 @@
 .form-group label {
   display: block;
   margin-bottom: 8px;
-  color: #374151;
+  color: var(--theme-modal-body-text, #374151);
   font-weight: 500;
   font-size: 14px;
 }
@@ -104,32 +104,34 @@
 .form-control {
   width: 100%;
   padding: 12px 16px;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--theme-input-border-color, #d1d5db);
   border-radius: 6px;
   font-size: 15px;
   transition: all 0.2s ease;
   box-sizing: border-box;
+  background-color: var(--theme-input-bg, #ffffff);
+  color: var(--theme-input-text-color, #374151);
 }
 
 .form-control:focus {
   outline: none;
-  border-color: #8b9fa6;
-  box-shadow: 0 0 0 3px rgba(139, 159, 166, 0.1);
+  border-color: var(--theme-input-focus-border-color, #8b9fa6);
+  box-shadow: 0 0 0 3px var(--theme-input-focus-shadow, rgba(139, 159, 166, 0.1));
 }
 
 .form-control.error {
-  border-color: #ef4444;
-  background-color: #fef2f2;
+  border-color: var(--theme-input-error-border-color, #ef4444);
+  background-color: var(--theme-error-bg, #fef2f2);
 }
 
 .form-control:disabled {
-  background-color: #f3f4f6;
+  background-color: var(--theme-neutral-bg, #f3f4f6);
   cursor: not-allowed;
 }
 
 .error-message {
   display: block;
-  color: #ef4444;
+  color: var(--theme-error-text-color, #ef4444);
   font-size: 13px;
   margin-top: 6px;
   font-weight: 500;
@@ -142,12 +144,12 @@
 
 .resend-text {
   margin: 0;
-  color: #6b7280;
+  color: var(--theme-neutral-text, #6b7280);
   font-size: 14px;
 }
 
 .link {
-  color: #1f2937;
+  color: var(--theme-link-color, #1f2937);
   text-decoration: underline;
   font-weight: 500;
   transition: color 0.2s ease;
@@ -160,11 +162,11 @@
 }
 
 .link:hover:not(:disabled) {
-  color: #374151;
+  color: var(--theme-link-hover-color, #374151);
 }
 
 .link:disabled {
-  color: #9ca3af;
+  color: var(--theme-input-placeholder-color, #9ca3af);
   cursor: not-allowed;
   text-decoration: none;
 }
@@ -175,7 +177,7 @@
 
 .modal-footer {
   padding: 24px 32px;
-  border-top: 1px solid #e5e7eb;
+  border-top: 1px solid var(--theme-modal-border-color, #e5e7eb);
   display: flex;
   gap: 12px;
   justify-content: flex-end;
@@ -197,29 +199,29 @@
 }
 
 .btn-primary {
-  background-color: #8b9fa6;
-  color: white;
+  background-color: var(--theme-secondary-btn-bg, #8b9fa6);
+  color: var(--theme-secondary-btn-text, white);
 }
 
 .btn-primary:hover:not(:disabled) {
-  background-color: #7a8e95;
+  background-color: var(--theme-secondary-btn-hover-bg, #7a8e95);
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(139, 159, 166, 0.3);
 }
 
 .btn-primary:disabled {
-  background-color: #d1d5db;
+  background-color: var(--theme-input-border-color, #d1d5db);
   cursor: not-allowed;
   transform: none;
 }
 
 .btn-secondary {
-  background-color: #f3f4f6;
-  color: #374151;
+  background-color: var(--theme-neutral-bg, #f3f4f6);
+  color: var(--theme-modal-body-text, #374151);
 }
 
 .btn-secondary:hover:not(:disabled) {
-  background-color: #e5e7eb;
+  background-color: var(--theme-modal-border-color, #e5e7eb);
 }
 
 .btn-secondary:disabled {
@@ -233,8 +235,9 @@
   gap: 8px;
 }
 
-.loading-spinner svg {
+.loading-spinner .spinner-icon {
   animation: spin 1s linear infinite;
+  display: inline-block;
 }
 
 @keyframes spin {
