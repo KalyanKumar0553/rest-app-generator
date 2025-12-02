@@ -35,7 +35,7 @@ export class HeaderComponent implements OnInit {
   }
 
   private checkRoute(url: string): void {
-    this.isDashboardRoute = url.includes('/user/dashboard');
+    this.isDashboardRoute = url.includes('/user/dashboard') || url.includes('/project-generation');
   }
 
   navigateToHome(): void {
@@ -68,5 +68,11 @@ export class HeaderComponent implements OnInit {
         this.modalService.openLoginModal();
       }, 100);
     }
+  }
+
+  handleStartProjectClick(event: Event): void {
+    event.preventDefault();
+    this.closeMenu();
+    this.router.navigate(['/project-generation']);
   }
 }

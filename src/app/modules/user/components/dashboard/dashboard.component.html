@@ -1,10 +1,8 @@
 <app-confirmation-modal
   *ngIf="showLogoutConfirmation"
-  title="Confirm Logout"
-  message="Are you sure you want to logout? You will need to login again to access your dashboard."
-  confirmText="Logout"
-  cancelText="Cancel"
-  confirmButtonClass="btn-confirm"
+  [title]="logoutModalConfig.title"
+  [message]="logoutModalConfig.message"
+  [buttons]="logoutModalConfig.buttons"
   [isLoading]="isLoggingOut"
   (confirm)="confirmLogout()"
   (cancel)="cancelLogout()"
@@ -12,15 +10,17 @@
 
 <div class="dashboard-container">
   <div class="mobile-header">
-    <button class="menu-toggle" (click)="toggleSidebar()" aria-label="Toggle menu">
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M3 12h18M3 6h18M3 18h18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-      </svg>
-    </button>
-    <div class="logo">
-      <span class="logo-text">Bootify</span>
+    <div class="container">
+      <div class="header-content">
+        <button class="menu-toggle" (click)="toggleSidebar()" aria-label="Toggle menu">
+          <i class="bi bi-list"></i>
+        </button>
+        <div class="logo">
+          <span class="logo-text">Bootify</span>
+        </div>
+        <div class="spacer"></div>
+      </div>
     </div>
-    <div class="spacer"></div>
   </div>
 
   <div class="sidebar-overlay" [class.show]="isSidebarOpen" (click)="closeSidebar()"></div>
@@ -29,10 +29,7 @@
     <div class="sidebar-header">
       <div class="logo">
         <span class="logo-text">Bootify</span>
-        <svg class="logo-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M20 4L12 12L4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-          <path d="M4 20L12 12L20 20" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
+        <i class="bi bi-code-slash logo-icon"></i>
       </div>
       <div class="user-info">
         <p class="welcome">Welcome,</p>
@@ -40,35 +37,16 @@
       </div>
     </div>
 
-    <nav class="sidebar-nav">
-      <button class="nav-item active" (click)="closeSidebar()">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <rect x="3" y="3" width="7" height="7" rx="1" stroke="currentColor" stroke-width="2"/>
-          <rect x="14" y="3" width="7" height="7" rx="1" stroke="currentColor" stroke-width="2"/>
-          <rect x="14" y="14" width="7" height="7" rx="1" stroke="currentColor" stroke-width="2"/>
-          <rect x="3" y="14" width="7" height="7" rx="1" stroke="currentColor" stroke-width="2"/>
-        </svg>
-        <span>Projects</span>
-      </button>
-      <button class="nav-item" (click)="navigateToAccount(); closeSidebar()">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2"/>
-          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z" fill="currentColor"/>
-        </svg>
-        <span>Account</span>
-      </button>
-      <button class="nav-item" (click)="navigateToPlan(); closeSidebar()">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
-          <path d="M12 6v6l4 2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-        </svg>
-        <span>Your Plan</span>
-      </button>
+    <app-sidenav
+      [navItems]="navItems"
+      [activeItem]="activeSection"
+      (itemClick)="navigateToSection($event)">
+    </app-sidenav>
+
+    <nav class="sidebar-nav sidebar-nav-footer">
       <button class="nav-item" (click)="logout(); closeSidebar()">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-        <span>Logout</span>
+        <mat-icon class="nav-icon">logout</mat-icon>
+        <span class="nav-label">Logout</span>
       </button>
     </nav>
   </aside>
@@ -76,38 +54,55 @@
   <main class="main-content">
     <div class="content-header">
       <h1>Project Overview</h1>
+      <div class="action-buttons">
+        <button class="btn btn-primary" (click)="createNewProject()">Create new project</button>
+        <!-- <button class="btn btn-secondary">Link existing project</button> -->
+      </div>
+      <app-search-sort
+        *ngIf="!isLoadingProjects && projects.length > 0"
+        [searchConfig]="searchConfig"
+        [sortOptions]="sortOptions"
+        (searchSortChange)="onSearchSortChange($event)"
+      ></app-search-sort>
     </div>
 
     <div class="content-body">
-      <div class="action-buttons">
-        <button class="btn btn-primary">Create new project</button>
-        <button class="btn btn-secondary">Link existing project</button>
+
+      <div *ngIf="isLoadingProjects" class="loading-state">
+        <div class="spinner"></div>
+        <p>Loading projects...</p>
       </div>
 
-      <div class="project-card">
-        <div class="project-header">
-          <div class="project-meta">
-            <span class="project-status">STARTUP0VL6N</span>
-            <span class="project-date">2025-11-23 15:12</span>
+      <div *ngIf="!isLoadingProjects && projects.length === 0" class="empty-state">
+        <p>No projects found. Create your first project to get started.</p>
+      </div>
+
+      <div *ngIf="!isLoadingProjects && projects.length > 0 && filteredProjects.length === 0" class="empty-state">
+        <p>No projects match your search criteria.</p>
+      </div>
+
+      <div class="projects-grid" *ngIf="!isLoadingProjects && filteredProjects.length > 0">
+        <div class="project-card" *ngFor="let project of filteredProjects">
+          <div class="project-header">
+            <div class="project-meta">
+              <span class="project-status">{{ project.id }}</span>
+              <span class="project-date">{{ formatDate(project.createdAt) }}</span>
+            </div>
           </div>
-        </div>
-        <div class="project-title">
-          <h3>io.bootify.my-app</h3>
-        </div>
-        <div class="project-actions">
-          <button class="btn-open">Open</button>
-          <div class="action-icons">
-            <button class="icon-btn" aria-label="Archive">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" stroke-width="2"/>
-                <path d="M9 9h6M9 13h6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-              </svg>
-            </button>
-            <button class="icon-btn" aria-label="Add">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-              </svg>
-            </button>
+          <div class="project-title">
+            <h3>{{ project.name }}</h3>
+            <p class="project-description">{{ project.description }}</p>
+          </div>
+          <div class="project-actions">
+            <button class="btn-open" (click)="openProject(project)">Open</button>
+            <div class="action-icons">
+              <button class="icon-btn" aria-label="Archive">
+                <i class="bi bi-archive"></i>
+              </button>
+              <button class="icon-btn" aria-label="Add">
+                <i class="bi bi-plus-lg"></i>
+              </button>
+            </div>
           </div>
         </div>
       </div>

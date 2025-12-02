@@ -1,19 +1,52 @@
-.app-content {
-  --background: transparent;
-  --padding-top: 0;
-  --padding-bottom: 0;
-  --padding-start: 0;
-  --padding-end: 0;
+.app-container {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
 }
 
-.main-content {
-  min-height: calc(100vh - 160px);
+.app-header-fixed {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  background-color: #f8f9fa;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.main-content-scrollable {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  margin-top: 24px;
+  margin-bottom: 24px;
   position: relative;
   transition: opacity 0.3s ease;
 }
 
-.main-content.loading {
+.main-content-scrollable.no-margins {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
+.main-content-scrollable.no-padding {
+  padding: 0;
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
+.main-content-scrollable.loading {
   opacity: 0.3;
+}
+
+.app-footer-fixed {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  background: var(--color-text-primary);
 }
 
 .loading-overlay {

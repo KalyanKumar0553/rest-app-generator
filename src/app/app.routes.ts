@@ -17,6 +17,10 @@ export const routes: Routes = [
     loadChildren: () => import('./modules/user/user.routes').then(m => m.USER_ROUTES)
   },
   {
+    path: 'project-generation',
+    loadChildren: () => import('./modules/project-generation/project-generation.routes').then(m => m.PROJECT_GENERATION_ROUTES)
+  },
+  {
     path: 'dashboard',
     redirectTo: 'user/dashboard',
     pathMatch: 'full'

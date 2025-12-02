@@ -1,29 +1,22 @@
 <div class="modal-overlay" (click)="onOverlayClick()">
   <div class="modal-container" (click)="$event.stopPropagation()">
-    <div class="modal-content">
+    <div class="modal-header">
       <h2 class="modal-title">{{ title }}</h2>
-      <p class="modal-message">{{ message }}</p>
+    </div>
+    <div class="modal-content">
+      <p class="modal-message" *ngFor="let line of messageLines">{{ line }}</p>
     </div>
 
     <div class="modal-footer">
       <button
-        class="btn-cancel"
-        (click)="onCancel()"
+        *ngFor="let button of buttons"
+        [class]="getButtonClass(button)"
+        (click)="onButtonClick(button)"
         [disabled]="isLoading"
       >
-        {{ cancelText }}
-      </button>
-      <button
-        [class]="'btn-action ' + confirmButtonClass"
-        (click)="onConfirm()"
-        [disabled]="isLoading"
-      >
-        <span *ngIf="!isLoading">{{ confirmText }}</span>
-        <span *ngIf="isLoading" class="loading-spinner">
-          <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-            <circle cx="10" cy="10" r="8" stroke="currentColor" stroke-width="2" opacity="0.25"/>
-            <path d="M10 2C5.58172 2 2 10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-          </svg>
+        <span *ngIf="!isLoading || button.action === 'cancel'">{{ button.text }}</span>
+        <span *ngIf="isLoading && button.action === 'confirm'" class="loading-spinner">
+          <i class="bi bi-arrow-repeat spinner-icon"></i>
           Processing...
         </span>
       </button>

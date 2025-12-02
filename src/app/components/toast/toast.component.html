@@ -5,22 +5,14 @@
        [@slideIn]>
     <div class="toast-content">
       <div class="toast-icon">
-        <svg *ngIf="toast.type === 'success'" width="20" height="20" viewBox="0 0 20 20" fill="none">
-          <path d="M16.6667 5L7.50004 14.1667L3.33337 10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-        <svg *ngIf="toast.type === 'error'" width="20" height="20" viewBox="0 0 20 20" fill="none">
-          <path d="M15 5L5 15M5 5L15 15" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-        <svg *ngIf="toast.type === 'info'" width="20" height="20" viewBox="0 0 20 20" fill="none">
-          <path d="M10 14V10M10 6H10.01M19 10C19 14.9706 14.9706 19 10 19C5.02944 19 1 14.9706 1 10C1 5.02944 5.02944 1 10 1C14.9706 1 19 5.02944 19 10Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
+        <i *ngIf="toast.type === 'success'" class="bi bi-check-circle"></i>
+        <i *ngIf="toast.type === 'error'" class="bi bi-x-circle"></i>
+        <i *ngIf="toast.type === 'info'" class="bi bi-info-circle"></i>
       </div>
       <span class="toast-message">{{ toast.message }}</span>
     </div>
     <button class="toast-close" (click)="closeToast(toast.id)" aria-label="Close notification">
-      <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-        <path d="M12 4L4 12M4 4L12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-      </svg>
+      <i class="bi bi-x-lg"></i>
     </button>
   </div>
 </div>

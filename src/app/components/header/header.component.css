@@ -153,7 +153,7 @@
   border: none;
   cursor: pointer;
   padding: 8px;
-  color: #6b7280;
+  color: var(--theme-plain-text, #6b7280);
   transition: color 0.2s ease;
   display: flex;
   align-items: center;
