@@ -34,8 +34,6 @@ import com.src.main.util.AppConstants;
 import com.src.main.util.AppUtils;
 import com.src.main.util.PasswordUtil;
 import com.src.main.util.RequestStatus;
-import com.src.main.validators.AppValidators;
-import com.src.main.validators.AuthValidator;
 
 import lombok.AllArgsConstructor;
 import lombok.extern.log4j.Log4j2;
@@ -49,12 +47,9 @@ public class UserDetailsServiceImpl implements UserDetailsService {
 
 	private final UserInfoRepository userRepository;
 
-	private final MsgService emailService;
+	private final MsgService msgService;
 
 	private final OTPService otpService;
-
-	private final AuthValidator authValidator;
-
 
 	@Override
 	public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
@@ -89,11 +84,7 @@ public class UserDetailsServiceImpl implements UserDetailsService {
 
 	public boolean sendOTP(UserInfo user,Context context) {
 		if (otpService.canSendOtp(user.getUsername())) {
-			if(AppValidators.isMobile(user.getUsername())) {
-//				emailService.sendSMS("+19296006492", "+919148042308","Please User OTP : " + context.getVariable("otp") + " To login");
-			} else {
-//				emailService.sendHtmlEmail("DoNotReply@8fcd10ba-82fa-40fa-88ff-892b2c57d4bd.azurecomm.net",user.getEmail(), "MyComplex : Verification Mail", "otpEmail", context);
-			}
+//			msgService.sendHtmlEmail("DoNotReply@8fcd10ba-82fa-40fa-88ff-892b2c57d4bd.azurecomm.net",user.getEmail(), "MyComplex : Verification Mail", "otpEmail", context);
 			otpService.saveOtp(user.getUsername(), (String)context.getVariable("otp"));
 			otpService.recordOtpAttempt(user.getUsername());
 			return true;
@@ -117,30 +108,14 @@ public class UserDetailsServiceImpl implements UserDetailsService {
 		return (isVerified ? RequestStatus.OTP_VERIFICATION_SUCCESS : RequestStatus.OTP_VERIFICATION_FAIL).toString();
 	}
 
-	public String getUserName(SignupRequestDTO signupRequest) {
-		return authValidator.isMobileNumberProivded(signupRequest) ? signupRequest.getMobile() : signupRequest.getEmail();
-	}
-
 	public void checkDuplicateUser(SignupRequestDTO signupRequest) {
-		boolean isMobile = authValidator.isMobileNumberProivded(signupRequest);
-		if(isMobile) {
-			if(signupRequest.getMobile()!=null && !signupRequest.getMobile().trim().isEmpty()) {
-				Optional<UserInfo> userWithMobile = userRepository.findByMobile(signupRequest.getMobile());
-				if (userWithMobile.isPresent()) {
-					throw new UserRequestException(RequestStatus.USER_DUPLICATE_MOBILE);
-				}
-			} else {
-				throw new UserRequestException(RequestStatus.SIGNUP_REQUEST_MOBILE_DATA_ERROR);
+		if(signupRequest.getEmail()!=null &&  !signupRequest.getEmail().trim().isEmpty()) {
+			Optional<UserInfo> userWithEmail = userRepository.findByEmail(signupRequest.getEmail());
+			if (userWithEmail.isPresent()) {
+				throw new UserRequestException(RequestStatus.USER_DUPLICATE_EMAIL);
 			}
 		} else {
-			if(signupRequest.getEmail()!=null &&  !signupRequest.getEmail().trim().isEmpty()) {
-				Optional<UserInfo> userWithEmail = userRepository.findByEmail(signupRequest.getEmail());
-				if (userWithEmail.isPresent()) {
-					throw new UserRequestException(RequestStatus.USER_DUPLICATE_EMAIL);
-				}
-			} else {
-				throw new UserRequestException(RequestStatus.SIGNUP_REQUEST_EMAIL_DATA_ERROR);
-			}
+			throw new UserRequestException(RequestStatus.SIGNUP_REQUEST_EMAIL_DATA_ERROR);
 		}
 	}
 
@@ -159,7 +134,7 @@ public class UserDetailsServiceImpl implements UserDetailsService {
 	}
 
 	public UserInfo validateAndGetIfUserEnabled(LoginRequestDTO loginRequest) {
-		UserInfo user = findUserByUsername(loginRequest.getUsername())
+		UserInfo user = findUserByUsername(loginRequest.getEmail())
 				.orElseThrow(() -> new UserNotFoundException(RequestStatus.USER_NOT_FOUND));
 		if (!user.isEnabled()) {
 			String usernameSrc = user.getUsername().equalsIgnoreCase(user.getEmail()) ? "email" : "mobile";
@@ -209,8 +184,6 @@ public class UserDetailsServiceImpl implements UserDetailsService {
 		user.setFullName(profileRequest.getFullName());
 		if(profileRequest.getEmail()!=null) {
 			user.setEmail(profileRequest.getEmail());
-		} if(profileRequest.getMobile()!=null) {
-			user.setMobile(profileRequest.getMobile());
 		} if(profileRequest.getDob()!=null) {
 			user.setDob(profileRequest.getDob());
 		} if(profileRequest.getFullName()!=null) {

@@ -1,0 +1,25 @@
+<div class="modal-overlay" (click)="onOverlayClick()">
+  <div class="modal-container" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2 class="modal-title">{{ title }}</h2>
+    </div>
+    <div class="modal-content">
+      <p class="modal-message" *ngFor="let line of messageLines">{{ line }}</p>
+    </div>
+
+    <div class="modal-footer">
+      <button
+        *ngFor="let button of buttons"
+        [class]="getButtonClass(button)"
+        (click)="onButtonClick(button)"
+        [disabled]="isLoading"
+      >
+        <span *ngIf="!isLoading || button.action === 'cancel'">{{ button.text }}</span>
+        <span *ngIf="isLoading && button.action === 'confirm'" class="loading-spinner">
+          <i class="bi bi-arrow-repeat spinner-icon"></i>
+          Processing...
+        </span>
+      </button>
+    </div>
+  </div>
+</div>

@@ -1,56 +1,37 @@
-<!-- Bootstrap Header -->
-<header class="header fixed-top">
-  <nav class="navbar navbar-expand-lg navbar-light">
-    <div class="container-fluid">
-      <!-- Brand -->
-      <a class="navbar-brand" (click)="navigateToHome()" style="cursor: pointer;">
-        <img 
-          src="assets/icon/qs-logo copy.png"
-          alt="QS - Quality Solutions" 
-          class="logo-img"
-        />
-        <div class="brand-container">
-          <span class="brand-text">QuadProSol</span>
-          <div class="brand-slogan">QUALITY ★ PERFORMANCE ★ SECURITY</div>
-        </div>
-      </a>
+<header class="header" *ngIf="!isDashboardRoute">
+  <div class="container">
+    <div class="header-content">
+      <div class="logo" (click)="navigateToHome()">
+        <span class="logo-text">Bootify</span>
+        <i class="bi bi-code-slash logo-icon"></i>
+      </div>
 
-      <!-- Mobile Toggle Button -->
-      <button 
-        class="navbar-toggler d-lg-none p-2"
-        type="button"
-        (click)="toggleMenu()"
-        [attr.aria-expanded]="isMenuOpen"
-        aria-label="Toggle navigation"
-      >
-        <i class="bi bi-list fs-4" *ngIf="!isMenuOpen"></i>
-        <i class="bi bi-x-lg fs-4" *ngIf="isMenuOpen"></i>
+      <button class="menu-toggle" (click)="toggleMenu()" aria-label="Toggle menu">
+        <i class="bi bi-list"></i>
       </button>
 
-      <!-- Navigation Menu -->
-      <div class="collapse navbar-collapse" [class.show]="isMenuOpen" [class.collapsing]="isTransitioning">
-        <ul class="navbar-nav ms-auto align-items-lg-center">
-          <li class="nav-item" *ngFor="let item of navigationItems">
-            <a 
-              class="nav-link"
-              [class.active]="currentRoute === '/' && activeSection === item.id"
-              (click)="onNavClick($event, item.id)"
-              [href]="'#' + item.id"
-            >
-              {{ item.label }}
-            </a>
-          </li>
-          <li class="nav-item ms-lg-3">
-            <button 
-              class="btn contact-btn"
-              (click)="navigateToIntake()"
-              aria-label="Contact us"
-            >
-              CONTACT
-            </button>
-          </li>
-        </ul>
-      </div>
+      <nav class="nav">
+        <a href="#" class="nav-link">Learn</a>
+        <a href="#" class="nav-link start-project" (click)="handleStartProjectClick($event)">Start Project</a>
+        <a href="#" class="nav-link" (click)="handleAccountClick($event)">Account</a>
+      </nav>
     </div>
-  </nav>
+  </div>
 </header>
+
+<div class="sidenav-overlay" *ngIf="!isDashboardRoute" [class.active]="isMenuOpen" (click)="closeMenu()"></div>
+
+<aside class="sidenav" *ngIf="!isDashboardRoute" [class.active]="isMenuOpen">
+  <div class="sidenav-header">
+    <span class="sidenav-title">Menu</span>
+    <button class="close-btn" (click)="closeMenu()" aria-label="Close menu">
+      <i class="bi bi-x-lg"></i>
+    </button>
+  </div>
+  <nav class="sidenav-nav">
+    <a href="#" class="sidenav-link" (click)="closeMenu()">Learn</a>
+    <a href="#" class="sidenav-link" (click)="closeMenu()">Pricing</a>
+    <a href="#" class="sidenav-link start-project" (click)="handleStartProjectClick($event)">Start Project</a>
+    <a href="#" class="sidenav-link" (click)="handleAccountClick($event)">Account</a>
+  </nav>
+</aside>

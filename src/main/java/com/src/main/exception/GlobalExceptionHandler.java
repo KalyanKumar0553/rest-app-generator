@@ -16,16 +16,27 @@ public class GlobalExceptionHandler {
   @ExceptionHandler(ConstraintViolationException.class)
   public ResponseEntity<Map<String,Object>> onConstraintViolation(ConstraintViolationException ex){
     Map<String,Object> body = new HashMap<>();
-    body.put("error", "VALIDATION_FAILED");
-    body.put("details", ex.getConstraintViolations().stream().map(v -> v.getPropertyPath() + " " + v.getMessage()).toList());
+    String firstError = ex.getConstraintViolations()
+            .stream()
+            .findFirst()
+            .map(v -> v.getPropertyPath() + " " + v.getMessage())
+            .orElse("Validation failed");
+    body.put("errorCode", HttpStatus.BAD_REQUEST.value());
+    body.put("errorMsg", firstError);
     return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body);
   }
 
   @ExceptionHandler(MethodArgumentNotValidException.class)
   public ResponseEntity<Map<String,Object>> onMethodArgInvalid(MethodArgumentNotValidException ex){
     Map<String,Object> body = new HashMap<>();
-    body.put("error", "VALIDATION_FAILED");
-    body.put("details", ex.getBindingResult().getFieldErrors().stream().map(fe -> fe.getField() + " " + fe.getDefaultMessage()).toList());
+    String firstError = ex.getBindingResult()
+            .getFieldErrors()
+            .stream()
+            .findFirst()
+            .map(fe -> fe.getDefaultMessage())
+            .orElse("Validation failed");
+    body.put("errorCode", HttpStatus.BAD_REQUEST.value());
+    body.put("errorMsg", firstError);
     return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body);
   }
   
