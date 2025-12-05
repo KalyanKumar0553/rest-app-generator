@@ -3,9 +3,11 @@ package com.src.main.dto;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
+@ToString
 public class InitializrProjectModel {
 
     private String groupId;
@@ -19,20 +21,5 @@ public class InitializrProjectModel {
     private String bootVersion;
     private boolean includeOpenapi;
     private boolean angularIntegration;
-    @Override
-    public String toString() {
-        return "InitializrProjectModel{" +
-                "groupId='" + groupId + '\'' +
-                ", artifactId='" + artifactId + '\'' +
-                ", version='" + version + '\'' +
-                ", name='" + name + '\'' +
-                ", description='" + description + '\'' +
-                ", packaging='" + packaging + '\'' +
-                ", generator='" + generator + '\'' +
-                ", jdkVersion='" + jdkVersion + '\'' +
-                ", bootVersion='" + bootVersion + '\'' +
-                ", includeOpenapi=" + includeOpenapi +
-                ", angularIntegration=" + angularIntegration +
-                '}';
-    }
+    
 }

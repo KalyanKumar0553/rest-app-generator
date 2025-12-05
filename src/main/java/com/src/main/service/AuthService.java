@@ -18,6 +18,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.thymeleaf.context.Context;
 
 import com.src.main.config.JWTTokenProvider;
@@ -33,9 +34,9 @@ import com.src.main.transformers.UserInfoTransformer;
 import com.src.main.util.AppUtils;
 import com.src.main.util.PasswordUtil;
 import com.src.main.util.RequestStatus;
-import com.src.main.validators.AuthValidator;
 
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 
 @Service
@@ -54,9 +55,8 @@ public class AuthService {
 
 	final PasswordEncoder passwordEncoder;
 
-	final AuthValidator authValidator;
-
-	public ResponseEntity<JSONResponseDTO<?>> login(LoginRequestDTO loginRequest, HttpServletResponse response) {
+	public ResponseEntity<JSONResponseDTO<?>> login(@Valid @RequestBody LoginRequestDTO loginRequest,
+			HttpServletResponse response) {
 		UserInfo user = userService.validateAndGetIfUserEnabled(loginRequest);
 		String hashPassword = PasswordUtil.hashPassword(loginRequest.getPassword(), user.getSalt());
 		String encodedPassword = passwordEncoder.encode(hashPassword);
@@ -85,32 +85,30 @@ public class AuthService {
 
 	}
 
-	public ResponseEntity<JSONResponseDTO<?>> signup(SignupRequestDTO signupRequest) {
-		authValidator.validateSignUpRequest(signupRequest);
+	public ResponseEntity<JSONResponseDTO<?>> signup(@Valid @RequestBody SignupRequestDTO signupRequest) {
 		userService.checkDuplicateUser(signupRequest);
-		String msgSource = authValidator.isMobileNumberProivded(signupRequest) ? "mobile" : "email";
+		String msgSource = "email";
 		UserInfo userInfo = userInfoTransformer.fromSignupRequestDTO(signupRequest);
 		userService.saveUser(userInfo, passwordEncoder);
 		String msg = String.format(RequestStatus.SIGNUP_SUCCESS.getDescription(msgSource));
 		return ResponseEntity.ok(AppUtils.getJSONObject(msg));
 	}
 
-	public ResponseEntity<JSONResponseDTO<?>> verifyOTP(OTPVerificationRequestDTO otpVerificationRequest) {
-		 authValidator.validateOTPVerificationRequest(otpVerificationRequest);
-		UserInfo user = userService.findUserByUsername(otpVerificationRequest.getUsername())
+	public ResponseEntity<JSONResponseDTO<?>> verifyOTP(
+			@Valid @RequestBody OTPVerificationRequestDTO otpVerificationRequest) {
+		UserInfo user = userService.findUserByUsername(otpVerificationRequest.getEmail())
 				.orElseThrow(() -> new UserNotFoundException(RequestStatus.USER_NOT_FOUND));
 		if (user.isEnabled()) {
 			return ResponseEntity
 					.ok(AppUtils.getJSONObject(RequestStatus.USER_ALREADY_VERIFIED_ERROR.getDescription()));
 		}
-		String msg = userService.verifyOtp(otpVerificationRequest.getUsername(), otpVerificationRequest.getOtp());
+		String msg = userService.verifyOtp(otpVerificationRequest.getEmail(), otpVerificationRequest.getOtp());
 		return ResponseEntity.ok(AppUtils.getJSONObject(msg));
 
 	}
 
-	public ResponseEntity<JSONResponseDTO<?>> sendOTP(SendOTPRequestDTO sendOTPRequest) {
-		authValidator.validateSendOTPRequest(sendOTPRequest);
-		String username = sendOTPRequest.getUsername();
+	public ResponseEntity<JSONResponseDTO<?>> sendOTP(@Valid @RequestBody SendOTPRequestDTO sendOTPRequest) {
+		String username = sendOTPRequest.getEmail();
 		UserInfo user = userService.findUserByUsername(username)
 				.orElseThrow(() -> new UserNotFoundException(RequestStatus.USER_NOT_FOUND));
 		Context context = new Context();
@@ -121,9 +119,8 @@ public class AuthService {
 	}
 
 	public ResponseEntity<JSONResponseDTO<?>> resetPasswordWithOTP(Authentication authentication,
-			ResetPasswordRequestDTO resetPasswordRequest) {
-		authValidator.validateResetPasswordWithOTPRequest(resetPasswordRequest);
-		UserInfo user = userService.findUserByUsername(resetPasswordRequest.getUsername())
+			@Valid @RequestBody ResetPasswordRequestDTO resetPasswordRequest) {
+		UserInfo user = userService.findUserByUsername(resetPasswordRequest.getEmail())
 				.orElseThrow(() -> new UserNotFoundException(RequestStatus.USER_NOT_FOUND));
 		userService.resetPasswordWithOTP(user, resetPasswordRequest.getOtp(), resetPasswordRequest.getPassword(),
 				passwordEncoder);

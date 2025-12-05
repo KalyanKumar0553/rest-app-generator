@@ -100,7 +100,7 @@
           [disabled]="!isFormValid() || isLoading"
         >
           <span *ngIf="!isLoading">
-            {{ isForgotPasswordMode ? 'Send Reset Link' : (isSignupMode ? 'Create account' : 'Log in') }}
+            {{ isForgotPasswordMode ? 'OTP' : (isSignupMode ? 'Create account' : 'Log in') }}
           </span>
           <span *ngIf="isLoading" class="loading-spinner">
             <i class="bi bi-arrow-repeat spinner-icon"></i>

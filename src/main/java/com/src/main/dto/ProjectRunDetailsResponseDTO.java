@@ -6,14 +6,21 @@ import java.util.UUID;
 import com.src.main.util.ProjectRunStatus;
 import com.src.main.util.ProjectRunType;
 
-public record ProjectRunDetailsResponseDTO(
-        UUID runId,
-        UUID projectId,
-        String ownerId,
-        ProjectRunType type,
-        ProjectRunStatus status,
-        int runNumber,
-        String errorMessage,
-        OffsetDateTime createdAt,
-        OffsetDateTime updatedAt
-) {}
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
+public class ProjectRunDetailsResponseDTO {
+	private UUID runId;
+	private UUID projectId;
+	private String ownerId;
+	private ProjectRunType type;
+	private ProjectRunStatus status;
+	private int runNumber;
+	private String errorMessage;
+	private OffsetDateTime createdAt;
+	private OffsetDateTime updatedAt;
+}
