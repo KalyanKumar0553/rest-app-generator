@@ -1,0 +1,80 @@
+.signup-section {
+  padding: 80px 0;
+  background-color: var(--color-background-secondary);
+  text-align: center;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+.signup-title {
+  font-size: 32px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  margin-bottom: 32px;
+}
+
+.signup-form {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  max-width: 500px;
+  margin: 0 auto 16px;
+}
+
+.email-input {
+  flex: 1;
+  padding: 12px 20px;
+  font-size: 15px;
+  border: 2px solid var(--color-border);
+  border-radius: 8px;
+  background-color: var(--color-background-white);
+  color: var(--color-text-primary);
+  outline: none;
+  transition: border-color 0.2s ease;
+}
+
+.email-input:focus {
+  border-color: var(--color-primary);
+}
+
+.email-input::placeholder {
+  color: var(--color-text-muted);
+}
+
+.submit-button {
+  padding: 12px 32px;
+  font-size: 15px;
+  font-weight: 500;
+  background-color: var(--color-text-secondary);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.submit-button:hover {
+  background-color: var(--color-text-primary);
+  transform: translateY(-2px);
+}
+
+.signup-note {
+  font-size: 13px;
+  color: var(--color-text-secondary);
+}
+
+.signup-note a {
+  color: var(--color-text-primary);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+@media (max-width: 768px) {
+  .signup-form {
+    flex-direction: column;
+  }
+}

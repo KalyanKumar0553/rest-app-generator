@@ -8,36 +8,19 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonIgnoreProperties(ignoreUnknown = true)
+@AllArgsConstructor
+@NoArgsConstructor
+@Data
 public class ConstraintDTO {
 
 	private String name; // e.g. "NotBlank", "Size", "pattern"
 	private Map<String, Object> params; // e.g. { min:3, max:50 } or { value: 10 }
-
-	public ConstraintDTO() {
-	}
-
-	public ConstraintDTO(String name, Map<String, Object> params) {
-		this.name = name;
-		this.params = (params == null) ? Collections.emptyMap() : params;
-	}
-
-	public String getName() {
-		return name;
-	}
-
-	public void setName(String name) {
-		this.name = name;
-	}
-
-	public Map<String, Object> getParams() {
-		return params;
-	}
-
-	public void setParams(Map<String, Object> params) {
-		this.params = params;
-	}
 
 	@JsonCreator
 	public static ConstraintDTO fromJson(JsonNode node) {

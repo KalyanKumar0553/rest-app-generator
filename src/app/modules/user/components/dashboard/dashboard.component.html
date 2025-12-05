@@ -1,0 +1,111 @@
+<app-confirmation-modal
+  *ngIf="showLogoutConfirmation"
+  [title]="logoutModalConfig.title"
+  [message]="logoutModalConfig.message"
+  [buttons]="logoutModalConfig.buttons"
+  [isLoading]="isLoggingOut"
+  (confirm)="confirmLogout()"
+  (cancel)="cancelLogout()"
+></app-confirmation-modal>
+
+<div class="dashboard-container">
+  <div class="mobile-header">
+    <div class="container">
+      <div class="header-content">
+        <button class="menu-toggle" (click)="toggleSidebar()" aria-label="Toggle menu">
+          <i class="bi bi-list"></i>
+        </button>
+        <div class="logo">
+          <span class="logo-text">Bootify</span>
+        </div>
+        <div class="spacer"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sidebar-overlay" [class.show]="isSidebarOpen" (click)="closeSidebar()"></div>
+
+  <aside class="sidebar" [class.open]="isSidebarOpen">
+    <div class="sidebar-header">
+      <div class="logo">
+        <span class="logo-text">Bootify</span>
+        <i class="bi bi-code-slash logo-icon"></i>
+      </div>
+      <div class="user-info">
+        <p class="welcome">Welcome,</p>
+        <p class="email">{{ userEmail }}</p>
+      </div>
+    </div>
+
+    <app-sidenav
+      [navItems]="navItems"
+      [activeItem]="activeSection"
+      (itemClick)="navigateToSection($event)">
+    </app-sidenav>
+
+    <nav class="sidebar-nav sidebar-nav-footer">
+      <button class="nav-item" (click)="logout(); closeSidebar()">
+        <mat-icon class="nav-icon">logout</mat-icon>
+        <span class="nav-label">Logout</span>
+      </button>
+    </nav>
+  </aside>
+
+  <main class="main-content">
+    <div class="content-header">
+      <h1>Project Overview</h1>
+      <div class="action-buttons">
+        <button class="btn btn-primary" (click)="createNewProject()">Create new project</button>
+        <!-- <button class="btn btn-secondary">Link existing project</button> -->
+      </div>
+      <app-search-sort
+        *ngIf="!isLoadingProjects && projects.length > 0"
+        [searchConfig]="searchConfig"
+        [sortOptions]="sortOptions"
+        (searchSortChange)="onSearchSortChange($event)"
+      ></app-search-sort>
+    </div>
+
+    <div class="content-body">
+
+      <div *ngIf="isLoadingProjects" class="loading-state">
+        <div class="spinner"></div>
+        <p>Loading projects...</p>
+      </div>
+
+      <div *ngIf="!isLoadingProjects && projects.length === 0" class="empty-state">
+        <p>No projects found. Create your first project to get started.</p>
+      </div>
+
+      <div *ngIf="!isLoadingProjects && projects.length > 0 && filteredProjects.length === 0" class="empty-state">
+        <p>No projects match your search criteria.</p>
+      </div>
+
+      <div class="projects-grid" *ngIf="!isLoadingProjects && filteredProjects.length > 0">
+        <div class="project-card" *ngFor="let project of filteredProjects">
+          <div class="project-header">
+            <div class="project-meta">
+              <span class="project-status">{{ project.id }}</span>
+              <span class="project-date">{{ formatDate(project.createdAt) }}</span>
+            </div>
+          </div>
+          <div class="project-title">
+            <h3>{{ project.name }}</h3>
+            <p class="project-description">{{ project.description }}</p>
+          </div>
+          <div class="project-actions">
+            <button class="btn-open" (click)="openProject(project)">Open</button>
+            <div class="action-icons">
+              <button class="icon-btn" aria-label="Archive">
+                <i class="bi bi-archive"></i>
+              </button>
+              <button class="icon-btn" aria-label="Add">
+                <i class="bi bi-plus-lg"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>

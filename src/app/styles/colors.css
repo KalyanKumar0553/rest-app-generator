@@ -1,28 +1,11 @@
-/* QuadProSol Color System */
+/* Bootify Color System */
 :root {
-  /* Primary Colors */
-  --primary-50: #ecfdf5;
-  --primary-100: #d1fae5;
-  --primary-200: #a7f3d0;
-  --primary-300: #6ee7b7;
-  --primary-400: #34d399;
-  --primary-500: #10b981;
-  --primary-600: #059669;
-  --primary-700: #047857;
-  --primary-800: #065f46;
-  --primary-900: #064e3b;
-
-  /* Secondary Colors */
-  --secondary-50: #f0f9ff;
-  --secondary-100: #e0f2fe;
-  --secondary-200: #bae6fd;
-  --secondary-300: #7dd3fc;
-  --secondary-400: #38bdf8;
-  --secondary-500: #0ea5e9;
-  --secondary-600: #0284c7;
-  --secondary-700: #0369a1;
-  --secondary-800: #075985;
-  --secondary-900: #0c4a6e;
+  /* Brand Colors - Based on Bootify Design */
+  --brand-background: #dff1ef;
+  --brand-text: #49565d;
+  --brand-accent: #e89b8e;
+  --brand-accent-hover: #d17d6e;
+  --brand-secondary: #97a9ae;
 
   /* Neutral Colors */
   --neutral-50: #f9fafb;
@@ -73,42 +56,27 @@
   --error-900: #7f1d1d;
 
   /* Semantic Color Mappings */
-  --color-primary: var(--primary-600);
-  --color-primary-hover: var(--primary-700);
-  --color-primary-light: var(--primary-500);
-  --color-primary-lighter: var(--primary-100);
-
-  --color-secondary: var(--secondary-600);
-  --color-secondary-hover: var(--secondary-700);
-  --color-secondary-light: var(--secondary-500);
-
-  --color-text-primary: var(--neutral-900);
-  --color-text-secondary: var(--neutral-600);
+  --color-primary: var(--brand-accent);
+  --color-primary-hover: var(--brand-accent-hover);
+  --color-text-primary: var(--brand-text);
+  --color-text-secondary: var(--brand-secondary);
   --color-text-muted: var(--neutral-500);
   --color-text-inverse: #ffffff;
-
-  --color-background: #ffffff;
-  --color-background-secondary: var(--neutral-50);
+  --color-background: var(--brand-background);
+  --color-background-white: #ffffff;
+  --color-background-secondary: #f5faf9;
   --color-background-muted: var(--neutral-100);
-
   --color-border: var(--neutral-200);
-  --color-border-light: var(--neutral-100);
+  --color-border-light: #e5f0ee;
   --color-border-dark: var(--neutral-300);
-
   --color-success: var(--success-600);
   --color-warning: var(--warning-600);
   --color-error: var(--error-600);
 
-  /* Gradients */
-  --gradient-primary: linear-gradient(135deg, var(--primary-600), var(--primary-500));
-  --gradient-secondary: linear-gradient(135deg, var(--secondary-600), var(--secondary-500));
-  --gradient-hero: linear-gradient(135deg, rgba(0, 0, 0, 0.6) 0%, rgba(0, 0, 0, 0.4) 50%, rgba(0, 0, 0, 0.6) 100%);
-  --gradient-overlay: linear-gradient(135deg, rgba(5, 150, 105, 0.8) 0%, rgba(16, 185, 129, 0.8) 100%);
-
   /* Shadows */
-  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-  --shadow-2xl: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  --shadow-sm: 0 1px 2px 0 rgba(73, 86, 93, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(73, 86, 93, 0.1), 0 2px 4px -1px rgba(73, 86, 93, 0.06);
+  --shadow-lg: 0 10px 15px -3px rgba(73, 86, 93, 0.1), 0 4px 6px -2px rgba(73, 86, 93, 0.05);
+  --shadow-xl: 0 20px 25px -5px rgba(73, 86, 93, 0.1), 0 10px 10px -5px rgba(73, 86, 93, 0.04);
+  --shadow-2xl: 0 25px 50px -12px rgba(73, 86, 93, 0.25);
 }

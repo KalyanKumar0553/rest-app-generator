@@ -39,7 +39,10 @@
             			"main": "src/main.ts",
 						"assets": [
 							"src/assets",
-							"src/favicon.ico"
+							{
+								"glob": "**/*",
+								"input": "public"
+							}
 						],
 						"allowedCommonJsDependencies": []
 					},
@@ -49,10 +52,10 @@
 							"optimization": {
 								"scripts": true,
 								"styles": {
-									"minify": false,
-									"inlineCritical": false
+									"minify": true,
+									"inlineCritical": true
 								},
-								"fonts": true
+								"fonts": false
 							},
 							"outputHashing": "all",
 							"sourceMap": false,
@@ -60,6 +63,18 @@
 							"extractLicenses": true,
 							"vendorChunk": false,
 							"buildOptimizer": true,
+							"budgets": [
+								{
+									"type": "initial",
+									"maximumWarning": "2mb",
+									"maximumError": "5mb"
+								},
+								{
+									"type": "anyComponentStyle",
+									"maximumWarning": "6kb",
+									"maximumError": "10kb"
+								}
+							],
 							"fileReplacements": [
 								{
 									"replace": "src/environments/environment.ts",

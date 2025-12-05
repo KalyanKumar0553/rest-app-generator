@@ -28,7 +28,7 @@ public class ProjectRunController {
 
     @GetMapping("/{runId}")
     public ResponseEntity<ProjectRunDetailsResponseDTO> getRun(@PathVariable UUID runId,
-                                                            Principal principal) {
+            Principal principal) {
         String userId = currentUserId(principal);
         var run = orchestrationService.getRun(runId, userId);
 
@@ -41,8 +41,28 @@ public class ProjectRunController {
                 run.getRunNumber(),
                 run.getErrorMessage(),
                 run.getCreatedAt(),
-                run.getUpdatedAt()
-        );
+                run.getUpdatedAt());
         return ResponseEntity.ok(dto);
+    }
+
+    @GetMapping("/project/{projectId}")
+    public ResponseEntity<java.util.List<ProjectRunDetailsResponseDTO>> getRunsForProject(@PathVariable UUID projectId,
+            Principal principal) {
+        String userId = currentUserId(principal);
+        var runs = orchestrationService.getRunsForProject(projectId, userId);
+
+        var dtos = runs.stream()
+                .map(run -> new ProjectRunDetailsResponseDTO(
+                        run.getId(),
+                        run.getProject().getId(),
+                        run.getOwnerId(),
+                        run.getType(),
+                        run.getStatus(),
+                        run.getRunNumber(),
+                        run.getErrorMessage(),
+                        run.getCreatedAt(),
+                        run.getUpdatedAt()))
+                .toList();
+        return ResponseEntity.ok(dtos);
     }
 }

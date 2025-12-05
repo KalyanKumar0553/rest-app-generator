@@ -92,7 +92,7 @@ public class ModelGenerator {
 		List<String> classAnnotations = new ArrayList<>();
 
 		// ----- @Entity + @Table
-		boolean entityEnabled = (m.getOptions() == null) || Boolean.TRUE.equals(m.getOptions().getEntity());
+		boolean entityEnabled = (m.getOptions() == null) || Boolean.TRUE.equals(m.getOptions().isEntity());
 		if (entityEnabled) {
 			imports.add("jakarta.persistence.Entity");
 			classAnnotations.add("@Entity");
@@ -120,11 +120,11 @@ public class ModelGenerator {
 		}
 
 		// Hibernate extras
-		if (m.getOptions() != null && Boolean.TRUE.equals(m.getOptions().getImmutable())) {
+		if (m.getOptions() != null && Boolean.TRUE.equals(m.getOptions().isImmutable())) {
 			imports.add("org.hibernate.annotations.Immutable");
 			classAnnotations.add("@Immutable");
 		}
-		if (m.getOptions() != null && Boolean.TRUE.equals(m.getOptions().getNaturalIdCache())) {
+		if (m.getOptions() != null && Boolean.TRUE.equals(m.getOptions().isNaturalIdCache())) {
 			imports.add("org.hibernate.annotations.NaturalIdCache");
 			classAnnotations.add("@NaturalIdCache");
 		}
@@ -184,7 +184,7 @@ public class ModelGenerator {
 
 		// ----- Auditing
 		AuditingBlock auditing = new AuditingBlock();
-		if (m.getOptions() != null && Boolean.TRUE.equals(m.getOptions().getAuditing())) {
+		if (m.getOptions() != null && Boolean.TRUE.equals(m.getOptions().isAuditing())) {
 			auditing.setEnabled(true);
 			// Optional: add imports/annotations for auditing here if you wire them in
 			// templates
@@ -192,14 +192,14 @@ public class ModelGenerator {
 		ctx.put("auditing", auditing);
 
 		// ----- Soft delete
-		boolean softDeleteEnabled = m.getOptions() != null && Boolean.TRUE.equals(m.getOptions().getSoftDelete());
+		boolean softDeleteEnabled = m.getOptions() != null && Boolean.TRUE.equals(m.getOptions().isSoftDelete());
 		Map<String, Object> softDelete = Map.of("enabled", softDeleteEnabled);
 		ctx.put("softDelete", softDelete);
 
 		// Implement Serializable (if your template uses this)
 		imports.add("java.io.Serializable");
 
-		if (m.getOptions() != null && Boolean.TRUE.equals(m.getOptions().getAuditing())) {
+		if (m.getOptions() != null && Boolean.TRUE.equals(m.getOptions().isAuditing())) {
 			imports.add("org.springframework.data.annotation.CreatedDate");
 			imports.add("org.springframework.data.annotation.LastModifiedDate");
 			imports.add("java.time.OffsetDateTime");
