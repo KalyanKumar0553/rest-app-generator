@@ -6,7 +6,14 @@
   (verified)="onOtpVerified()"
 ></app-otp-modal>
 
-<div class="modal-overlay" (click)="closeModal()" *ngIf="!showOtpModal">
+<app-update-password-modal
+  *ngIf="showUpdatePasswordModal"
+  [email]="email"
+  (close)="onUpdatePasswordClose()"
+  (passwordReset)="onPasswordResetSuccess()"
+></app-update-password-modal>
+
+<div class="modal-overlay" (click)="closeModal()" *ngIf="!showOtpModal && !showUpdatePasswordModal">
   <div class="modal-container" (click)="$event.stopPropagation()">
     <button class="close-btn" (click)="closeModal()" aria-label="Close modal">
       <i class="bi bi-x-lg"></i>
@@ -100,7 +107,7 @@
           [disabled]="!isFormValid() || isLoading"
         >
           <span *ngIf="!isLoading">
-            {{ isForgotPasswordMode ? 'OTP' : (isSignupMode ? 'Create account' : 'Log in') }}
+            {{ isForgotPasswordMode ? 'Send OTP' : (isSignupMode ? 'Create account' : 'Log in') }}
           </span>
           <span *ngIf="isLoading" class="loading-spinner">
             <i class="bi bi-arrow-repeat spinner-icon"></i>

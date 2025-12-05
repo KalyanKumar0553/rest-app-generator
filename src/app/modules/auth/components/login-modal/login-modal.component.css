@@ -28,7 +28,7 @@
   max-width: 600px;
   width: 100%;
   position: relative;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  box-shadow: var(--theme-modal-shadow, 0 4px 20px rgba(0, 0, 0, 0.15));
   animation: slideUp 0.3s ease;
   max-height: 90vh;
   overflow-y: auto;
@@ -145,7 +145,7 @@ form {
 
 .form-control.error:focus {
   border-color: var(--theme-input-error-border-color, #ef4444);
-  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+  box-shadow: 0 0 0 3px var(--theme-input-error-shadow, rgba(239, 68, 68, 0.1));
 }
 
 .error-message {
@@ -197,7 +197,7 @@ form {
   gap: 10px;
   cursor: pointer;
   font-size: 14px;
-  color: #4b5563;
+  color: var(--theme-neutral-text, #4b5563);
   line-height: 1.5;
 }
 
@@ -230,7 +230,7 @@ form {
 .btn-submit:hover:not(:disabled) {
   background-color: var(--theme-primary-btn-hover-bg, #c55544);
   transform: translateY(-1px);
-  box-shadow: 0 4px 8px rgba(220, 100, 84, 0.3);
+  box-shadow: var(--theme-primary-btn-shadow, 0 4px 8px rgba(220, 100, 84, 0.3));
 }
 
 .btn-submit:disabled {

@@ -5,13 +5,15 @@ import { Router } from '@angular/router';
 import { ModalService } from '../../../../services/modal.service';
 import { ToastService } from '../../../../services/toast.service';
 import { AuthService, SignupRequest, LoginRequest } from '../../../../services/auth.service';
+import { ComponentThemeService } from '../../../../services/component-theme.service';
 import { FormValidator, ValidationErrors, CommonValidationRules } from '../../../../validators/form-validator';
 import { OTPModalComponent } from '../otp-modal/otp-modal.component';
+import { UpdatePasswordModalComponent } from '../update-password-modal/update-password-modal.component';
 
 @Component({
   selector: 'app-login-modal',
   standalone: true,
-  imports: [CommonModule, FormsModule, OTPModalComponent],
+  imports: [CommonModule, FormsModule, OTPModalComponent, UpdatePasswordModalComponent],
   templateUrl: './login-modal.component.html',
   styleUrls: ['./login-modal.component.css']
 })
@@ -21,6 +23,7 @@ export class LoginModalComponent {
   isSignupMode = true;
   isForgotPasswordMode = false;
   showOtpModal = false;
+  showUpdatePasswordModal = false;
   email = '';
   password = '';
   acceptTerms = false;
@@ -32,7 +35,9 @@ export class LoginModalComponent {
     private router: Router,
     private modalService: ModalService,
     private toastService: ToastService,
-    private authService: AuthService
+    private authService: AuthService,
+    // Injected to ensure theme variables are applied/persisted for this modal
+    public themeService: ComponentThemeService
   ) {}
 
   get emailError(): string {
@@ -208,6 +213,22 @@ export class LoginModalComponent {
     this.showOtpModal = false;
   }
 
+  onUpdatePasswordClose(): void {
+    this.showUpdatePasswordModal = false;
+    this.isSignupMode = false;
+    this.isForgotPasswordMode = false;
+  }
+
+  onPasswordResetSuccess(): void {
+    this.showUpdatePasswordModal = false;
+    this.isSignupMode = false;
+    this.isForgotPasswordMode = false;
+    const cachedEmail = this.email;
+    this.resetForm();
+    this.email = cachedEmail;
+    this.modalService.openLoginModal();
+  }
+
   handleLogin(): void {
     this.isLoading = true;
 
@@ -240,9 +261,9 @@ export class LoginModalComponent {
       next: (response) => {
         this.isLoading = false;
         this.toastService.success(response.message || 'OTP has been sent to your email.');
-        setTimeout(() => {
-          this.backToLogin();
-        }, 2000);
+        this.showUpdatePasswordModal = true;
+        this.isForgotPasswordMode = false;
+        this.isSignupMode = false;
       },
       error: (error) => {
         this.isLoading = false;
