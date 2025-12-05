@@ -23,6 +23,7 @@ import com.src.main.util.AppUtils;
 
 import jakarta.mail.MessagingException;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 
@@ -36,24 +37,24 @@ public class AuthController {
 	final AuthService authService;
 
 	@PostMapping("/signup")
-	public ResponseEntity<JSONResponseDTO<?>> registerUser(@RequestBody SignupRequestDTO signupRequest)
+	public ResponseEntity<JSONResponseDTO<?>> registerUser(@RequestBody @Valid SignupRequestDTO signupRequest)
 			throws MessagingException {
 		return authService.signup(signupRequest);
 	}
 
 	@PostMapping("/login")
-	public ResponseEntity<JSONResponseDTO<?>> authenticateUser(@RequestBody LoginRequestDTO loginRequest,
+	public ResponseEntity<JSONResponseDTO<?>> authenticateUser(@RequestBody @Valid LoginRequestDTO loginRequest,
 			HttpServletResponse response) {
 		return authService.login(loginRequest, response);
 	}
 
-	@PostMapping("/verify_otp")
-	public ResponseEntity<JSONResponseDTO<?>> verifyOtp(@RequestBody OTPVerificationRequestDTO otpVerificationRequest) {
+	@PostMapping("/verify-otp")
+	public ResponseEntity<JSONResponseDTO<?>> verifyOtp(@RequestBody @Valid OTPVerificationRequestDTO otpVerificationRequest) {
 		return authService.verifyOTP(otpVerificationRequest);
 	}
 
-	@PostMapping("/send_otp")
-	public ResponseEntity<JSONResponseDTO<?>> sendOtp(@RequestBody SendOTPRequestDTO sendOTPRequest) {
+	@PostMapping("/send-otp")
+	public ResponseEntity<JSONResponseDTO<?>> sendOtp(@RequestBody @Valid SendOTPRequestDTO sendOTPRequest) {
 		return authService.sendOTP(sendOTPRequest);
 	}
 
@@ -63,9 +64,9 @@ public class AuthController {
 		return ResponseEntity.ok(AppUtils.getJSONObject(authentication.getAuthorities()));
 	}
 
-	@PostMapping("/reset_password_with_otp")
+	@PostMapping("/reset-password-with-otp")
 	public ResponseEntity<JSONResponseDTO<?>> resetPasswordWithOTP(
-			@RequestBody ResetPasswordRequestDTO resetPasswordRequest, Authentication authentication) {
+			@RequestBody @Valid ResetPasswordRequestDTO resetPasswordRequest, Authentication authentication) {
 		return authService.resetPasswordWithOTP(authentication,resetPasswordRequest);
 	}
 

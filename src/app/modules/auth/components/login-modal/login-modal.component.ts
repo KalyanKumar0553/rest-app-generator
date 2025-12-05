@@ -183,7 +183,7 @@ export class LoginModalComponent {
       },
       error: (error) => {
         this.isLoading = false;
-        const errorMessage = error.message || 'Failed to create account. Please try again.';
+        const errorMessage = error?.error?.errorMsg ?? 'Failed to create account. Please try again.';
 
         if (errorMessage.toLowerCase().includes('already exists') || errorMessage.toLowerCase().includes('already registered')) {
           this.toastService.error(errorMessage + ' Please login instead.');
@@ -236,17 +236,17 @@ export class LoginModalComponent {
   handleForgotPassword(): void {
     this.isLoading = true;
 
-    this.authService.forgotPassword({ email: this.email }).subscribe({
+    this.authService.sendOTP({ email: this.email }).subscribe({
       next: (response) => {
         this.isLoading = false;
-        this.toastService.success(response.message || 'Password reset link has been sent to your email.');
+        this.toastService.success(response.message || 'OTP has been sent to your email.');
         setTimeout(() => {
           this.backToLogin();
         }, 2000);
       },
       error: (error) => {
         this.isLoading = false;
-        const errorMessage = error.message || 'Failed to send password reset link. Please try again.';
+        const errorMessage = error.message || 'Failed to send OTP. Please try again.';
         this.toastService.error(errorMessage);
       }
     });

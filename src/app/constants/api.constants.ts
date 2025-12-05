@@ -1,14 +1,7 @@
 import { environment } from '../../environments/environment';
 
-const getBaseUrl = (): string => {
-  if (typeof window !== 'undefined') {
-    return `${window.location.protocol}//${window.location.hostname}${window.location.port ? ':' + window.location.port : ''}`;
-  }
-  return 'http://localhost:8080';
-};
-
 export const API_CONFIG = {
-  BASE_URL: getBaseUrl(),
+  BASE_URL: environment.baseUrl,
   TIMEOUT: 30000,
   RETRY_ATTEMPTS: 3,
   RETRY_DELAY: 1000
