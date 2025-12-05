@@ -27,7 +27,7 @@
   border-radius: 16px;
   max-width: 560px;
   width: 100%;
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  box-shadow: var(--theme-modal-shadow, 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04));
   animation: slideUp 0.3s ease;
   overflow: hidden;
 }
@@ -123,6 +123,7 @@
 
 .btn-confirm:hover:not(:disabled) {
   background-color: var(--theme-confirm-btn-hover-bg, #b91c1c);
+  box-shadow: var(--theme-primary-btn-shadow, 0 4px 8px rgba(220, 100, 84, 0.3));
 }
 
 .btn-confirm:disabled {
@@ -137,6 +138,7 @@
 
 .btn-primary:hover:not(:disabled) {
   background-color: var(--theme-primary-btn-hover-bg, #c55544);
+  box-shadow: var(--theme-primary-btn-shadow, 0 4px 8px rgba(220, 100, 84, 0.3));
 }
 
 .btn-primary:disabled {
