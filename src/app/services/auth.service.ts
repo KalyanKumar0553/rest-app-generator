@@ -138,7 +138,8 @@ export class AuthService {
 
   resetPasswordWithOTP(data: ResetPasswordWithOTPRequest): Observable<any> {
     const url = `${API_CONFIG.BASE_URL}${API_ENDPOINTS.AUTH.RESET_PASSWORD_WITH_OTP}`;
-    return this.http.post(url, data).pipe(
+    return this.mockApiService.post(url, data, '/assets/mock/reset-password-with-otp-response.json').pipe(
+      map((response: any) => response.data || response),
       catchError(error => this.handleAuthError(error))
     );
   }

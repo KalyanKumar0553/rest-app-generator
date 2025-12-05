@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { ToastService } from '../../../../services/toast.service';
 import { AuthService } from '../../../../services/auth.service';
 import { Router } from '@angular/router';
+import { ComponentThemeService } from '../../../../services/component-theme.service';
 
 @Component({
   selector: 'app-otp-modal',
@@ -28,7 +29,8 @@ export class OTPModalComponent implements OnInit, OnDestroy {
   constructor(
     private toastService: ToastService,
     private authService: AuthService,
-    private router: Router
+    private router: Router,
+    public themeService: ComponentThemeService
   ) {}
 
   ngOnInit(): void {
