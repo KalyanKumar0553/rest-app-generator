@@ -5,6 +5,7 @@ export interface ComponentTheme {
   // Modal themes
   modalOverlayBg: string;
   modalContainerBg: string;
+  modalShadow: string;
   modalHeaderBg: string;
   modalHeaderText: string;
   modalBodyText: string;
@@ -14,9 +15,11 @@ export interface ComponentTheme {
   primaryButtonBg: string;
   primaryButtonHoverBg: string;
   primaryButtonText: string;
+  primaryButtonShadow: string;
   secondaryButtonBg: string;
   secondaryButtonHoverBg: string;
   secondaryButtonText: string;
+  secondaryButtonShadow: string;
   confirmButtonBg: string;
   confirmButtonHoverBg: string;
   cancelButtonBg: string;
@@ -28,6 +31,7 @@ export interface ComponentTheme {
   inputFocusBorderColor: string;
   inputFocusShadow: string;
   inputErrorBorderColor: string;
+  inputErrorShadow: string;
   inputPlaceholderColor: string;
   inputTextColor: string;
   inputBg: string;
@@ -53,6 +57,7 @@ const DEFAULT_THEME: ComponentTheme = {
   // Modal themes
   modalOverlayBg: 'rgba(0, 0, 0, 0.6)',
   modalContainerBg: '#ffffff',
+  modalShadow: '0 4px 20px rgba(0, 0, 0, 0.15)',
   modalHeaderBg: '#8b9fa6',
   modalHeaderText: '#ffffff',
   modalBodyText: '#374151',
@@ -62,9 +67,11 @@ const DEFAULT_THEME: ComponentTheme = {
   primaryButtonBg: '#dc6454',
   primaryButtonHoverBg: '#c55544',
   primaryButtonText: '#ffffff',
+  primaryButtonShadow: '0 4px 8px rgba(220, 100, 84, 0.3)',
   secondaryButtonBg: '#8b9fa6',
   secondaryButtonHoverBg: '#7a8e95',
   secondaryButtonText: '#ffffff',
+  secondaryButtonShadow: '0 4px 12px rgba(139, 159, 166, 0.3)',
   confirmButtonBg: '#dc6454',
   confirmButtonHoverBg: '#b91c1c',
   cancelButtonBg: '#ffffff',
@@ -76,6 +83,7 @@ const DEFAULT_THEME: ComponentTheme = {
   inputFocusBorderColor: '#8b9fa6',
   inputFocusShadow: 'rgba(139, 159, 166, 0.1)',
   inputErrorBorderColor: '#ef4444',
+  inputErrorShadow: 'rgba(239, 68, 68, 0.1)',
   inputPlaceholderColor: '#9ca3af',
   inputTextColor: '#374151',
   inputBg: '#ffffff',
@@ -188,6 +196,7 @@ export class ComponentThemeService {
     // Modal variables
     root.style.setProperty('--theme-modal-overlay-bg', theme.modalOverlayBg);
     root.style.setProperty('--theme-modal-container-bg', theme.modalContainerBg);
+    root.style.setProperty('--theme-modal-shadow', theme.modalShadow);
     root.style.setProperty('--theme-modal-header-bg', theme.modalHeaderBg);
     root.style.setProperty('--theme-modal-header-text', theme.modalHeaderText);
     root.style.setProperty('--theme-modal-body-text', theme.modalBodyText);
@@ -197,9 +206,11 @@ export class ComponentThemeService {
     root.style.setProperty('--theme-primary-btn-bg', theme.primaryButtonBg);
     root.style.setProperty('--theme-primary-btn-hover-bg', theme.primaryButtonHoverBg);
     root.style.setProperty('--theme-primary-btn-text', theme.primaryButtonText);
+    root.style.setProperty('--theme-primary-btn-shadow', theme.primaryButtonShadow);
     root.style.setProperty('--theme-secondary-btn-bg', theme.secondaryButtonBg);
     root.style.setProperty('--theme-secondary-btn-hover-bg', theme.secondaryButtonHoverBg);
     root.style.setProperty('--theme-secondary-btn-text', theme.secondaryButtonText);
+    root.style.setProperty('--theme-secondary-btn-shadow', theme.secondaryButtonShadow);
     root.style.setProperty('--theme-confirm-btn-bg', theme.confirmButtonBg);
     root.style.setProperty('--theme-confirm-btn-hover-bg', theme.confirmButtonHoverBg);
     root.style.setProperty('--theme-cancel-btn-bg', theme.cancelButtonBg);
@@ -211,6 +222,7 @@ export class ComponentThemeService {
     root.style.setProperty('--theme-input-focus-border-color', theme.inputFocusBorderColor);
     root.style.setProperty('--theme-input-focus-shadow', theme.inputFocusShadow);
     root.style.setProperty('--theme-input-error-border-color', theme.inputErrorBorderColor);
+    root.style.setProperty('--theme-input-error-shadow', theme.inputErrorShadow);
     root.style.setProperty('--theme-input-placeholder-color', theme.inputPlaceholderColor);
     root.style.setProperty('--theme-input-text-color', theme.inputTextColor);
     root.style.setProperty('--theme-input-bg', theme.inputBg);

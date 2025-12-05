@@ -37,8 +37,8 @@ export class MockApiService {
   }
 
   private shouldReturnError(url: string, body: any): boolean {
-    if (url.includes('/verify-otp') && body.otp === '000000') {
-      return true;
+    if (url.includes('/verify-otp')) {
+      return false;
     }
     if (url.includes('/login') && body.email === 'invalid@example.com') {
       return true;

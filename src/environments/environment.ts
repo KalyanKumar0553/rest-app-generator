@@ -10,5 +10,5 @@ export const environment = {
   API_ENDPOINT: `${getBaseUrl()}/api`,
   apiUrl: `${getBaseUrl()}/api`,
   baseUrl: getBaseUrl(),
-  useMockApi: false
+  useMockApi: true
 };
