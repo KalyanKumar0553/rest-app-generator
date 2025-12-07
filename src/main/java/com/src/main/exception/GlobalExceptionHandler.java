@@ -64,6 +64,7 @@ public class GlobalExceptionHandler {
     Map<String,Object> body = new HashMap<>();
     body.put("error", "BAD_REQUEST");
     body.put("message", ex.getMessage());
+    ex.printStackTrace();
     return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body);
   }
 }

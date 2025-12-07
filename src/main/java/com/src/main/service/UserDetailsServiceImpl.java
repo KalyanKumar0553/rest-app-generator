@@ -95,17 +95,15 @@ public class UserDetailsServiceImpl implements UserDetailsService {
 
 	public String generateOtp() {
 		Random random = new Random();
-		return "123654";
-//		return String.format("%06d", random.nextInt(999999));
+		return String.format("%06d", random.nextInt(999999));
 	}
 
 	public Optional<UserInfo> findUserByUsername(String username) {
 		return userRepository.findByEmailOrMobile(username, username);
 	}
 
-	public String verifyOtp(String username,String otp) {
-		boolean isVerified = otpService.verifyOtp(username, otp);
-		return (isVerified ? RequestStatus.OTP_VERIFICATION_SUCCESS : RequestStatus.OTP_VERIFICATION_FAIL).toString();
+	public boolean verifyOtp(String username,String otp) {
+		return otpService.verifyOtp(username, otp);
 	}
 
 	public void checkDuplicateUser(SignupRequestDTO signupRequest) {
@@ -158,7 +156,7 @@ public class UserDetailsServiceImpl implements UserDetailsService {
 	}
 
 	public void resetPasswordWithOTP(UserInfo user,String otp,String password,PasswordEncoder passwordEncoder) {
-		if(verifyOtp(user.getUsername(), otp).equals(RequestStatus.OTP_VERIFICATION_SUCCESS.toString())) {
+		if(verifyOtp(user.getUsername(), otp)) {
 			String salt = PasswordUtil.generateSalt();
 			user.setSalt(salt);
 			String hashPassword = PasswordUtil.hashPassword(password, salt);

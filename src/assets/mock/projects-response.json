@@ -1,5 +1,5 @@
 {
-  "status": "success",
+  "success": true,
   "message": "Projects retrieved successfully",
   "data": {
     "projects": [

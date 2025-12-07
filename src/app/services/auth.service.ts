@@ -31,7 +31,8 @@ export interface VerifyOTPRequest {
 export interface ResetPasswordWithOTPRequest {
   email: string;
   otp: string;
-  newPassword: string;
+  password: string;
+  retypePassword:string;
 }
 
 export interface ForgotPasswordRequest {

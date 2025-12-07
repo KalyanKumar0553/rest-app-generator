@@ -6,12 +6,14 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Data
-@Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class JSONResponseDTO<T> {
-	T data;
-	private boolean success;
-	private String message;
-	boolean isError;
+@Builder
+public class UserResponseDTO {
+	private Long id;
+	private String uuid;
+	private String email;
+	private String name;
+	private boolean emailVerified;
+	private String createdAt;
 }

@@ -21,7 +21,7 @@ export class UserService {
   ) {}
 
   getUserRoles(): Observable<UserRoles> {
-    const url = `${API_CONFIG.BASE_URL}${API_ENDPOINTS.USER.PROFILE}/roles`;
+    const url = `${API_CONFIG.BASE_URL}${API_ENDPOINTS.AUTH.ROLES}`;
     return this.mockApiService.get<any>(url, '/assets/mock/user-roles-response.json').pipe(
       map((response: any) => response.data || response)
     );

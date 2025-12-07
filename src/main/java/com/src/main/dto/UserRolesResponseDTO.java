@@ -1,5 +1,7 @@
 package com.src.main.dto;
 
+import java.util.List;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -9,9 +11,8 @@ import lombok.NoArgsConstructor;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class JSONResponseDTO<T> {
-	T data;
-	private boolean success;
-	private String message;
-	boolean isError;
+public class UserRolesResponseDTO {
+	private String userId;
+	private List<String> roles;
+	private List<String> permissions;
 }

@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { Component, EventEmitter, Input, Output, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AuthService } from '../../../../services/auth.service';
@@ -13,7 +13,9 @@ import { FormValidator, ValidationErrors, CommonValidationRules } from '../../..
   templateUrl: './update-password-modal.component.html',
   styleUrls: ['./update-password-modal.component.css']
 })
-export class UpdatePasswordModalComponent {
+export class UpdatePasswordModalComponent implements OnInit, OnDestroy {
+  private readonly RESEND_COOLDOWN_SECONDS = 180;
+
   @Input() email: string = '';
   @Output() close = new EventEmitter<void>();
   @Output() passwordReset = new EventEmitter<void>();
@@ -23,6 +25,10 @@ export class UpdatePasswordModalComponent {
   confirmPassword: string = '';
   validationErrors: ValidationErrors = {};
   isLoading = false;
+  isResending = false;
+  timeLeft: number = 180;
+  canResend: boolean = false;
+  private countdownInterval: any;
 
   constructor(
     private authService: AuthService,
@@ -42,26 +48,32 @@ export class UpdatePasswordModalComponent {
     return this.validationErrors['confirmPassword'] || '';
   }
 
+  ngOnInit(): void {
+    this.restartCountdown();
+  }
+
+  ngOnDestroy(): void {
+    this.resetForm();
+  }
+
   onOtpInput(): void {
     this.otp = this.otp.replace(/\D/g, '');
     if (this.otp.length > 6) {
       this.otp = this.otp.slice(0, 6);
     }
-    this.validationErrors = FormValidator.clearErrors(this.validationErrors, 'otp');
-  }
-
-  onOtpBlur(): void {
     this.validateField('otp');
   }
 
-  onPasswordBlur(): void {
+  onPasswordChange(value: string): void {
+    this.newPassword = value;
     this.validateField('newPassword');
     if (this.confirmPassword) {
       this.validateField('confirmPassword');
     }
   }
 
-  onConfirmPasswordBlur(): void {
+  onConfirmPasswordChange(value: string): void {
+    this.confirmPassword = value;
     this.validateField('confirmPassword');
   }
 
@@ -106,6 +118,33 @@ export class UpdatePasswordModalComponent {
       !this.confirmPasswordError;
   }
 
+  get formattedTime(): string {
+    const minutes = Math.floor(this.timeLeft / 60);
+    const seconds = this.timeLeft % 60;
+    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+  }
+
+  private restartCountdown(): void {
+    this.timeLeft = this.RESEND_COOLDOWN_SECONDS;
+    this.canResend = false;
+    this.clearCountdown();
+
+    this.countdownInterval = setInterval(() => {
+      this.timeLeft = Math.max(0, this.timeLeft - 1);
+      if (this.timeLeft === 0) {
+        this.canResend = true;
+        this.clearCountdown();
+      }
+    }, 1000);
+  }
+
+  private clearCountdown(): void {
+    if (this.countdownInterval) {
+      clearInterval(this.countdownInterval);
+      this.countdownInterval = null;
+    }
+  }
+
   onSubmit(): void {
     if (!this.validateForm()) {
       return;
@@ -116,7 +155,8 @@ export class UpdatePasswordModalComponent {
     this.authService.resetPasswordWithOTP({
       email: this.email,
       otp: this.otp,
-      newPassword: this.newPassword
+      password: this.newPassword,
+      retypePassword: this.confirmPassword
     }).subscribe({
       next: (response) => {
         this.isLoading = false;
@@ -126,7 +166,7 @@ export class UpdatePasswordModalComponent {
       },
       error: (error) => {
         this.isLoading = false;
-        const errorMessage = error.message || 'Failed to reset password. Please try again.';
+    const errorMessage = error?.error?.errorMsg || 'Failed to reset password. Please try again.';
         this.toastService.error(errorMessage);
         this.validationErrors = { ...this.validationErrors, otp: errorMessage };
       }
@@ -138,10 +178,34 @@ export class UpdatePasswordModalComponent {
     this.close.emit();
   }
 
+  resendOTP(): void {
+    if (!this.canResend || this.isLoading || this.isResending) {
+      return;
+    }
+
+    this.isResending = true;
+
+    this.authService.sendOTP({ email: this.email }).subscribe({
+      next: (response: any) => {
+        this.isResending = false;
+        this.toastService.success(response.message || 'OTP has been resent to your email.');
+        this.restartCountdown();
+        this.otp = '';
+        this.validationErrors = FormValidator.clearErrors(this.validationErrors, 'otp');
+      },
+      error: (error) => {
+        this.isResending = false;
+        const errorMessage = error?.error?.errorMsg || 'Failed to resend OTP. Please try again.';
+      this.toastService.error(errorMessage);
+    }
+  });
+}
+
   private resetForm(): void {
     this.otp = '';
     this.newPassword = '';
     this.confirmPassword = '';
     this.validationErrors = {};
+    this.clearCountdown();
   }
 }

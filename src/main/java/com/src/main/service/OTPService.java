@@ -6,8 +6,11 @@ import java.time.temporal.ChronoUnit;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import com.src.main.config.OtpConfig;
 import com.src.main.exception.OTPException;
 import com.src.main.model.Otp;
 import com.src.main.model.OtpAttempt;
@@ -18,37 +21,41 @@ import com.src.main.repository.UserInfoRepository;
 import com.src.main.util.AppUtils;
 import com.src.main.util.RequestStatus;
 
+import lombok.AllArgsConstructor;
+
 @Service
+@AllArgsConstructor
 public class OTPService {
-	private static final int MAX_ATTEMPTS = 35;
-	private static final int OTP_VALIDITY_MINUTES = 3;
 
-	@Autowired
-	private OtpRepository otpRepository;
+	private final OtpRepository otpRepository;
 
-	@Autowired
-	private OtpAttemptRepository otpAttemptRepository;
+	private final OtpAttemptRepository otpAttemptRepository;
 
-	@Autowired
-	private UserInfoRepository userRepository;
+	private final UserInfoRepository userRepository;
+	
+	private final OtpConfig otpConfig;
 
 	public boolean canSendOtp(String username) {
 		LocalDateTime startOfToday = LocalDateTime.now().toLocalDate().atStartOfDay();
 		LocalDateTime endOfToday = LocalDateTime.now().toLocalDate().atTime(LocalTime.MAX);
-		Optional<Otp> latestOTP = otpRepository.findFirstByUsernameAndCreatedAtBetweenOrderByCreatedAtDesc(username,startOfToday, endOfToday);
-		Optional<OtpAttempt> latestOTPAttempt = otpAttemptRepository.findByUsernameAndCreatedAtBetweenOrderByCreatedAtDesc(username,startOfToday, endOfToday);
+		Optional<Otp> latestOTP = otpRepository.findFirstByUsernameAndCreatedAtBetweenOrderByCreatedAtDesc(username,
+				startOfToday, endOfToday);
+		Optional<OtpAttempt> latestOTPAttempt = otpAttemptRepository
+				.findByUsernameAndCreatedAtBetweenOrderByCreatedAtDesc(username, startOfToday, endOfToday);
 		if (latestOTPAttempt.isPresent()) {
-			if (latestOTPAttempt.get().getAttempts() >= MAX_ATTEMPTS) {
+			if (latestOTPAttempt.get().getAttempts() >= otpConfig.getMaxAttempts()) {
 				throw new OTPException(RequestStatus.OTP_LIMIT_EXCEED_ERROR);
 			}
+			if (latestOTP.isPresent()) {
+				LocalDateTime otpSentAt = latestOTP.get().getCreatedAt();
+				LocalDateTime nextOtpAt = otpSentAt.plusMinutes(otpConfig.getOtpValiditiyMinutes());
+				LocalDateTime currentTime = LocalDateTime.now();
 
-			LocalDateTime otpSentAt = latestOTP.get().getCreatedAt();
-			LocalDateTime nextOtpAt = otpSentAt.plusMinutes(OTP_VALIDITY_MINUTES);
-			LocalDateTime currentTime =  LocalDateTime.now();
-			
-			boolean canSendOTP = nextOtpAt.isBefore(currentTime);
-			if (!canSendOTP) {
-				throw new OTPException(RequestStatus.OTP_TIME_LIMIT_ERROR,AppUtils.formatSecondsToHMString(ChronoUnit.SECONDS.between(currentTime,nextOtpAt)));
+				boolean canSendOTP = nextOtpAt.isBefore(currentTime);
+				if (!canSendOTP) {
+					throw new OTPException(RequestStatus.OTP_TIME_LIMIT_ERROR,
+							AppUtils.formatSecondsToHMString(ChronoUnit.SECONDS.between(currentTime, nextOtpAt)));
+				}
 			}
 		}
 		return true;
@@ -57,7 +64,8 @@ public class OTPService {
 	public void recordOtpAttempt(String username) {
 		LocalDateTime startOfToday = LocalDateTime.now().toLocalDate().atStartOfDay();
 		LocalDateTime endOfToday = LocalDateTime.now().toLocalDate().atTime(LocalTime.MAX);
-		Optional<OtpAttempt> otpAttemptOpt = otpAttemptRepository.findByUsernameAndCreatedAtBetweenOrderByCreatedAtDesc(username,startOfToday, endOfToday);
+		Optional<OtpAttempt> otpAttemptOpt = otpAttemptRepository
+				.findByUsernameAndCreatedAtBetweenOrderByCreatedAtDesc(username, startOfToday, endOfToday);
 		if (otpAttemptOpt.isPresent()) {
 			OtpAttempt otpAttempt = otpAttemptOpt.get();
 			otpAttempt.setAttempts(otpAttempt.getAttempts() + 1);
@@ -79,6 +87,7 @@ public class OTPService {
 		otpRepository.save(otpEntity);
 	}
 
+	@Transactional
 	public boolean verifyOtp(String username, String otp) {
 		Optional<Otp> otpOpt = otpRepository.findFirstByUsernameOrderByCreatedAtDesc(username);
 		if (otpOpt.isPresent()) {
@@ -96,7 +105,7 @@ public class OTPService {
 				throw new OTPException(RequestStatus.OTP_VERIFICATION_FAIL);
 			}
 		} else {
-			throw new RuntimeException();
+			throw new OTPException(RequestStatus.OTP_NOT_VERIFIED_ERROR);
 		}
 	}
 }

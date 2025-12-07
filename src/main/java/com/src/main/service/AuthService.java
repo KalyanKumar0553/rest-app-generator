@@ -4,7 +4,10 @@ import java.time.Duration;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.Date;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -13,30 +16,37 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.thymeleaf.context.Context;
 
 import com.src.main.config.JWTTokenProvider;
+import com.src.main.config.OtpConfig;
 import com.src.main.dto.JSONResponseDTO;
 import com.src.main.dto.LoginRequestDTO;
+import com.src.main.dto.LoginResponseDTO;
+import com.src.main.dto.OTPSentResponseDTO;
 import com.src.main.dto.OTPVerificationRequestDTO;
 import com.src.main.dto.ResetPasswordRequestDTO;
+import com.src.main.dto.ResetPasswordWithOTPResponseDTO;
 import com.src.main.dto.SendOTPRequestDTO;
 import com.src.main.dto.SignupRequestDTO;
+import com.src.main.dto.SignupResponseDTO;
+import com.src.main.dto.UserResponseDTO;
+import com.src.main.dto.UserRolesResponseDTO;
 import com.src.main.exception.UserNotFoundException;
 import com.src.main.model.UserInfo;
+import com.src.main.repository.RolesPermissionsRepository;
 import com.src.main.transformers.UserInfoTransformer;
 import com.src.main.util.AppUtils;
 import com.src.main.util.PasswordUtil;
 import com.src.main.util.RequestStatus;
 
 import jakarta.servlet.http.HttpServletResponse;
-import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 
 @Service
@@ -52,10 +62,14 @@ public class AuthService {
 	final JWTTokenProvider tokenProvider;
 
 	final UserDetailsServiceImpl userService;
+	
+	final RolesPermissionsRepository permissionsRepo;
 
 	final PasswordEncoder passwordEncoder;
+	
+	final OtpConfig otpConfig;
 
-	public ResponseEntity<JSONResponseDTO<?>> login(@Valid @RequestBody LoginRequestDTO loginRequest,
+	public ResponseEntity<JSONResponseDTO<LoginResponseDTO>> login(LoginRequestDTO loginRequest,
 			HttpServletResponse response) {
 		UserInfo user = userService.validateAndGetIfUserEnabled(loginRequest);
 		String hashPassword = PasswordUtil.hashPassword(loginRequest.getPassword(), user.getSalt());
@@ -81,50 +95,38 @@ public class AuthService {
 		DateTimeFormatter formatter = DateTimeFormatter.ISO_OFFSET_DATE_TIME;
 		String formatted = expiresAt.toInstant().atZone(ZoneId.systemDefault()).format(formatter);
 
-		return ResponseEntity.ok(AppUtils.getJSONObject(Map.of("accessToken", accessToken, "expiresAt", formatted)));
+		UserResponseDTO userResponse = UserResponseDTO.builder().id(user.getId()).uuid(user.getUuid())
+				.email(user.getEmail()).name(user.getFullName()).emailVerified(user.isEnabled()).createdAt(formatted)
+				.build();
+
+		LoginResponseDTO logjResponse = LoginResponseDTO.builder().accessToken(accessToken).refreshToken(refreshToken)
+				.user(userResponse).build();
+
+		return ResponseEntity.ok(AppUtils.getJSONObject(logjResponse, RequestStatus.LOGIN_SUCCESS.getDescription()));
 
 	}
 
-	public ResponseEntity<JSONResponseDTO<?>> signup(@Valid @RequestBody SignupRequestDTO signupRequest) {
-		userService.checkDuplicateUser(signupRequest);
-		String msgSource = "email";
-		UserInfo userInfo = userInfoTransformer.fromSignupRequestDTO(signupRequest);
-		userService.saveUser(userInfo, passwordEncoder);
-		String msg = String.format(RequestStatus.SIGNUP_SUCCESS.getDescription(msgSource));
-		return ResponseEntity.ok(AppUtils.getJSONObject(msg));
-	}
-
-	public ResponseEntity<JSONResponseDTO<?>> verifyOTP(
-			@Valid @RequestBody OTPVerificationRequestDTO otpVerificationRequest) {
-		UserInfo user = userService.findUserByUsername(otpVerificationRequest.getEmail())
-				.orElseThrow(() -> new UserNotFoundException(RequestStatus.USER_NOT_FOUND));
-		if (user.isEnabled()) {
-			return ResponseEntity
-					.ok(AppUtils.getJSONObject(RequestStatus.USER_ALREADY_VERIFIED_ERROR.getDescription()));
-		}
-		String msg = userService.verifyOtp(otpVerificationRequest.getEmail(), otpVerificationRequest.getOtp());
-		return ResponseEntity.ok(AppUtils.getJSONObject(msg));
-
-	}
-
-	public ResponseEntity<JSONResponseDTO<?>> sendOTP(@Valid @RequestBody SendOTPRequestDTO sendOTPRequest) {
+	public ResponseEntity<JSONResponseDTO<OTPSentResponseDTO>> sendOTP(SendOTPRequestDTO sendOTPRequest) {
 		String username = sendOTPRequest.getEmail();
 		UserInfo user = userService.findUserByUsername(username)
 				.orElseThrow(() -> new UserNotFoundException(RequestStatus.USER_NOT_FOUND));
 		Context context = new Context();
 		context.setVariable("otp", userService.generateOtp());
 		boolean otpSent = userService.sendOTP(user, context);
-		return ResponseEntity.ok(AppUtils.getJSONObject(otpSent ? RequestStatus.OTP_SENT_SUCCESS.getDescription()
-				: RequestStatus.OTP_SENT_FAIL.getDescription()));
+		OTPSentResponseDTO response = OTPSentResponseDTO.builder()
+				.expiresIn(Duration.ofMinutes(otpConfig.getOtpValiditiyMinutes()).toSeconds()).otpSent(otpSent).build();
+		return ResponseEntity.ok(AppUtils.getJSONObject(response, RequestStatus.OTP_SENT_SUCCESS.getDescription()));
 	}
 
-	public ResponseEntity<JSONResponseDTO<?>> resetPasswordWithOTP(Authentication authentication,
-			@Valid @RequestBody ResetPasswordRequestDTO resetPasswordRequest) {
+	public ResponseEntity<JSONResponseDTO<ResetPasswordWithOTPResponseDTO>> resetPasswordWithOTP(
+			Authentication authentication, ResetPasswordRequestDTO resetPasswordRequest) {
 		UserInfo user = userService.findUserByUsername(resetPasswordRequest.getEmail())
 				.orElseThrow(() -> new UserNotFoundException(RequestStatus.USER_NOT_FOUND));
 		userService.resetPasswordWithOTP(user, resetPasswordRequest.getOtp(), resetPasswordRequest.getPassword(),
 				passwordEncoder);
-		return ResponseEntity.ok(AppUtils.getJSONObject(RequestStatus.PASSWORD_RESET_SUCCESS.getDescription()));
+		ResetPasswordWithOTPResponseDTO response = ResetPasswordWithOTPResponseDTO.builder().reset(true).build();
+		return ResponseEntity
+				.ok(AppUtils.getJSONObject(response, RequestStatus.PASSWORD_RESET_SUCCESS.getDescription()));
 	}
 
 	public ResponseEntity<JSONResponseDTO<?>> logout(String accessToken, String refreshToken,
@@ -139,14 +141,35 @@ public class AuthService {
 		ResponseCookie clearCookie = ResponseCookie.from("refreshToken", "").httpOnly(true).secure(true)
 				.path("/auth/refresh-token").maxAge(0).build();
 		response.addHeader(HttpHeaders.SET_COOKIE, clearCookie.toString());
-		return ResponseEntity.ok(AppUtils.getJSONObject("Logged out successfully"));
+		return ResponseEntity.ok(AppUtils.getJSONObject(null, RequestStatus.LOGOUT_SUCCESS.getDescription()));
+	}
 
+	public ResponseEntity<JSONResponseDTO<?>> verifyOTP(OTPVerificationRequestDTO otpVerificationRequest) {
+		UserInfo user = userService.findUserByUsername(otpVerificationRequest.getEmail())
+				.orElseThrow(() -> new UserNotFoundException(RequestStatus.USER_NOT_FOUND));
+		if (user.isEnabled()) {
+			return ResponseEntity
+					.internalServerError().body(AppUtils.getJSONObject(null,RequestStatus.USER_ALREADY_VERIFIED_ERROR.getDescription()));
+		}
+		userService.verifyOtp(otpVerificationRequest.getEmail(), otpVerificationRequest.getOtp());
+		return ResponseEntity
+				.ok(AppUtils.getJSONObject(null,RequestStatus.OTP_VERIFICATION_SUCCESS.getDescription()));
+	}
+	
+	public ResponseEntity<JSONResponseDTO<?>> signup(SignupRequestDTO signupRequest) {
+		userService.checkDuplicateUser(signupRequest);
+		UserInfo userInfo = userInfoTransformer.fromSignupRequestDTO(signupRequest);
+		userInfo = userService.saveUser(userInfo, passwordEncoder);
+		SignupResponseDTO response = SignupResponseDTO.builder().email(userInfo.getEmail()).userId(userInfo.getUuid())
+				.otpSent(true).otpExpiresIn(Duration.ofMinutes(otpConfig.getOtpValiditiyMinutes()).toSeconds()).build();
+		return ResponseEntity
+				.ok(AppUtils.getJSONObject(response, String.format(RequestStatus.SIGNUP_SUCCESS.getDescription(),userInfo.getEmail())));
 	}
 
 	public ResponseEntity<JSONResponseDTO<?>> refreshToken(String refreshToken, HttpServletResponse response) {
 		if (refreshToken == null || !tokenProvider.validateToken(refreshToken)) {
 			return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(
-					JSONResponseDTO.builder().isError(false).statusMsg("Invalid or expired refresh token").build());
+					JSONResponseDTO.builder().isError(false).message("Invalid or expired refresh token").build());
 		}
 
 		String username = tokenProvider.getUsernameFromToken(refreshToken);
@@ -174,9 +197,26 @@ public class AuthService {
 		String formatted = expiresAt.toInstant().atZone(ZoneId.systemDefault()).format(formatter);
 
 		JSONResponseDTO refreshTokenResponse = JSONResponseDTO.builder().isError(false)
-				.statusMsg(Map.of("accessToken", newAccessToken, "expiresAt", formatted)).build();
-
+				.data(Map.of("accessToken", newAccessToken, "expiresAt", formatted)).build();
 		return ResponseEntity.ok(refreshTokenResponse);
+	}
+
+	public ResponseEntity<JSONResponseDTO<UserRolesResponseDTO>> getRoles(String username) {
+		UserInfo user = userService.findUserByUsername(username)
+				.orElseThrow(() -> new UserNotFoundException(RequestStatus.USER_NOT_FOUND));
+
+		Set<GrantedAuthority> authorities = userService.getAuthorities(user.getUuid());
+
+		List<String> roles = authorities.stream().filter(auth -> auth.getAuthority().startsWith("ROLE_"))
+				.map(auth -> auth.getAuthority().substring("ROLE_".length())).distinct().collect(Collectors.toList());
+
+		List<String> permissions = permissionsRepo.findAllByRoleIn(roles).stream().map(p->p.getPermission()).collect(Collectors.toList());
+
+		UserRolesResponseDTO response = UserRolesResponseDTO.builder().userId(user.getUuid()).roles(roles)
+				.permissions(permissions).build();
+
+		return ResponseEntity.ok(
+				AppUtils.getJSONObject(response, RequestStatus.ROLE_SUCCESS.getDescription(username)));
 	}
 
 }

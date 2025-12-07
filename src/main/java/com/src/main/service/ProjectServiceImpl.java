@@ -1,19 +1,25 @@
 package com.src.main.service;
 
-import java.time.OffsetDateTime;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.yaml.snakeyaml.Yaml;
 
+import com.src.main.dto.JSONResponseDTO;
 import com.src.main.dto.ProjectCreateResponseDTO;
 import com.src.main.dto.ProjectSummaryDTO;
 import com.src.main.exception.GenericException;
+import com.src.main.exception.ProjectFetchException;
 import com.src.main.model.ProjectEntity;
 import com.src.main.repository.ProjectRepository;
-import com.src.main.util.ProjectMetaDataConstants;
+import com.src.main.util.AppUtils;
 import com.src.main.util.ProjectRunStatus;
+import com.src.main.util.RequestStatus;
+import com.src.main.validation.ProjectRequestValidator;
 
 import jakarta.transaction.Transactional;
 import jakarta.validation.ConstraintViolationException;
@@ -43,11 +49,14 @@ public class ProjectServiceImpl implements ProjectService {
 
 	@Override
 	@Transactional
-	public ProjectCreateResponseDTO create(String yamlText) {
+	public ProjectCreateResponseDTO create(String yamlText, String ownerId) {
 		try {
 			var violations = validator.validate(new Input(yamlText));
 			if (!violations.isEmpty())
 				throw new ConstraintViolationException(violations);
+			if (ownerId == null || ownerId.isBlank()) {
+				throw new IllegalArgumentException("Owner is required");
+			}
 
 			Map<String, Object> spec;
 			try {
@@ -60,51 +69,23 @@ public class ProjectServiceImpl implements ProjectService {
 			Map<String, Object> app = (Map<String, Object>) spec.get("app");
 			if (app == null)
 				throw new IllegalArgumentException("Missing required 'app' section");
-			String artifact = String.valueOf(app.getOrDefault(ProjectMetaDataConstants.ARTIFACT_ID, ProjectMetaDataConstants.DEFAULT_ARTIFACT));
-			String groupId = String.valueOf(app.getOrDefault(ProjectMetaDataConstants.GROUP_ID, ProjectMetaDataConstants.DEFAULT_GROUP));
-			String version = String.valueOf(app.getOrDefault(ProjectMetaDataConstants.VERSION, ProjectMetaDataConstants.DEFAULT_VERSION));
-			String buildTool = String.valueOf(app.getOrDefault(ProjectMetaDataConstants.BUILD_TOOL, ProjectMetaDataConstants.DEFAULT_BUILD_TOOL));
-			String packaging = String.valueOf(app.getOrDefault(ProjectMetaDataConstants.PACKAGING, ProjectMetaDataConstants.DEFAULT_PACKAGING));
-			String generator = String.valueOf(app.getOrDefault(ProjectMetaDataConstants.GENERATOR, ProjectMetaDataConstants.DEFAULT_GRADLE_GENERATOR));
-			String name = String.valueOf(app.getOrDefault(ProjectMetaDataConstants.NAME, ProjectMetaDataConstants.DEFAULT_NAME));
-			String description = String.valueOf(app.getOrDefault(ProjectMetaDataConstants.DESCRIPTION, ProjectMetaDataConstants.DEFAULT_DESCRIPTION));
-			String springBootVersion = String.valueOf(app.getOrDefault(ProjectMetaDataConstants.SPRING_BOOT_VERSION, ProjectMetaDataConstants.DEFAULT_BOOT_VERSION));
-			String jdkVersion = String.valueOf(app.getOrDefault(ProjectMetaDataConstants.JDK_VERSION, ProjectMetaDataConstants.DEFAULT_JDK));
-			if (artifact == null || artifact.isBlank())
-				throw new IllegalArgumentException("app.artifact must be provided");
-			if (groupId == null || groupId.isBlank())
-				throw new IllegalArgumentException("app.groupId must be provided");
-			if (version == null || version.isBlank())
-				throw new IllegalArgumentException("app.version must be provided");
-			ProjectEntity p = new ProjectEntity();
-			p.setId(java.util.UUID.randomUUID());
-			p.setArtifact(artifact);
-			p.setGroupId(groupId);
-			p.setVersion(version);
-			p.setBuildTool(buildTool);
-			p.setPackaging(packaging);
-			p.setGenerator(generator);
-			p.setName(name);
-			p.setDescription(description);
-			p.setSpringBootVersion(springBootVersion);
-			p.setJdkVersion(jdkVersion);
-			p.setYaml(yamlText);
-			p.setCreatedAt(OffsetDateTime.now());
-			p.setUpdatedAt(OffsetDateTime.now());
+			Map<String, String> projectDetails = ProjectRequestValidator.validateProjectData(app);
+			ProjectEntity p = ProjectEntity.fromDTO(projectDetails,ownerId,yamlText);
 			repo.save(p);
-			return new ProjectCreateResponseDTO(p.getId().toString(), ProjectRunStatus.QUEUED.name());	
+			return new ProjectCreateResponseDTO(p.getId().toString(), ProjectRunStatus.QUEUED.name());
 		} catch (Exception e) {
-			throw new GenericException(HttpStatus.INTERNAL_SERVER_ERROR,e.getMessage());
+			throw new GenericException(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage());
 		}
 	}
 
 	@Override
-	public java.util.List<ProjectSummaryDTO> list() {
-		java.util.List<ProjectEntity> all = repo.findAll();
-		java.util.List<ProjectSummaryDTO> out = new java.util.ArrayList<>();
-		for (ProjectEntity p : all) {
-			out.add(new ProjectSummaryDTO(p.getId().toString(), p.getArtifact(), p.getId()));
+	public ResponseEntity<JSONResponseDTO<List<ProjectSummaryDTO>>> fetchProjecs(String ownerId) {
+		try {
+			List<ProjectEntity> projectEntities = repo.findByOwnerId(ownerId);
+			List<ProjectSummaryDTO> projectResponseList = projectEntities.stream().map(ProjectSummaryDTO::toDTO).collect(Collectors.toList());
+			return ResponseEntity.ok(AppUtils.getJSONObject(projectResponseList, RequestStatus.PROJECT_FETCH_SUCCESS.getDescription()));
+		} catch (Exception e) {
+			throw new ProjectFetchException(RequestStatus.PROJECT_FETCH_FAIL);
 		}
-		return out;
 	}
 }

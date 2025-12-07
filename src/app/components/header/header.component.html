@@ -23,7 +23,10 @@
 
 <aside class="sidenav" *ngIf="!isDashboardRoute" [class.active]="isMenuOpen">
   <div class="sidenav-header">
-    <span class="sidenav-title">Menu</span>
+    <div class="logo" (click)="navigateToHome()">
+      <span class="logo-text">Bootify</span>
+      <i class="bi bi-code-slash logo-icon"></i>
+    </div>
     <button class="close-btn" (click)="closeMenu()" aria-label="Close menu">
       <i class="bi bi-x-lg"></i>
     </button>

@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Output } from '@angular/core';
+import { Component, EventEmitter, Output, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -17,7 +17,7 @@ import { UpdatePasswordModalComponent } from '../update-password-modal/update-pa
   templateUrl: './login-modal.component.html',
   styleUrls: ['./login-modal.component.css']
 })
-export class LoginModalComponent {
+export class LoginModalComponent implements OnDestroy {
   @Output() close = new EventEmitter<void>();
 
   isSignupMode = true;
@@ -39,6 +39,13 @@ export class LoginModalComponent {
     // Injected to ensure theme variables are applied/persisted for this modal
     public themeService: ComponentThemeService
   ) {}
+  ngOnDestroy(): void {
+    this.resetForm();
+    this.isSignupMode = true;
+    this.isForgotPasswordMode = false;
+    this.showOtpModal = false;
+    this.showUpdatePasswordModal = false;
+  }
 
   get emailError(): string {
     return this.validationErrors['email'] || '';
@@ -94,34 +101,43 @@ export class LoginModalComponent {
     return !FormValidator.hasErrors(this.validationErrors);
   }
 
-  onEmailBlur(): void {
-    if (this.email) {
-      const error = FormValidator.validateSingleField(
-        this.email,
-        CommonValidationRules.email,
-        'email'
-      );
-      if (error) {
-        this.validationErrors['email'] = error;
-      } else {
-        this.validationErrors = FormValidator.clearErrors(this.validationErrors, 'email');
-      }
+  onEmailChange(value: string): void {
+    this.email = value;
+    if (!this.email) {
+      this.validationErrors = FormValidator.clearErrors(this.validationErrors, 'email');
+      return;
     }
+
+    const error = FormValidator.validateSingleField(
+      this.email,
+      CommonValidationRules.email,
+      'email'
+    );
+    this.validationErrors = error
+      ? { ...this.validationErrors, email: error }
+      : FormValidator.clearErrors(this.validationErrors, 'email');
   }
 
-  onPasswordBlur(): void {
-    if (this.password && !this.isForgotPasswordMode) {
-      const error = FormValidator.validateSingleField(
-        this.password,
-        CommonValidationRules.password,
-        'password'
-      );
-      if (error) {
-        this.validationErrors['password'] = error;
-      } else {
-        this.validationErrors = FormValidator.clearErrors(this.validationErrors, 'password');
-      }
+  onPasswordChange(value: string): void {
+    this.password = value;
+    if (this.isForgotPasswordMode) {
+      this.validationErrors = FormValidator.clearErrors(this.validationErrors, 'password');
+      return;
     }
+
+    if (!this.password) {
+      this.validationErrors = FormValidator.clearErrors(this.validationErrors, 'password');
+      return;
+    }
+
+    const error = FormValidator.validateSingleField(
+      this.password,
+      CommonValidationRules.password,
+      'password'
+    );
+    this.validationErrors = error
+      ? { ...this.validationErrors, password: error }
+      : FormValidator.clearErrors(this.validationErrors, 'password');
   }
 
   isFormValid(): boolean {
@@ -248,7 +264,7 @@ export class LoginModalComponent {
       },
       error: (error) => {
         this.isLoading = false;
-        const errorMessage = error.message || 'Invalid email or password.';
+        const errorMessage = error?.error?.errorMsg|| 'Invalid email or password.';
         this.toastService.error(errorMessage);
       }
     });
@@ -267,7 +283,7 @@ export class LoginModalComponent {
       },
       error: (error) => {
         this.isLoading = false;
-        const errorMessage = error.message || 'Failed to send OTP. Please try again.';
+        const errorMessage = error?.error?.errorMsg|| 'Failed to send OTP. Please try again.';
         this.toastService.error(errorMessage);
       }
     });

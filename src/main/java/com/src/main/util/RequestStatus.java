@@ -5,7 +5,10 @@ import org.springframework.http.HttpStatus;
 public enum RequestStatus {
 
 	USER_NOT_FOUND(HttpStatus.NOT_FOUND.value(),"User not found"),
-	PASSWORD_RESET_SUCCESS(HttpStatus.OK.value(), "Password Reset succesfully"),
+	ROLE_SUCCESS(HttpStatus.OK.value(),"Roles for user %s successfully fetched"),
+	PASSWORD_RESET_SUCCESS(HttpStatus.OK.value(), "Password updated successfully. Please log in with your new credentials."),
+	LOGIN_SUCCESS(HttpStatus.OK.value(), "Login successful"),
+	LOGOUT_SUCCESS(HttpStatus.OK.value(), "Logged out successfully"),
 	SIGNUP_ERROR(HttpStatus.INTERNAL_SERVER_ERROR.value(),"Unable To Create the User"),
 	SIGNUP_SUCCESS(HttpStatus.OK.value(), "User registered successfully. Please verify OTP sent to %s "),
 	LOGIN_REQUEST_PASSWORD_REQUIRED_ERROR(HttpStatus.BAD_REQUEST.value(),"Invalid Request. Password is Required to login"),
@@ -21,13 +24,13 @@ public enum RequestStatus {
 	USER_DUPLICATE_EMAIL(HttpStatus.BAD_REQUEST.value(),"User with email already taken. Please try with different email"),
 	USER_DUPLICATE_MOBILE(HttpStatus.BAD_REQUEST.value(),"User with mobile already taken. Please try with different mobile"),
 	EMAIL_SENT_ERROR(HttpStatus.INTERNAL_SERVER_ERROR.value(),"Unable To Send OTP"),
-	USER_ALREADY_VERIFIED_ERROR(HttpStatus.OK.value(), "User already verified."),
+	USER_ALREADY_VERIFIED_ERROR(HttpStatus.OK.value(), "User already exists and verified. Please try to reset password"),
 	OTP_VERIFICATION_ERROR_USERNAME_REQUIRED_ERROR(HttpStatus.BAD_REQUEST.value(),"Invalid Request. Username is Required to verify OTP."),
-	OTP_NOT_VERIFIED_ERROR(HttpStatus.BAD_REQUEST.value(),"User not verified OTP. Please verify OTP Sent to %s"),
-	OTP_SENT_SUCCESS(HttpStatus.OK.value(), "OTP Sent succesfully"),
+	OTP_NOT_VERIFIED_ERROR(HttpStatus.BAD_REQUEST.value(),"User not verified OTP. Please verify OTP Sent to %s or use forgot password"),
+	OTP_SENT_SUCCESS(HttpStatus.OK.value(), "OTP has been sent to your email to verify."),
 	OTP_SENT_FAIL(HttpStatus.INTERNAL_SERVER_ERROR.value(), "Unable to send OTP"),
 	OTP_LIMIT_EXCEED_ERROR(HttpStatus.INTERNAL_SERVER_ERROR.value(), "OTP Limit Has been reached for today. Please try again tomorrow."),
-	OTP_TIME_LIMIT_ERROR(HttpStatus.INTERNAL_SERVER_ERROR.value(), "OTP Has been already sent please try after %s"),
+	OTP_TIME_LIMIT_ERROR(HttpStatus.INTERNAL_SERVER_ERROR.value(), "OTP Has been already sent. Please try after %s"),
 	OTP_EXPIRATION_ERROR(HttpStatus.INTERNAL_SERVER_ERROR.value(), "OTP Expired. Please enter latest OTP"),
 	OTP_VERIFICATION_FAIL(HttpStatus.INTERNAL_SERVER_ERROR.value(),"Unable to verify OTP. Please try again"),
 	OTP_VERIFICATION_SUCCESS(HttpStatus.OK.value(),"OTP Verified succesfully"),
@@ -39,11 +42,15 @@ public enum RequestStatus {
 	RESET_PASSWORD_ERROR_RETYPE_PASSWORD_REQUIRED(HttpStatus.BAD_REQUEST.value(),"Invalid Request. Retype Password is Required."),
 	RESET_PASSWORD_ERROR(HttpStatus.BAD_REQUEST.value(),"Error: Failed To Reset Password"),
 	RESET_PASSWORD_ERROR_PASSWORD_NOT_MATCH(HttpStatus.BAD_REQUEST.value(),"Invalid Request. Password and Retype Doesn't match"),
-
+	
+	PROJECT_FETCH_SUCCESS(HttpStatus.OK.value(),"Projects retrieved successfully"),
+	PROJECT_FETCH_FAIL(HttpStatus.INTERNAL_SERVER_ERROR.value(),"Unable To Fetch Project Details"),
+	
 	UPLOAD_FILE_SUCCESS(HttpStatus.OK.value(),"Success: Data Succesfully Uploaded"),
 	UPLOAD_FILE_FAILURE(HttpStatus.INTERNAL_SERVER_ERROR.value(),"Error: Failed To Upload Data");
 
 
+	
 	private final int code;
 	private final String description;
 

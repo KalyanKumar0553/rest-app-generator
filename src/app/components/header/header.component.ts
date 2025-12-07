@@ -39,7 +39,15 @@ export class HeaderComponent implements OnInit {
   }
 
   navigateToHome(): void {
+    if (this.isMobile() && this.authService.isLoggedIn()) {
+      this.router.navigate(['/user/dashboard']);
+      return;
+    }
     this.router.navigate(['/']);
+  }
+
+  private isMobile(): boolean {
+    return window.innerWidth <= 768;
   }
 
   toggleMenu(): void {

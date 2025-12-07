@@ -16,18 +16,19 @@ export const API_ENDPOINTS = {
     SEND_OTP: '/api/auth/send-otp',
     VERIFY_OTP: '/api/auth/verify-otp',
     FORGOT_PASSWORD: '/api/auth/forgot-password',
-    RESET_PASSWORD_WITH_OTP: '/api/auth/reset-password-with-otp'
+    RESET_PASSWORD_WITH_OTP: '/api/auth/reset-password-with-otp',
+    ROLES:'/api/auth/roles'
   },
   USER: {
     PROFILE: '/api/user/profile',
     UPDATE_PROFILE: '/api/user/profile/update'
   },
   PROJECT: {
-    LIST: '/api/projects',
-    CREATE: '/api/projects/create',
-    GET: (id: string) => `/api/projects/${id}`,
-    UPDATE: (id: string) => `/api/projects/${id}/update`,
-    DELETE: (id: string) => `/api/projects/${id}/delete`
+    LIST: '/api/user/projects',
+    CREATE: '/api/user/projects/create',
+    GET: (id: string) => `/api/user/projects/${id}`,
+    UPDATE: (id: string) => `/api/user/projects/${id}/update`,
+    DELETE: (id: string) => `/api/user/projects/${id}/delete`
   }
 };
 

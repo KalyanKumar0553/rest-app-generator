@@ -1,12 +1,13 @@
-import { Component, EventEmitter, Input, Output, OnChanges, SimpleChanges } from '@angular/core';
+import { Component, EventEmitter, Input, Output, OnChanges, SimpleChanges, ViewChild, ElementRef, ViewChildren, QueryList } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
+import { FormsModule, NgForm, NgModel } from '@angular/forms';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatSelectModule } from '@angular/material/select';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
+import { MatExpansionModule } from '@angular/material/expansion';
 import { FieldItemComponent, Field } from '../field-item/field-item.component';
 
 interface Entity {
@@ -28,6 +29,7 @@ interface Entity {
     MatSelectModule,
     MatButtonModule,
     MatIconModule,
+    MatExpansionModule,
     FieldItemComponent
   ],
   templateUrl: './add-entity.component.html',
@@ -39,11 +41,16 @@ export class AddEntityComponent implements OnChanges {
   @Input() existingEntities: Entity[] = [];
   @Output() save = new EventEmitter<any>();
   @Output() cancel = new EventEmitter<void>();
+  @ViewChild('entityNameInput') entityNameInput?: ElementRef<HTMLInputElement>;
+  @ViewChild('entityNameModel') entityNameModel?: NgModel;
+  @ViewChild('entityForm') entityForm?: NgForm;
+  @ViewChildren(FieldItemComponent) fieldItems?: QueryList<FieldItemComponent>;
 
   entityName = '';
   mappedSuperclass = false;
   addRestEndpoints = false;
   nameError = '';
+  submitted = false;
 
   fields: Field[] = [
     {
@@ -96,6 +103,9 @@ export class AddEntityComponent implements OnChanges {
     this.addRestEndpoints = entity.addRestEndpoints;
     this.fields = JSON.parse(JSON.stringify(entity.fields));
     this.nameError = '';
+    this.submitted = false;
+    this.setEntityNameError('');
+    this.enforceSinglePrimary();
   }
 
   resetForm(): void {
@@ -103,6 +113,7 @@ export class AddEntityComponent implements OnChanges {
     this.mappedSuperclass = false;
     this.addRestEndpoints = false;
     this.nameError = '';
+    this.submitted = false;
     this.fields = [
       {
         type: 'Long',
@@ -113,6 +124,8 @@ export class AddEntityComponent implements OnChanges {
       }
     ];
     this.tempFields = [];
+    this.entityForm?.resetForm();
+    this.enforceSinglePrimary();
   }
 
   addField(): void {
@@ -130,12 +143,16 @@ export class AddEntityComponent implements OnChanges {
   onFieldNameChange(field: Field): void {
     if (field.nameError) {
       field.nameError = '';
+      const index = this.fields.indexOf(field);
+      if (index > -1) {
+        this.fieldItems?.toArray()[index]?.setCustomError(null);
+      }
     }
   }
 
   onEntityNameChange(): void {
     if (this.nameError) {
-      this.nameError = '';
+      this.setEntityNameError('');
     }
   }
 
@@ -157,7 +174,8 @@ export class AddEntityComponent implements OnChanges {
 
   validateEntityName(): boolean {
     if (!this.entityName.trim()) {
-      this.nameError = 'Entity name is required.';
+      this.setEntityNameError('Entity name is required.');
+      this.focusEntityName();
       return false;
     }
 
@@ -171,23 +189,24 @@ export class AddEntityComponent implements OnChanges {
     );
 
     if (duplicateEntity) {
-      this.nameError = `Entity "${this.entityName}" already exists.`;
+      this.setEntityNameError(`Entity "${this.entityName}" already exists.`);
+      this.focusEntityName();
       return false;
     }
 
-    this.nameError = '';
+    this.setEntityNameError('');
     return true;
   }
 
-  validateFieldName(field: Field): boolean {
+  validateFieldName(field: Field, index: number): boolean {
     if (!field.name.trim()) {
-      field.nameError = 'Field name is required.';
+      this.setFieldError(index, 'Field name is required.');
       return false;
     }
 
     const alphanumericPattern = /^[a-zA-Z0-9]+$/;
     if (!alphanumericPattern.test(field.name)) {
-      field.nameError = 'Field name must be alphanumeric without spaces.';
+      this.setFieldError(index, 'Field name must be alphanumeric without spaces.');
       return false;
     }
 
@@ -196,20 +215,28 @@ export class AddEntityComponent implements OnChanges {
     );
 
     if (duplicateField.length > 0) {
-      field.nameError = `Field "${field.name}" already exists in this entity.`;
+      this.setFieldError(index, `Field "${field.name}" already exists in this entity.`);
       return false;
     }
 
-    field.nameError = '';
+    this.setFieldError(index, '');
     return true;
   }
 
   validateAllFields(): boolean {
     let isValid = true;
-    for (const field of this.fields) {
-      if (!field.primaryKey && !this.validateFieldName(field)) {
+    let firstInvalidIndex: number | null = null;
+    for (let i = 0; i < this.fields.length; i++) {
+      const field = this.fields[i];
+      if (!this.validateFieldName(field, i)) {
         isValid = false;
+        if (firstInvalidIndex === null) {
+          firstInvalidIndex = i;
+        }
       }
+    }
+    if (firstInvalidIndex !== null) {
+      this.focusFieldName(firstInvalidIndex);
     }
     return isValid;
   }
@@ -231,6 +258,11 @@ export class AddEntityComponent implements OnChanges {
   }
 
   onSave(): void {
+    this.submitted = true;
+    this.entityForm?.form.markAllAsTouched();
+    this.entityNameModel?.control.markAsTouched();
+    this.fieldItems?.forEach(item => item.markAsTouched());
+
     if (!this.validateEntityName()) {
       return;
     }
@@ -258,25 +290,80 @@ export class AddEntityComponent implements OnChanges {
   }
 
   onMappedSuperclassChange(): void {
-    if (this.mappedSuperclass) {
-      this.tempFields = JSON.parse(JSON.stringify(this.fields));
-      this.fields = [];
-      this.addRestEndpoints = false;
-    } else {
-      if (this.tempFields.length > 0) {
-        this.fields = JSON.parse(JSON.stringify(this.tempFields));
-        this.tempFields = [];
-      } else {
-        this.fields = [
-          {
-            type: 'Long',
-            name: 'id',
-            primaryKey: true,
-            required: false,
-            unique: false
-          }
-        ];
-      }
+    this.addRestEndpoints = false;
+  }
+
+  private focusEntityName(): void {
+    setTimeout(() => {
+      this.entityNameInput?.nativeElement.focus();
+      this.entityNameInput?.nativeElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    });
+  }
+
+  private focusFieldName(index: number): void {
+    const fieldArray = this.fieldItems?.toArray() || [];
+    const fieldItem = fieldArray[index];
+    if (fieldItem) {
+      setTimeout(() => fieldItem.focusNameInput());
     }
+  }
+
+  private setEntityNameError(message: string): void {
+    this.nameError = message;
+    if (this.entityNameModel?.control) {
+      const currentErrors = { ...(this.entityNameModel.control.errors || {}) };
+      if (message) {
+        currentErrors['custom'] = true;
+      } else {
+        delete currentErrors['custom'];
+      }
+      const finalErrors = Object.keys(currentErrors).length ? currentErrors : null;
+      this.entityNameModel.control.setErrors(finalErrors);
+      this.entityNameModel.control.updateValueAndValidity();
+    }
+  }
+
+  private setFieldError(index: number, message: string): void {
+    const field = this.fields[index];
+    if (!field) {
+      return;
+    }
+    field.nameError = message;
+    const item = this.fieldItems?.toArray()[index];
+    item?.setCustomError(message || null);
+  }
+
+  onPrimaryChange(field: Field): void {
+    const selectedIndex = this.fields.indexOf(field);
+    if (selectedIndex === -1) {
+      return;
+    }
+
+    if (field.primaryKey) {
+      field.required = false;
+      field.unique = false;
+      this.enforceSinglePrimary(selectedIndex);
+    }
+  }
+
+  onFieldChange(field: Field): void {
+    const index = this.fields.indexOf(field);
+    if (index > -1 && field.nameError) {
+      this.setFieldError(index, '');
+    }
+  }
+
+  private enforceSinglePrimary(preferredIndex?: number): void {
+    let primaryIndex = preferredIndex ?? this.fields.findIndex(f => f.primaryKey);
+    if (primaryIndex === -1 && this.fields.length > 0) {
+      return;
+    }
+    this.fields.forEach((f, idx) => {
+      f.primaryKey = idx === primaryIndex;
+    });
+  }
+
+  get primarySelected(): boolean {
+    return this.fields.some(f => f.primaryKey);
   }
 }

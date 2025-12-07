@@ -3,7 +3,7 @@ package com.src.main.util;
 public interface AppConstants {
 
 	String API_ROOT = "/api";
-	String API_PROJECTS = API_ROOT + "/projects";
+	String API_PROJECTS = API_ROOT + "/user/projects";
 	String PATH_ID = "/{id}";
 	String PATH_DOWNLOAD = "/download";
 

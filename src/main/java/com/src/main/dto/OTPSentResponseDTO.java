@@ -6,12 +6,10 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Data
-@Builder
-@AllArgsConstructor
 @NoArgsConstructor
-public class JSONResponseDTO<T> {
-	T data;
-	private boolean success;
-	private String message;
-	boolean isError;
+@AllArgsConstructor
+@Builder
+public class OTPSentResponseDTO {
+    private boolean otpSent;
+	private long expiresIn;
 }

@@ -38,7 +38,7 @@ export class OTPModalComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
-    this.clearCountdown();
+    this.resetState();
   }
 
   startCountdown(): void {
@@ -78,10 +78,6 @@ export class OTPModalComponent implements OnInit, OnDestroy {
       this.otpValue = this.otpValue.substring(0, 6);
     }
 
-    this.otpError = '';
-  }
-
-  onOtpBlur(): void {
     this.validateOtp();
   }
 
@@ -124,7 +120,7 @@ export class OTPModalComponent implements OnInit, OnDestroy {
       },
       error: (error) => {
         this.isLoading = false;
-        const errorMessage = error.message || 'Invalid OTP. Please try again.';
+        const errorMessage = error?.error?.errorMsg|| 'Invalid OTP. Please try again.';
         this.otpError = errorMessage;
         this.toastService.error(errorMessage);
       }
@@ -154,7 +150,7 @@ export class OTPModalComponent implements OnInit, OnDestroy {
       error: (error) => {
         this.isLoading = false;
         this.closeModal();
-        const errorMessage = error.message || 'Auto-login failed. Please login manually.';
+        const errorMessage = error?.error?.errorMsg|| 'Auto-login failed. Please login manually.';
         this.toastService.error(errorMessage);
       }
     });
@@ -177,7 +173,7 @@ export class OTPModalComponent implements OnInit, OnDestroy {
       },
       error: (error) => {
         this.isLoading = false;
-        const errorMessage = error.message || 'Failed to resend OTP. Please try again.';
+        const errorMessage = error?.error?.errorMsg|| 'Failed to resend OTP. Please try again.';
         this.toastService.error(errorMessage);
       }
     });
@@ -185,5 +181,14 @@ export class OTPModalComponent implements OnInit, OnDestroy {
 
   closeModal(): void {
     this.close.emit();
+  }
+
+  private resetState(): void {
+    this.clearCountdown();
+    this.otpValue = '';
+    this.otpError = '';
+    this.isLoading = false;
+    this.timeLeft = 180;
+    this.canResend = false;
   }
 }

@@ -1,5 +1,6 @@
 package com.src.main.config;
 
+import java.util.List;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -13,6 +14,9 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import com.src.main.filters.JwtAuthenticationFilter;
 import com.src.main.service.UserDetailsServiceImpl;
@@ -21,88 +25,63 @@ import jakarta.servlet.http.HttpServletResponse;
 
 @Configuration
 @EnableMethodSecurity
-public class SecurityConfig {
+public class SecurityConfig {private static final String LOGOUT_URL = "/logout";
+	private static final String LOGOUT_SUCCESS_URL = "/logout";
 
-    private static final String LOGOUT_URL = "/logout";
-    private static final String LOGOUT_SUCCESS_URL = "/logout";
+	private final UserDetailsServiceImpl userDetailsService;
+	private final JWTTokenProvider jwtTokenProvider;
 
-    private final UserDetailsServiceImpl userDetailsService;
-    private final JWTTokenProvider jwtTokenProvider;
+	public SecurityConfig(UserDetailsServiceImpl userDetailsService, JWTTokenProvider jwtTokenProvider) {
+		this.userDetailsService = userDetailsService;
+		this.jwtTokenProvider = jwtTokenProvider;
+	}
 
-    public SecurityConfig(UserDetailsServiceImpl userDetailsService,
-                          JWTTokenProvider jwtTokenProvider) {
-        this.userDetailsService = userDetailsService;
-        this.jwtTokenProvider = jwtTokenProvider;
-    }
+	@Bean
+	public PasswordEncoder passwordEncoder() {
+		return new BCryptPasswordEncoder();
+	}
 
-    @Bean
-    public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
-    }
+	@Bean
+	public AuthenticationManager authenticationManager(AuthenticationConfiguration configuration) throws Exception {
+		return configuration.getAuthenticationManager();
+	}
 
-    @Bean
-    public AuthenticationManager authenticationManager(AuthenticationConfiguration configuration) throws Exception {
-        return configuration.getAuthenticationManager();
-    }
+	@Bean
+	public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
 
-    @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+		http.cors(Customizer.withDefaults()).csrf(AbstractHttpConfigurer::disable)
 
-        http
-                // Disable CORS + CSRF
-                .cors(Customizer.withDefaults())
-                .csrf(AbstractHttpConfigurer::disable)
+				.authorizeHttpRequests(auth -> auth
+						.requestMatchers("/assets/**", "/*.css", "/*.js", "/canvaskit/**", "/icons/*.png",
+								"/icons/*.jpg", "/index.html", "/*.json", "/*.png", "/*.jpg", "/", "/*.woff2",
+								LOGOUT_URL, "/actuator/health")
+						.permitAll().requestMatchers("/api/auth/**").permitAll().requestMatchers("/api/user/**")
+						.hasRole("USER").requestMatchers("/api/admin/**").hasRole("ADMIN").anyRequest().authenticated())
 
-                // Authorization
-                .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(
-                                "/assets/**",
-                                "/*.css",
-                                "/*.js",
-                                "/canvaskit/**",
-                                "/icons/*.png",
-                                "/icons/*.jpg",
-                                "/index.html",
-                                "/*.json",
-                                "/*.png",
-                                "/*.jpg",
-                                "/",
-                                "/*.woff2",
-                                LOGOUT_URL,
-                                "/actuator/health"
-                        ).permitAll()
-                        .requestMatchers("/api/auth/**").permitAll()
-                        .requestMatchers("/api/user/**").hasRole("USER")
-                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
-                        .anyRequest().authenticated()
-                )
+				.logout(logout -> logout.logoutUrl(LOGOUT_URL).logoutSuccessUrl(LOGOUT_SUCCESS_URL)
+						.deleteCookies("JSESSIONID").invalidateHttpSession(true).clearAuthentication(true))
 
-                // Logout handling
-                .logout(logout -> logout
-                        .logoutUrl(LOGOUT_URL)
-                        .logoutSuccessUrl(LOGOUT_SUCCESS_URL)
-                        .deleteCookies("JSESSIONID")
-                        .invalidateHttpSession(true)
-                        .clearAuthentication(true)
-                )
+				.exceptionHandling(ex -> ex.authenticationEntryPoint(
+						(req, res, ex2) -> res.sendError(HttpServletResponse.SC_UNAUTHORIZED, ex2.getMessage())))
 
-                // Exception handling
-                .exceptionHandling(ex -> ex
-                        .authenticationEntryPoint((req, res, ex2) ->
-                                res.sendError(HttpServletResponse.SC_UNAUTHORIZED, ex2.getMessage())
-                        )
-                )
+				.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
 
-                // Make session stateless (JWT)
-                .sessionManagement(session ->
-                        session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-                );
+		http.addFilterBefore(new JwtAuthenticationFilter(jwtTokenProvider, userDetailsService),
+				UsernamePasswordAuthenticationFilter.class);
 
-        http.addFilterBefore(
-                new JwtAuthenticationFilter(jwtTokenProvider, userDetailsService),
-                UsernamePasswordAuthenticationFilter.class
-        );
+		return http.build();
+	}
 
-        return http.build();
-    }
+	@Bean
+	public CorsConfigurationSource corsConfigurationSource() {
+		CorsConfiguration config = new CorsConfiguration();
+		config.setAllowedOrigins(List.of("http://localhost:4200"));
+		config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
+		config.setAllowedHeaders(List.of("Authorization", "Content-Type", "X-Requested-With"));
+		config.setExposedHeaders(List.of("Authorization"));
+		config.setAllowCredentials(true);
+		UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+		source.registerCorsConfiguration("/**", config);
+		return source;
+	}
 }

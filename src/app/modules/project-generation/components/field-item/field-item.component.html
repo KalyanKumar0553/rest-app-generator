@@ -2,22 +2,27 @@
   <mat-form-field appearance="fill" class="field-type-select">
     <mat-label>Field Type</mat-label>
     <mat-select
+      [name]="'fieldType' + index"
       [(ngModel)]="field.type"
       (selectionChange)="onTypeChange()">
       <mat-option *ngFor="let type of fieldTypes" [value]="type">{{ type }}</mat-option>
     </mat-select>
   </mat-form-field>
 
-  <mat-form-field appearance="fill" class="field-name-input">
+  <mat-form-field appearance="fill" class="field-name-input" [class.has-error]="field.nameError || (fieldNameModel?.invalid && (fieldNameModel?.touched || submitted))">
     <mat-label>Field name</mat-label>
     <input
       matInput
+      [name]="'fieldName' + index"
       [(ngModel)]="field.name"
       (ngModelChange)="onNameChange()"
-      [disabled]="field.primaryKey"
+      #fieldNameInput
+      #fieldNameModel="ngModel"
       placeholder="Field name"
       required>
-    <mat-error *ngIf="field.nameError">{{ field.nameError }}</mat-error>
+    <mat-error *ngIf="field.nameError || (fieldNameModel?.invalid && (fieldNameModel?.touched || submitted))">
+      {{ field.nameError || 'Field name is required.' }}
+    </mat-error>
   </mat-form-field>
 
   <mat-form-field appearance="fill" class="field-max-length-input" *ngIf="field.type === 'String'">
@@ -25,6 +30,7 @@
     <input
       matInput
       type="number"
+      [name]="'maxLength' + index"
       [(ngModel)]="field.maxLength"
       (ngModelChange)="onFieldUpdate()"
       placeholder="255">
@@ -32,9 +38,10 @@
 
   <div class="field-constraints">
     <mat-checkbox
-      *ngIf="field.primaryKey"
       [(ngModel)]="field.primaryKey"
-      [disabled]="true"
+      [name]="'primaryKey' + index"
+      [disabled]="primaryLocked && !field.primaryKey"
+      (change)="onPrimaryChange()"
       color="primary"
       class="constraint-checkbox">
       Primary key
@@ -43,6 +50,7 @@
     <mat-checkbox
       *ngIf="!field.primaryKey"
       [(ngModel)]="field.required"
+      [name]="'required' + index"
       (change)="onFieldUpdate()"
       color="primary"
       class="constraint-checkbox">
@@ -52,6 +60,7 @@
     <mat-checkbox
       *ngIf="!field.primaryKey"
       [(ngModel)]="field.unique"
+      [name]="'unique' + index"
       (change)="onFieldUpdate()"
       color="primary"
       class="constraint-checkbox">

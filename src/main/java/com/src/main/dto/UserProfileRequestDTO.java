@@ -3,14 +3,12 @@ package com.src.main.dto;
 import java.time.LocalDate;
 
 import com.src.main.util.AppConstants;
-import com.src.main.validation.ValidUserProfileUpdate;
 
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
 
 @Data
-@ValidUserProfileUpdate
 public class UserProfileRequestDTO {
 	@Size(max = 50, message = "Email must not exceed 50 characters")
     @Pattern(regexp = AppConstants.emailRegex, message = "Invalid email format")

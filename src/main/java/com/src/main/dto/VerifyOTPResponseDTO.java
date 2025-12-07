@@ -6,12 +6,10 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Data
-@Builder
-@AllArgsConstructor
 @NoArgsConstructor
-public class JSONResponseDTO<T> {
-	T data;
-	private boolean success;
+@AllArgsConstructor
+@Builder
+public class VerifyOTPResponseDTO {
 	private String message;
-	boolean isError;
+	private boolean success;
 }
