@@ -17,8 +17,7 @@
 
 .main-content-scrollable {
   flex: 1;
-  overflow-y: auto;
-  overflow-x: hidden;
+  overflow: hidden;
   margin-top: 24px;
   margin-bottom: 24px;
   position: relative;

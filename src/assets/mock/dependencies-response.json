@@ -1,0 +1,9 @@
+{
+  "dependencies": [
+    { "id": "spring-boot-starter-web" },
+    { "id": "spring-boot-starter-data-jpa" },
+    { "id": "spring-boot-starter-security" },
+    { "id": "lombok" },
+    { "id": "mapstruct" }
+  ]
+}

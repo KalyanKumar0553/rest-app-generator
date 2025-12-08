@@ -407,12 +407,21 @@
     font-size: 14px;
   }
 
-  .relation-card {
-    padding: 16px;
-  }
+.relation-card {
+  padding: 16px;
+}
 
-  .relation-details {
-    flex-direction: column;
-    gap: 8px;
-  }
+.relation-details {
+  flex-direction: column;
+  gap: 8px;
+}
+}
+
+.modal-footer button {
+  min-width: 110px;
+  padding: 8px 16px;
+}
+
+.modal-footer button + button {
+  margin-left: 4px;
 }

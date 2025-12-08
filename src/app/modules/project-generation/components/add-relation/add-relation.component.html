@@ -3,14 +3,18 @@
     <div class="form-row">
       <mat-form-field appearance="fill" class="form-field">
         <mat-label>Source entity</mat-label>
-        <mat-select
+        <input
+          matInput
           [(ngModel)]="sourceEntity"
-          (selectionChange)="onSourceEntityChange()"
+          [matAutocomplete]="sourceEntityAutocomplete"
+          (ngModelChange)="onSourceEntityChange()"
+          placeholder="Select source entity"
           required>
+        <mat-autocomplete #sourceEntityAutocomplete="matAutocomplete" (optionSelected)="onSourceEntityChange()">
           <mat-option *ngFor="let entity of entities" [value]="entity.name">
             {{ entity.name }}
           </mat-option>
-        </mat-select>
+        </mat-autocomplete>
         <mat-error *ngIf="sourceEntityError">{{ sourceEntityError }}</mat-error>
       </mat-form-field>
 
@@ -19,9 +23,15 @@
         <input
           matInput
           [(ngModel)]="sourceFieldName"
+          [matAutocomplete]="sourceFieldAuto"
           (ngModelChange)="onSourceFieldNameChange()"
-          placeholder="relationFieldName"
+          placeholder="Source FieldName"
           required>
+        <mat-autocomplete #sourceFieldAuto="matAutocomplete" (optionSelected)="onSourceFieldNameChange()">
+          <mat-option *ngFor="let field of sourceEntityFields" [value]="field.name">
+            {{ field.name }}
+          </mat-option>
+        </mat-autocomplete>
         <mat-error *ngIf="sourceFieldNameError">{{ sourceFieldNameError }}</mat-error>
       </mat-form-field>
     </div>
@@ -29,14 +39,18 @@
     <div class="form-row">
       <mat-form-field appearance="fill" class="form-field">
         <mat-label>Target entity</mat-label>
-        <mat-select
+        <input
+          matInput
           [(ngModel)]="targetEntity"
-          (selectionChange)="onTargetEntityChange()"
+          [matAutocomplete]="targetEntityAuto"
+          (ngModelChange)="onTargetEntityChange()"
+          placeholder="Select target entity"
           required>
+        <mat-autocomplete #targetEntityAuto="matAutocomplete" (optionSelected)="onTargetEntityChange()">
           <mat-option *ngFor="let entity of entities" [value]="entity.name">
             {{ entity.name }}
           </mat-option>
-        </mat-select>
+        </mat-autocomplete>
         <mat-error *ngIf="targetEntityError">{{ targetEntityError }}</mat-error>
       </mat-form-field>
 
@@ -45,7 +59,13 @@
         <input
           matInput
           [(ngModel)]="targetFieldName"
+          [matAutocomplete]="targetFieldAuto"
           placeholder="backReferenceFieldName">
+        <mat-autocomplete #targetFieldAuto="matAutocomplete">
+          <mat-option *ngFor="let field of targetEntityFields" [value]="field.name">
+            {{ field.name }}
+          </mat-option>
+        </mat-autocomplete>
       </mat-form-field>
     </div>
 
@@ -70,6 +90,18 @@
             [(ngModel)]="required"
             class="checkbox-input">
           <span class="checkbox-text">Required</span>
+        </label>
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-field checkbox-field">
+        <label class="checkbox-label">
+          <input
+            type="checkbox"
+            [(ngModel)]="unidirectional"
+            class="checkbox-input">
+          <span class="checkbox-text">Unidirectional</span>
         </label>
       </div>
     </div>

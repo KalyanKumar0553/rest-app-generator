@@ -11,6 +11,7 @@
     <button
       *ngIf="searchTerm"
       class="clear-btn"
+      type="button"
       (click)="clearSearch()"
       aria-label="Clear search"
     >
@@ -23,6 +24,7 @@
       <button
         #sortButton
         class="sort-main-btn"
+        type="button"
         (click)="toggleDropdown()"
         aria-label="Sort options"
       >
@@ -32,6 +34,7 @@
       <div *ngIf="selectedSortOption" class="direction-controls">
         <button
           class="direction-btn"
+          type="button"
           [class.selected]="selectedSortOption.direction === 'asc'"
           (click)="toggleDirection($event, 'asc')"
           aria-label="Sort ascending"
@@ -40,6 +43,7 @@
         </button>
         <button
           class="direction-btn"
+          type="button"
           [class.selected]="selectedSortOption.direction === 'desc'"
           (click)="toggleDirection($event, 'desc')"
           aria-label="Sort descending"
@@ -48,6 +52,7 @@
         </button>
         <button
           class="clear-sort-btn"
+          type="button"
           (click)="clearSort($event)"
           aria-label="Clear sort"
         >
@@ -61,6 +66,7 @@
       <button
         *ngFor="let prop of uniqueSortProperties"
         class="dropdown-item"
+        type="button"
         [class.selected]="selectedSortOption?.property === prop.property"
         (click)="selectProperty(prop.property)"
       >

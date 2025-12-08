@@ -20,25 +20,20 @@
           {{ nameError || 'Entity name is required.' }}
         </mat-error>
       </mat-form-field>
-
-      <div class="form-group checkbox-group">
-        <mat-checkbox
-          name="mappedSuperclass"
-          [(ngModel)]="mappedSuperclass"
-          (change)="onMappedSuperclassChange()"
-          color="primary">
-          Mapped superclass
-        </mat-checkbox>
-        <button class="help-btn" type="button" aria-label="Help">
-          <i class="bi bi-question-circle"></i>
-        </button>
-      </div>
-
-      <div class="section-divider"></div>
-
-      <div class="crud-section" *ngIf="!mappedSuperclass">
-        <h3 class="section-title">CRUD Options</h3>
+      <div class="crud-section">
         <div class="form-group checkbox-group">
+          <mat-checkbox
+            name="mappedSuperclass"
+            [(ngModel)]="mappedSuperclass"
+            (change)="onMappedSuperclassChange()"
+            color="primary">
+            Mapped superclass
+          </mat-checkbox>
+          <button class="help-btn" type="button" aria-label="Help">
+            <i class="bi bi-question-circle"></i>
+          </button>
+        </div>
+        <div class="form-group checkbox-group"  *ngIf="!mappedSuperclass">
           <mat-checkbox
             name="addRestEndpoints"
             [(ngModel)]="addRestEndpoints"
@@ -48,6 +43,9 @@
           </mat-checkbox>
           <button class="help-btn" type="button" aria-label="Help">
             <i class="bi bi-question-circle"></i>
+          </button>
+          <button mat-icon-button class="settings-btn" type="button" aria-label="Configure Entity settings" (click)="openEntityConfig()">
+            <mat-icon>settings</mat-icon>
           </button>
         </div>
 
@@ -62,33 +60,87 @@
           </button>
         </div>
 
-        <mat-accordion class="fields-list" multi>
-          <mat-expansion-panel *ngFor="let field of fields; let i = index" [expanded]="i === 0">
-            <mat-expansion-panel-header>
-              <mat-panel-title>{{ field.name || ('New field ' + (i + 1)) }}</mat-panel-title>
-              <mat-panel-description>{{ field.type }}</mat-panel-description>
-            </mat-expansion-panel-header>
-            <app-field-item
-              [field]="field"
-              [index]="i"
-              [totalFields]="fields.length"
-              [fieldTypes]="fieldTypes"
-              [canDelete]="i > 0"
-              [canMoveUp]="i > 1"
-              [canMoveDown]="i > 0 && i < fields.length - 1"
-              [primaryLocked]="primarySelected && !field.primaryKey"
-              [submitted]="submitted"
-              (fieldChange)="onFieldChange($event)"
-              (fieldNameChange)="onFieldNameChange($event)"
-              (fieldTypeChange)="onFieldTypeChange($event)"
-              (primaryChange)="onPrimaryChange($event)"
-              (deleteField)="removeField(i)"
-              (moveUp)="moveFieldUp(i)"
-              (moveDown)="moveFieldDown(i)">
-            </app-field-item>
-          </mat-expansion-panel>
-        </mat-accordion>
+        <div class="fields-toolbar">
+          <app-search-sort
+            [searchConfig]="fieldSearchConfig"
+            [sortOptions]="fieldSortOptions"
+            (searchSortChange)="onFieldSearch($event)">
+          </app-search-sort>
+        </div>
+
+        <div class="fields-list">
+          <div
+            class="field-card"
+            #fieldCard
+            [attr.data-field-index]="item.index"
+            [class.has-error]="item.field.nameError"
+            *ngFor="let item of filteredFieldList; let visibleIndex = index; trackBy: trackField">
+            <div class="field-card-header">
+              <div class="field-card-title">
+                <span class="field-name">
+                  <mat-icon *ngIf="item.field.primaryKey" class="key-icon" fontIcon="key"></mat-icon>
+                  {{ item.field.name || ('New field ' + (item.index + 1)) }}
+                </span>
+                <span class="field-type-tag">{{ item.field.type }}</span>
+              </div>
+              <div class="field-card-actions">
+                <button mat-icon-button type="button" aria-label="Configure Field" (click)="openFieldConfig(item.index)">
+                  <mat-icon>settings</mat-icon>
+                </button>
+                <button mat-icon-button type="button" aria-label="Delete field" (click)="removeField(item.index)" [disabled]="item.index === 0">
+                  <mat-icon>delete</mat-icon>
+                </button>
+                <button mat-icon-button type="button" aria-label="Move field up" (click)="moveFieldUp(item.index)" [disabled]="visibleIndex === 0">
+                  <mat-icon>keyboard_arrow_up</mat-icon>
+                </button>
+                <button mat-icon-button type="button" aria-label="Move field down" (click)="moveFieldDown(item.index)" [disabled]="visibleIndex === filteredFieldList.length - 1">
+                  <mat-icon>keyboard_arrow_down</mat-icon>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </form>
+
+  <app-configure-entity
+    [isOpen]="showEntityConfigModal"
+    [useLombok]="useLombok"
+    [lombokSettings]="lombokSettings"
+    [generalSettings]="generalSettings"
+    (save)="onEntityConfigSave($event)"
+    (cancel)="onEntityConfigCancel()">
+  </app-configure-entity>
+
+   <app-modal
+    [isOpen]="showFieldConfigModal"
+    [title]="'Configure Field'"
+    [size]="'large'"
+    (close)="closeFieldConfig()">
+    <ng-container *ngIf="fieldConfigIndex !== null">
+          <app-field-item
+            [field]="fields[fieldConfigIndex]"
+            [index]="fieldConfigIndex"
+            [totalFields]="fields.length"
+        [fieldTypes]="fieldTypes"
+        [readonlyName]="fieldConfigIndex === 0"
+        [canDelete]="fieldConfigIndex > 0"
+        [canMoveUp]="fieldConfigIndex > 1"
+        [canMoveDown]="fieldConfigIndex > 0 && fieldConfigIndex < fields.length - 1"
+        [primaryLocked]="primarySelected && !fields[fieldConfigIndex].primaryKey"
+        [submitted]="submitted"
+        (fieldChange)="onFieldChange($event)"
+        (fieldNameChange)="onFieldNameChange($event)"
+        (fieldTypeChange)="onFieldTypeChange($event)"
+        (primaryChange)="onPrimaryChange($event)"
+        (deleteField)="removeField(fieldConfigIndex)"
+        (moveUp)="moveFieldUp(fieldConfigIndex)"
+        (moveDown)="moveFieldDown(fieldConfigIndex)">
+      </app-field-item>
+    </ng-container>
+    <div modal-footer>
+      <button mat-raised-button type="button" (click)="closeFieldConfig()">Close</button>
+    </div>
+  </app-modal>
 </div>

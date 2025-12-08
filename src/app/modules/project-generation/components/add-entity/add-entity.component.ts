@@ -7,14 +7,20 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatSelectModule } from '@angular/material/select';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
-import { MatExpansionModule } from '@angular/material/expansion';
+import { ModalComponent } from '../../../../components/modal/modal.component';
+import { SearchSortComponent, SearchSortEvent, SearchConfig, SortOption } from '../../../../components/search-sort/search-sort.component';
 import { FieldItemComponent, Field } from '../field-item/field-item.component';
+import { ConfigureEntityComponent } from '../configure-entity/configure-entity.component';
+import { GeneralSettings, LombokSettings } from './entity-settings.model';
 
-interface Entity {
+export interface Entity {
   name: string;
   mappedSuperclass: boolean;
   addRestEndpoints: boolean;
   fields: Field[];
+  useLombok?: boolean;
+  lombokSettings?: LombokSettings;
+  generalSettings?: GeneralSettings;
 }
 
 @Component({
@@ -29,7 +35,9 @@ interface Entity {
     MatSelectModule,
     MatButtonModule,
     MatIconModule,
-    MatExpansionModule,
+    ConfigureEntityComponent,
+    ModalComponent,
+    SearchSortComponent,
     FieldItemComponent
   ],
   templateUrl: './add-entity.component.html',
@@ -45,20 +53,39 @@ export class AddEntityComponent implements OnChanges {
   @ViewChild('entityNameModel') entityNameModel?: NgModel;
   @ViewChild('entityForm') entityForm?: NgForm;
   @ViewChildren(FieldItemComponent) fieldItems?: QueryList<FieldItemComponent>;
+  @ViewChildren('fieldCard') fieldCards?: QueryList<ElementRef<HTMLDivElement>>;
 
   entityName = '';
   mappedSuperclass = false;
   addRestEndpoints = false;
   nameError = '';
   submitted = false;
+  fieldSearchConfig: SearchConfig = {
+    placeholder: 'Search fields...',
+    properties: ['name', 'type']
+  };
+  fieldSearchTerm = '';
+  fieldSortOptions: SortOption[] = [
+    { label: 'Field name', property: 'name', direction: 'asc' },
+    { label: 'Field name', property: 'name', direction: 'desc' },
+    { label: 'Field type', property: 'type', direction: 'asc' },
+    { label: 'Field type', property: 'type', direction: 'desc' }
+  ];
+  fieldSortSelection: SortOption | null = null;
+  showFieldConfigModal = false;
+  fieldConfigIndex: number | null = null;
+  filteredFieldList: Array<{ field: Field; index: number }> = [];
+  showEntityConfigModal = false;
+  useLombok = false;
+  lombokSettings: LombokSettings = this.createDefaultLombokSettings();
+  generalSettings: GeneralSettings = this.createDefaultGeneralSettings();
 
   fields: Field[] = [
     {
       type: 'Long',
       name: 'id',
       primaryKey: true,
-      required: false,
-      unique: false
+      validations: [{ key: '', searchTerm: '' }]
     }
   ];
 
@@ -78,6 +105,23 @@ export class AddEntityComponent implements OnChanges {
     'Enum',
     'byte[]'
   ];
+
+  private createDefaultLombokSettings(): LombokSettings {
+    return {
+      generateBuilder: false,
+      generateToString: false,
+      generateEqualsAndHashCode: false
+    };
+  }
+
+  private createDefaultGeneralSettings(): GeneralSettings {
+    return {
+      softDelete: false,
+      auditing: false,
+      makeImmutable: false,
+      naturalIdCache: false
+    };
+  }
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['isOpen']) {
@@ -102,16 +146,29 @@ export class AddEntityComponent implements OnChanges {
     this.mappedSuperclass = entity.mappedSuperclass;
     this.addRestEndpoints = entity.addRestEndpoints;
     this.fields = JSON.parse(JSON.stringify(entity.fields));
+    this.useLombok = !!entity.useLombok;
+    this.lombokSettings = {
+      ...this.createDefaultLombokSettings(),
+      ...(entity.lombokSettings || {})
+    };
+    this.generalSettings = {
+      ...this.createDefaultGeneralSettings(),
+      ...(entity.generalSettings || {})
+    };
     this.nameError = '';
     this.submitted = false;
     this.setEntityNameError('');
     this.enforceSinglePrimary();
+    this.updateFilteredFields();
   }
 
   resetForm(): void {
     this.entityName = '';
     this.mappedSuperclass = false;
     this.addRestEndpoints = false;
+    this.useLombok = false;
+    this.lombokSettings = this.createDefaultLombokSettings();
+    this.generalSettings = this.createDefaultGeneralSettings();
     this.nameError = '';
     this.submitted = false;
     this.fields = [
@@ -119,25 +176,27 @@ export class AddEntityComponent implements OnChanges {
         type: 'Long',
         name: 'id',
         primaryKey: true,
-        required: false,
-        unique: false
+        validations: [{ key: '', searchTerm: '' }]
       }
     ];
     this.tempFields = [];
     this.entityForm?.resetForm();
     this.enforceSinglePrimary();
+    this.updateFilteredFields();
   }
 
   addField(): void {
-    this.fields.push({
+    const newField: Field = {
       type: 'String',
       name: '',
       maxLength: 255,
-      required: false,
-      unique: false,
       primaryKey: false,
-      nameError: ''
-    });
+      nameError: '',
+      validations: [{ key: '', searchTerm: '' }]
+    };
+    this.fields.push(newField);
+    const newIndex = this.fields.length - 1;
+    this.openFieldConfig(newIndex);
   }
 
   onFieldNameChange(field: Field): void {
@@ -148,6 +207,8 @@ export class AddEntityComponent implements OnChanges {
         this.fieldItems?.toArray()[index]?.setCustomError(null);
       }
     }
+    this.updateFilteredFields();
+    this.validateDuplicateFieldNames();
   }
 
   onEntityNameChange(): void {
@@ -159,6 +220,7 @@ export class AddEntityComponent implements OnChanges {
   removeField(index: number): void {
     if (index > 0) {
       this.fields.splice(index, 1);
+      this.updateFilteredFields();
     }
   }
 
@@ -170,23 +232,28 @@ export class AddEntityComponent implements OnChanges {
     } else {
       delete field.maxLength;
     }
+    this.updateFilteredFields();
   }
 
   validateEntityName(): boolean {
-    if (!this.entityName.trim()) {
+    const candidateName = (this.entityName || '').trim();
+    if (!candidateName) {
       this.setEntityNameError('Entity name is required.');
       this.focusEntityName();
       return false;
     }
 
-    const duplicateEntity = this.existingEntities.find(
-      (entity, index) => {
-        if (this.editEntity && this.existingEntities[index] === this.editEntity) {
-          return false;
-        }
-        return entity.name.toLowerCase() === this.entityName.trim().toLowerCase();
+    const editingName = (this.editEntity?.name || '').trim().toLowerCase();
+    const duplicateEntity = this.existingEntities.find(entity => {
+      const name = (entity?.name || '').trim().toLowerCase();
+      if (!name) {
+        return false;
       }
-    );
+      if (this.editEntity && name === editingName) {
+        return false;
+      }
+      return name === candidateName.toLowerCase();
+    });
 
     if (duplicateEntity) {
       this.setEntityNameError(`Entity "${this.entityName}" already exists.`);
@@ -236,6 +303,7 @@ export class AddEntityComponent implements OnChanges {
       }
     }
     if (firstInvalidIndex !== null) {
+      this.scrollToFieldCard(firstInvalidIndex);
       this.focusFieldName(firstInvalidIndex);
     }
     return isValid;
@@ -246,6 +314,7 @@ export class AddEntityComponent implements OnChanges {
       const temp = this.fields[index];
       this.fields[index] = this.fields[index - 1];
       this.fields[index - 1] = temp;
+      this.updateFilteredFields();
     }
   }
 
@@ -254,6 +323,7 @@ export class AddEntityComponent implements OnChanges {
       const temp = this.fields[index];
       this.fields[index] = this.fields[index + 1];
       this.fields[index + 1] = temp;
+      this.updateFilteredFields();
     }
   }
 
@@ -275,7 +345,10 @@ export class AddEntityComponent implements OnChanges {
       name: this.entityName,
       mappedSuperclass: this.mappedSuperclass,
       addRestEndpoints: this.addRestEndpoints,
-      fields: JSON.parse(JSON.stringify(this.fields))
+      fields: JSON.parse(JSON.stringify(this.fields)),
+      useLombok: this.useLombok,
+      lombokSettings: { ...this.lombokSettings },
+      generalSettings: { ...this.generalSettings }
     };
 
     this.save.emit(entity);
@@ -338,10 +411,7 @@ export class AddEntityComponent implements OnChanges {
     if (selectedIndex === -1) {
       return;
     }
-
     if (field.primaryKey) {
-      field.required = false;
-      field.unique = false;
       this.enforceSinglePrimary(selectedIndex);
     }
   }
@@ -351,6 +421,8 @@ export class AddEntityComponent implements OnChanges {
     if (index > -1 && field.nameError) {
       this.setFieldError(index, '');
     }
+    this.updateFilteredFields();
+    this.validateDuplicateFieldNames();
   }
 
   private enforceSinglePrimary(preferredIndex?: number): void {
@@ -361,9 +433,133 @@ export class AddEntityComponent implements OnChanges {
     this.fields.forEach((f, idx) => {
       f.primaryKey = idx === primaryIndex;
     });
+    this.updateFilteredFields();
   }
 
   get primarySelected(): boolean {
     return this.fields.some(f => f.primaryKey);
+  }
+
+  openEntityConfig(): void {
+    this.showEntityConfigModal = true;
+  }
+
+  onEntityConfigSave(event: { useLombok: boolean; lombokSettings: LombokSettings; generalSettings: GeneralSettings }): void {
+    this.useLombok = event.useLombok;
+    this.lombokSettings = { ...event.lombokSettings };
+    this.generalSettings = { ...event.generalSettings };
+    this.showEntityConfigModal = false;
+  }
+
+  onEntityConfigCancel(): void {
+    this.showEntityConfigModal = false;
+  }
+
+  openFieldConfig(index: number): void {
+    this.fieldConfigIndex = index;
+    this.showFieldConfigModal = true;
+  }
+
+  closeFieldConfig(): void {
+    if (this.fieldConfigIndex !== null) {
+      const field = this.fields[this.fieldConfigIndex];
+      this.trimEmptyValidations(field);
+      if (!this.isFieldValid(field)) {
+        this.removeField(this.fieldConfigIndex);
+      }
+    }
+    this.fieldConfigIndex = null;
+    this.showFieldConfigModal = false;
+  }
+
+  onFieldSearch(event: SearchSortEvent): void {
+    this.fieldSearchTerm = (event.searchTerm || '').toLowerCase();
+    this.fieldSortSelection = event.sortOption;
+    this.updateFilteredFields();
+  }
+
+  trackField(_: number, item: { field: Field; index: number }): string {
+    return `${item.index}-${item.field.name}-${item.field.type}`;
+  }
+
+  private updateFilteredFields(): void {
+    const term = this.fieldSearchTerm?.trim().toLowerCase();
+    const list = this.fields.map((field, index) => ({ field, index }));
+    if (!term) {
+      this.filteredFieldList = this.sortFields(list);
+      return;
+    }
+    const filtered = list.filter(({ field }) => {
+      return (
+        (field.name && field.name.toLowerCase().includes(term)) ||
+        (field.type && field.type.toLowerCase().includes(term))
+      );
+    });
+    this.filteredFieldList = this.sortFields(filtered);
+  }
+
+  private sortFields(list: Array<{ field: Field; index: number }>): Array<{ field: Field; index: number }> {
+    if (!this.fieldSortSelection) {
+      return list;
+    }
+    const { property, direction } = this.fieldSortSelection;
+    return [...list].sort((a, b) => {
+      const aVal = (a.field as any)[property] || '';
+      const bVal = (b.field as any)[property] || '';
+      const compare = String(aVal).localeCompare(String(bVal));
+      return direction === 'asc' ? compare : -compare;
+    });
+  }
+
+  private trimEmptyValidations(field: Field | undefined): void {
+    if (!field || !field.validations) {
+      return;
+    }
+    field.validations = field.validations.filter(v => !!(v.key && v.key.trim()));
+  }
+
+  private isFieldValid(field: Field | undefined): boolean {
+    if (!field) return false;
+    const hasName = !!(field.name && field.name.trim());
+    const noError = !field.nameError;
+    return hasName && noError;
+  }
+
+  private validateDuplicateFieldNames(): void {
+    const nameMap = new Map<string, number[]>();
+    this.fields.forEach((field, idx) => {
+      const key = (field.name || '').trim().toLowerCase();
+      if (!key) {
+        return;
+      }
+      const list = nameMap.get(key) || [];
+      list.push(idx);
+      nameMap.set(key, list);
+    });
+
+    // Clear existing duplicate errors first
+    this.fields.forEach((field, idx) => {
+      if (field.nameError && field.nameError.includes('already exists in this entity.')) {
+        this.setFieldError(idx, '');
+      }
+    });
+
+    nameMap.forEach(indices => {
+      if (indices.length > 1) {
+        indices.forEach(i => {
+          const f = this.fields[i];
+          this.setFieldError(i, `Field "${f.name}" already exists in this entity.`);
+        });
+      }
+    });
+  }
+
+  private scrollToFieldCard(fieldIndex: number): void {
+    const card = this.fieldCards?.find(
+      el => el.nativeElement.getAttribute('data-field-index') === String(fieldIndex)
+    );
+    if (card) {
+      card.nativeElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
   }
 }

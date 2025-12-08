@@ -81,6 +81,14 @@
               <mat-label>Project name</mat-label>
               <input matInput [(ngModel)]="projectSettings.projectName" placeholder="my-app">
             </mat-form-field>
+            <mat-form-field appearance="fill" class="full-width">
+              <mat-label>Project description</mat-label>
+              <textarea
+                matInput
+                rows="3"
+                [(ngModel)]="projectSettings.projectDescription"
+                placeholder="Brief summary of the project"></textarea>
+            </mat-form-field>
 
             <div class="form-row">
               <label class="field-label">Build type</label>
@@ -98,7 +106,7 @@
               </mat-radio-group>
             </div>
 
-            <mat-form-field appearance="fill" class="full-width">
+            <!-- <mat-form-field appearance="fill" class="full-width">
               <mat-label>Frontend</mat-label>
               <mat-select [(ngModel)]="projectSettings.frontend">
                 <mat-option *ngFor="let option of frontendOptions" [value]="option.toLowerCase()">
@@ -106,11 +114,12 @@
                 </mat-option>
               </mat-select>
               <mat-icon matSuffix matTooltip="Select a frontend framework for your project">info</mat-icon>
-            </mat-form-field>
+            </mat-form-field> -->
+            
           </div>
         </mat-expansion-panel>
 
-        <mat-expansion-panel>
+        <!-- <mat-expansion-panel>
           <mat-expansion-panel-header>
             <mat-panel-title>
               Database settings
@@ -142,15 +151,8 @@
                 <mat-icon class="inline-icon" matTooltip="Automatically pluralize table names">info</mat-icon>
               </mat-checkbox>
             </div>
-
-            <div class="form-row">
-              <mat-checkbox [(ngModel)]="databaseSettings.addDateCreatedLastUpdated">
-                Add dateCreated/lastUpdated to entities
-                <mat-icon class="inline-icon" matTooltip="Add timestamp fields to all entities">info</mat-icon>
-              </mat-checkbox>
-            </div>
           </div>
-        </mat-expansion-panel>
+        </mat-expansion-panel> -->
 
         <mat-expansion-panel>
           <mat-expansion-panel-header>
@@ -175,7 +177,6 @@
               <mat-radio-group [(ngModel)]="developerPreferences.packages" class="radio-group-horizontal">
                 <mat-radio-button value="technical">Technical</mat-radio-button>
                 <mat-radio-button value="domain">Domain driven</mat-radio-button>
-                <mat-radio-button value="mixed">Mixed</mat-radio-button>
               </mat-radio-group>
             </div>
 
@@ -202,14 +203,14 @@
               </mat-radio-group>
             </div>
 
-            <mat-form-field appearance="fill" class="full-width">
+            <!-- <mat-form-field appearance="fill" class="full-width">
               <mat-label>Deployment</mat-label>
               <mat-select [(ngModel)]="developerPreferences.deployment">
                 <mat-option *ngFor="let option of deploymentOptions" [value]="option">
                   {{ option }}
                 </mat-option>
               </mat-select>
-            </mat-form-field>
+            </mat-form-field> -->
           </div>
         </mat-expansion-panel>
 

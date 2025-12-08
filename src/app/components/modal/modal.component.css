@@ -108,7 +108,9 @@
 
 .modal-body {
   padding: 32px;
-  overflow-y: auto;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
   flex: 1;
   min-height: 0;
 }
@@ -125,6 +127,7 @@
   bottom: 0;
   z-index: 10;
 }
+
 
 @media (max-width: 768px) {
   .modal-backdrop {
@@ -191,7 +194,6 @@
   .modal-container {
     border-radius: 8px;
     max-height: 90vh;
-    height: 90vh;
     max-width: 97vw;
   }
 

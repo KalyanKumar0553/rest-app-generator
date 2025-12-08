@@ -26,7 +26,7 @@
         </button>
         <h2 class="panel-title">Entities</h2>
       </div>
-      <button class="add-btn" (click)="addEntity(); $event.stopPropagation()" aria-label="Add entity">
+      <button class="add-btn" (click)="addEntity(); $event.stopPropagation()" aria-label="Add Entity">
         <i class="bi bi-plus-circle"></i>
       </button>
     </div>
@@ -92,6 +92,7 @@
             <span class="relation-type-badge">{{ relation.relationType }}</span>
             <span class="relation-field">Field: {{ relation.sourceFieldName }}</span>
             <span class="relation-required" *ngIf="relation.required">Required</span>
+            <span class="relation-required" *ngIf="relation.unidirectional">Unidirectional</span>
           </div>
         </div>
       </div>
@@ -115,8 +116,8 @@
 
 <app-modal
   [isOpen]="showAddEntityModal"
-  [title]="editingEntity ? 'Edit entity' : 'Add entity'"
-  [size]="'xlarge'"
+  [title]="editingEntity ? 'Edit Entity' : 'Add Entity'"
+  [size]="'medium'"
   (close)="closeModal()">
   <app-add-entity
     [editEntity]="editingEntity"
@@ -126,8 +127,8 @@
     (cancel)="onEntityCancel()">
   </app-add-entity>
   <div modal-footer>
-    <button mat-raised-button type="button" (click)="onEntityCancel()">Cancel</button>
-    <button mat-raised-button color="primary" type="button" (click)="saveEntity()">Save</button>
+    <button mat-raised-button type="button" class="modal-footer-btn" (click)="onEntityCancel()">Cancel</button>
+    <button mat-raised-button color="primary" class="modal-footer-btn" type="button" (click)="saveEntity()">Save</button>
   </div>
 </app-modal>
 
@@ -156,7 +157,7 @@
     (cancel)="onRelationCancel()">
   </app-add-relation>
   <div modal-footer>
-    <button mat-raised-button type="button" (click)="onRelationCancel()">Cancel</button>
-    <button mat-raised-button color="primary" type="button" (click)="saveRelation()">Save</button>
+    <button mat-raised-button type="button"  class="modal-footer-btn" (click)="onRelationCancel()">Cancel</button>
+    <button mat-raised-button color="primary"  class="modal-footer-btn" type="button" (click)="saveRelation()">Save</button>
   </div>
 </app-modal>

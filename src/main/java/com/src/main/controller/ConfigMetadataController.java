@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.src.main.dto.ConfigPropertyResponseDTO;
 import com.src.main.dto.ConfigPropertySaveRequestDTO;
+import com.src.main.dto.DependencyResponseDTO;
 import com.src.main.service.ConfigMetadataService;
 
 import lombok.AllArgsConstructor;
@@ -39,10 +40,18 @@ public class ConfigMetadataController {
 		return ResponseEntity.ok(configMetadataService.getPropertiesByCategory(category));
 	}
 	
+	
+	@GetMapping("/dependencies")
+	public ResponseEntity<List<DependencyResponseDTO>> getDependencies() {
+		return ResponseEntity.ok(configMetadataService.getDependencies());
+	}
+	
 	@PostMapping("/reload")
     @PreAuthorize("hasRole('CONFIG_ADMIN')")
     public ResponseEntity<Void> reloadDefaults() {
 		configMetadataService.reloadDefaults();
         return ResponseEntity.noContent().build();
     }
+	
+	
 }

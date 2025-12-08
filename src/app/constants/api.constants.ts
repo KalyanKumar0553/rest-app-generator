@@ -23,6 +23,9 @@ export const API_ENDPOINTS = {
     PROFILE: '/api/user/profile',
     UPDATE_PROFILE: '/api/user/profile/update'
   },
+  CONFIG: {
+    DEPENDENCIES: '/api/config/dependencies'
+  },
   PROJECT: {
     LIST: '/api/user/projects',
     CREATE: '/api/user/projects/create',

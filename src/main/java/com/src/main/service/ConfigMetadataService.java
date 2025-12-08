@@ -1,5 +1,8 @@
 package com.src.main.service;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Arrays;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Objects;
@@ -13,12 +16,15 @@ import org.springframework.jdbc.datasource.init.ResourceDatabasePopulator;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.src.main.dto.ConfigPropertyResponseDTO;
 import com.src.main.dto.ConfigPropertySaveRequestDTO;
 import com.src.main.dto.ConfigPropertyValueDTO;
+import com.src.main.dto.DependencyResponseDTO;
 import com.src.main.model.ConfigProperty;
 import com.src.main.model.ConfigPropertyValue;
 import com.src.main.repository.ConfigPropertyRepository;
+import com.src.main.repository.ConfigPropertyValueRepository;
 
 import lombok.AllArgsConstructor;
 
@@ -27,7 +33,12 @@ import lombok.AllArgsConstructor;
 public class ConfigMetadataService {
 
 	private final ConfigPropertyRepository configPropertyRepository;
+	
+	private final ConfigPropertyValueRepository configPropertyValueRepository;
+	
 	private final DataSource dataSource;
+	
+	private final ObjectMapper objectMapper;
 
 	@Transactional
 	public ConfigPropertyResponseDTO saveOrUpdateProperty(ConfigPropertySaveRequestDTO request) {
@@ -97,9 +108,21 @@ public class ConfigMetadataService {
 	@Transactional
     public void reloadDefaults() {
         configPropertyRepository.deleteAllInBatch();
+        configPropertyValueRepository.deleteAllInBatch();
         Resource resource = new ClassPathResource("db/data/default-config-data.sql");
         ResourceDatabasePopulator populator = new ResourceDatabasePopulator(resource);
         populator.execute(dataSource);
     }
+
+	@Transactional(readOnly = true)
+	public List<DependencyResponseDTO> getDependencies() {
+		Resource resource = new ClassPathResource("db/data/dependencies.json");
+		try (InputStream inputStream = resource.getInputStream()) {
+			DependencyResponseDTO[] dependencies = objectMapper.readValue(inputStream, DependencyResponseDTO[].class);
+			return Arrays.asList(dependencies);
+		} catch (IOException ex) {
+			throw new IllegalStateException("Failed to load dependencies metadata", ex);
+		}
+	}
 
 }

@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
+import { MatAutocompleteModule } from '@angular/material/autocomplete';
 import { MatButtonModule } from '@angular/material/button';
 
 export interface Relation {
@@ -13,11 +14,12 @@ export interface Relation {
   targetFieldName?: string;
   relationType: string;
   required?: boolean;
+  unidirectional?: boolean;
 }
 
 interface Entity {
   name: string;
-  fields?: any[];
+  fields?: Array<{ name: string }>;
 }
 
 @Component({
@@ -29,6 +31,7 @@ interface Entity {
     MatFormFieldModule,
     MatInputModule,
     MatSelectModule,
+    MatAutocompleteModule,
     MatButtonModule
   ],
   templateUrl: './add-relation.component.html',
@@ -48,6 +51,7 @@ export class AddRelationComponent implements OnChanges {
   targetFieldName = '';
   relationType = '';
   required = false;
+  unidirectional = false;
 
   sourceEntityError = '';
   sourceFieldNameError = '';
@@ -60,6 +64,16 @@ export class AddRelationComponent implements OnChanges {
     'ManyToOne',
     'ManyToMany'
   ];
+
+  get sourceEntityFields(): Array<{ name: string }> {
+    const entity = this.entities.find(e => e.name === this.sourceEntity);
+    return entity?.fields || [];
+  }
+
+  get targetEntityFields(): Array<{ name: string }> {
+    const entity = this.entities.find(e => e.name === this.targetEntity);
+    return entity?.fields || [];
+  }
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['isOpen']) {
@@ -84,6 +98,7 @@ export class AddRelationComponent implements OnChanges {
     this.targetFieldName = relation.targetFieldName || '';
     this.relationType = relation.relationType;
     this.required = relation.required || false;
+    this.unidirectional = !!relation.unidirectional;
     this.clearErrors();
   }
 
@@ -94,6 +109,7 @@ export class AddRelationComponent implements OnChanges {
     this.targetFieldName = '';
     this.relationType = '';
     this.required = false;
+    this.unidirectional = false;
     this.clearErrors();
   }
 
@@ -189,7 +205,8 @@ export class AddRelationComponent implements OnChanges {
       targetEntity: this.targetEntity,
       targetFieldName: this.targetFieldName || undefined,
       relationType: this.relationType,
-      required: this.required
+      required: this.required,
+      unidirectional: this.unidirectional
     };
 
     this.save.emit(relation);

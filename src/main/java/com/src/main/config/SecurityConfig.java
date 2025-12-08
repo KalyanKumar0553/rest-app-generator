@@ -55,8 +55,12 @@ public class SecurityConfig {private static final String LOGOUT_URL = "/logout";
 						.requestMatchers("/assets/**", "/*.css", "/*.js", "/canvaskit/**", "/icons/*.png",
 								"/icons/*.jpg", "/index.html", "/*.json", "/*.png", "/*.jpg", "/", "/*.woff2",
 								LOGOUT_URL, "/actuator/health")
-						.permitAll().requestMatchers("/api/auth/**").permitAll().requestMatchers("/api/user/**")
-						.hasRole("USER").requestMatchers("/api/admin/**").hasRole("ADMIN").anyRequest().authenticated())
+						.permitAll()
+						.requestMatchers("/api/auth/**").permitAll()
+						.requestMatchers("/api/config/**").permitAll()
+						.requestMatchers("/api/user/**").hasRole("USER")
+						.requestMatchers("/api/admin/**").hasRole("ADMIN")
+						.anyRequest().authenticated())
 
 				.logout(logout -> logout.logoutUrl(LOGOUT_URL).logoutSuccessUrl(LOGOUT_SUCCESS_URL)
 						.deleteCookies("JSESSIONID").invalidateHttpSession(true).clearAuthentication(true))

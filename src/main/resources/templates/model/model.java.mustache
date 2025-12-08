@@ -5,48 +5,64 @@ import {{.}};
 {{/imports}}
 
 {{#classAnnotations}}
-{{{.}}}
+{{.}}
 {{/classAnnotations}}
-public class {{className}}{{#implements}} implements {{.}}{{/implements}} {
+public class {{className}} implements {{implements}} {
 
-    private static final long serialVersionUID = 1L;
+    {{! ----- ID field ----- }}
+    {{#idBlock.annotations}}
+    {{.}}
+    {{/idBlock.annotations}}
+    private {{idBlock.type}} {{idBlock.name}};
 
-    {{!-- ===================== ID BLOCK ===================== --}}
-    {{#idBlock}}
-    {{#annotations}}
-    {{{.}}}
-    {{/annotations}}
-    private {{{type}}} {{name}};
-    {{/idBlock}}
-
-    {{!-- ===================== REGULAR FIELDS ===================== --}}
+    {{! ----- Scalar fields ----- }}
     {{#fields}}
     {{#annotations}}
-    {{{.}}}
+    {{.}}
     {{/annotations}}
-    private {{{type}}} {{name}};
+    private {{type}} {{name}};
     {{/fields}}
 
-    {{!-- ===================== RELATION FIELDS ===================== --}}
+    {{! ----- Relation fields ----- }}
     {{#relations}}
     {{#annotations}}
-    {{{.}}}
+    {{.}}
     {{/annotations}}
-    private {{{declarationType}}} {{name}};
+    private {{declarationType}} {{name}};
     {{/relations}}
 
-    {{!-- ===================== AUDITING FIELDS ===================== --}}
-    {{#auditing.enabled}}
-    @CreatedDate
-    private OffsetDateTime createdAt;
+    {{^lombokEnabled}}
+    // No Lombok: generate constructor, getters and setters
 
-    @LastModifiedDate
-    private OffsetDateTime updatedAt;
-    {{/auditing.enabled}}
+    public {{className}}() {
+    }
 
-    {{!-- ===================== SOFT DELETE FIELDS ===================== --}}
-    {{#softDelete.enabled}}
-    private Boolean deleted = false;
-    private OffsetDateTime deletedAt;
-    {{/softDelete.enabled}}
+    public {{idBlock.type}} get{{idBlock.capitalizedName}}() {
+        return {{idBlock.name}};
+    }
+
+    public void set{{idBlock.capitalizedName}}({{idBlock.type}} {{idBlock.name}}) {
+        this.{{idBlock.name}} = {{idBlock.name}};
+    }
+
+    {{#fields}}
+    public {{type}} get{{capitalizedName}}() {
+        return {{name}};
+    }
+
+    public void set{{capitalizedName}}({{type}} {{name}}) {
+        this.{{name}} = {{name}};
+    }
+    {{/fields}}
+
+    {{#relations}}
+    public {{declarationType}} get{{capitalizedName}}() {
+        return {{name}};
+    }
+
+    public void set{{capitalizedName}}({{declarationType}} {{name}}) {
+        this.{{name}} = {{name}};
+    }
+    {{/relations}}
+    {{/lombokEnabled}}
 }

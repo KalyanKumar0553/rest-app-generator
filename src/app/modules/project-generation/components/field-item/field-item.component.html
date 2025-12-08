@@ -16,6 +16,7 @@
       [name]="'fieldName' + index"
       [(ngModel)]="field.name"
       (ngModelChange)="onNameChange()"
+      [readonly]="readonlyName"
       #fieldNameInput
       #fieldNameModel="ngModel"
       placeholder="Field name"
@@ -49,16 +50,6 @@
 
     <mat-checkbox
       *ngIf="!field.primaryKey"
-      [(ngModel)]="field.required"
-      [name]="'required' + index"
-      (change)="onFieldUpdate()"
-      color="primary"
-      class="constraint-checkbox">
-      Required
-    </mat-checkbox>
-
-    <mat-checkbox
-      *ngIf="!field.primaryKey"
       [(ngModel)]="field.unique"
       [name]="'unique' + index"
       (change)="onFieldUpdate()"
@@ -68,35 +59,75 @@
     </mat-checkbox>
   </div>
 
-  <div class="field-actions">
-    <button
-      mat-icon-button
-      class="action-btn delete-btn"
-      type="button"
-      *ngIf="canDelete"
-      (click)="onDelete()"
-      aria-label="Delete field">
-      <mat-icon>delete</mat-icon>
-    </button>
-    <div class="reorder-controls" *ngIf="canDelete">
-      <button
-        mat-icon-button
-        class="action-btn reorder-btn"
-        type="button"
-        [disabled]="!canMoveUp"
-        (click)="onMoveUp()"
-        aria-label="Move field up">
-        <mat-icon>keyboard_arrow_up</mat-icon>
-      </button>
-      <button
-        mat-icon-button
-        class="action-btn reorder-btn"
-        type="button"
-        [disabled]="!canMoveDown"
-        (click)="onMoveDown()"
-        aria-label="Move field down">
-        <mat-icon>keyboard_arrow_down</mat-icon>
-      </button>
+  <div class="validation-section">
+    <div class="validation-header">
+      <span class="section-label">Validations</span>
+    </div>
+    <div class="validation-rows">
+      <div class="validation-row row align-items-center g-2" *ngFor="let validation of field.validations; let i = index">
+        <mat-form-field appearance="fill" class="validation-select col-4 col-md-4">
+          <mat-label>Validation</mat-label>
+          <input
+            matInput
+            type="text"
+            [name]="'validation' + index + '-' + i"
+            [matAutocomplete]="validationAuto"
+            [(ngModel)]="validation.searchTerm"
+            (ngModelChange)="onValidationInput(i, $event)"
+            placeholder="Select validation">
+          <mat-autocomplete [displayWith]="getValidationLabel.bind(this)" #validationAuto="matAutocomplete" (optionSelected)="onValidationSelected(i, $event.option.value)">
+            <mat-option *ngFor="let option of getAvailableValidationOptions(i)" [value]="option.value">
+              {{ option.label }}
+            </mat-option>
+          </mat-autocomplete>
+        </mat-form-field>
+        <div class="col-1 col-md-1"></div>
+        <div class="validation-extra col-5 col-md-5">
+          <ng-container [ngSwitch]="validation.key">
+            <mat-form-field *ngSwitchCase="'Length'" appearance="fill" class="extra-input">
+              <mat-label>Length</mat-label>
+              <input matInput type="number" min="0" [(ngModel)]="validation.value" (ngModelChange)="onFieldUpdate()" placeholder="Length">
+            </mat-form-field>
+            <mat-form-field *ngSwitchCase="'Min'" appearance="fill" class="extra-input">
+              <mat-label>Minimum</mat-label>
+              <input matInput type="number" [(ngModel)]="validation.value" (ngModelChange)="onFieldUpdate()" placeholder="Minimum value">
+            </mat-form-field>
+            <mat-form-field *ngSwitchCase="'Max'" appearance="fill" class="extra-input">
+              <mat-label>Maximum</mat-label>
+              <input matInput type="number" [(ngModel)]="validation.value" (ngModelChange)="onFieldUpdate()" placeholder="Maximum value">
+            </mat-form-field>
+            <mat-form-field *ngSwitchCase="'Pattern'" appearance="fill" class="extra-input">
+              <mat-label>Pattern</mat-label>
+              <input matInput type="text" [(ngModel)]="validation.value" (ngModelChange)="onFieldUpdate()" placeholder="Regex pattern">
+            </mat-form-field>
+            <div *ngSwitchCase="'Digits'" class="extra-inputs-two">
+              <mat-form-field appearance="fill" class="extra-input">
+                <mat-label>Integer</mat-label>
+                <input matInput type="number" min="0" [(ngModel)]="validation.value" (ngModelChange)="onFieldUpdate()" placeholder="Integer digits">
+              </mat-form-field>
+              <mat-form-field appearance="fill" class="extra-input">
+                <mat-label>Fractional</mat-label>
+                <input matInput type="number" min="0" [(ngModel)]="validation.secondValue" (ngModelChange)="onFieldUpdate()" placeholder="Fractional digits">
+              </mat-form-field>
+            </div>
+            <div *ngSwitchCase="'DecimalMin'" class="extra-inputs-two align-items-center">
+              <mat-form-field appearance="fill" class="extra-input">
+                <mat-label>Minimum decimal</mat-label>
+                <input matInput type="number" [(ngModel)]="validation.value" (ngModelChange)="onFieldUpdate()" placeholder="0.01">
+              </mat-form-field>
+              <mat-checkbox [(ngModel)]="validation.inclusive" (change)="onFieldUpdate()">Inclusive</mat-checkbox>
+            </div>
+          </ng-container>
+        </div>
+        <div class="validation-actions col-2 col-md-2">
+          <button mat-icon-button type="button" aria-label="Add validation row" (click)="addValidationRow(i)">
+            <mat-icon>add</mat-icon>
+          </button>
+          <button mat-icon-button type="button" aria-label="Remove validation row" (click)="removeValidationRow(i)">
+            <mat-icon>remove</mat-icon>
+          </button>
+        </div>
+      </div>
     </div>
   </div>
 </div>

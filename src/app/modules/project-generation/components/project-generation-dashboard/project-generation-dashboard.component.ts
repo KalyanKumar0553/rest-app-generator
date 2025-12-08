@@ -3,6 +3,8 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, ActivatedRoute } from '@angular/router';
 import { Subject, takeUntil } from 'rxjs';
+import { catchError } from 'rxjs/operators';
+import { of } from 'rxjs';
 import { MatExpansionModule } from '@angular/material/expansion';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
@@ -18,6 +20,7 @@ import { ConfirmationModalComponent } from '../../../../components/confirmation-
 import { EntitiesComponent } from '../entities/entities.component';
 import { SidenavComponent, NavItem } from '../../../../components/shared/sidenav/sidenav.component';
 import { AuthService } from '../../../../services/auth.service';
+import { DependencyService, DependencyDTO } from '../../../../services/dependency.service';
 import { ToastService } from '../../../../services/toast.service';
 
 interface ProjectSettings {
@@ -37,7 +40,7 @@ interface DatabaseSettings {
 
 interface DeveloperPreferences {
   applFormat: 'yaml' | 'properties';
-  packages: 'technical' | 'domain' | 'mixed';
+  packages: 'technical' | 'domain';
   enableOpenAPI: boolean;
   useDockerCompose: boolean;
   javaVersion: string;
@@ -156,6 +159,7 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
     'swagger-ui',
     'openapi'
   ];
+  private defaultDependencies = [...this.availableDependencies];
 
   frontendOptions = ['None', 'React', 'Vue', 'Angular'];
   databaseOptions = ['PostgreSQL', 'MySQL', 'H2', 'MongoDB'];
@@ -167,11 +171,13 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
     private router: Router,
     private route: ActivatedRoute,
     private authService: AuthService,
+    private dependencyService: DependencyService,
     private toastService: ToastService
   ) {}
 
   ngOnInit(): void {
     this.isLoggedIn = this.authService.isLoggedIn();
+    this.loadDependencies();
 
     this.route.queryParams
       .pipe(takeUntil(this.destroy$))
@@ -314,6 +320,23 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
 
   closeInfoBanner(): void {
     this.showInfoBanner = false;
+  }
+
+  private loadDependencies(): void {
+    this.dependencyService
+      .getDependencies()
+      .pipe(
+        takeUntil(this.destroy$),
+        catchError(err => {
+          console.error('Failed to load dependencies', err);
+          this.toastService.error('Failed to load dependencies, using defaults.');
+          return of<DependencyDTO[]>([]);
+        })
+      )
+      .subscribe(deps => {
+        const resolved = (deps || []).map(d => d.id).filter(Boolean);
+        this.availableDependencies = resolved.length ? resolved : this.defaultDependencies;
+      });
   }
 
   filterDependencies(value: string): void {

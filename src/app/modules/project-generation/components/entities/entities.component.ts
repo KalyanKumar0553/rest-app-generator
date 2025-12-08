@@ -1,17 +1,13 @@
 import { Component, Input, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ModalComponent } from '../../../../components/modal/modal.component';
-import { AddEntityComponent } from '../add-entity/add-entity.component';
+import { AddEntityComponent, Entity } from '../add-entity/add-entity.component';
 import { AddRelationComponent, Relation } from '../add-relation/add-relation.component';
 import { ConfirmationModalComponent, ModalButton } from '../../../../components/confirmation-modal/confirmation-modal.component';
 import { EntityDetailViewComponent } from '../entity-detail-view/entity-detail-view.component';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
-
-interface Entity {
-  name: string;
-  fields?: any[];
-}
+import { ToastService } from '../../../../services/toast.service';
 
 
 @Component({
@@ -26,6 +22,7 @@ export class EntitiesComponent {
   @Input() relations: Relation[] = [];
   @ViewChild(AddEntityComponent) addEntityComponent!: AddEntityComponent;
   @ViewChild(AddRelationComponent) addRelationComponent!: AddRelationComponent;
+  constructor(private toastService: ToastService) {}
 
   showInfoBanner = true;
 
@@ -134,6 +131,10 @@ export class EntitiesComponent {
   }
 
   addRelation(): void {
+    if (!this.entities || this.entities.length === 0) {
+      this.toastService.error('No Entities Found. Please add atleast one entity.');
+      return;
+    }
     this.editingRelation = null;
     this.editingRelationIndex = null;
     this.showAddRelationModal = true;

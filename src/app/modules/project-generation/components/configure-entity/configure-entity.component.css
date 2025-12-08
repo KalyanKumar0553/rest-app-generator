@@ -1,0 +1,29 @@
+.entity-settings-modal {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.settings-accordion {
+  margin-top: 8px;
+}
+
+.settings-accordion .mat-expansion-panel {
+  margin-bottom: 12px;
+}
+
+.settings-checkbox-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 8px 16px;
+  padding: 8px 0 4px;
+}
+
+.truncate-checkbox .mdc-label,
+.truncate-label {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: inline-block;
+  max-width: 100%;
+}

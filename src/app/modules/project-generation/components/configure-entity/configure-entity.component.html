@@ -1,0 +1,44 @@
+<app-modal
+  [isOpen]="isOpen"
+  [title]="'Configure Entity'"
+  [size]="'medium'"
+  (close)="onCancel()">
+  <div class="entity-settings-modal">
+    <mat-checkbox [(ngModel)]="localUseLombok" color="primary">Use Lombok</mat-checkbox>
+
+    <mat-accordion class="settings-accordion" multi>
+      <mat-expansion-panel>
+        <mat-expansion-panel-header>
+          <mat-panel-title>General settings</mat-panel-title>
+        </mat-expansion-panel-header>
+        <div class="settings-checkbox-list">
+          <mat-checkbox [(ngModel)]="localGeneralSettings.softDelete" color="primary">Soft delete</mat-checkbox>
+          <mat-checkbox [(ngModel)]="localGeneralSettings.auditing" color="primary">Auditing</mat-checkbox>
+          <mat-checkbox [(ngModel)]="localGeneralSettings.makeImmutable" color="primary">Make immutable</mat-checkbox>
+          <mat-checkbox [(ngModel)]="localGeneralSettings.naturalIdCache" color="primary">Natural ID Cache</mat-checkbox>
+        </div>
+      </mat-expansion-panel>
+      <mat-expansion-panel *ngIf="localUseLombok">
+        <mat-expansion-panel-header>
+          <mat-panel-title>Lombok settings</mat-panel-title>
+        </mat-expansion-panel-header>
+        <div class="settings-checkbox-list">
+          <mat-checkbox [(ngModel)]="localLombokSettings.generateBuilder" color="primary">Generate Builder</mat-checkbox>
+          <mat-checkbox [(ngModel)]="localLombokSettings.generateToString" color="primary">Generate To String</mat-checkbox>
+          <mat-checkbox
+            [(ngModel)]="localLombokSettings.generateEqualsAndHashCode"
+            color="primary"
+            class="truncate-checkbox"
+            matTooltip="Generate Equals and Hash Code">
+            <span class="truncate-label">Generate Equals and Hash Code</span>
+          </mat-checkbox>
+        </div>
+      </mat-expansion-panel>
+
+    </mat-accordion>
+  </div>
+  <div modal-footer>
+    <button mat-raised-button type="button" (click)="onCancel()">Cancel</button>
+    <button mat-raised-button color="primary" type="button" (click)="onSave()">Save</button>
+  </div>
+</app-modal>
