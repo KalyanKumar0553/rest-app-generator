@@ -16,11 +16,27 @@
 			<url>
 				https://pkgs.dev.azure.com/azure-sdk/public/_packaging/azure-sdk-for-java/maven/v1</url>
 		</repository>
+		<repository>
+			<id>github-auth</id>
+			<url>https://maven.pkg.github.com/KalyanKumar0553/auth</url>
+		</repository>
+		<repository>
+			<id>github-commons</id>
+			<url>https://maven.pkg.github.com/KalyanKumar0553/commons</url>
+		</repository>
+		<repository>
+			<id>github-communication</id>
+			<url>https://maven.pkg.github.com/KalyanKumar0553/communication</url>
+		</repository>
 	</repositories>
 	<properties>
 		<java.version>17</java.version>
 		<spring-boot.version>3.3.4</spring-boot.version>
 		<mustache.version>0.9.10</mustache.version>
+		<lombok.version>1.18.36</lombok.version>
+		<auth.version>1.1.4</auth.version>
+		<common.version>1.0.1</common.version>
+		<communication.version>1.0.1</communication.version>
 	</properties>
 	<dependencyManagement>
 		<dependencies>
@@ -34,6 +50,21 @@
 		</dependencies>
 	</dependencyManagement>
 	<dependencies>
+		<dependency>
+			<groupId>com.src</groupId>
+			<artifactId>common</artifactId>
+			<version>${common.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>com.src</groupId>
+			<artifactId>communication</artifactId>
+			<version>${communication.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>com.src</groupId>
+			<artifactId>auth</artifactId>
+			<version>${auth.version}</version>
+		</dependency>
 		<dependency>
 			<groupId>io.spring.initializr</groupId>
 			<artifactId>initializr-generator-spring</artifactId>
@@ -88,6 +119,7 @@
 		<dependency>
 			<groupId>org.projectlombok</groupId>
 			<artifactId>lombok</artifactId>
+			<version>${lombok.version}</version>
 			<optional>true</optional>
 		</dependency>
 		<dependency>
@@ -148,24 +180,8 @@
 			<artifactId>spring-security-config</artifactId>
 		</dependency>
 		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-validation</artifactId>
-		</dependency>
-		<dependency>
 			<groupId>com.github.ben-manes.caffeine</groupId>
 			<artifactId>caffeine</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-cache</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>com.github.ben-manes.caffeine</groupId>
-			<artifactId>caffeine</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-validation</artifactId>
 		</dependency>
 		<dependency>
 			<groupId>org.json</groupId>
@@ -205,12 +221,26 @@
 		</dependency>
 	</dependencies>
 	<build>
+		<sourceDirectory>src/api/main/java</sourceDirectory>
+		<testSourceDirectory>src/api/test/java</testSourceDirectory>
+		<resources>
+			<resource>
+				<directory>src/api/main/resources</directory>
+			</resource>
+		</resources>
+		<testResources>
+			<testResource>
+				<directory>src/api/test/resources</directory>
+			</testResource>
+		</testResources>
 		<plugins>
 			<plugin>
 				<groupId>com.github.eirslett</groupId>
 				<artifactId>frontend-maven-plugin</artifactId>
 				<version>1.12.1</version>
 				<configuration>
+					<workingDirectory>src/ux</workingDirectory>
+					<installDirectory>src/ux</installDirectory>
 					<nodeVersion>
 						v21.7.3
 					</nodeVersion>
@@ -253,6 +283,7 @@
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
+				<version>${spring-boot.version}</version>
 			</plugin>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
@@ -260,6 +291,13 @@
 				<version>3.11.0</version>
 				<configuration>
 					<release>${java.version}</release>
+					<annotationProcessorPaths>
+						<path>
+							<groupId>org.projectlombok</groupId>
+							<artifactId>lombok</artifactId>
+							<version>${lombok.version}</version>
+						</path>
+					</annotationProcessorPaths>
 				</configuration>
 			</plugin>
 		</plugins>
