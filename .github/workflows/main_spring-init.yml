@@ -18,14 +18,47 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Checkout commons
+        uses: actions/checkout@v4
+        with:
+          repository: KalyanKumar0553/commons
+          path: deps/commons
+          token: ${{ secrets.DEPENDENCY_REPO_TOKEN }}
+
+      - name: Checkout communication
+        uses: actions/checkout@v4
+        with:
+          repository: KalyanKumar0553/communication
+          path: deps/communication
+          token: ${{ secrets.DEPENDENCY_REPO_TOKEN }}
+
+      - name: Checkout auth
+        uses: actions/checkout@v4
+        with:
+          repository: KalyanKumar0553/auth
+          path: deps/auth
+          token: ${{ secrets.DEPENDENCY_REPO_TOKEN }}
+
       - name: Set up Java version
         uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'microsoft'
 
+      - name: Install commons
+        run: mvn -B -DskipTests install
+        working-directory: deps/commons
+
+      - name: Install communication
+        run: mvn -B -DskipTests install
+        working-directory: deps/communication
+
+      - name: Install auth
+        run: mvn -B -DskipTests install
+        working-directory: deps/auth
+
       - name: Build with Maven
-        run: mvn clean install
+        run: mvn -B clean install
 
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
