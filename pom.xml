@@ -34,7 +34,7 @@
 		<spring-boot.version>3.3.4</spring-boot.version>
 		<mustache.version>0.9.10</mustache.version>
 		<lombok.version>1.18.36</lombok.version>
-		<auth.version>1.1.4</auth.version>
+		<auth.version>1.1.5</auth.version>
 		<common.version>1.0.1</common.version>
 		<communication.version>1.0.1</communication.version>
 	</properties>
