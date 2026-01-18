@@ -1,5 +1,3 @@
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
-
 DO $$ BEGIN
     CREATE TYPE identifier_type AS ENUM ('EMAIL', 'PHONE');
 EXCEPTION
@@ -28,7 +26,7 @@ DROP TABLE IF EXISTS settings CASCADE;
 DROP TABLE IF EXISTS users CASCADE;
 
 CREATE TABLE IF NOT EXISTS users (
-    id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id uuid PRIMARY KEY,
     identifier text UNIQUE NOT NULL,
     identifier_type identifier_type NOT NULL,
     password_hash text NOT NULL,
@@ -52,7 +50,7 @@ CREATE TABLE IF NOT EXISTS user_roles (
 );
 
 CREATE TABLE IF NOT EXISTS otp_requests (
-    id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id uuid PRIMARY KEY,
     user_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     purpose otp_purpose NOT NULL,
     otp_hash text NOT NULL,
@@ -65,7 +63,7 @@ CREATE INDEX IF NOT EXISTS idx_otp_user_purpose ON otp_requests(user_id, purpose
 CREATE INDEX IF NOT EXISTS idx_otp_created_at ON otp_requests(created_at);
 
 CREATE TABLE IF NOT EXISTS refresh_tokens (
-    id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id uuid PRIMARY KEY,
     user_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     family_id uuid NOT NULL,
     token_hash text NOT NULL,
@@ -78,7 +76,7 @@ CREATE INDEX IF NOT EXISTS idx_refresh_user ON refresh_tokens(user_id);
 CREATE INDEX IF NOT EXISTS idx_refresh_family ON refresh_tokens(family_id);
 
 CREATE TABLE IF NOT EXISTS captcha_challenges (
-    id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id uuid PRIMARY KEY,
     answer_hash text NOT NULL,
     expires_at timestamptz NOT NULL,
     used boolean NOT NULL DEFAULT false,
@@ -88,7 +86,7 @@ CREATE TABLE IF NOT EXISTS captcha_challenges (
 CREATE INDEX IF NOT EXISTS idx_captcha_created_at ON captcha_challenges(created_at);
 
 CREATE TABLE IF NOT EXISTS settings (
-    id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id uuid PRIMARY KEY,
     source text NOT NULL,
     username text,
     password text,
@@ -101,7 +99,7 @@ CREATE TABLE IF NOT EXISTS settings (
 CREATE INDEX IF NOT EXISTS idx_settings_source_username ON settings(source, username);
 
 CREATE TABLE IF NOT EXISTS tenants (
-    id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id uuid PRIMARY KEY,
     tenant_code text UNIQUE NOT NULL,
     display_name text NOT NULL,
     is_active boolean NOT NULL DEFAULT true,
@@ -119,7 +117,7 @@ CREATE TABLE IF NOT EXISTS user_tenants (
 CREATE INDEX IF NOT EXISTS idx_user_tenants_tenant ON user_tenants(tenant_id);
 
 CREATE TABLE IF NOT EXISTS tenant_roles (
-    id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id uuid PRIMARY KEY,
     tenant_id uuid NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
     name text NOT NULL,
     is_active boolean NOT NULL DEFAULT true,
@@ -163,7 +161,7 @@ CREATE TABLE IF NOT EXISTS user_tenant_verifications (
 CREATE INDEX IF NOT EXISTS idx_user_tenant_verifications_tenant ON user_tenant_verifications(tenant_id);
 
 CREATE TABLE IF NOT EXISTS tenant_sha_keys (
-    id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id uuid PRIMARY KEY,
     tenant_id uuid NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
     sha_key text NOT NULL,
     is_active boolean NOT NULL DEFAULT true,

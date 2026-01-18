@@ -34,7 +34,7 @@
 		<spring-boot.version>3.3.4</spring-boot.version>
 		<mustache.version>0.9.10</mustache.version>
 		<lombok.version>1.18.36</lombok.version>
-		<auth.version>1.1.5</auth.version>
+		<auth.version>1.1.4</auth.version>
 		<common.version>1.0.2</common.version>
 		<communication.version>1.0.2</communication.version>
 	</properties>
@@ -298,6 +298,21 @@
 							<version>${lombok.version}</version>
 						</path>
 					</annotationProcessorPaths>
+				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>org.flywaydb</groupId>
+				<artifactId>flyway-maven-plugin</artifactId>
+				<version>10.17.0</version>
+				<configuration>
+					<url>${env.SPRING_DATASOURCE_URL}</url>
+					<user>${env.SPRING_DATASOURCE_USERNAME}</user>
+					<password>${env.SPRING_DATASOURCE_PASSWORD}</password>
+					<locations>
+						<location>filesystem:src/api/main/resources/db/migration</location>
+					</locations>
+					<baselineOnMigrate>true</baselineOnMigrate>
+					<outOfOrder>true</outOfOrder>
 				</configuration>
 			</plugin>
 		</plugins>
