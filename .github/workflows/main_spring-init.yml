@@ -58,7 +58,7 @@ jobs:
         working-directory: deps/auth
 
       - name: Build with Maven
-        run: mvn -B -DskipTests package
+        run: mvn -B clean install
 
       - name: Prepare app jar
         run: |
