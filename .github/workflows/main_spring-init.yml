@@ -45,33 +45,6 @@ jobs:
           java-version: '17'
           distribution: 'microsoft'
 
-      - name: Configure GitHub Packages credentials
-        run: |
-          cat > ~/.m2/settings.xml <<EOF
-          <settings>
-            <servers>
-              <server>
-                <id>github-auth</id>
-                <username>${GH_PACKAGES_USER}</username>
-                <password>${DEPENDENCY_REPO_TOKEN}</password>
-              </server>
-              <server>
-                <id>github-commons</id>
-                <username>${GH_PACKAGES_USER}</username>
-                <password>${DEPENDENCY_REPO_TOKEN}</password>
-              </server>
-              <server>
-                <id>github-communication</id>
-                <username>${GH_PACKAGES_USER}</username>
-                <password>${DEPENDENCY_REPO_TOKEN}</password>
-              </server>
-            </servers>
-          </settings>
-          EOF
-        env:
-          GH_PACKAGES_USER: ${{ secrets.GH_PACKAGES_USER }}
-          DEPENDENCY_REPO_TOKEN: ${{ secrets.DEPENDENCY_REPO_TOKEN }}
-
       - name: Debug Maven settings
         run: |
           echo "GH_PACKAGES_USER=$GH_PACKAGES_USER"
@@ -94,16 +67,11 @@ jobs:
       - name: Build with Maven
         run: mvn -B clean install
 
-      - name: Prepare app jar
-        run: |
-          JAR_PATH=$(ls target/*.jar | grep -v 'original' | head -n1)
-          cp "$JAR_PATH" target/app.jar
-
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
         with:
           name: java-app
-          path: '${{ github.workspace }}/target/app.jar'
+          path: '${{ github.workspace }}/target/*.jar'
 
   deploy:
     runs-on: ubuntu-latest
@@ -131,5 +99,5 @@ jobs:
         with:
           app-name: 'spring-init'
           slot-name: 'Production'
-          package: 'app.jar'
+          package: '*.jar'
           
