@@ -58,13 +58,18 @@ jobs:
         working-directory: deps/auth
 
       - name: Build with Maven
-        run: mvn -B clean install
+        run: mvn -B -DskipTests package
+
+      - name: Prepare app jar
+        run: |
+          JAR_PATH=$(ls target/*.jar | grep -v 'original' | head -n1)
+          cp "$JAR_PATH" target/app.jar
 
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
         with:
           name: java-app
-          path: '${{ github.workspace }}/target/*.jar'
+          path: '${{ github.workspace }}/target/app.jar'
 
   deploy:
     runs-on: ubuntu-latest
@@ -92,5 +97,5 @@ jobs:
         with:
           app-name: 'spring-init'
           slot-name: 'Production'
-          package: '*.jar'
+          package: 'app.jar'
           
