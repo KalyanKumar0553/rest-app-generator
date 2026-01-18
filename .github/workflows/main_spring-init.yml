@@ -52,24 +52,32 @@ jobs:
             <servers>
               <server>
                 <id>github-auth</id>
-                <username>${env.GITHUB_ACTOR}</username>
+                <username>${env.GH_PACKAGES_USER}</username>
                 <password>${env.DEPENDENCY_REPO_TOKEN}</password>
               </server>
               <server>
                 <id>github-commons</id>
-                <username>${env.GITHUB_ACTOR}</username>
+                <username>${env.GH_PACKAGES_USER}</username>
                 <password>${env.DEPENDENCY_REPO_TOKEN}</password>
               </server>
               <server>
                 <id>github-communication</id>
-                <username>${env.GITHUB_ACTOR}</username>
+                <username>${env.GH_PACKAGES_USER}</username>
                 <password>${env.DEPENDENCY_REPO_TOKEN}</password>
               </server>
             </servers>
           </settings>
           EOF
         env:
+          GH_PACKAGES_USER: ${{ secrets.GH_PACKAGES_USER }}
           DEPENDENCY_REPO_TOKEN: ${{ secrets.DEPENDENCY_REPO_TOKEN }}
+
+      - name: Debug Maven settings
+        run: |
+          echo "GH_PACKAGES_USER=$GH_PACKAGES_USER"
+          sed -n '1,120p' ~/.m2/settings.xml
+        env:
+          GH_PACKAGES_USER: ${{ secrets.GH_PACKAGES_USER }}
 
       - name: Install commons
         run: mvn -B -DskipTests install
@@ -84,7 +92,7 @@ jobs:
         working-directory: deps/auth
 
       - name: Build with Maven
-        run: mvn -B -DskipTests package
+        run: mvn -B clean verify
 
       - name: Prepare app jar
         run: |
