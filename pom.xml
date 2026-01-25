@@ -4,7 +4,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>com.src</groupId>
 	<artifactId>rest-app-generator</artifactId>
-	<version>1.0.0</version>
+	<version>1.0.1</version>
 	<name>rest-app-generator</name>
 	<repositories>
 		<repository>
@@ -28,13 +28,18 @@
 			<id>github-communication</id>
 			<url>https://maven.pkg.github.com/KalyanKumar0553/communication</url>
 		</repository>
+		<repository>
+			<id>github-swagger</id>
+			<url>https://maven.pkg.github.com/KalyanKumar0553/swagger</url>
+		</repository>
 	</repositories>
 	<properties>
 		<java.version>17</java.version>
 		<spring-boot.version>3.3.4</spring-boot.version>
 		<mustache.version>0.9.10</mustache.version>
-		<lombok.version>1.18.36</lombok.version>
-		<auth.version>1.1.17</auth.version>
+		<lombok.version>1.18.38</lombok.version>
+		<auth.version>1.1.23</auth.version>
+		<swagger.version>1.0.5</swagger.version>
 		<common.version>1.0.2</common.version>
 		<communication.version>1.0.2</communication.version>
 	</properties>
@@ -66,6 +71,11 @@
 			<version>${auth.version}</version>
 		</dependency>
 		<dependency>
+			<groupId>com.src</groupId>
+			<artifactId>swagger</artifactId>
+			<version>${swagger.version}</version>
+		</dependency>
+		<dependency>
 			<groupId>io.spring.initializr</groupId>
 			<artifactId>initializr-generator-spring</artifactId>
 			<version>0.22.0</version>
@@ -78,6 +88,10 @@
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-web</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-actuator</artifactId>
 		</dependency>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
@@ -327,4 +341,11 @@
 			</plugin>
 		</plugins>
 	</build>
+	<distributionManagement>
+		<repository>
+			<id>github-rest-app-generator</id>
+			<name>GitHub Packages</name>
+			<url>https://maven.pkg.github.com/KalyanKumar0553/rest-app-generator</url>
+		</repository>
+	</distributionManagement>
 </project>

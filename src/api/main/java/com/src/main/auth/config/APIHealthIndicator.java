@@ -1,4 +1,4 @@
-package com.src.main.config;
+package com.src.main.auth.config;
 
 import org.springframework.boot.actuate.health.Health;
 import org.springframework.boot.actuate.health.HealthIndicator;
