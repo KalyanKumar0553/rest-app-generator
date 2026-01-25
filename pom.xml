@@ -33,8 +33,8 @@
 			<url>https://maven.pkg.github.com/KalyanKumar0553/swagger</url>
 		</repository>
 		<repository>
-			<id>github-platform-bom</id>
-			<url>https://maven.pkg.github.com/KalyanKumar0553/platform-bom</url>
+			<id>github-rest-app-generator</id>
+			<url>https://maven.pkg.github.com/KalyanKumar0553/rest-app-generator</url>
 		</repository>
 	</repositories>
 	<properties>
