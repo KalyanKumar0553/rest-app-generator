@@ -39,9 +39,9 @@
 	</dependencyManagement>
 	<distributionManagement>
 		<repository>
-			<id>github-platform-bom</id>
+			<id>github-rest-app-generator</id>
 			<name>GitHub Packages</name>
-			<url>https://maven.pkg.github.com/KalyanKumar0553/platform-bom</url>
+			<url>https://maven.pkg.github.com/KalyanKumar0553/rest-app-generator</url>
 		</repository>
 	</distributionManagement>
 </project>
