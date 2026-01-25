@@ -28,6 +28,9 @@ export const API_ENDPOINTS = {
     GET: (id: string) => `/api/projects/${id}`,
     UPDATE: (id: string) => `/api/projects/${id}/update`,
     DELETE: (id: string) => `/api/projects/${id}/delete`
+  },
+  DEPENDENCIES: {
+    LIST: '/api/openapi/dependencies'
   }
 };
 

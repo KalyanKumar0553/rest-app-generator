@@ -19,6 +19,8 @@ import { EntitiesComponent } from '../entities/entities.component';
 import { SidenavComponent, NavItem } from '../../../../components/shared/sidenav/sidenav.component';
 import { AuthService } from '../../../../services/auth.service';
 import { ToastService } from '../../../../services/toast.service';
+import { HttpClient } from '@angular/common/http';
+import { API_CONFIG, API_ENDPOINTS } from '../../../../constants/api.constants';
 
 interface ProjectSettings {
   projectGroup: string;
@@ -128,34 +130,7 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
   dependencyInput = '';
   selectedDependencies: string[] = [];
   filteredDependencies: string[] = [];
-  availableDependencies = [
-    'spring-boot-starter-web',
-    'spring-boot-starter-data-jpa',
-    'spring-boot-starter-security',
-    'spring-boot-starter-validation',
-    'spring-boot-starter-test',
-    'spring-boot-starter-actuator',
-    'spring-boot-devtools',
-    'lombok',
-    'mapstruct',
-    'commons-lang3',
-    'commons-collections4',
-    'guava',
-    'jackson-databind',
-    'hibernate-validator',
-    'flyway-core',
-    'liquibase-core',
-    'postgresql',
-    'mysql-connector-java',
-    'h2',
-    'mongodb-driver',
-    'redis',
-    'kafka',
-    'rabbitmq',
-    'jwt',
-    'swagger-ui',
-    'openapi'
-  ];
+  availableDependencies: string[] = [];
 
   frontendOptions = ['None', 'React', 'Vue', 'Angular'];
   databaseOptions = ['PostgreSQL', 'MySQL', 'H2', 'MongoDB'];
@@ -167,7 +142,8 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
     private router: Router,
     private route: ActivatedRoute,
     private authService: AuthService,
-    private toastService: ToastService
+    private toastService: ToastService,
+    private http: HttpClient
   ) {}
 
   ngOnInit(): void {
@@ -183,6 +159,7 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
       });
 
     this.trackChanges();
+    this.loadDependencies();
   }
 
   ngOnDestroy(): void {
@@ -314,6 +291,19 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
 
   closeInfoBanner(): void {
     this.showInfoBanner = false;
+  }
+
+  loadDependencies(): void {
+    const url = `${API_CONFIG.BASE_URL}${API_ENDPOINTS.DEPENDENCIES.LIST}`;
+    this.http.get<string[]>(url).subscribe({
+      next: (dependencies) => {
+        this.availableDependencies = Array.isArray(dependencies) ? dependencies : [];
+      },
+      error: () => {
+        this.toastService.error('Failed to load dependencies');
+        this.availableDependencies = [];
+      }
+    });
   }
 
   filterDependencies(value: string): void {
