@@ -18,6 +18,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Install platform BOM
+        run: mvn -B -DskipTests install
+        working-directory: platform-bom
+
       - name: Checkout commons
         uses: actions/checkout@v4
         with:
