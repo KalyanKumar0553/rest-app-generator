@@ -42,7 +42,7 @@
 		<spring-boot.version>3.3.4</spring-boot.version>
 		<mustache.version>0.9.10</mustache.version>
 		<lombok.version>1.18.38</lombok.version>
-		<platform-bom.version>1.0.1</platform-bom.version>
+		<platform-bom.version>1.0.2</platform-bom.version>
 	</properties>
 	<dependencyManagement>
 		<dependencies>
