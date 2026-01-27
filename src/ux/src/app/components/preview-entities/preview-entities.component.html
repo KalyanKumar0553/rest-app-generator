@@ -1,0 +1,50 @@
+<div class="preview-entities">
+  <div class="preview-entities__grid" *ngIf="entities.length > 0; else emptyState">
+    <div class="entity-card" *ngFor="let entity of entities; let i = index" tabindex="0">
+      <div class="entity-card__header">
+        <span class="entity-card__title">{{ entity.name }}</span>
+        <div class="entity-card__actions" *ngIf="showActions">
+          <button class="entity-action-btn" type="button" (click)="onEdit(entity, i); $event.stopPropagation()" aria-label="Edit entity">
+            <i class="bi bi-pencil"></i>
+          </button>
+          <button class="entity-action-btn" type="button" (click)="onDelete(entity, i); $event.stopPropagation()" aria-label="Delete entity">
+            <i class="bi bi-trash"></i>
+          </button>
+        </div>
+      </div>
+
+      <ng-container *ngIf="getEntityRelations(entity.name) as entityRelations">
+        <div class="entity-card__relations" *ngIf="entityRelations.length > 0">
+          <span class="relation-label">Relations</span>
+          <div class="relation-list">
+            <span class="relation-pill" *ngFor="let relation of entityRelations">
+              {{ relation }}
+            </span>
+          </div>
+        </div>
+      </ng-container>
+
+      <div class="entity-card__fields">
+        <div class="entity-field" *ngFor="let field of getVisibleFields(entity)">
+          <span class="field-name">{{ field.name }}:</span>
+          <span class="field-type">
+            {{ field.type }}<span *ngIf="field.maxLength">({{ field.maxLength }})</span><span *ngIf="field.required">*</span>
+          </span>
+        </div>
+      </div>
+
+      <button
+        class="view-more"
+        type="button"
+        *ngIf="hasMoreFields(entity)"
+        (click)="onViewMore(entity, i)">
+        View more
+        <i class="bi bi-chevron-down"></i>
+      </button>
+    </div>
+  </div>
+
+  <ng-template #emptyState>
+    <div class="empty-state">{{ emptyMessage }}</div>
+  </ng-template>
+</div>

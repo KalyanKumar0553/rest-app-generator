@@ -1,14 +1,18 @@
-import { Component, Input, ViewChild, ElementRef } from '@angular/core';
+import { Component, Input, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ModalComponent } from '../../../../components/modal/modal.component';
 import { AddEntityComponent } from '../add-entity/add-entity.component';
 import { AddRelationComponent, Relation } from '../add-relation/add-relation.component';
-import { ConfirmationModalComponent, ModalButton } from '../../../../components/confirmation-modal/confirmation-modal.component';
+import { ConfirmationModalComponent } from '../../../../components/confirmation-modal/confirmation-modal.component';
 import { EntityDetailViewComponent } from '../entity-detail-view/entity-detail-view.component';
+import { ImportSchemaComponent } from '../import-schema/import-schema.component';
+import { ImportSchemaPreviewComponent } from '../import-schema-preview/import-schema-preview.component';
+import { PreviewEntitiesComponent } from '../../../../components/preview-entities/preview-entities.component';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
-import { ToastService } from '../../../../services/toast.service';
 import { Field } from '../field-item/field-item.component';
+import { DdlEntity, DdlImportService } from '../../../../services/ddl-import.service';
+import { ToastService } from '../../../../services/toast.service';
 
 interface Entity {
   name: string;
@@ -21,7 +25,7 @@ interface Entity {
 @Component({
   selector: 'app-entities',
   standalone: true,
-  imports: [CommonModule, ModalComponent, AddEntityComponent, AddRelationComponent, ConfirmationModalComponent, EntityDetailViewComponent, MatIconModule, MatButtonModule],
+  imports: [CommonModule, ModalComponent, AddEntityComponent, AddRelationComponent, ConfirmationModalComponent, EntityDetailViewComponent, ImportSchemaComponent, ImportSchemaPreviewComponent, PreviewEntitiesComponent, MatIconModule, MatButtonModule],
   templateUrl: './entities.component.html',
   styleUrls: ['./entities.component.css']
 })
@@ -30,13 +34,17 @@ export class EntitiesComponent {
   @Input() relations: Relation[] = [];
   @ViewChild(AddEntityComponent) addEntityComponent!: AddEntityComponent;
   @ViewChild(AddRelationComponent) addRelationComponent!: AddRelationComponent;
-  @ViewChild('schemaFileInput') schemaFileInput?: ElementRef<HTMLInputElement>;
 
   showInfoBanner = true;
 
   entitiesExpanded = true;
   relationsExpanded = true;
   showAddEntityModal = false;
+  showImportSchemaModal = false;
+  showImportSchemaPreviewModal = false;
+  importSchemaSql = '';
+  importPreviewEntities: DdlEntity[] = [];
+  importAddRestEndpoints = false;
   editingEntity: Entity | null = null;
   editingEntityIndex: number | null = null;
   showDeleteConfirmation = false;
@@ -49,6 +57,30 @@ export class EntitiesComponent {
   editingRelation: Relation | null = null;
   editingRelationIndex: number | null = null;
   deletingRelationIndex: number | null = null;
+  viewingEntityIndex: number | null = null;
+  viewingEntitySource: 'main' | 'import' = 'main';
+  showFieldDeleteConfirmation = false;
+  fieldDeleteIndex: number | null = null;
+  showImportEntityDeleteConfirmation = false;
+  importDeleteIndex: number | null = null;
+
+  fieldDeleteModalConfig = {
+    title: 'Delete Field',
+    message: [''],
+    buttons: [
+      { text: 'Cancel', type: 'cancel' as const, action: 'cancel' as const },
+      { text: 'Delete', type: 'danger' as const, action: 'confirm' as const }
+    ]
+  };
+
+  importEntityDeleteModalConfig = {
+    title: 'Delete Entity',
+    message: [''],
+    buttons: [
+      { text: 'Cancel', type: 'cancel' as const, action: 'cancel' as const },
+      { text: 'Delete', type: 'danger' as const, action: 'confirm' as const }
+    ]
+  };
 
   deleteModalConfig = {
     title: 'Delete Entity',
@@ -59,7 +91,10 @@ export class EntitiesComponent {
     ]
   };
 
-  constructor(private toastService: ToastService) {}
+  constructor(
+    private ddlImportService: DdlImportService,
+    private toastService: ToastService
+  ) {}
 
   addEntity(): void {
     this.editingEntity = null;
@@ -208,221 +243,176 @@ export class EntitiesComponent {
   closeEntityDetail(): void {
     this.showEntityDetailModal = false;
     this.viewingEntity = null;
+    this.viewingEntityIndex = null;
+    if (this.viewingEntitySource === 'import') {
+      this.showImportSchemaPreviewModal = true;
+    }
   }
 
-  triggerSchemaImport(event: MouseEvent): void {
-    event.preventDefault();
-    this.schemaFileInput?.nativeElement.click();
+  openEntityDetailFromMain(event: { entity: Entity; index: number }): void {
+    this.viewingEntitySource = 'main';
+    this.viewingEntityIndex = event.index;
+    this.showEntityDetail(event.entity);
   }
 
-  onSchemaFileSelected(event: Event): void {
-    const input = event.target as HTMLInputElement;
-    const file = input.files && input.files.length > 0 ? input.files[0] : null;
-    if (!file) {
+  openEntityDetailFromImport(event: { entity: DdlEntity; index: number }): void {
+    this.viewingEntitySource = 'import';
+    this.viewingEntityIndex = event.index;
+    this.showImportSchemaPreviewModal = false;
+    this.showEntityDetail(event.entity as Entity);
+  }
+
+  editImportEntity(): void {
+    this.showImportSchemaPreviewModal = false;
+    this.showImportSchemaModal = true;
+  }
+
+  requestImportEntityDelete(event: { entity: DdlEntity; index: number }): void {
+    const name = event.entity?.name ?? 'this entity';
+    this.importDeleteIndex = event.index;
+    this.importEntityDeleteModalConfig.message = [
+      `Are you sure you want to delete "${name}" from the import preview?`,
+      'This will remove it from the import list.'
+    ];
+    this.showImportEntityDeleteConfirmation = true;
+  }
+
+  confirmImportEntityDelete(): void {
+    if (this.importDeleteIndex === null) {
+      this.cancelImportEntityDelete();
       return;
     }
 
-    const reader = new FileReader();
-    reader.onload = () => {
-      try {
-        const raw = typeof reader.result === 'string' ? reader.result : '';
-        const parsed = JSON.parse(raw);
-        const { entities, relations } = this.normalizeSchema(parsed);
-
-        if (entities.length === 0) {
-          this.toastService.error('No entities found in the schema file.');
-          return;
-        }
-
-        this.replaceSchema(entities, relations);
-        this.toastService.success(`Imported ${entities.length} entities and ${relations.length} relations.`);
-      } catch (error) {
-        console.error('Schema import failed:', error);
-        this.toastService.error('Invalid schema file. Please provide valid JSON.');
-      } finally {
-        input.value = '';
-      }
-    };
-    reader.onerror = () => {
-      this.toastService.error('Failed to read schema file.');
-      input.value = '';
-    };
-    reader.readAsText(file);
+    this.importPreviewEntities.splice(this.importDeleteIndex, 1);
+    this.cancelImportEntityDelete();
   }
 
-  private normalizeSchema(data: any): { entities: Entity[]; relations: Relation[] } {
-    const rawEntities = this.extractEntities(data);
-    const entities = rawEntities
-      .map(entity => this.normalizeEntity(entity))
-      .filter((entity): entity is Entity => entity !== null);
-
-    const entityNames = new Set(entities.map(entity => entity.name));
-    const rawRelations = this.extractRelations(data);
-    const relations = rawRelations
-      .map(relation => this.normalizeRelation(relation))
-      .filter((relation): relation is Relation => relation !== null)
-      .filter(relation => entityNames.has(relation.sourceEntity) && entityNames.has(relation.targetEntity));
-
-    return { entities, relations };
+  cancelImportEntityDelete(): void {
+    this.showImportEntityDeleteConfirmation = false;
+    this.importDeleteIndex = null;
   }
 
-  private extractEntities(data: any): any[] {
-    if (Array.isArray(data)) {
-      return data;
+  deleteEntityField(fieldIndex: number): void {
+    if (this.viewingEntityIndex === null) {
+      return;
     }
-    if (Array.isArray(data?.entities)) {
-      return data.entities;
+
+    if (this.viewingEntitySource === 'main') {
+      const target = this.entities[this.viewingEntityIndex];
+      const fieldName = target?.fields?.[fieldIndex]?.name ?? 'this field';
+      this.fieldDeleteIndex = fieldIndex;
+      this.fieldDeleteModalConfig.message = [
+        `Are you sure you want to delete "${fieldName}"?`,
+        'This action cannot be undone.'
+      ];
+      this.showFieldDeleteConfirmation = true;
     }
-    if (Array.isArray(data?.schema?.entities)) {
-      return data.schema.entities;
-    }
-    if (Array.isArray(data?.model?.entities)) {
-      return data.model.entities;
-    }
-    return [];
   }
 
-  private extractRelations(data: any): any[] {
-    if (Array.isArray(data?.relations)) {
-      return data.relations;
+  confirmDeleteField(): void {
+    if (this.viewingEntityIndex === null || this.fieldDeleteIndex === null) {
+      this.cancelDeleteField();
+      return;
     }
-    if (Array.isArray(data?.schema?.relations)) {
-      return data.schema.relations;
+
+    const target = this.entities[this.viewingEntityIndex];
+    if (target?.fields) {
+      target.fields.splice(this.fieldDeleteIndex, 1);
     }
-    if (Array.isArray(data?.model?.relations)) {
-      return data.model.relations;
-    }
-    if (Array.isArray(data?.relationships)) {
-      return data.relationships;
-    }
-    return [];
+    this.cancelDeleteField();
   }
 
-  private normalizeEntity(raw: any): Entity | null {
-    const name = this.normalizeString(
-      raw?.name ?? raw?.entityName ?? raw?.table ?? raw?.tableName ?? raw?.entity
-    );
-    if (!name) {
-      return null;
+  cancelDeleteField(): void {
+    this.showFieldDeleteConfirmation = false;
+    this.fieldDeleteIndex = null;
+  }
+
+  openImportSchema(event: MouseEvent): void {
+    event.preventDefault();
+    this.showImportSchemaModal = true;
+  }
+
+  closeImportSchema(): void {
+    this.showImportSchemaModal = false;
+  }
+
+  goToSchemaPreview(): void {
+    const parsed = this.ddlImportService.parse(this.importSchemaSql);
+    if (parsed.length === 0) {
+      this.toastService.error('No tables found in the SQL script.');
+      return;
     }
 
-    const rawFields = Array.isArray(raw?.fields)
-      ? raw.fields
-      : Array.isArray(raw?.columns)
-        ? raw.columns
-        : Array.isArray(raw?.attributes)
-          ? raw.attributes
-          : [];
+    this.importPreviewEntities = parsed;
+    this.showImportSchemaModal = false;
+    this.showImportSchemaPreviewModal = true;
+  }
 
-    const fields = rawFields
-      .map(field => this.normalizeField(field))
-      .filter((field): field is Field => field !== null);
+  goBackToImportSchema(): void {
+    this.showImportSchemaPreviewModal = false;
+    this.showImportSchemaModal = true;
+  }
 
-    if (fields.length === 0) {
-      fields.push({
-        type: 'Long',
-        name: 'id',
-        primaryKey: true,
-        required: false,
+  performSchemaImport(): void {
+    const mappedEntities = this.importPreviewEntities.map(entity => ({
+      name: entity.name,
+      mappedSuperclass: false,
+      addRestEndpoints: this.importAddRestEndpoints,
+      fields: entity.fields.map(field => ({
+        name: field.name,
+        type: field.type,
+        maxLength: field.maxLength,
+        primaryKey: Boolean(field.primaryKey),
+        required: Boolean(field.required),
         unique: false
-      });
+      }))
+    }));
+
+    const existingByName = new Map(this.entities.map(entity => [entity.name.toLowerCase(), entity]));
+    for (const imported of mappedEntities) {
+      const key = imported.name.toLowerCase();
+      if (existingByName.has(key)) {
+        const index = this.entities.findIndex(entity => entity.name.toLowerCase() === key);
+        if (index >= 0) {
+          this.entities[index] = this.mergeEntityFields(this.entities[index], imported);
+        }
+      } else {
+        this.entities.push(imported);
+      }
+    }
+
+    this.toastService.success(`Imported ${mappedEntities.length} entities from SQL.`);
+    this.showImportSchemaPreviewModal = false;
+    this.importSchemaSql = '';
+    this.importPreviewEntities = [];
+    this.importAddRestEndpoints = false;
+  }
+
+  private mergeEntityFields(existing: Entity, incoming: Entity): Entity {
+    const mergedFields = [...(existing.fields ?? [])];
+    const existingByName = new Map(
+      mergedFields.map(field => [field.name.toLowerCase(), field])
+    );
+
+    for (const incomingField of incoming.fields ?? []) {
+      const key = incomingField.name.toLowerCase();
+      if (existingByName.has(key)) {
+        const target = existingByName.get(key);
+        if (target) {
+          target.type = incomingField.type;
+          target.maxLength = incomingField.maxLength;
+          target.primaryKey = incomingField.primaryKey;
+          target.required = incomingField.required;
+        }
+      } else {
+        mergedFields.push(incomingField);
+      }
     }
 
     return {
-      name,
-      mappedSuperclass: Boolean(raw?.mappedSuperclass),
-      addRestEndpoints: Boolean(raw?.addRestEndpoints),
-      fields
+      ...existing,
+      addRestEndpoints: incoming.addRestEndpoints,
+      fields: mergedFields
     };
-  }
-
-  private normalizeField(raw: any): Field | null {
-    const name = this.normalizeString(
-      raw?.name ?? raw?.fieldName ?? raw?.column ?? raw?.columnName ?? raw?.attribute
-    );
-    const type = this.normalizeString(raw?.type ?? raw?.fieldType ?? raw?.dataType) || 'String';
-
-    if (!name) {
-      return null;
-    }
-
-    const maxLength = this.normalizeNumber(raw?.maxLength ?? raw?.length ?? raw?.size);
-
-    return {
-      name,
-      type,
-      maxLength: maxLength ?? undefined,
-      primaryKey: Boolean(raw?.primaryKey ?? raw?.id ?? raw?.isId),
-      required: Boolean(raw?.required ?? raw?.notNull ?? raw?.nullable === false),
-      unique: Boolean(raw?.unique ?? raw?.isUnique)
-    };
-  }
-
-  private normalizeRelation(raw: any): Relation | null {
-    const sourceEntity = this.normalizeString(
-      raw?.sourceEntity ?? raw?.source ?? raw?.from ?? raw?.ownerEntity
-    );
-    const targetEntity = this.normalizeString(
-      raw?.targetEntity ?? raw?.target ?? raw?.to ?? raw?.inverseEntity
-    );
-    const relationType = this.normalizeRelationType(raw?.relationType ?? raw?.type ?? raw?.cardinality);
-    const sourceFieldName = this.normalizeString(
-      raw?.sourceFieldName ?? raw?.sourceField ?? raw?.fieldName ?? raw?.name
-    );
-    const targetFieldName = this.normalizeString(raw?.targetFieldName ?? raw?.targetField ?? raw?.inverseField);
-
-    if (!sourceEntity || !targetEntity || !relationType || !sourceFieldName) {
-      return null;
-    }
-
-    return {
-      sourceEntity,
-      sourceFieldName,
-      targetEntity,
-      targetFieldName: targetFieldName || undefined,
-      relationType,
-      required: Boolean(raw?.required ?? raw?.notNull ?? raw?.mandatory)
-    };
-  }
-
-  private normalizeRelationType(value: any): string {
-    const normalized = this.normalizeString(value);
-    if (!normalized) {
-      return '';
-    }
-    const compact = normalized.toLowerCase().replace(/[^a-z0-9]/g, '');
-    if (compact === 'onetoone') {
-      return 'OneToOne';
-    }
-    if (compact === 'onetomany') {
-      return 'OneToMany';
-    }
-    if (compact === 'manytoone') {
-      return 'ManyToOne';
-    }
-    if (compact === 'manytomany') {
-      return 'ManyToMany';
-    }
-    return normalized;
-  }
-
-  private normalizeString(value: any): string {
-    if (value === null || value === undefined) {
-      return '';
-    }
-    return String(value).trim();
-  }
-
-  private normalizeNumber(value: any): number | null {
-    if (value === null || value === undefined || value === '') {
-      return null;
-    }
-    const parsed = Number(value);
-    return Number.isFinite(parsed) ? parsed : null;
-  }
-
-  private replaceSchema(entities: Entity[], relations: Relation[]): void {
-    this.entities.splice(0, this.entities.length, ...entities);
-    this.relations.splice(0, this.relations.length, ...relations);
   }
 }

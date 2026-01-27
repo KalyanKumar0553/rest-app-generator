@@ -26,9 +26,18 @@ interface Entity {
 })
 export class EntityDetailViewComponent {
   @Input() entity: Entity | null = null;
+  @Input() canDeleteFields = true;
   @Output() close = new EventEmitter<void>();
+  @Output() deleteField = new EventEmitter<number>();
 
   onClose(): void {
     this.close.emit();
+  }
+
+  onDeleteField(index: number): void {
+    if (!this.canDeleteFields) {
+      return;
+    }
+    this.deleteField.emit(index);
   }
 }

@@ -1,14 +1,7 @@
 <div class="entities-container">
   <div class="entities-sticky-header">
     <div class="import-section">
-      <a href="#" class="import-link" (click)="triggerSchemaImport($event)">Import Schema</a>
-      <input
-        #schemaFileInput
-        class="visually-hidden"
-        type="file"
-        accept=".json,application/json"
-        (change)="onSchemaFileSelected($event)"
-      />
+      <a href="#" class="import-link" (click)="openImportSchema($event)">Import Schema</a>
     </div>
 
     <div class="info-banner" *ngIf="showInfoBanner">
@@ -39,28 +32,15 @@
     </div>
 
     <div class="panel-body" *ngIf="entitiesExpanded">
-      <div class="entities-grid" *ngIf="entities.length > 0">
-        <div class="entity-box" *ngFor="let entity of entities; let i = index">
-          <div class="entity-box-header">
-            <h3 class="entity-box-title">{{ entity.name }}</h3>
-            <div class="entity-box-actions">
-              <button class="entity-action-btn" (click)="editEntity(entity, i)" aria-label="Edit entity">
-                <i class="bi bi-pencil"></i>
-              </button>
-              <button class="entity-action-btn" (click)="deleteEntity(i)" aria-label="Delete entity">
-                <i class="bi bi-trash"></i>
-              </button>
-            </div>
-          </div>
-          <div class="entity-box-body">
-            <div class="entity-box-fields" *ngIf="entity.fields && entity.fields.length > 0">
-              <div class="entity-field-row" *ngFor="let field of entity.fields">
-                <span class="entity-field-text">{{ field.name }}: {{ field.type }}<span *ngIf="field.maxLength">({{ field.maxLength }})</span></span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+      <app-preview-entities
+        *ngIf="entities.length > 0"
+        [entities]="entities"
+        [relations]="relations"
+        [showActions]="true"
+        (viewMore)="openEntityDetailFromMain($event)"
+        (editEntity)="editEntity($event.entity, $event.index)"
+        (deleteEntity)="deleteEntity($event.index)">
+      </app-preview-entities>
 
       <div class="empty-state" *ngIf="entities.length === 0">
         <p>No entities created yet. Click the + button to add your first entity.</p>
@@ -141,10 +121,23 @@
 <app-modal
   [isOpen]="showEntityDetailModal"
   [title]="''"
+  [customHeader]="true"
   [size]="'large'"
   (close)="closeEntityDetail()">
+  <div modal-header class="entity-detail-modal-header">
+    <div class="entity-detail-header-left">
+      <span class="entity-detail-title">{{ viewingEntity?.name }}</span>
+      <span class="entity-detail-tag">Entity</span>
+      <div class="entity-detail-tags" *ngIf="viewingEntity?.mappedSuperclass || viewingEntity?.addRestEndpoints">
+        <span class="entity-detail-meta-tag" *ngIf="viewingEntity?.mappedSuperclass">Mapped Superclass</span>
+        <span class="entity-detail-meta-tag" *ngIf="viewingEntity?.addRestEndpoints">REST Endpoints Enabled</span>
+      </div>
+    </div>
+  </div>
   <app-entity-detail-view
     [entity]="viewingEntity"
+    [canDeleteFields]="viewingEntitySource === 'main'"
+    (deleteField)="deleteEntityField($event)"
     (close)="closeEntityDetail()">
   </app-entity-detail-view>
 </app-modal>
@@ -167,3 +160,51 @@
     <button mat-raised-button color="primary" type="button" (click)="saveRelation()">Save</button>
   </div>
 </app-modal>
+
+<app-modal
+  [isOpen]="showImportSchemaModal"
+  [title]="'Import Schema from SQL'"
+  [size]="'xlarge'"
+  (close)="closeImportSchema()">
+  <app-import-schema [(sqlScript)]="importSchemaSql"></app-import-schema>
+  <div modal-footer>
+    <button mat-raised-button color="primary" type="button" (click)="goToSchemaPreview()">Go to preview</button>
+    <button mat-raised-button type="button" (click)="closeImportSchema()">Cancel</button>
+  </div>
+</app-modal>
+
+<app-modal
+  [isOpen]="showImportSchemaPreviewModal"
+  [title]="'Import Schema from SQL'"
+  [size]="'xlarge'"
+  (close)="showImportSchemaPreviewModal = false">
+  <app-import-schema-preview
+    [entities]="importPreviewEntities"
+    [(addRestEndpoints)]="importAddRestEndpoints"
+    (viewEntity)="openEntityDetailFromImport($event)"
+    (editEntity)="editImportEntity()"
+    (deleteEntity)="requestImportEntityDelete($event)">
+  </app-import-schema-preview>
+  <div modal-footer>
+    <button mat-raised-button color="primary" type="button" (click)="performSchemaImport()">Perform import</button>
+    <button mat-raised-button type="button" (click)="goBackToImportSchema()">Go back</button>
+  </div>
+</app-modal>
+
+<app-confirmation-modal
+  *ngIf="showFieldDeleteConfirmation"
+  [title]="fieldDeleteModalConfig.title"
+  [message]="fieldDeleteModalConfig.message"
+  [buttons]="fieldDeleteModalConfig.buttons"
+  (confirm)="confirmDeleteField()"
+  (cancel)="cancelDeleteField()">
+</app-confirmation-modal>
+
+<app-confirmation-modal
+  *ngIf="showImportEntityDeleteConfirmation"
+  [title]="importEntityDeleteModalConfig.title"
+  [message]="importEntityDeleteModalConfig.message"
+  [buttons]="importEntityDeleteModalConfig.buttons"
+  (confirm)="confirmImportEntityDelete()"
+  (cancel)="cancelImportEntityDelete()">
+</app-confirmation-modal>
