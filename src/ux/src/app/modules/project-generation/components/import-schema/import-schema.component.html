@@ -1,0 +1,15 @@
+<div class="import-schema">
+  <p class="import-schema__intro">
+    Paste your SQL script here describing your schema
+    (<span class="inline-code">create table</span> / <span class="inline-code">alter table</span>) and you can see a preview in the
+    next step. Only features available in Bootify can be imported.
+  </p>
+
+  <textarea
+    class="import-schema__textarea"
+    rows="14"
+    [ngModel]="sqlScript"
+    (ngModelChange)="onSqlChange($event)"
+    placeholder="Your SQL script: CREATE TABLE user_account (...">
+  </textarea>
+</div>

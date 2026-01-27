@@ -93,6 +93,10 @@
   position: sticky;
   top: 0;
   z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
 }
 
 .modal-title {
@@ -101,6 +105,7 @@
   font-weight: 600;
   color: var(--theme-modal-header-text, #ffffff);
   padding-right: 40px;
+  flex: 1;
 }
 
 .modal-body {

@@ -13,6 +13,7 @@ export class ModalComponent {
   @Input() title = '';
   @Input() size: 'small' | 'medium' | 'large' | 'xlarge' = 'large';
   @Input() showFooter = true;
+  @Input() customHeader = false;
   @Output() close = new EventEmitter<void>();
 
   onClose(): void {

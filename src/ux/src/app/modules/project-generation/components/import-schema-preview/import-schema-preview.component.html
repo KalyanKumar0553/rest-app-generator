@@ -1,0 +1,29 @@
+<div class="import-preview">
+  <p class="import-preview__intro">
+    Would you like to import this schema? <strong>Existing entities/relations with the same name will be overwritten.</strong>
+    It's recommended to change DB Generation to <span class="inline-code">None (validate only)</span>, so Hibernate isn't altering
+    the existing schema during application startup.
+  </p>
+
+  <app-preview-entities
+    [entities]="entities"
+    [showActions]="true"
+    (viewMore)="onViewEntity($event)"
+    (editEntity)="onEditEntity($event)"
+    (deleteEntity)="onDeleteEntity($event)">
+  </app-preview-entities>
+
+  <div class="import-preview__crud">
+    <h4>Please select the default CRUD options for your entities.</h4>
+    <div class="crud-row">
+      <span class="crud-label">Add REST endpoints</span>
+      <mat-radio-group
+        class="crud-options"
+        [ngModel]="addRestEndpoints"
+        (ngModelChange)="onAddRestEndpointsChange($event)">
+        <mat-radio-button [value]="false">Disabled</mat-radio-button>
+        <mat-radio-button [value]="true">Enabled</mat-radio-button>
+      </mat-radio-group>
+    </div>
+  </div>
+</div>
