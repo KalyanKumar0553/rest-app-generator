@@ -1,71 +1,77 @@
-<div class="search-sort-container">
-  <div class="search-box">
-    <i class="bi bi-search search-icon"></i>
-    <input
-      type="text"
-      class="search-input"
-      [placeholder]="searchConfig.placeholder"
-      [(ngModel)]="searchTerm"
-      (ngModelChange)="onSearchChange()"
-    />
-    <button
-      *ngIf="searchTerm"
-      class="clear-btn"
-      (click)="clearSearch()"
-      aria-label="Clear search"
-    >
-      <i class="bi bi-x-lg"></i>
-    </button>
-  </div>
-
-  <div class="sort-container">
-    <div class="sort-button" [class.active]="selectedSortOption">
+<div class="search-sort-shell">
+  <div class="search-sort-container">
+    <div class="search-box">
+      <i class="bi bi-search search-icon"></i>
+      <input
+        type="text"
+        class="search-input"
+        [placeholder]="searchConfig.placeholder"
+        [(ngModel)]="searchTerm"
+        (ngModelChange)="onSearchChange()"
+      />
       <button
-        #sortButton
-        class="sort-main-btn"
-        (click)="toggleDropdown()"
-        aria-label="Sort options"
+        *ngIf="searchTerm"
+        class="clear-btn"
+        (click)="clearSearch()"
+        aria-label="Clear search"
       >
-        <i class="bi bi-funnel sort-icon"></i>
-        <span class="sort-label">{{ getSortLabel() }}</span>
+        <i class="bi bi-x-lg"></i>
       </button>
-      <div *ngIf="selectedSortOption" class="direction-controls">
+    </div>
+
+    <div class="sort-container">
+      <div class="sort-button" [class.active]="selectedSortOption">
         <button
-          class="direction-btn"
-          [class.selected]="selectedSortOption.direction === 'asc'"
-          (click)="toggleDirection($event, 'asc')"
-          aria-label="Sort ascending"
+          #sortButton
+          class="sort-main-btn"
+          (click)="toggleDropdown()"
+          aria-label="Sort options"
         >
-          <i class="bi bi-arrow-up"></i>
+          <i class="bi bi-funnel sort-icon"></i>
+          <span class="sort-label">{{ getSortLabel() }}</span>
         </button>
+        <div *ngIf="selectedSortOption" class="direction-controls">
+          <button
+            class="direction-btn"
+            [class.selected]="selectedSortOption.direction === 'asc'"
+            (click)="toggleDirection($event, 'asc')"
+            aria-label="Sort ascending"
+          >
+            <i class="bi bi-arrow-up"></i>
+          </button>
+          <button
+            class="direction-btn"
+            [class.selected]="selectedSortOption.direction === 'desc'"
+            (click)="toggleDirection($event, 'desc')"
+            aria-label="Sort descending"
+          >
+            <i class="bi bi-arrow-down"></i>
+          </button>
+          <button
+            class="clear-sort-btn"
+            (click)="clearSort($event)"
+            aria-label="Clear sort"
+          >
+            <i class="bi bi-x-lg"></i>
+          </button>
+        </div>
+      </div>
+
+      <div class="dropdown-overlay" *ngIf="isDropdownOpen" (click)="closeDropdown()"></div>
+      <div class="dropdown-menu" [class.open]="isDropdownOpen" [style.top]="dropdownPosition.top" [style.right]="dropdownPosition.right">
         <button
-          class="direction-btn"
-          [class.selected]="selectedSortOption.direction === 'desc'"
-          (click)="toggleDirection($event, 'desc')"
-          aria-label="Sort descending"
+          *ngFor="let prop of uniqueSortProperties"
+          class="dropdown-item"
+          [class.selected]="selectedSortOption?.property === prop.property"
+          (click)="selectProperty(prop.property)"
         >
-          <i class="bi bi-arrow-down"></i>
-        </button>
-        <button
-          class="clear-sort-btn"
-          (click)="clearSort($event)"
-          aria-label="Clear sort"
-        >
-          <i class="bi bi-x-lg"></i>
+          {{ prop.label }}
         </button>
       </div>
     </div>
+  </div>
 
-    <div class="dropdown-overlay" *ngIf="isDropdownOpen" (click)="closeDropdown()"></div>
-    <div class="dropdown-menu" [class.open]="isDropdownOpen" [style.top]="dropdownPosition.top" [style.right]="dropdownPosition.right">
-      <button
-        *ngFor="let prop of uniqueSortProperties"
-        class="dropdown-item"
-        [class.selected]="selectedSortOption?.property === prop.property"
-        (click)="selectProperty(prop.property)"
-      >
-        {{ prop.label }}
-      </button>
-    </div>
+  <div class="search-sort-content">
+    <ng-content></ng-content>
   </div>
 </div>

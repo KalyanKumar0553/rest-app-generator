@@ -7,7 +7,14 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatSelectModule } from '@angular/material/select';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
-import { FieldItemComponent, Field } from '../field-item/field-item.component';
+import { Field } from '../field-item/field-item.component';
+import { SearchSortComponent, SearchConfig, SortOption, SearchSortEvent } from '../../../../components/search-sort/search-sort.component';
+import { ConfirmationModalComponent, ModalButton } from '../../../../components/confirmation-modal/confirmation-modal.component';
+import { FieldConfigComponent } from '../field-config/field-config.component';
+import { ModalComponent } from '../../../../components/modal/modal.component';
+import { ValidatorService } from '../../../../services/validator.service';
+import { buildEntityNameRules, buildFieldListRules, buildFieldRules } from '../../validators/entity-validation';
+import { FieldFilterService } from '../../../../services/field-filter.service';
 
 interface Entity {
   name: string;
@@ -28,7 +35,10 @@ interface Entity {
     MatSelectModule,
     MatButtonModule,
     MatIconModule,
-    FieldItemComponent
+    SearchSortComponent,
+    ConfirmationModalComponent,
+    FieldConfigComponent,
+    ModalComponent
   ],
   templateUrl: './add-entity.component.html',
   styleUrls: ['./add-entity.component.css']
@@ -45,17 +55,43 @@ export class AddEntityComponent implements OnChanges {
   addRestEndpoints = false;
   nameError = '';
 
-  fields: Field[] = [
-    {
-      type: 'Long',
-      name: 'id',
-      primaryKey: true,
-      required: false,
-      unique: false
-    }
-  ];
+  fields: Field[] = [];
 
   private tempFields: Field[] = [];
+  visibleFields: Array<{ field: Field; index: number }> = [];
+  fieldSearchTerm = '';
+  fieldSortOption: SortOption | null = null;
+  isFieldConfigOpen = false;
+  fieldConfigMode: 'add' | 'edit' = 'add';
+  fieldConfigIndex: number | null = null;
+  fieldDraft: Field | null = null;
+  showFieldDeleteModal = false;
+  fieldDeleteIndex: number | null = null;
+
+  fieldDeleteModalConfig = {
+    title: 'Delete field',
+    message: ['Are you sure you want to delete this field?', 'This action cannot be undone.'],
+    buttons: [
+      { text: 'Cancel', type: 'cancel' as const, action: 'cancel' as const },
+      { text: 'Delete', type: 'danger' as const, action: 'confirm' as const }
+    ] as ModalButton[]
+  };
+
+  searchConfig: SearchConfig = {
+    placeholder: 'Search fields by name, type, or constraint...',
+    properties: ['name', 'type', 'constraints']
+  };
+
+  sortOptions: SortOption[] = [
+    { label: 'Name (A-Z)', property: 'name', direction: 'asc' },
+    { label: 'Name (Z-A)', property: 'name', direction: 'desc' },
+    { label: 'Type (A-Z)', property: 'type', direction: 'asc' },
+    { label: 'Type (Z-A)', property: 'type', direction: 'desc' },
+    { label: 'Constraints (Most)', property: 'constraintCount', direction: 'desc' },
+    { label: 'Constraints (Least)', property: 'constraintCount', direction: 'asc' },
+    { label: 'Max Length (High)', property: 'maxLength', direction: 'desc' },
+    { label: 'Max Length (Low)', property: 'maxLength', direction: 'asc' }
+  ];
 
   fieldTypes = [
     'String',
@@ -71,6 +107,11 @@ export class AddEntityComponent implements OnChanges {
     'Enum',
     'byte[]'
   ];
+
+  constructor(
+    private validatorService: ValidatorService,
+    private fieldFilterService: FieldFilterService
+  ) {}
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['isOpen']) {
@@ -88,6 +129,10 @@ export class AddEntityComponent implements OnChanges {
     if (changes['editEntity'] && this.editEntity) {
       this.loadEntityData(this.editEntity);
     }
+
+    if (changes['editEntity'] || changes['isOpen']) {
+      this.updateVisibleFields();
+    }
   }
 
   loadEntityData(entity: Entity): void {
@@ -96,6 +141,7 @@ export class AddEntityComponent implements OnChanges {
     this.addRestEndpoints = entity.addRestEndpoints;
     this.fields = JSON.parse(JSON.stringify(entity.fields));
     this.nameError = '';
+    this.updateVisibleFields();
   }
 
   resetForm(): void {
@@ -103,34 +149,34 @@ export class AddEntityComponent implements OnChanges {
     this.mappedSuperclass = false;
     this.addRestEndpoints = false;
     this.nameError = '';
-    this.fields = [
-      {
-        type: 'Long',
-        name: 'id',
-        primaryKey: true,
-        required: false,
-        unique: false
-      }
-    ];
+    this.fields = [];
     this.tempFields = [];
+    this.updateVisibleFields();
   }
 
   addField(): void {
-    this.fields.push({
+    this.fieldConfigMode = 'add';
+    this.fieldConfigIndex = null;
+    this.fieldDraft = {
       type: 'String',
       name: '',
       maxLength: 255,
       required: false,
       unique: false,
       primaryKey: false,
+      softDelete: false,
+      constraints: [],
       nameError: ''
-    });
+    };
+    this.isFieldConfigOpen = true;
+    this.updateVisibleFields();
   }
 
   onFieldNameChange(field: Field): void {
     if (field.nameError) {
       field.nameError = '';
     }
+    this.updateVisibleFields();
   }
 
   onEntityNameChange(): void {
@@ -142,6 +188,7 @@ export class AddEntityComponent implements OnChanges {
   removeField(index: number): void {
     if (index > 0) {
       this.fields.splice(index, 1);
+      this.updateVisibleFields();
     }
   }
 
@@ -153,65 +200,26 @@ export class AddEntityComponent implements OnChanges {
     } else {
       delete field.maxLength;
     }
+    this.updateVisibleFields();
   }
 
   validateEntityName(): boolean {
-    if (!this.entityName.trim()) {
-      this.nameError = 'Entity name is required.';
-      return false;
-    }
-
-    const duplicateEntity = this.existingEntities.find(
-      (entity, index) => {
-        if (this.editEntity && this.existingEntities[index] === this.editEntity) {
-          return false;
+    const valid = this.validatorService.validate(
+      this,
+      buildEntityNameRules({
+        entityName: this.entityName,
+        existingEntities: this.existingEntities,
+        editEntityName: this.editEntity?.name ?? null,
+        setError: (message) => {
+          this.nameError = message;
         }
-        return entity.name.toLowerCase() === this.entityName.trim().toLowerCase();
-      }
+      })
     );
 
-    if (duplicateEntity) {
-      this.nameError = `Entity "${this.entityName}" already exists.`;
-      return false;
+    if (valid) {
+      this.nameError = '';
     }
-
-    this.nameError = '';
-    return true;
-  }
-
-  validateFieldName(field: Field): boolean {
-    if (!field.name.trim()) {
-      field.nameError = 'Field name is required.';
-      return false;
-    }
-
-    const alphanumericPattern = /^[a-zA-Z0-9]+$/;
-    if (!alphanumericPattern.test(field.name)) {
-      field.nameError = 'Field name must be alphanumeric without spaces.';
-      return false;
-    }
-
-    const duplicateField = this.fields.filter(
-      f => f !== field && f.name.toLowerCase() === field.name.trim().toLowerCase()
-    );
-
-    if (duplicateField.length > 0) {
-      field.nameError = `Field "${field.name}" already exists in this entity.`;
-      return false;
-    }
-
-    field.nameError = '';
-    return true;
-  }
-
-  validateAllFields(): boolean {
-    let isValid = true;
-    for (const field of this.fields) {
-      if (!field.primaryKey && !this.validateFieldName(field)) {
-        isValid = false;
-      }
-    }
-    return isValid;
+    return valid;
   }
 
   moveFieldUp(index: number): void {
@@ -219,6 +227,7 @@ export class AddEntityComponent implements OnChanges {
       const temp = this.fields[index];
       this.fields[index] = this.fields[index - 1];
       this.fields[index - 1] = temp;
+      this.updateVisibleFields();
     }
   }
 
@@ -227,6 +236,7 @@ export class AddEntityComponent implements OnChanges {
       const temp = this.fields[index];
       this.fields[index] = this.fields[index + 1];
       this.fields[index + 1] = temp;
+      this.updateVisibleFields();
     }
   }
 
@@ -235,7 +245,7 @@ export class AddEntityComponent implements OnChanges {
       return;
     }
 
-    if (!this.validateAllFields()) {
+    if (!this.validatorService.validate(this, buildFieldListRules())) {
       return;
     }
 
@@ -262,20 +272,171 @@ export class AddEntityComponent implements OnChanges {
       this.tempFields = JSON.parse(JSON.stringify(this.fields));
       this.fields = [];
       this.addRestEndpoints = false;
+      this.closeFieldConfig();
     } else {
       if (this.tempFields.length > 0) {
         this.fields = JSON.parse(JSON.stringify(this.tempFields));
         this.tempFields = [];
       } else {
-        this.fields = [
-          {
-            type: 'Long',
-            name: 'id',
-            primaryKey: true,
-            required: false,
-            unique: false
-          }
-        ];
+        this.fields = [];
+      }
+    }
+    this.updateVisibleFields();
+  }
+
+  startEditField(index: number): void {
+    this.fieldConfigMode = 'edit';
+    this.fieldConfigIndex = index;
+    this.fieldDraft = JSON.parse(JSON.stringify(this.fields[index]));
+    if (this.fieldDraft && !this.fieldDraft.constraints) {
+      this.fieldDraft.constraints = [];
+    }
+    this.isFieldConfigOpen = true;
+  }
+
+  onFieldConfigCancel(): void {
+    this.closeFieldConfig();
+  }
+
+  onFieldConfigSave(field: Field): void {
+    if (!this.validateFieldDraft(field)) {
+      return;
+    }
+
+    this.applyConstraintMappings(field);
+
+    if (this.fieldConfigMode === 'edit' && this.fieldConfigIndex !== null) {
+      this.fields[this.fieldConfigIndex] = field;
+    } else {
+      this.fields.push(field);
+    }
+
+    this.closeFieldConfig();
+    this.updateVisibleFields();
+  }
+
+  requestDeleteField(index: number): void {
+    if (index <= 0) return;
+    const fieldName = this.fields[index]?.name?.trim() || 'this field';
+    this.fieldDeleteModalConfig.message = [
+      `Are you sure you want to delete "${fieldName}"?`,
+      'This will remove all constraints for the field.'
+    ];
+    this.fieldDeleteIndex = index;
+    this.showFieldDeleteModal = true;
+  }
+
+  confirmDeleteField(): void {
+    if (this.fieldDeleteIndex === null) {
+      return;
+    }
+    this.removeField(this.fieldDeleteIndex);
+    this.fieldDeleteIndex = null;
+    this.showFieldDeleteModal = false;
+  }
+
+  cancelDeleteField(): void {
+    this.fieldDeleteIndex = null;
+    this.showFieldDeleteModal = false;
+  }
+
+  onFieldSearchSortChange(event: SearchSortEvent): void {
+    this.fieldSearchTerm = event.searchTerm;
+    this.fieldSortOption = event.sortOption;
+    this.updateVisibleFields();
+  }
+
+  get hasActiveFilters(): boolean {
+    return Boolean(this.fieldSearchTerm) || Boolean(this.fieldSortOption);
+  }
+
+  private updateVisibleFields(): void {
+    this.visibleFields = this.fieldFilterService.getVisibleFields(
+      this.fields,
+      this.fieldSearchTerm,
+      this.fieldSortOption
+    );
+  }
+
+  getConstraintCount(field: Field): number {
+    const listCount = field.constraints?.length ?? 0;
+    if (listCount > 0) {
+      return listCount;
+    }
+    return Number(Boolean(field.primaryKey)) + Number(Boolean(field.required)) + Number(Boolean(field.unique));
+  }
+
+  getConstraintLabel(field: Field): string {
+    const count = this.getConstraintCount(field);
+    return `${count} constraint${count === 1 ? '' : 's'}`;
+  }
+
+  get hasOtherPrimaryKey(): boolean {
+    const draftIndex = this.fieldConfigIndex;
+    return this.fields.some((existing, index) => {
+      if (draftIndex !== null && index === draftIndex) {
+        return false;
+      }
+      return Boolean(existing.primaryKey);
+    });
+  }
+
+  private validateFieldDraft(field: Field): boolean {
+    const duplicateField = this.fields.find((existingField, index) => {
+      if (this.fieldConfigMode === 'edit' && this.fieldConfigIndex === index) {
+        return false;
+      }
+      return existingField.name.toLowerCase() === field.name.trim().toLowerCase();
+    });
+
+    const valid = this.validatorService.validate(
+      field,
+      buildFieldRules({
+        field,
+        duplicateField: Boolean(duplicateField),
+        hasOtherPrimaryKey: this.hasOtherPrimaryKey,
+        setError: (message) => {
+          field.nameError = message;
+        }
+      })
+    );
+
+    if (valid) {
+      field.nameError = '';
+      return true;
+    }
+    return false;
+  }
+
+  private closeFieldConfig(): void {
+    this.isFieldConfigOpen = false;
+    this.fieldConfigMode = 'add';
+    this.fieldConfigIndex = null;
+    this.fieldDraft = null;
+  }
+
+  private applyConstraintMappings(field: Field): void {
+    field.primaryKey = false;
+    field.required = false;
+    field.unique = false;
+
+    const constraints = field.constraints ?? [];
+    for (const constraint of constraints) {
+      const name = constraint.name.toLowerCase().trim();
+      if (name === 'primary key' || name === 'primarykey' || name === 'primary_key') {
+        field.primaryKey = true;
+      }
+      if (name === 'required' || name === 'not null' || name === 'not_null') {
+        field.required = true;
+      }
+      if (name === 'unique') {
+        field.unique = true;
+      }
+      if ((name === 'max length' || name === 'length') && constraint.value) {
+        const parsed = Number(constraint.value);
+        if (!Number.isNaN(parsed)) {
+          field.maxLength = parsed;
+        }
       }
     }
   }

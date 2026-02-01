@@ -103,7 +103,7 @@
 <app-modal
   [isOpen]="showAddEntityModal"
   [title]="editingEntity ? 'Edit entity' : 'Add entity'"
-  [size]="'xlarge'"
+  [size]="'medium'"
   (close)="closeModal()">
   <app-add-entity
     [editEntity]="editingEntity"
@@ -177,7 +177,7 @@
   [isOpen]="showImportSchemaPreviewModal"
   [title]="'Import Schema from SQL'"
   [size]="'xlarge'"
-  (close)="showImportSchemaPreviewModal = false">
+  (close)="closeImportSchemaPreview()">
   <app-import-schema-preview
     [entities]="importPreviewEntities"
     [(addRestEndpoints)]="importAddRestEndpoints"

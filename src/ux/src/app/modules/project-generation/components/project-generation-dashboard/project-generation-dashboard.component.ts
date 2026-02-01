@@ -339,6 +339,10 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
     }
   }
 
+  onEntitiesChange(entities: any[]): void {
+    this.entities = entities;
+  }
+
   async setupEntities(): Promise<void> {
     this.isLoading = true;
     try {

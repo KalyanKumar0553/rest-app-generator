@@ -1,8 +1,18 @@
+.search-sort-shell {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
 .search-sort-container {
   display: flex;
   gap: 16px;
   align-items: center;
   margin-bottom: 24px;
+}
+
+.search-sort-content {
+  width: 100%;
 }
 
 .search-box {

@@ -1,4 +1,4 @@
-import { Component, Input, ViewChild } from '@angular/core';
+import { Component, Input, Output, EventEmitter, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ModalComponent } from '../../../../components/modal/modal.component';
 import { AddEntityComponent } from '../add-entity/add-entity.component';
@@ -32,6 +32,7 @@ interface Entity {
 export class EntitiesComponent {
   @Input() entities: Entity[] = [];
   @Input() relations: Relation[] = [];
+  @Output() entitiesChange = new EventEmitter<Entity[]>();
   @ViewChild(AddEntityComponent) addEntityComponent!: AddEntityComponent;
   @ViewChild(AddRelationComponent) addRelationComponent!: AddRelationComponent;
 
@@ -140,6 +141,7 @@ export class EntitiesComponent {
     } else {
       this.entities.push(entity);
     }
+    this.entitiesChange.emit(JSON.parse(JSON.stringify(this.entities)));
     this.showAddEntityModal = false;
     this.editingEntity = null;
     this.editingEntityIndex = null;
@@ -334,6 +336,7 @@ export class EntitiesComponent {
 
   closeImportSchema(): void {
     this.showImportSchemaModal = false;
+    this.importSchemaSql = '';
   }
 
   goToSchemaPreview(): void {
@@ -351,6 +354,11 @@ export class EntitiesComponent {
   goBackToImportSchema(): void {
     this.showImportSchemaPreviewModal = false;
     this.showImportSchemaModal = true;
+  }
+
+  closeImportSchemaPreview(): void {
+    this.showImportSchemaPreviewModal = false;
+    this.importSchemaSql = '';
   }
 
   performSchemaImport(): void {
