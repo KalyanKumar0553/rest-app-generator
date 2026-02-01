@@ -281,7 +281,11 @@
       </div>
 
       <div class="scrollable-content">
-        <app-entities [entities]="entities" [relations]="relations"></app-entities>
+        <app-entities
+          [entities]="entities"
+          [relations]="relations"
+          (entitiesChange)="onEntitiesChange($event)">
+        </app-entities>
       </div>
 
       <div class="sticky-footer">

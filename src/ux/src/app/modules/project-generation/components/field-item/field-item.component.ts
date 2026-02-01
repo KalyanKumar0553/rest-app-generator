@@ -15,6 +15,8 @@ export interface Field {
   primaryKey?: boolean;
   required?: boolean;
   unique?: boolean;
+  softDelete?: boolean;
+  constraints?: Array<{ name: string; value: string }>;
   nameError?: string;
 }
 

@@ -64,20 +64,15 @@ export class DdlImportService {
       const rawType = columnMatch[3];
       const length = columnMatch[5] ? Number(columnMatch[5]) : undefined;
       const normalizedType = this.mapType(rawType);
-      const isPrimaryKey = /\bprimary\s+key\b/i.test(line) || /id$/i.test(rawName);
+      const isPrimaryKey = /\bprimary\s+key\b/i.test(line);
 
       fields.push({
         name: this.toCamelCase(rawName),
         type: normalizedType,
         maxLength: length,
         primaryKey: isPrimaryKey,
-        required: isPrimaryKey || /\bnot\s+null\b/i.test(line)
+        required: /\bnot\s+null\b/i.test(line)
       });
-    }
-
-    if (fields.length > 0 && !fields.some(field => field.primaryKey)) {
-      fields[0].primaryKey = true;
-      fields[0].required = true;
     }
 
     return fields;

@@ -1,0 +1,167 @@
+.field-config {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  height: 100%;
+}
+
+.field-config-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.field-config-header h3 {
+  margin: 0;
+  font-size: 20px;
+  color: #111827;
+}
+
+.field-config-header p {
+  margin: 6px 0 0;
+  font-size: 13px;
+  color: #6b7280;
+}
+
+.field-config-close {
+  border: none;
+  background: none;
+  color: #6b7280;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 6px 10px;
+  border-radius: 8px;
+}
+
+.field-config-close:hover {
+  color: #111827;
+  background-color: #f3f4f6;
+}
+
+.field-config-body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  overflow: hidden;
+}
+
+.field-input {
+  width: 100%;
+}
+
+.field-toggle-row {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+
+.field-separator {
+  height: 1px;
+  background-color: #e5e7eb;
+}
+
+.constraints-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.constraints-header h4 {
+  margin: 0;
+  font-size: 16px;
+  color: #111827;
+}
+
+.constraint-add-btn {
+  border: none;
+  background-color: #f3f4f6;
+  color: #8b9fa6;
+  border-radius: 999px;
+  padding: 6px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.constraint-add-btn:hover {
+  background-color: #e5e7eb;
+  color: #6b7280;
+}
+
+.constraints-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-height: 220px;
+  overflow-y: auto;
+  padding-right: 6px;
+  overscroll-behavior: contain;
+}
+
+.constraint-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  gap: 12px;
+  align-items: center;
+}
+
+.constraint-select,
+.constraint-value {
+  width: 100%;
+}
+
+.constraint-remove-btn {
+  border: none;
+  background-color: rgba(239, 68, 68, 0.12);
+  color: var(--theme-error-text-color, #ef4444);
+  border-radius: 10px;
+  padding: 6px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s ease;
+}
+
+.constraint-remove-btn:hover {
+  background-color: rgba(239, 68, 68, 0.2);
+}
+
+.constraints-empty {
+  font-size: 13px;
+  color: #6b7280;
+  background-color: #f9fafb;
+  border: 1px dashed #e5e7eb;
+  border-radius: 12px;
+  padding: 12px;
+}
+
+.constraint-error {
+  color: var(--theme-error-text-color, #ef4444);
+  font-size: 13px;
+}
+
+.field-config-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: auto;
+}
+
+@media (max-width: 768px) {
+  .constraint-row {
+    grid-template-columns: 1fr;
+  }
+
+  .constraint-remove-btn {
+    justify-self: flex-end;
+  }
+}

@@ -1,0 +1,89 @@
+<div class="field-config">
+  <div class="field-config-body">
+    <mat-form-field appearance="fill" class="field-input">
+      <mat-label>Field name</mat-label>
+      <input
+        matInput
+        [(ngModel)]="field.name"
+        (ngModelChange)="onFieldNameChange()"
+        [disabled]="mode === 'edit'"
+        placeholder="Field name">
+      <mat-error *ngIf="field.nameError">{{ field.nameError }}</mat-error>
+    </mat-form-field>
+
+    <mat-form-field appearance="fill" class="field-input">
+      <mat-label>Field type</mat-label>
+      <mat-select
+        [(ngModel)]="field.type"
+        (selectionChange)="onFieldTypeChange()"
+        [disabled]="mode === 'edit'">
+        <mat-option *ngFor="let type of fieldTypes" [value]="type">{{ type }}</mat-option>
+      </mat-select>
+    </mat-form-field>
+
+    <div class="field-toggle-row">
+      <mat-checkbox
+        *ngIf="!hasOtherPrimaryKey || field.primaryKey"
+        [(ngModel)]="field.primaryKey"
+        (change)="field.required = false"
+        color="primary">
+        Primary key
+      </mat-checkbox>
+      <mat-checkbox
+        [(ngModel)]="field.softDelete"
+        color="primary">
+        Soft delete
+      </mat-checkbox>
+      <mat-checkbox
+        *ngIf="!field.primaryKey"
+        [(ngModel)]="field.required"
+        color="primary">
+        Required
+      </mat-checkbox>
+    </div>
+
+    <div class="field-separator"></div>
+
+    <div class="constraints-header">
+      <h4>Constraints</h4>
+      <button class="constraint-add-btn" type="button" (click)="addConstraint()" aria-label="Add constraint">
+        <mat-icon>add</mat-icon>
+      </button>
+    </div>
+
+    <div class="constraints-list" *ngIf="field.constraints && field.constraints.length > 0; else emptyConstraints">
+      <div class="constraint-row" *ngFor="let constraint of field.constraints; let i = index">
+        <mat-form-field appearance="fill" class="constraint-select">
+          <mat-label>Constraint</mat-label>
+          <mat-select [(ngModel)]="constraint.name">
+            <mat-option *ngFor="let option of constraintOptions" [value]="option">{{ option }}</mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field appearance="fill" class="constraint-value">
+          <mat-label>Value</mat-label>
+          <input matInput [(ngModel)]="constraint.value" placeholder="Enter value">
+        </mat-form-field>
+
+        <button
+          class="constraint-remove-btn"
+          type="button"
+          (click)="removeConstraint(i)"
+          aria-label="Remove constraint">
+          <mat-icon>remove</mat-icon>
+        </button>
+      </div>
+    </div>
+
+    <ng-template #emptyConstraints>
+      <div class="constraints-empty">No constraints added yet.</div>
+    </ng-template>
+
+    <div class="constraint-error" *ngIf="constraintError">{{ constraintError }}</div>
+  </div>
+
+  <div class="field-config-footer">
+    <button mat-stroked-button type="button" (click)="onCancel()">Cancel</button>
+    <button mat-raised-button color="primary" type="button" (click)="onSave()">Save field</button>
+  </div>
+</div>

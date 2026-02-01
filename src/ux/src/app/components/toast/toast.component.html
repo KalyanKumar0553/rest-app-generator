@@ -8,6 +8,7 @@
         <i *ngIf="toast.type === 'success'" class="bi bi-check-circle"></i>
         <i *ngIf="toast.type === 'error'" class="bi bi-x-circle"></i>
         <i *ngIf="toast.type === 'info'" class="bi bi-info-circle"></i>
+        <i *ngIf="toast.type === 'warning'" class="bi bi-exclamation-triangle"></i>
       </div>
       <span class="toast-message">{{ toast.message }}</span>
     </div>
