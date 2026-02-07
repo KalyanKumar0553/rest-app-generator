@@ -16,7 +16,7 @@ export interface Field {
   required?: boolean;
   unique?: boolean;
   softDelete?: boolean;
-  constraints?: Array<{ name: string; value: string }>;
+  constraints?: Array<{ name: string; value?: string; value2?: string }>;
   nameError?: string;
 }
 

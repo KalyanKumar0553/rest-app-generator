@@ -1,0 +1,15 @@
+{
+  "success": true,
+  "message": "User roles fetched successfully",
+  "data": {
+    "userId": "user-12345",
+    "roles": ["user", "developer"],
+    "permissions": [
+      "project.create",
+      "project.read",
+      "project.update",
+      "project.delete",
+      "dashboard.view"
+    ]
+  }
+}

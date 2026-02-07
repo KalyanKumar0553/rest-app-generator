@@ -1,0 +1,144 @@
+{
+  "status": "success",
+  "message": "Projects retrieved successfully",
+  "data": {
+    "projects": [
+      {
+        "id": "STARTUP0VL6N",
+        "name": "io.bootify.my-app",
+        "description": "E-commerce platform with payment integration",
+        "createdAt": "2025-11-23T15:12:00Z",
+        "updatedAt": "2025-11-25T10:30:00Z",
+        "status": "active"
+      },
+      {
+        "id": "PROJ2XK9M4",
+        "name": "com.example.task-manager",
+        "description": "Task management system with real-time notifications",
+        "createdAt": "2025-11-20T09:45:00Z",
+        "updatedAt": "2025-11-24T16:20:00Z",
+        "status": "active"
+      },
+      {
+        "id": "APP3YH8N2",
+        "name": "org.company.inventory-system",
+        "description": "Inventory tracking and management application",
+        "createdAt": "2025-11-18T14:30:00Z",
+        "updatedAt": "2025-11-23T11:15:00Z",
+        "status": "active"
+      },
+      {
+        "id": "SVC4WG7P1",
+        "name": "net.service.analytics-dashboard",
+        "description": "Real-time analytics and reporting dashboard",
+        "createdAt": "2025-11-15T08:20:00Z",
+        "updatedAt": "2025-11-22T09:45:00Z",
+        "status": "active"
+      },
+      {
+        "id": "API5VF6K9",
+        "name": "io.api.customer-portal",
+        "description": "Customer self-service portal with ticketing",
+        "createdAt": "2025-11-12T11:00:00Z",
+        "updatedAt": "2025-11-21T14:30:00Z",
+        "status": "archived"
+      },
+      {
+        "id": "WEB6UE5J8",
+        "name": "com.web.booking-platform",
+        "description": "Online booking and reservation system",
+        "createdAt": "2025-11-10T13:15:00Z",
+        "updatedAt": "2025-11-20T10:00:00Z",
+        "status": "active"
+      },
+      {
+        "id": "MOB7TD4H7",
+        "name": "app.mobile.fitness-tracker",
+        "description": "Mobile fitness and workout tracking application",
+        "createdAt": "2025-11-08T07:30:00Z",
+        "updatedAt": "2025-11-19T15:45:00Z",
+        "status": "active"
+      },
+      {
+        "id": "SYS8SC3G6",
+        "name": "org.system.hr-management",
+        "description": "Human resources management system",
+        "createdAt": "2025-11-05T10:45:00Z",
+        "updatedAt": "2025-11-18T12:20:00Z",
+        "status": "active"
+      },
+      {
+        "id": "PLT9RB2F5",
+        "name": "io.platform.learning-hub",
+        "description": "Online learning and course management platform",
+        "createdAt": "2025-11-03T09:00:00Z",
+        "updatedAt": "2025-11-17T16:30:00Z",
+        "status": "active"
+      },
+      {
+        "id": "APP0QA1E4",
+        "name": "com.app.social-network",
+        "description": "Social networking platform with messaging",
+        "createdAt": "2025-10-30T12:30:00Z",
+        "updatedAt": "2025-11-16T11:00:00Z",
+        "status": "archived"
+      },
+      {
+        "id": "SRV1PZ9D3",
+        "name": "net.service.payment-gateway",
+        "description": "Payment processing and gateway service",
+        "createdAt": "2025-10-28T08:15:00Z",
+        "updatedAt": "2025-11-15T13:45:00Z",
+        "status": "active"
+      },
+      {
+        "id": "DEV2OY8C2",
+        "name": "org.dev.project-tracker",
+        "description": "Agile project tracking and management tool",
+        "createdAt": "2025-10-25T14:00:00Z",
+        "updatedAt": "2025-11-14T10:30:00Z",
+        "status": "active"
+      },
+      {
+        "id": "API3NX7B1",
+        "name": "io.api.weather-service",
+        "description": "Weather data API service",
+        "createdAt": "2025-10-22T11:30:00Z",
+        "updatedAt": "2025-11-13T15:00:00Z",
+        "status": "active"
+      },
+      {
+        "id": "WEB4MW6A9",
+        "name": "com.web.blog-engine",
+        "description": "Content management system for blogs",
+        "createdAt": "2025-10-20T09:45:00Z",
+        "updatedAt": "2025-11-12T12:15:00Z",
+        "status": "active"
+      },
+      {
+        "id": "APP5LV5Z8",
+        "name": "app.mobile.delivery-tracker",
+        "description": "Real-time delivery tracking application",
+        "createdAt": "2025-10-18T13:00:00Z",
+        "updatedAt": "2025-11-11T09:30:00Z",
+        "status": "active"
+      },
+      {
+        "id": "SYS6KU4Y7",
+        "name": "org.system.crm-platform",
+        "description": "Customer relationship management platform",
+        "createdAt": "2025-10-15T10:15:00Z",
+        "updatedAt": "2025-11-10T14:45:00Z",
+        "status": "archived"
+      },
+      {
+        "id": "PLT7JT3X6",
+        "name": "io.platform.marketplace",
+        "description": "Multi-vendor marketplace platform",
+        "createdAt": "2025-10-12T08:30:00Z",
+        "updatedAt": "2025-11-09T11:20:00Z",
+        "status": "active"
+      }
+    ]
+  }
+}

@@ -40,7 +40,7 @@ export class FieldFilterService {
   private matchesFieldSearch(field: Field, searchTerm: string): boolean {
     const constraints = field.constraints ?? [];
     const constraintTokens = constraints
-      .map(constraint => `${constraint.name ?? ''} ${constraint.value ?? ''}`.trim())
+      .map(constraint => `${constraint.name ?? ''} ${constraint.value ?? ''} ${constraint.value2 ?? ''}`.trim())
       .filter(Boolean)
       .join(' ');
     const legacyConstraints = [

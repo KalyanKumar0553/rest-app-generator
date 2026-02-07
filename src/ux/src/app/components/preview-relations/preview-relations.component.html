@@ -1,0 +1,4 @@
+<div class="preview-relations">
+  <div class="preview-relations-empty" *ngIf="!hasRelations">{{ emptyMessage }}</div>
+  <div class="preview-relations-canvas" #cyContainer *ngIf="hasRelations"></div>
+</div>

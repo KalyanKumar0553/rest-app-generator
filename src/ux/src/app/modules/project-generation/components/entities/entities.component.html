@@ -2,19 +2,23 @@
   <div class="entities-sticky-header">
     <div class="import-section">
       <a href="#" class="import-link" (click)="openImportSchema($event)">Import Schema</a>
+      <button class="import-upload-btn" type="button" (click)="triggerSchemaUpload(schemaUploadInput, $event)" aria-label="Upload SQL file">
+        <i class="bi bi-upload"></i>
+      </button>
+      <input
+        #schemaUploadInput
+        type="file"
+        class="schema-upload-input"
+        accept=".sql,text/plain"
+        (change)="onSchemaFileSelected($event)">
     </div>
 
-    <div class="info-banner" *ngIf="showInfoBanner">
-      <div class="info-content">
-        <p>
-          Create your custom database model here. Names are transformed to follow proper naming conventions - please use singular
-          table names. Relation types with examples <a href="#" class="info-link">are explained here</a>.
-        </p>
-      </div>
-      <button class="close-banner-btn" (click)="closeInfoBanner()" aria-label="Close banner">
-        <mat-icon>close</mat-icon>
-      </button>
-    </div>
+    <app-info-banner storageKey="entities-info">
+      <span>
+        Create your custom database model here. Names are transformed to follow proper naming conventions - please use singular
+        table names. Relation types with examples <a href="#" class="info-link">are explained here</a>.
+      </span>
+    </app-info-banner>
   </div>
 
   <div class="entities-scrollable">
@@ -26,24 +30,47 @@
         </button>
         <h2 class="panel-title">Entities</h2>
       </div>
-      <button class="add-btn" (click)="addEntity(); $event.stopPropagation()" aria-label="Add entity">
-        <i class="bi bi-plus-circle"></i>
-      </button>
+      <div class="panel-actions" (click)="$event.stopPropagation()">
+        <button
+          type="button"
+          class="filter-btn"
+          [class.active]="showEntityFilters"
+          [disabled]="entities.length === 0"
+          (click)="toggleEntityFilters()"
+          aria-label="Filter entities"
+        >
+          <i class="bi bi-funnel"></i>
+        </button>
+        <button type="button" class="add-btn" (click)="addEntity()" aria-label="Add entity">
+          <i class="bi bi-plus-circle"></i>
+        </button>
+      </div>
     </div>
 
     <div class="panel-body" *ngIf="entitiesExpanded">
+      <app-search-sort
+        *ngIf="showEntityFilters && entities.length > 0"
+        [searchConfig]="searchConfig"
+        [sortOptions]="sortOptions"
+        (searchSortChange)="onEntitySearchSortChange($event)"
+      ></app-search-sort>
+
       <app-preview-entities
-        *ngIf="entities.length > 0"
-        [entities]="entities"
+        *ngIf="visibleEntities.length > 0"
+        [entities]="visibleEntities"
         [relations]="relations"
         [showActions]="true"
         (viewMore)="openEntityDetailFromMain($event)"
-        (editEntity)="editEntity($event.entity, $event.index)"
-        (deleteEntity)="deleteEntity($event.index)">
+        (editEntity)="editEntityFromList($event)"
+        (deleteEntity)="deleteEntityFromList($event)">
       </app-preview-entities>
 
       <div class="empty-state" *ngIf="entities.length === 0">
         <p>No entities created yet. Click the + button to add your first entity.</p>
+      </div>
+
+      <div class="empty-state" *ngIf="entities.length > 0 && visibleEntities.length === 0">
+        <p>No entities match your search. Try a different keyword.</p>
       </div>
     </div>
   </div>
@@ -56,12 +83,21 @@
         </button>
         <h2 class="panel-title">Relations</h2>
       </div>
-      <button class="add-btn" (click)="addRelation(); $event.stopPropagation()" aria-label="Add relation">
-        <i class="bi bi-plus-circle"></i>
-      </button>
+      <div class="panel-actions" (click)="$event.stopPropagation()">
+        <button
+          *ngIf="relations.length > 0"
+          class="graph-link-btn"
+          (click)="openRelationsPreview()"
+          aria-label="View relations graph">
+          View graph
+        </button>
+        <button class="add-btn" (click)="addRelation()" aria-label="Add relation">
+          <i class="bi bi-plus-circle"></i>
+        </button>
+      </div>
     </div>
 
-    <div class="panel-body" *ngIf="relationsExpanded">
+    <div class="panel-body relations-panel-body" *ngIf="relationsExpanded">
       <div class="relations-list" *ngIf="relations.length > 0">
         <div class="relation-card" *ngFor="let relation of relations; let i = index">
           <div class="relation-header">
@@ -70,7 +106,7 @@
               <button class="icon-btn" (click)="editRelation(relation, i)" aria-label="Edit relation">
                 <i class="bi bi-pencil"></i>
               </button>
-              <button class="icon-btn" (click)="deleteRelation(i)" aria-label="Delete relation">
+              <button class="icon-btn danger" (click)="deleteRelation(i)" aria-label="Delete relation">
                 <i class="bi bi-trash"></i>
               </button>
             </div>
@@ -159,6 +195,15 @@
     <button mat-raised-button type="button" (click)="onRelationCancel()">Cancel</button>
     <button mat-raised-button color="primary" type="button" (click)="saveRelation()">Save</button>
   </div>
+</app-modal>
+
+<app-modal
+  [isOpen]="showRelationsPreviewModal"
+  [title]="'Relations Preview'"
+  [size]="'xlarge'"
+  [showFooter]="false"
+  (close)="closeRelationsPreview()">
+  <app-preview-relations [relations]="relations" [isOpen]="showRelationsPreviewModal"></app-preview-relations>
 </app-modal>
 
 <app-modal

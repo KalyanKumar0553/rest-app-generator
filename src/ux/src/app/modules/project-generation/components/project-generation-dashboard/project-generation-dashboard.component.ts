@@ -21,6 +21,7 @@ import { AuthService } from '../../../../services/auth.service';
 import { ToastService } from '../../../../services/toast.service';
 import { HttpClient } from '@angular/common/http';
 import { API_CONFIG, API_ENDPOINTS } from '../../../../constants/api.constants';
+import { InfoBannerComponent } from '../../../../components/info-banner/info-banner.component';
 
 interface ProjectSettings {
   projectGroup: string;
@@ -65,7 +66,8 @@ interface DeveloperPreferences {
     MatAutocompleteModule,
     ConfirmationModalComponent,
     EntitiesComponent,
-    SidenavComponent
+    SidenavComponent,
+    InfoBannerComponent
   ],
   templateUrl: './project-generation-dashboard.component.html',
   styleUrls: ['./project-generation-dashboard.component.css']
@@ -78,7 +80,6 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
   isLoggedIn = false;
   projectId: number | null = null;
   hasUnsavedChanges = false;
-  showInfoBanner = true;
   activeSection = 'general';
 
   navItems: NavItem[] = [
@@ -287,10 +288,6 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
     } else {
       this.router.navigate(['/']);
     }
-  }
-
-  closeInfoBanner(): void {
-    this.showInfoBanner = false;
   }
 
   loadDependencies(): void {

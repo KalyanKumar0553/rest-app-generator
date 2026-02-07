@@ -1,0 +1,1 @@
+"use strict";(self.webpackChunkrest_app_generator=self.webpackChunkrest_app_generator||[]).push([[545],{2545(s,e,_){_.d(e,{AUTH_ROUTES:()=>p});const p=[{path:"",children:[]}]}}]);

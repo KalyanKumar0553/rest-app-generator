@@ -1,5 +1,6 @@
 import { ValidationRule } from '../../../services/validator.service';
 import { Field } from '../components/field-item/field-item.component';
+import { areConstraintsValid } from '../constants/field-constraints';
 
 const FIELD_NAME_PATTERN = /^[a-zA-Z0-9]+$/;
 
@@ -60,6 +61,13 @@ export const buildFieldListRules = (): ValidationRule[] => [
         predicate: (value) => Array.isArray(value) && value.length > 0,
         message: 'At least one field is required to save an entity.',
         messageType: 'warning'
+      },
+      {
+        type: 'custom',
+        predicate: (value) =>
+          Array.isArray(value) && value.some((field: Field) => Boolean(field?.primaryKey)),
+        message: 'At least one primary key is required to save an entity.',
+        messageType: 'warning'
       }
     ]
   }
@@ -100,14 +108,8 @@ export const buildFieldRules = (params: FieldValidationParams): ValidationRule[]
     constraints: [
       {
         type: 'custom',
-        predicate: (value) => {
-          const constraints = Array.isArray(value) ? value : [];
-          const invalidConstraint = constraints.find(
-            constraint => !constraint?.name?.trim() || !constraint?.value?.trim()
-          );
-          return !invalidConstraint;
-        },
-        message: 'Constraint name and value are required.',
+        predicate: (value) => areConstraintsValid(Array.isArray(value) ? value : []),
+        message: 'Constraints contain invalid or missing values.',
         messageType: 'error'
       }
     ]

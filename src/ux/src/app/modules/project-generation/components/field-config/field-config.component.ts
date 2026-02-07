@@ -8,6 +8,15 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatSelectModule } from '@angular/material/select';
 import { MatIconModule } from '@angular/material/icon';
 import { Field } from '../field-item/field-item.component';
+import {
+  getConstraintValidationError,
+  getConstraintDefinition,
+  getConstraintInputConfig,
+  getConstraintOptionsForFieldType,
+  getConstraintValueMode,
+  normalizeConstraintValuesForMode
+} from '../../constants/field-constraints';
+import { ToastService } from '../../../../services/toast.service';
 
 @Component({
   selector: 'app-field-config',
@@ -34,19 +43,12 @@ export class FieldConfigComponent implements OnChanges {
   @Output() cancel = new EventEmitter<void>();
 
   constraintError = '';
-  constraintOptions = [
-    'Primary Key',
-    'Required',
-    'Unique',
-    'Min',
-    'Max',
-    'Max Length',
-    'Pattern',
-    'Default'
-  ];
+
+  constructor(private toastService: ToastService) {}
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['field'] || changes['mode']) {
+      this.pruneConstraintsForFieldType();
       this.sortConstraintsForEdit();
     }
   }
@@ -65,13 +67,14 @@ export class FieldConfigComponent implements OnChanges {
     } else {
       delete this.field.maxLength;
     }
+    this.pruneConstraintsForFieldType();
   }
 
   addConstraint(): void {
     if (!this.field.constraints) {
       this.field.constraints = [];
     }
-    this.field.constraints.push({ name: '', value: '' });
+    this.field.constraints.push({ name: '', value: '', value2: '' });
   }
 
   removeConstraint(index: number): void {
@@ -80,19 +83,68 @@ export class FieldConfigComponent implements OnChanges {
 
   onSave(): void {
     this.constraintError = '';
-    const constraints = this.field.constraints ?? [];
-    const invalidConstraint = constraints.find(
-      constraint => !constraint.name?.trim() || !constraint.value?.trim()
-    );
-    if (invalidConstraint) {
-      this.constraintError = 'Constraint name and value are required.';
+    const error = getConstraintValidationError(this.field.constraints);
+    if (error) {
+      this.constraintError = error;
+      this.toastService.error(this.constraintError);
       return;
     }
+
     this.save.emit(this.field);
   }
 
   onCancel(): void {
     this.cancel.emit();
+  }
+
+  onConstraintNameChange(index: number): void {
+    this.constraintError = '';
+    const constraint = this.field.constraints?.[index];
+    if (!constraint) {
+      return;
+    }
+    normalizeConstraintValuesForMode(constraint);
+  }
+
+  getAvailableConstraintOptions(index: number): string[] {
+    const typeOptions = getConstraintOptionsForFieldType(this.field?.type ?? '');
+    const selectedInOtherRows = new Set(
+      (this.field.constraints ?? [])
+        .map((constraint, i) => (i === index ? '' : constraint.name?.trim()))
+        .filter(Boolean) as string[]
+    );
+
+    const filtered = typeOptions.filter(option => !selectedInOtherRows.has(option));
+    const currentName = this.field.constraints?.[index]?.name?.trim();
+    if (currentName && !filtered.includes(currentName)) {
+      filtered.push(currentName);
+    }
+
+    return filtered.sort((a, b) => a.localeCompare(b));
+  }
+
+  hasFirstValue(constraintName: string | undefined): boolean {
+    return getConstraintValueMode(constraintName) !== 'none';
+  }
+
+  hasSecondValue(constraintName: string | undefined): boolean {
+    return getConstraintValueMode(constraintName) === 'double';
+  }
+
+  getFirstInputLabel(constraintName: string | undefined): string {
+    return getConstraintInputConfig(constraintName, 1)?.label ?? 'Value';
+  }
+
+  getFirstInputPlaceholder(constraintName: string | undefined): string {
+    return getConstraintInputConfig(constraintName, 1)?.placeholder ?? 'Enter value';
+  }
+
+  getSecondInputLabel(constraintName: string | undefined): string {
+    return getConstraintInputConfig(constraintName, 2)?.label ?? 'Value 2';
+  }
+
+  getSecondInputPlaceholder(constraintName: string | undefined): string {
+    return getConstraintInputConfig(constraintName, 2)?.placeholder ?? 'Enter value';
   }
 
   private sortConstraintsForEdit(): void {
@@ -109,6 +161,29 @@ export class FieldConfigComponent implements OnChanges {
       if (!nameA) return 1;
       if (!nameB) return -1;
       return nameA.localeCompare(nameB);
+    });
+  }
+
+  private pruneConstraintsForFieldType(): void {
+    if (!this.field) {
+      return;
+    }
+    const constraints = this.field.constraints ?? [];
+    if (constraints.length === 0) {
+      return;
+    }
+
+    const allowedOptions = new Set(getConstraintOptionsForFieldType(this.field.type));
+    this.field.constraints = constraints.filter(constraint => {
+      if (!constraint.name?.trim()) {
+        return true;
+      }
+      const name = constraint.name.trim();
+      const definition = getConstraintDefinition(name);
+      if (!definition) {
+        return true;
+      }
+      return allowedOptions.has(name);
     });
   }
 }

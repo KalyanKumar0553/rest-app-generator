@@ -1,69 +1,88 @@
 <div class="add-relation-container">
   <div class="relation-form">
     <div class="form-row">
-      <mat-form-field appearance="fill" class="form-field">
-        <mat-label>Source entity</mat-label>
-        <mat-select
-          [(ngModel)]="sourceEntity"
-          (selectionChange)="onSourceEntityChange()"
-          required>
-          <mat-option *ngFor="let entity of entities" [value]="entity.name">
-            {{ entity.name }}
-          </mat-option>
-        </mat-select>
-        <mat-error *ngIf="sourceEntityError">{{ sourceEntityError }}</mat-error>
-      </mat-form-field>
+      <div class="form-field-group">
+        <mat-form-field appearance="fill" class="form-field">
+          <mat-label>Source entity</mat-label>
+          <mat-select
+            [(ngModel)]="sourceEntity"
+            (selectionChange)="onSourceEntityChange()"
+            required>
+            <mat-option *ngFor="let entity of entities" [value]="entity.name">
+              {{ entity.name }}
+            </mat-option>
+          </mat-select>
+        </mat-form-field>
+        <div class="input-error" *ngIf="sourceEntityError">{{ sourceEntityError }}</div>
+      </div>
 
-      <mat-form-field appearance="fill" class="form-field">
-        <mat-label>Source field name</mat-label>
-        <input
-          matInput
-          [(ngModel)]="sourceFieldName"
-          (ngModelChange)="onSourceFieldNameChange()"
-          placeholder="relationFieldName"
-          required>
-        <mat-error *ngIf="sourceFieldNameError">{{ sourceFieldNameError }}</mat-error>
-      </mat-form-field>
+      <div class="form-field-group">
+        <mat-form-field appearance="fill" class="form-field">
+          <mat-label>Source field name</mat-label>
+          <mat-select
+            [(ngModel)]="sourceFieldName"
+            (selectionChange)="onSourceFieldNameChange()"
+            [disabled]="!sourceEntity"
+            required>
+            <mat-option *ngFor="let fieldName of getSourceEntityFields()" [value]="fieldName">
+              {{ fieldName }}
+            </mat-option>
+          </mat-select>
+        </mat-form-field>
+        <div class="input-error" *ngIf="sourceFieldNameError">{{ sourceFieldNameError }}</div>
+      </div>
     </div>
 
     <div class="form-row">
-      <mat-form-field appearance="fill" class="form-field">
-        <mat-label>Target entity</mat-label>
-        <mat-select
-          [(ngModel)]="targetEntity"
-          (selectionChange)="onTargetEntityChange()"
-          required>
-          <mat-option *ngFor="let entity of entities" [value]="entity.name">
-            {{ entity.name }}
-          </mat-option>
-        </mat-select>
-        <mat-error *ngIf="targetEntityError">{{ targetEntityError }}</mat-error>
-      </mat-form-field>
+      <div class="form-field-group">
+        <mat-form-field appearance="fill" class="form-field">
+          <mat-label>Target entity</mat-label>
+          <mat-select
+            [(ngModel)]="targetEntity"
+            (selectionChange)="onTargetEntityChange()"
+            required>
+            <mat-option *ngFor="let entity of entities" [value]="entity.name">
+              {{ entity.name }}
+            </mat-option>
+          </mat-select>
+        </mat-form-field>
+        <div class="input-error" *ngIf="targetEntityError">{{ targetEntityError }}</div>
+      </div>
 
-      <mat-form-field appearance="fill" class="form-field">
-        <mat-label>Target field name (optional)</mat-label>
-        <input
-          matInput
-          [(ngModel)]="targetFieldName"
-          placeholder="backReferenceFieldName">
-      </mat-form-field>
+      <div class="form-field-group">
+        <mat-form-field appearance="fill" class="form-field">
+          <mat-label>Target field name</mat-label>
+          <mat-select
+            [(ngModel)]="targetFieldName"
+            (selectionChange)="onTargetFieldNameChange()"
+            required
+            [disabled]="!targetEntity">
+            <mat-option *ngFor="let fieldName of getTargetEntityFields()" [value]="fieldName">
+              {{ fieldName }}
+            </mat-option>
+          </mat-select>
+        </mat-form-field>
+        <div class="input-error" *ngIf="targetFieldNameError">{{ targetFieldNameError }}</div>
+      </div>
     </div>
 
     <div class="form-row">
-      <mat-form-field appearance="fill" class="form-field">
-        <mat-label>Relation type</mat-label>
-        <mat-select
-          [(ngModel)]="relationType"
-          (selectionChange)="onRelationTypeChange()"
-          required>
-          <mat-option *ngFor="let type of relationTypes" [value]="type">
-            {{ type }}
-          </mat-option>
-        </mat-select>
-        <mat-error *ngIf="relationTypeError">{{ relationTypeError }}</mat-error>
-      </mat-form-field>
+      <div class="form-field-group">
+        <mat-form-field appearance="fill" class="form-field">
+          <mat-label>Relation type</mat-label>
+          <mat-select
+            [(ngModel)]="relationType"
+            (selectionChange)="onRelationTypeChange()"
+            required>
+            <mat-option *ngFor="let type of relationTypes" [value]="type">
+              {{ type }}
+            </mat-option>
+          </mat-select>
+        </mat-form-field>
+        <div class="input-error" *ngIf="relationTypeError">{{ relationTypeError }}</div>
+      </div>
 
-      <div class="form-field checkbox-field">
+      <div class="form-field-group checkbox-field">
         <label class="checkbox-label">
           <input
             type="checkbox"

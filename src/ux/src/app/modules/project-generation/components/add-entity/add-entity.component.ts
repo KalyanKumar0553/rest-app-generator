@@ -304,11 +304,18 @@ export class AddEntityComponent implements OnChanges {
     }
 
     this.applyConstraintMappings(field);
+    if (field.primaryKey) {
+      field.required = false;
+    }
 
     if (this.fieldConfigMode === 'edit' && this.fieldConfigIndex !== null) {
       this.fields[this.fieldConfigIndex] = field;
     } else {
       this.fields.push(field);
+    }
+
+    if (field.primaryKey) {
+      this.clearOtherPrimaryKeys(field);
     }
 
     this.closeFieldConfig();
@@ -416,21 +423,27 @@ export class AddEntityComponent implements OnChanges {
   }
 
   private applyConstraintMappings(field: Field): void {
-    field.primaryKey = false;
-    field.required = false;
-    field.unique = false;
-
     const constraints = field.constraints ?? [];
+    if (constraints.length === 0) {
+      return;
+    }
+
     for (const constraint of constraints) {
       const name = constraint.name.toLowerCase().trim();
       if (name === 'primary key' || name === 'primarykey' || name === 'primary_key') {
         field.primaryKey = true;
       }
-      if (name === 'required' || name === 'not null' || name === 'not_null') {
+      if (name === 'required' || name === 'not null' || name === 'not_null' || name === 'notnull') {
         field.required = true;
       }
       if (name === 'unique') {
         field.unique = true;
+      }
+      if (name === 'size' && field.type === 'String') {
+        const parsed = Number(constraint.value2);
+        if (!Number.isNaN(parsed)) {
+          field.maxLength = parsed;
+        }
       }
       if ((name === 'max length' || name === 'length') && constraint.value) {
         const parsed = Number(constraint.value);
@@ -438,6 +451,15 @@ export class AddEntityComponent implements OnChanges {
           field.maxLength = parsed;
         }
       }
+    }
+  }
+
+  private clearOtherPrimaryKeys(selected: Field): void {
+    for (const existing of this.fields) {
+      if (existing === selected) {
+        continue;
+      }
+      existing.primaryKey = false;
     }
   }
 }
