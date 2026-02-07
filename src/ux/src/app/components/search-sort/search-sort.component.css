@@ -1,7 +1,6 @@
 .search-sort-shell {
   display: flex;
   flex-direction: column;
-  gap: 16px;
 }
 
 .search-sort-container {

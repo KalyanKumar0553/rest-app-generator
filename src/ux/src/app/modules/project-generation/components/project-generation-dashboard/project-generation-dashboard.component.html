@@ -50,16 +50,11 @@
           </button>
         </div>
 
-        <div class="info-banner" *ngIf="showInfoBanner">
-          <div class="info-content">
-            <p>
-              Define global project settings. Learn <a href="#" class="info-link">in the docs</a>.
-            </p>
-          </div>
-          <button class="close-banner-btn" (click)="closeInfoBanner()" aria-label="Close banner">
-            <mat-icon>close</mat-icon>
-          </button>
-        </div>
+        <app-info-banner storageKey="general-info">
+          <span>
+            Define global project settings. Learn <a href="#" class="info-link">in the docs</a>.
+          </span>
+        </app-info-banner>
       </div>
 
       <div class="scrollable-content">

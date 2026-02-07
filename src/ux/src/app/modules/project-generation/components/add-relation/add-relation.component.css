@@ -14,9 +14,22 @@
   margin-bottom: 24px;
 }
 
-.form-field {
+.form-field-group {
   flex: 1;
   min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.form-field {
+  width: 100%;
+}
+
+.input-error {
+  font-size: 12px;
+  line-height: 1.2;
+  color: var(--theme-error-text-color, #ef4444);
+  margin-top: -2px;
 }
 
 .checkbox-field {
@@ -52,7 +65,8 @@
 }
 
 ::ng-deep .add-relation-container .mat-mdc-form-field-subscript-wrapper {
-  height: 0;
+  min-height: 20px;
+  height: auto;
   margin-top: 4px;
 }
 

@@ -65,6 +65,9 @@
 
 .import-section {
   margin-bottom: 24px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
 .import-link {
@@ -78,56 +81,29 @@
   color: #1f2937;
 }
 
-.info-banner {
-  background-color: #97a9ae;
-  color: #ffffff;
-  padding: 20px 24px;
-  border-radius: 8px;
-  margin-bottom: 32px;
-  line-height: 1.6;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 16px;
-}
-
-.close-banner-btn {
-  background: none;
+.import-upload-btn {
   border: none;
+  background: none;
+  color: #6b7280;
+  font-size: 18px;
   cursor: pointer;
-  padding: 4px;
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  color: #ffffff;
-  transition: opacity 0.2s ease;
-  flex-shrink: 0;
+  padding: 0;
+  line-height: 1;
+  transition: color 0.2s ease;
 }
 
-.close-banner-btn:hover {
-  opacity: 0.8;
+.import-upload-btn:hover {
+  color: #1f2937;
 }
 
-.close-banner-btn mat-icon {
-  font-size: 20px;
-  width: 20px;
-  height: 20px;
+.schema-upload-input {
+  display: none;
 }
 
-.info-content p {
-  margin: 0;
-  font-size: 14px;
-}
 
-.info-link {
-  color: #ffffff;
-  text-decoration: underline;
-  transition: opacity 0.2s ease;
-}
-
-.info-link:hover {
-  opacity: 0.8;
-}
 
 .expansion-panel {
   background-color: #ffffff;
@@ -183,6 +159,12 @@
   padding: 24px;
 }
 
+.panel-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
 .add-btn {
   background: none;
   border: none;
@@ -199,6 +181,53 @@
 
 .add-btn:hover {
   color: #c55544;
+}
+
+.graph-link-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #6b7280;
+  font-size: 14px;
+  text-decoration: underline;
+  font-weight: 500;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s ease;
+  line-height: 1;
+}
+
+.graph-link-btn:hover {
+  color: #1f2937;
+}
+
+.filter-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #6b7280;
+  font-size: 22px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s ease;
+  line-height: 1;
+}
+
+.filter-btn.active {
+  color: #1f2937;
+}
+
+.filter-btn:disabled {
+  cursor: not-allowed;
+  color: #9ca3af;
+}
+
+.filter-btn:hover {
+  color: #1f2937;
 }
 
 .icon-btn {
@@ -218,6 +247,17 @@
   color: #1f2937;
 }
 
+.icon-btn.danger {
+  background-color: rgba(239, 68, 68, 0.12);
+  color: var(--theme-error-text-color, #ef4444);
+  border-radius: 10px;
+}
+
+.icon-btn.danger:hover {
+  background-color: rgba(239, 68, 68, 0.2);
+  color: var(--theme-error-text-color, #ef4444);
+}
+
 .empty-state {
   text-align: center;
   padding: 60px 20px;
@@ -225,10 +265,40 @@
   font-size: 15px;
 }
 
+app-search-sort {
+  display: block;
+}
+
 .relations-list {
   display: flex;
   flex-direction: column;
   gap: 16px;
+  padding-right: 2px;
+}
+
+.relations-panel-body {
+  max-height: 220px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-right: 6px;
+}
+
+.relations-panel-body::-webkit-scrollbar {
+  width: 8px;
+}
+
+.relations-panel-body::-webkit-scrollbar-track {
+  background: rgba(148, 163, 184, 0.15);
+  border-radius: 999px;
+}
+
+.relations-panel-body::-webkit-scrollbar-thumb {
+  background: rgba(79, 95, 102, 0.4);
+  border-radius: 999px;
+}
+
+.relations-panel-body::-webkit-scrollbar-thumb:hover {
+  background: rgba(79, 95, 102, 0.6);
 }
 
 .relation-card {
@@ -315,6 +385,10 @@
 
   .add-btn {
     font-size: 24px;
+  }
+
+  .relations-panel-body {
+    max-height: 420px;
   }
 
 }

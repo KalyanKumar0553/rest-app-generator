@@ -123,6 +123,12 @@ export class SearchSortComponent implements OnInit {
     this.emitChange();
   }
 
+  reset(): void {
+    this.searchTerm = '';
+    this.selectedSortOption = null;
+    this.emitChange();
+  }
+
   private emitChange(): void {
     this.searchSortChange.emit({
       searchTerm: this.searchTerm,

@@ -17,7 +17,7 @@ export interface Relation {
 
 interface Entity {
   name: string;
-  fields?: any[];
+  fields?: Array<{ name?: string }>;
 }
 
 @Component({
@@ -52,6 +52,7 @@ export class AddRelationComponent implements OnChanges {
   sourceEntityError = '';
   sourceFieldNameError = '';
   targetEntityError = '';
+  targetFieldNameError = '';
   relationTypeError = '';
 
   relationTypes = [
@@ -101,11 +102,14 @@ export class AddRelationComponent implements OnChanges {
     this.sourceEntityError = '';
     this.sourceFieldNameError = '';
     this.targetEntityError = '';
+    this.targetFieldNameError = '';
     this.relationTypeError = '';
   }
 
   onSourceEntityChange(): void {
     this.sourceEntityError = '';
+    this.sourceFieldName = '';
+    this.sourceFieldNameError = '';
   }
 
   onSourceFieldNameChange(): void {
@@ -114,6 +118,12 @@ export class AddRelationComponent implements OnChanges {
 
   onTargetEntityChange(): void {
     this.targetEntityError = '';
+    this.targetFieldName = '';
+    this.targetFieldNameError = '';
+  }
+
+  onTargetFieldNameChange(): void {
+    this.targetFieldNameError = '';
   }
 
   onRelationTypeChange(): void {
@@ -134,10 +144,9 @@ export class AddRelationComponent implements OnChanges {
       this.sourceFieldNameError = 'Source field name is required.';
       return false;
     }
-
-    const alphanumericPattern = /^[a-zA-Z0-9]+$/;
-    if (!alphanumericPattern.test(this.sourceFieldName)) {
-      this.sourceFieldNameError = 'Field name must be alphanumeric without spaces.';
+    const availableFieldNames = this.getFieldNamesForEntity(this.sourceEntity);
+    if (!availableFieldNames.includes(this.sourceFieldName)) {
+      this.sourceFieldNameError = 'Select a valid source field.';
       return false;
     }
 
@@ -160,6 +169,38 @@ export class AddRelationComponent implements OnChanges {
     return true;
   }
 
+  validateTargetFieldName(): boolean {
+    if (!this.targetFieldName.trim()) {
+      this.targetFieldNameError = 'Target field name is required.';
+      return false;
+    }
+
+    const availableFieldNames = this.getFieldNamesForEntity(this.targetEntity);
+    if (!availableFieldNames.includes(this.targetFieldName)) {
+      this.targetFieldNameError = 'Select a valid target field.';
+      return false;
+    }
+
+    this.targetFieldNameError = '';
+    return true;
+  }
+
+  getSourceEntityFields(): string[] {
+    const fields = this.getFieldNamesForEntity(this.sourceEntity);
+    if (this.sourceFieldName && !fields.includes(this.sourceFieldName)) {
+      return [...fields, this.sourceFieldName];
+    }
+    return fields;
+  }
+
+  getTargetEntityFields(): string[] {
+    const fields = this.getFieldNamesForEntity(this.targetEntity);
+    if (this.targetFieldName && !fields.includes(this.targetFieldName)) {
+      return [...fields, this.targetFieldName];
+    }
+    return fields;
+  }
+
   validateRelationType(): boolean {
     if (!this.relationType) {
       this.relationTypeError = 'Relation type is required.';
@@ -173,9 +214,10 @@ export class AddRelationComponent implements OnChanges {
     const isSourceEntityValid = this.validateSourceEntity();
     const isSourceFieldNameValid = this.validateSourceFieldName();
     const isTargetEntityValid = this.validateTargetEntity();
+    const isTargetFieldNameValid = this.validateTargetFieldName();
     const isRelationTypeValid = this.validateRelationType();
 
-    return isSourceEntityValid && isSourceFieldNameValid && isTargetEntityValid && isRelationTypeValid;
+    return isSourceEntityValid && isSourceFieldNameValid && isTargetEntityValid && isTargetFieldNameValid && isRelationTypeValid;
   }
 
   onSave(): void {
@@ -199,5 +241,18 @@ export class AddRelationComponent implements OnChanges {
   onCancel(): void {
     this.resetForm();
     this.cancel.emit();
+  }
+
+  private getFieldNamesForEntity(entityName: string): string[] {
+    if (!entityName) {
+      return [];
+    }
+    const entity = this.entities.find(item => item.name === entityName);
+    if (!entity?.fields?.length) {
+      return [];
+    }
+    return entity.fields
+      .map(field => field?.name?.trim() ?? '')
+      .filter(Boolean);
   }
 }

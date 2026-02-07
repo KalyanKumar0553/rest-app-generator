@@ -53,24 +53,37 @@
 
     <div class="constraints-list" *ngIf="field.constraints && field.constraints.length > 0; else emptyConstraints">
       <div class="constraint-row" *ngFor="let constraint of field.constraints; let i = index">
-        <mat-form-field appearance="fill" class="constraint-select">
-          <mat-label>Constraint</mat-label>
-          <mat-select [(ngModel)]="constraint.name">
-            <mat-option *ngFor="let option of constraintOptions" [value]="option">{{ option }}</mat-option>
-          </mat-select>
-        </mat-form-field>
+        <div class="constraint-fields">
+          <mat-form-field appearance="fill" class="constraint-select">
+            <mat-label>Constraint</mat-label>
+            <mat-select [(ngModel)]="constraint.name" (selectionChange)="onConstraintNameChange(i)">
+              <mat-option *ngFor="let option of getAvailableConstraintOptions(i)" [value]="option">{{ option }}</mat-option>
+            </mat-select>
+          </mat-form-field>
 
-        <mat-form-field appearance="fill" class="constraint-value">
-          <mat-label>Value</mat-label>
-          <input matInput [(ngModel)]="constraint.value" placeholder="Enter value">
-        </mat-form-field>
+          <mat-form-field appearance="fill" class="constraint-value" *ngIf="hasFirstValue(constraint.name)">
+            <mat-label>{{ getFirstInputLabel(constraint.name) }}</mat-label>
+            <input
+              matInput
+              [(ngModel)]="constraint.value"
+              [placeholder]="getFirstInputPlaceholder(constraint.name)">
+          </mat-form-field>
+
+          <mat-form-field appearance="fill" class="constraint-value" *ngIf="hasSecondValue(constraint.name)">
+            <mat-label>{{ getSecondInputLabel(constraint.name) }}</mat-label>
+            <input
+              matInput
+              [(ngModel)]="constraint.value2"
+              [placeholder]="getSecondInputPlaceholder(constraint.name)">
+          </mat-form-field>
+        </div>
 
         <button
           class="constraint-remove-btn"
           type="button"
           (click)="removeConstraint(i)"
           aria-label="Remove constraint">
-          <mat-icon>remove</mat-icon>
+          <mat-icon>delete</mat-icon>
         </button>
       </div>
     </div>

@@ -1,0 +1,82 @@
+.info-banner {
+  background-color: #97a9ae;
+  color: #ffffff;
+  padding: 20px 24px;
+  border-radius: 8px;
+  margin-bottom: 32px;
+  line-height: 1.6;
+  display: flex;
+  gap: 16px;
+  align-items: center;
+}
+
+.info-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.info-content p {
+  margin: 0 0 8px 0;
+  font-size: 14px;
+}
+
+.info-content p:last-child {
+  margin-bottom: 0;
+}
+
+.info-content a,
+.info-content a:visited,
+.info-content a:active {
+  color: #ffffff;
+  text-decoration: underline;
+  font-weight: 500;
+  display: inline-flex;
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+.info-content a.info-link {
+  color: #ffffff !important;
+}
+
+.info-content a:hover {
+  opacity: 0.9;
+  transform: scale(1.01);
+}
+
+:host ::ng-deep .info-content .info-link {
+  white-space: break-spaces;
+  color: #ffffff !important;
+  text-decoration: underline;
+  font-weight: 500;
+  display: inline-flex;
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+:host ::ng-deep .info-content .info-link:hover {
+  opacity: 0.9;
+  transform: scale(1.04);
+}
+
+.close-banner-btn {
+  background: none;
+  border: none;
+  color: #ffffff;
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  transition: opacity 0.2s ease;
+}
+
+.close-banner-btn:hover {
+  opacity: 0.8;
+}
+
+.close-banner-btn mat-icon {
+  font-size: 20px;
+  width: 20px;
+  height: 20px;
+}
