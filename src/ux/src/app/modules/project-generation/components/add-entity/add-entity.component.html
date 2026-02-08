@@ -1,0 +1,141 @@
+<div class="add-entity-container">
+  <div class="entity-form">
+    <mat-form-field appearance="fill" class="full-width">
+      <mat-label>Name</mat-label>
+      <input
+        matInput
+        [(ngModel)]="entityName"
+        (ngModelChange)="onEntityNameChange()"
+        placeholder="Entity name"
+        required>
+      <mat-error *ngIf="nameError">{{ nameError }}</mat-error>
+    </mat-form-field>
+
+    <div class="form-group checkbox-row">
+      <div class="checkbox-group">
+        <mat-checkbox
+          [(ngModel)]="mappedSuperclass"
+          (change)="onMappedSuperclassChange()"
+          color="primary">
+          Mapped superclass
+        </mat-checkbox>
+        <button class="help-btn" type="button" aria-label="Help">
+          <i class="bi bi-question-circle"></i>
+        </button>
+      </div>
+      <div class="checkbox-group">
+        <mat-checkbox
+          [(ngModel)]="addRestEndpoints"
+          [disabled]="mappedSuperclass"
+          color="primary">
+          Add REST endpoints
+        </mat-checkbox>
+        <button class="help-btn" type="button" aria-label="Help">
+          <i class="bi bi-question-circle"></i>
+        </button>
+      </div>
+    </div>
+
+    <div class="fields-section">
+      <div class="fields-header">
+        <div class="fields-title">
+          <h3 class="section-title">Fields</h3>
+          <span class="fields-count">{{ fields.length }}</span>
+        </div>
+        <button class="add-field-btn" type="button" (click)="addField()" aria-label="Add field">
+          <mat-icon>add_circle</mat-icon>
+          <span>Add field</span>
+        </button>
+      </div>
+
+      <div class="fields-panel">
+        <app-search-sort
+          [searchConfig]="searchConfig"
+          [sortOptions]="sortOptions"
+          (searchSortChange)="onFieldSearchSortChange($event)"
+        >
+          <div class="fields-toolbar">
+            <div class="fields-meta">
+              <span>Showing {{ visibleFields.length }} of {{ fields.length }}</span>
+              <span class="filter-hint" *ngIf="hasActiveFilters">Filtered view</span>
+            </div>
+
+            <div class="fields-scroll">
+              <div class="fields-list" *ngIf="visibleFields.length > 0; else emptyFields">
+                <div class="field-accordion" *ngFor="let item of visibleFields">
+                  <div class="field-accordion-header">
+                    <div class="field-info">
+                      <div class="field-name-row">
+                        <span class="field-name-text">{{ item.field.name || 'Untitled field' }}</span>
+                        <span class="field-type-pill">{{ item.field.type }}</span>
+                          <span class="field-badge badge-constraints" *ngIf="getConstraintCount(item.field) > 0">
+                            {{ getConstraintLabel(item.field) }}
+                          </span>
+                      </div>
+                      <div class="field-subtext" *ngIf="item.field.type === 'String' && item.field.maxLength">
+                        Max length: {{ item.field.maxLength }}
+                      </div>
+                    </div>
+                    <div class="field-actions">
+                      <button
+                        class="field-action-btn"
+                        type="button"
+                        (click)="startEditField(item.index)"
+                        aria-label="Edit field">
+                        <mat-icon>edit</mat-icon>
+                      </button>
+                      <button
+                        class="field-action-btn danger"
+                        type="button"
+                        [disabled]="item.index === 0"
+                        (click)="requestDeleteField(item.index)"
+                        aria-label="Delete field">
+                        <mat-icon>delete</mat-icon>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <ng-template #emptyFields>
+                <div class="fields-empty">
+                  <div class="empty-icon">
+                    <mat-icon>search_off</mat-icon>
+                  </div>
+                  <p *ngIf="fields.length === 0">No fields yet. Add your first field to get started.</p>
+                  <p *ngIf="fields.length > 0">No fields match your search. Try a different keyword.</p>
+                </div>
+              </ng-template>
+            </div>
+          </div>
+        </app-search-sort>
+      </div>
+    </div>
+  </div>
+</div>
+
+  <app-modal
+  [isOpen]="isFieldConfigOpen && fieldDraft !== null"
+  [title]="fieldConfigMode === 'add' ? 'Add field' : 'Edit field'"
+  [size]="'medium'"
+  [showFooter]="false"
+  (close)="onFieldConfigCancel()">
+  <app-field-config
+    *ngIf="fieldDraft"
+    [field]="fieldDraft"
+    [fieldTypes]="fieldTypes"
+    [mode]="fieldConfigMode"
+    [hasOtherPrimaryKey]="hasOtherPrimaryKey"
+    (save)="onFieldConfigSave($event)"
+    (cancel)="onFieldConfigCancel()">
+  </app-field-config>
+</app-modal>
+
+<app-confirmation-modal
+  *ngIf="showFieldDeleteModal"
+  [title]="fieldDeleteModalConfig.title"
+  [message]="fieldDeleteModalConfig.message"
+  [buttons]="fieldDeleteModalConfig.buttons"
+  (confirm)="confirmDeleteField()"
+  (cancel)="cancelDeleteField()">
+</app-confirmation-modal>

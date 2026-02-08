@@ -1,0 +1,114 @@
+# Docs for the Azure Web Apps Deploy action: https://github.com/Azure/webapps-deploy
+# More GitHub Actions for Azure: https://github.com/Azure/actions
+
+name: Build and deploy JAR app to Azure Web App - spring-init
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read #This is required for actions/checkout
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install platform BOM
+        run: mvn -B -DskipTests install
+        working-directory: platform-bom
+
+      - name: Checkout commons
+        uses: actions/checkout@v4
+        with:
+          repository: KalyanKumar0553/commons
+          path: deps/commons
+          token: ${{ secrets.DEPENDENCY_REPO_TOKEN }}
+
+      - name: Checkout communication
+        uses: actions/checkout@v4
+        with:
+          repository: KalyanKumar0553/communication
+          path: deps/communication
+          token: ${{ secrets.DEPENDENCY_REPO_TOKEN }}
+
+      - name: Checkout auth
+        uses: actions/checkout@v4
+        with:
+          repository: KalyanKumar0553/auth
+          path: deps/auth
+          token: ${{ secrets.DEPENDENCY_REPO_TOKEN }}
+      - name: Checkout swagger
+        uses: actions/checkout@v4
+        with:
+          repository: KalyanKumar0553/swagger
+          path: deps/swagger
+          token: ${{ secrets.DEPENDENCY_REPO_TOKEN }}
+
+      - name: Set up Java version
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'microsoft'
+
+      - name: Install commons
+        run: mvn -B -DskipTests install
+        working-directory: deps/commons
+
+      - name: Install communication
+        run: mvn -B -DskipTests install
+        working-directory: deps/communication
+
+      - name: Install auth
+        run: mvn -B -DskipTests install
+        working-directory: deps/auth
+      - name: Install swagger
+        run: mvn -B -DskipTests install
+        working-directory: deps/swagger
+
+      - name: Build with Maven
+        run: mvn -B clean install
+
+      - name: Prepare app jar
+        run: |
+          JAR_PATH=$(ls target/*.jar | grep -v 'original' | head -n1)
+          cp "$JAR_PATH" target/app.jar
+
+      - name: Upload artifact for deployment job
+        uses: actions/upload-artifact@v4
+        with:
+          name: java-app
+          path: '${{ github.workspace }}/target/app.jar'
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build
+    permissions:
+      id-token: write #This is required for requesting the JWT
+      contents: read #This is required for actions/checkout
+  
+    steps:
+      - name: Download artifact from build job
+        uses: actions/download-artifact@v4
+        with:
+          name: java-app
+      
+      - name: Login to Azure
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_ED31E39D66604E20A91678CF322E14E2 }}
+          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_86074963FA514E1E92BFF8D507B7EB7D }}
+          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_135806E80DC64570975B805F1DF09B03 }}
+
+      - name: Deploy to Azure Web App
+        id: deploy-to-webapp
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: 'spring-init'
+          slot-name: 'Production'
+          package: 'app.jar'
+          

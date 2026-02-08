@@ -1,0 +1,1 @@
+"use strict";(self.webpackChunkrest_app_generator=self.webpackChunkrest_app_generator||[]).push([[621],{5621(s,t,n){n.d(t,{PROJECT_GENERATION_ROUTES:()=>o});const o=[{path:"",loadComponent:()=>Promise.all([n.e(511),n.e(576)]).then(n.bind(n,3576)).then(e=>e.ProjectGenerationDashboardComponent)}]}}]);

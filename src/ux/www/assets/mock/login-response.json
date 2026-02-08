@@ -1,0 +1,15 @@
+{
+  "success": true,
+  "message": "Login successful",
+  "data": {
+    "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiAidXNlci0xMjM0NSIsICJlbWFpbCI6ICJ1c2VyQGV4YW1wbGUuY29tIiwgImlhdCI6IDE3NjQxNjQ4MTUsICJleHAiOiAxNzk1NzAwODE1fQ.abc123def456",
+    "refreshToken": "refresh-token-xyz789",
+    "user": {
+      "id": "user-12345",
+      "email": "user@example.com",
+      "name": "John Doe",
+      "emailVerified": true,
+      "createdAt": "2025-01-15T10:30:00Z"
+    }
+  }
+}

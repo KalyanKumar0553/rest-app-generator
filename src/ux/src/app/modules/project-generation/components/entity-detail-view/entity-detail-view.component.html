@@ -1,0 +1,40 @@
+<div class="entity-detail-container" *ngIf="entity">
+  <div class="detail-content">
+    <div class="fields-section">
+      <h3 class="section-title">Fields ({{ entity.fields.length }})</h3>
+      <div class="fields-table">
+        <div class="table-header">
+          <div class="col-type">Type</div>
+          <div class="col-name">Name</div>
+          <div class="col-constraints">Constraints</div>
+          <div class="col-actions">Actions</div>
+        </div>
+        <div class="table-body">
+          <div class="table-row" *ngFor="let field of entity.fields; let i = index">
+            <div class="col-type">
+              <span class="field-type-badge">{{ field.type }}</span>
+              <span class="field-length" *ngIf="field.maxLength">({{ field.maxLength }})</span>
+            </div>
+            <div class="col-name">{{ field.name }}</div>
+            <div class="col-constraints">
+              <span class="constraint-badge primary" *ngIf="field.primaryKey">Primary Key</span>
+              <span class="constraint-badge required" *ngIf="field.required">Required</span>
+              <span class="constraint-badge unique" *ngIf="field.unique">Unique</span>
+              <span class="constraint-badge none" *ngIf="!field.primaryKey && !field.required && !field.unique">None</span>
+            </div>
+            <div class="col-actions">
+              <button
+                class="delete-field-btn"
+                type="button"
+                [disabled]="!canDeleteFields"
+                (click)="onDeleteField(i)"
+                aria-label="Delete field">
+                <i class="bi bi-trash"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

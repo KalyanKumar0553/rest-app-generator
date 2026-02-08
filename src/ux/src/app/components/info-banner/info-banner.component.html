@@ -1,0 +1,8 @@
+<div class="info-banner" *ngIf="isVisible">
+  <div class="info-content">
+    <ng-content></ng-content>
+  </div>
+  <button class="close-banner-btn" type="button" (click)="close()" aria-label="Close banner">
+    <mat-icon>close</mat-icon>
+  </button>
+</div>

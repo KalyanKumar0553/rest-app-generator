@@ -1,0 +1,34 @@
+.preview-relations {
+  width: 100%;
+  min-height: 480px;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+  overflow: hidden;
+}
+
+.preview-relations-canvas {
+  width: 100%;
+  height: 560px;
+}
+
+.preview-relations-empty {
+  min-height: 320px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #6b7280;
+  font-size: 15px;
+  padding: 24px;
+  text-align: center;
+}
+
+@media (max-width: 768px) {
+  .preview-relations {
+    min-height: 360px;
+  }
+
+  .preview-relations-canvas {
+    height: 460px;
+  }
+}

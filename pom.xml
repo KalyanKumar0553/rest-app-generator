@@ -4,7 +4,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>com.src</groupId>
 	<artifactId>rest-app-generator</artifactId>
-	<version>1.0.0</version>
+	<version>1.0.3</version>
 	<name>rest-app-generator</name>
 	<repositories>
 		<repository>
@@ -16,11 +16,33 @@
 			<url>
 				https://pkgs.dev.azure.com/azure-sdk/public/_packaging/azure-sdk-for-java/maven/v1</url>
 		</repository>
+		<repository>
+			<id>github-auth</id>
+			<url>https://maven.pkg.github.com/KalyanKumar0553/auth</url>
+		</repository>
+		<repository>
+			<id>github-commons</id>
+			<url>https://maven.pkg.github.com/KalyanKumar0553/commons</url>
+		</repository>
+		<repository>
+			<id>github-communication</id>
+			<url>https://maven.pkg.github.com/KalyanKumar0553/communication</url>
+		</repository>
+		<repository>
+			<id>github-swagger</id>
+			<url>https://maven.pkg.github.com/KalyanKumar0553/swagger</url>
+		</repository>
+		<repository>
+			<id>github-rest-app-generator</id>
+			<url>https://maven.pkg.github.com/KalyanKumar0553/rest-app-generator</url>
+		</repository>
 	</repositories>
 	<properties>
 		<java.version>17</java.version>
 		<spring-boot.version>3.3.4</spring-boot.version>
 		<mustache.version>0.9.10</mustache.version>
+		<lombok.version>1.18.38</lombok.version>
+		<platform-bom.version>1.0.2</platform-bom.version>
 	</properties>
 	<dependencyManagement>
 		<dependencies>
@@ -31,9 +53,32 @@
 				<type>pom</type>
 				<scope>import</scope>
 			</dependency>
+			<dependency>
+				<groupId>com.src</groupId>
+				<artifactId>platform-bom</artifactId>
+				<version>${platform-bom.version}</version>
+				<type>pom</type>
+				<scope>import</scope>
+			</dependency>
 		</dependencies>
 	</dependencyManagement>
 	<dependencies>
+		<dependency>
+			<groupId>com.src</groupId>
+			<artifactId>common</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>com.src</groupId>
+			<artifactId>communication</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>com.src</groupId>
+			<artifactId>auth</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>com.src</groupId>
+			<artifactId>swagger</artifactId>
+		</dependency>
 		<dependency>
 			<groupId>io.spring.initializr</groupId>
 			<artifactId>initializr-generator-spring</artifactId>
@@ -47,6 +92,10 @@
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-web</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-actuator</artifactId>
 		</dependency>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
@@ -88,6 +137,7 @@
 		<dependency>
 			<groupId>org.projectlombok</groupId>
 			<artifactId>lombok</artifactId>
+			<version>${lombok.version}</version>
 			<optional>true</optional>
 		</dependency>
 		<dependency>
@@ -148,24 +198,8 @@
 			<artifactId>spring-security-config</artifactId>
 		</dependency>
 		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-validation</artifactId>
-		</dependency>
-		<dependency>
 			<groupId>com.github.ben-manes.caffeine</groupId>
 			<artifactId>caffeine</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-cache</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>com.github.ben-manes.caffeine</groupId>
-			<artifactId>caffeine</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-validation</artifactId>
 		</dependency>
 		<dependency>
 			<groupId>org.json</groupId>
@@ -205,12 +239,26 @@
 		</dependency>
 	</dependencies>
 	<build>
+		<sourceDirectory>src/api/main/java</sourceDirectory>
+		<testSourceDirectory>src/api/test/java</testSourceDirectory>
+		<resources>
+			<resource>
+				<directory>src/api/main/resources</directory>
+			</resource>
+		</resources>
+		<testResources>
+			<testResource>
+				<directory>src/api/test/resources</directory>
+			</testResource>
+		</testResources>
 		<plugins>
 			<plugin>
 				<groupId>com.github.eirslett</groupId>
 				<artifactId>frontend-maven-plugin</artifactId>
 				<version>1.12.1</version>
 				<configuration>
+					<workingDirectory>src/ux</workingDirectory>
+					<installDirectory>src/ux</installDirectory>
 					<nodeVersion>
 						v21.7.3
 					</nodeVersion>
@@ -253,6 +301,17 @@
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
+				<version>${spring-boot.version}</version>
+				<configuration>
+					<mainClass>com.src.main.RestAppGeneratorApplication</mainClass>
+				</configuration>
+				<executions>
+					<execution>
+						<goals>
+							<goal>repackage</goal>
+						</goals>
+					</execution>
+				</executions>
 			</plugin>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
@@ -260,8 +319,37 @@
 				<version>3.11.0</version>
 				<configuration>
 					<release>${java.version}</release>
+					<annotationProcessorPaths>
+						<path>
+							<groupId>org.projectlombok</groupId>
+							<artifactId>lombok</artifactId>
+							<version>${lombok.version}</version>
+						</path>
+					</annotationProcessorPaths>
+				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>org.flywaydb</groupId>
+				<artifactId>flyway-maven-plugin</artifactId>
+				<version>10.17.0</version>
+				<configuration>
+					<url>${env.SPRING_DATASOURCE_URL}</url>
+					<user>${env.SPRING_DATASOURCE_USERNAME}</user>
+					<password>${env.SPRING_DATASOURCE_PASSWORD}</password>
+					<locations>
+						<location>filesystem:src/api/main/resources/db/migration</location>
+					</locations>
+					<baselineOnMigrate>true</baselineOnMigrate>
+					<outOfOrder>true</outOfOrder>
 				</configuration>
 			</plugin>
 		</plugins>
 	</build>
+	<distributionManagement>
+		<repository>
+			<id>github-rest-app-generator</id>
+			<name>GitHub Packages</name>
+			<url>https://maven.pkg.github.com/KalyanKumar0553/rest-app-generator</url>
+		</repository>
+	</distributionManagement>
 </project>

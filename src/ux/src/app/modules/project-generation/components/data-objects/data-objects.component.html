@@ -1,0 +1,123 @@
+<div class="entities-container">
+  <div class="entities-sticky-header">
+    <app-info-banner storageKey="data-objects-info">
+      <span>
+        Configure reusable data objects and properties. Use add and filter options to manage the list.
+      </span>
+    </app-info-banner>
+  </div>
+
+  <div class="entities-scrollable">
+    <div class="expansion-panel">
+      <div class="panel-header" (click)="toggleDataObjectsPanel()">
+        <div class="panel-title-section">
+          <button class="expand-btn" [class.expanded]="dataObjectsExpanded">
+            <i class="bi" [ngClass]="dataObjectsExpanded ? 'bi-chevron-down' : 'bi-chevron-right'"></i>
+          </button>
+          <h2 class="panel-title">Data Objects</h2>
+        </div>
+        <div class="panel-actions" (click)="$event.stopPropagation()">
+          <button
+            type="button"
+            class="filter-btn"
+            [class.active]="showDataObjectFilters"
+            [disabled]="dataObjects.length === 0"
+            (click)="toggleDataObjectFilters()"
+            aria-label="Filter data objects">
+            <i class="bi bi-funnel"></i>
+          </button>
+          <button type="button" class="add-btn" (click)="addDataObject()" aria-label="Add data object">
+            <i class="bi bi-plus-circle"></i>
+          </button>
+        </div>
+      </div>
+
+      <div class="panel-body" *ngIf="dataObjectsExpanded">
+        <app-search-sort
+          *ngIf="showDataObjectFilters && dataObjects.length > 0"
+          [searchConfig]="searchConfig"
+          [sortOptions]="sortOptions"
+          (searchSortChange)="onDataObjectSearchSortChange($event)">
+        </app-search-sort>
+
+        <app-preview-entities
+          *ngIf="visibleDataObjects.length > 0"
+          [entities]="visibleDataObjects"
+          [relations]="[]"
+          [showActions]="true"
+          (viewMore)="openDataObjectDetail($event)"
+          (editEntity)="editDataObjectFromList($event)"
+          (deleteEntity)="deleteDataObjectFromList($event)">
+        </app-preview-entities>
+
+        <div class="empty-state" *ngIf="dataObjects.length === 0">
+          <p>No data objects created yet. Click the + button to add your first data object.</p>
+        </div>
+
+        <div class="empty-state" *ngIf="dataObjects.length > 0 && visibleDataObjects.length === 0">
+          <p>No data objects match your search. Try a different keyword.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<app-modal
+  [isOpen]="showAddDataObjectModal"
+  [title]="editingDataObject ? 'Edit data object' : 'Add data object'"
+  [size]="'medium'"
+  (close)="closeModal()">
+  <app-add-data-object
+    [editDataObject]="editingDataObject"
+    [isOpen]="showAddDataObjectModal"
+    [existingDataObjects]="dataObjects"
+    [availableModels]="entities"
+    (save)="onDataObjectSave($event)"
+    (cancel)="onDataObjectCancel()">
+  </app-add-data-object>
+  <div modal-footer>
+    <button mat-raised-button type="button" (click)="onDataObjectCancel()">Cancel</button>
+    <button mat-raised-button color="primary" type="button" (click)="saveDataObject()">Save</button>
+  </div>
+</app-modal>
+
+<app-modal
+  [isOpen]="showDataObjectDetailModal"
+  [title]="''"
+  [customHeader]="true"
+  [size]="'large'"
+  (close)="closeDataObjectDetail()">
+  <div modal-header class="entity-detail-modal-header">
+    <div class="entity-detail-header-left">
+      <span class="entity-detail-title">{{ viewingDataObject?.name }}</span>
+      <span class="entity-detail-tag">Data Object</span>
+      <span class="entity-detail-tag" *ngIf="viewingDataObject?.dtoType">
+        {{ viewingDataObject?.dtoType === 'request' ? 'Request DTO' : 'Response DTO' }}
+      </span>
+    </div>
+  </div>
+  <app-entity-detail-view
+    [entity]="viewingDataObject"
+    [canDeleteFields]="true"
+    (deleteField)="deleteProperty($event)"
+    (close)="closeDataObjectDetail()">
+  </app-entity-detail-view>
+</app-modal>
+
+<app-confirmation-modal
+  *ngIf="showDeleteConfirmation"
+  [title]="deleteModalConfig.title"
+  [message]="deleteModalConfig.message"
+  [buttons]="deleteModalConfig.buttons"
+  (confirm)="confirmDelete()"
+  (cancel)="cancelDelete()">
+</app-confirmation-modal>
+
+<app-confirmation-modal
+  *ngIf="showPropertyDeleteConfirmation"
+  [title]="propertyDeleteModalConfig.title"
+  [message]="propertyDeleteModalConfig.message"
+  [buttons]="propertyDeleteModalConfig.buttons"
+  (confirm)="confirmDeleteProperty()"
+  (cancel)="cancelDeleteProperty()">
+</app-confirmation-modal>

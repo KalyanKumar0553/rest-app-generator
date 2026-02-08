@@ -1,0 +1,89 @@
+<div class="field-config">
+  <div class="field-config-body">
+    <mat-form-field appearance="fill" class="field-input">
+      <mat-label>Property name</mat-label>
+      <input
+        matInput
+        [(ngModel)]="field.name"
+        (ngModelChange)="onFieldNameChange()"
+        [disabled]="mode === 'edit'"
+        placeholder="Property name">
+      <mat-error *ngIf="field.nameError">{{ field.nameError }}</mat-error>
+    </mat-form-field>
+
+    <mat-form-field appearance="fill" class="field-input">
+      <mat-label>Property type</mat-label>
+      <mat-select
+        [(ngModel)]="field.type"
+        (selectionChange)="onFieldTypeChange()"
+        [disabled]="mode === 'edit'">
+        <mat-option *ngFor="let type of fieldTypes" [value]="type">{{ type }}</mat-option>
+      </mat-select>
+    </mat-form-field>
+
+    <mat-form-field appearance="fill" class="field-input">
+      <mat-label>JSON property (optional)</mat-label>
+      <input
+        matInput
+        [(ngModel)]="field.jsonProperty"
+        placeholder="Alternate JSON name, for example: user_name">
+    </mat-form-field>
+
+    <div class="field-separator"></div>
+
+    <div class="constraints-header">
+      <h4>Constraints</h4>
+      <button class="constraint-add-btn" type="button" (click)="addConstraint()" aria-label="Add constraint">
+        <mat-icon>add</mat-icon>
+      </button>
+    </div>
+
+    <div class="constraints-list" *ngIf="field.constraints && field.constraints.length > 0; else emptyConstraints">
+      <div class="constraint-row" *ngFor="let constraint of field.constraints; let i = index">
+        <div class="constraint-fields">
+          <mat-form-field appearance="fill" class="constraint-select">
+            <mat-label>Constraint</mat-label>
+            <mat-select [(ngModel)]="constraint.name" (selectionChange)="onConstraintNameChange(i)">
+              <mat-option *ngFor="let option of getAvailableConstraintOptions(i)" [value]="option">{{ option }}</mat-option>
+            </mat-select>
+          </mat-form-field>
+
+          <mat-form-field appearance="fill" class="constraint-value" *ngIf="hasFirstValue(constraint.name)">
+            <mat-label>{{ getFirstInputLabel(constraint.name) }}</mat-label>
+            <input
+              matInput
+              [(ngModel)]="constraint.value"
+              [placeholder]="getFirstInputPlaceholder(constraint.name)">
+          </mat-form-field>
+
+          <mat-form-field appearance="fill" class="constraint-value" *ngIf="hasSecondValue(constraint.name)">
+            <mat-label>{{ getSecondInputLabel(constraint.name) }}</mat-label>
+            <input
+              matInput
+              [(ngModel)]="constraint.value2"
+              [placeholder]="getSecondInputPlaceholder(constraint.name)">
+          </mat-form-field>
+        </div>
+
+        <button
+          class="constraint-remove-btn"
+          type="button"
+          (click)="removeConstraint(i)"
+          aria-label="Remove constraint">
+          <mat-icon>delete</mat-icon>
+        </button>
+      </div>
+    </div>
+
+    <ng-template #emptyConstraints>
+      <div class="constraints-empty">No constraints added yet.</div>
+    </ng-template>
+
+    <div class="constraint-error" *ngIf="constraintError">{{ constraintError }}</div>
+  </div>
+
+  <div class="field-config-footer">
+    <button mat-stroked-button type="button" (click)="onCancel()">Cancel</button>
+    <button mat-raised-button color="primary" type="button" (click)="onSave()">Save property</button>
+  </div>
+</div>
