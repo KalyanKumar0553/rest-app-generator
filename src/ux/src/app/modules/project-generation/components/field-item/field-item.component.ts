@@ -11,6 +11,7 @@ import { MatIconModule } from '@angular/material/icon';
 export interface Field {
   type: string;
   name: string;
+  jsonProperty?: string;
   maxLength?: number;
   primaryKey?: boolean;
   required?: boolean;

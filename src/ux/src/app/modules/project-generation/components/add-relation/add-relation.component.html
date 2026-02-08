@@ -82,14 +82,211 @@
         <div class="input-error" *ngIf="relationTypeError">{{ relationTypeError }}</div>
       </div>
 
-      <div class="form-field-group checkbox-field">
-        <label class="checkbox-label">
-          <input
-            type="checkbox"
-            [(ngModel)]="required"
-            class="checkbox-input">
-          <span class="checkbox-text">Required</span>
-        </label>
+      <div class="form-field-group">
+        <mat-form-field appearance="fill" class="form-field">
+          <mat-label>Cascade</mat-label>
+          <mat-select [(ngModel)]="cascade" (selectionChange)="onCascadeChange()" multiple>
+            <mat-option *ngFor="let option of cascadeOptions" [value]="option">
+              {{ getCascadeOptionLabel(option) }}
+            </mat-option>
+          </mat-select>
+        </mat-form-field>
+      </div>
+    </div>
+
+    <div class="relation-config" *ngIf="relationType">
+      <button type="button" class="relation-config-header" (click)="toggleRelationConfig()" aria-label="Toggle relation configuration">
+        <span class="config-title">Relation configuration</span>
+        <i class="bi" [ngClass]="relationConfigExpanded ? 'bi-chevron-up' : 'bi-chevron-down'"></i>
+      </button>
+
+      <div class="relation-config-body" *ngIf="relationConfigExpanded">
+
+      <div *ngIf="isOneToOne()">
+        <div class="form-row">
+          <div class="form-field-group">
+            <mat-form-field appearance="fill" class="form-field">
+              <mat-label>Mapped by (optional)</mat-label>
+              <input matInput [(ngModel)]="mappedBy" placeholder="Use target field name for inverse side mapping" />
+            </mat-form-field>
+          </div>
+          <div class="form-field-group checkbox-field checkbox-row">
+            <mat-checkbox [(ngModel)]="optional">Optional</mat-checkbox>
+            <mat-checkbox [(ngModel)]="orphanRemoval">Orphan removal</mat-checkbox>
+            <mat-checkbox [(ngModel)]="required">Required</mat-checkbox>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-field-group checkbox-field checkbox-row">
+            <mat-checkbox [(ngModel)]="joinColumnNullable" [disabled]="mappedBy.trim().length > 0">Join column nullable</mat-checkbox>
+            <mat-checkbox [(ngModel)]="joinColumnIndex" [disabled]="mappedBy.trim().length > 0">Join column index hint</mat-checkbox>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-field-group">
+            <mat-form-field appearance="fill" class="form-field">
+              <mat-label>Join column name</mat-label>
+              <input matInput [(ngModel)]="joinColumnName" [disabled]="mappedBy.trim().length > 0" placeholder="Foreign key column for owning side, for example: profile_id" />
+            </mat-form-field>
+          </div>
+          <div class="form-field-group">
+            <mat-form-field appearance="fill" class="form-field">
+              <mat-label>Referenced column name</mat-label>
+              <input matInput [(ngModel)]="joinColumnReferencedColumnName" [disabled]="mappedBy.trim().length > 0" placeholder="Target primary key column, for example: id" />
+            </mat-form-field>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-field-group">
+            <mat-form-field appearance="fill" class="form-field">
+              <mat-label>Join column on delete</mat-label>
+              <mat-select [(ngModel)]="joinColumnOnDelete" [disabled]="mappedBy.trim().length > 0">
+                <mat-option [value]="''">Not specified</mat-option>
+                <mat-option *ngFor="let option of onDeleteOptions" [value]="option">
+                  {{ getOnDeleteOptionLabel(option) }}
+                </mat-option>
+              </mat-select>
+            </mat-form-field>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-row" *ngIf="isOneToMany()">
+        <div class="form-field-group">
+          <mat-form-field appearance="fill" class="form-field">
+            <mat-label>Mapped by</mat-label>
+            <input matInput [(ngModel)]="mappedBy" placeholder="Enter target entity field that owns this relation" />
+          </mat-form-field>
+          <div class="input-error" *ngIf="mappedByError">{{ mappedByError }}</div>
+        </div>
+
+        <div class="form-field-group">
+          <mat-form-field appearance="fill" class="form-field">
+            <mat-label>Order by</mat-label>
+            <input matInput [(ngModel)]="orderBy" placeholder="Sort expression, for example: createdAt DESC" />
+          </mat-form-field>
+        </div>
+      </div>
+
+      <div class="form-row" *ngIf="isOneToMany()">
+        <div class="form-field-group">
+          <mat-form-field appearance="fill" class="form-field">
+            <mat-label>Order column name</mat-label>
+            <input matInput [(ngModel)]="orderColumnName" placeholder="Column to store list order, for example: sort_order" />
+          </mat-form-field>
+        </div>
+
+        <div class="form-field-group checkbox-field checkbox-row">
+          <mat-checkbox [(ngModel)]="orphanRemoval">Orphan removal</mat-checkbox>
+          <mat-checkbox [(ngModel)]="required">Required</mat-checkbox>
+        </div>
+      </div>
+
+      <div *ngIf="isManyToOne()">
+        <div class="form-row">
+          <div class="form-field-group checkbox-field checkbox-row">
+            <mat-checkbox [(ngModel)]="optional">Optional</mat-checkbox>
+            <mat-checkbox [(ngModel)]="required">Required</mat-checkbox>
+            <mat-checkbox [(ngModel)]="joinColumnNullable">Join column nullable</mat-checkbox>
+            <mat-checkbox [(ngModel)]="joinColumnIndex">Join column index hint</mat-checkbox>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-field-group">
+            <mat-form-field appearance="fill" class="form-field">
+              <mat-label>Join column name</mat-label>
+              <input matInput [(ngModel)]="joinColumnName" placeholder="Foreign key column name, for example: customer_id" />
+            </mat-form-field>
+          </div>
+          <div class="form-field-group">
+            <mat-form-field appearance="fill" class="form-field">
+              <mat-label>Referenced column name</mat-label>
+              <input matInput [(ngModel)]="joinColumnReferencedColumnName" placeholder="Target column name, for example: id" />
+            </mat-form-field>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-field-group">
+            <mat-form-field appearance="fill" class="form-field">
+              <mat-label>Join column on delete</mat-label>
+              <mat-select [(ngModel)]="joinColumnOnDelete">
+                <mat-option [value]="''">Not specified</mat-option>
+                <mat-option *ngFor="let option of onDeleteOptions" [value]="option">
+                  {{ getOnDeleteOptionLabel(option) }}
+                </mat-option>
+              </mat-select>
+            </mat-form-field>
+          </div>
+        </div>
+      </div>
+
+      <div *ngIf="isManyToMany()">
+        <div class="form-row">
+          <div class="form-field-group">
+            <mat-form-field appearance="fill" class="form-field">
+              <mat-label>Join table name</mat-label>
+              <input matInput [(ngModel)]="joinTableName" placeholder="Link table name, for example: user_roles" />
+            </mat-form-field>
+            <div class="input-error" *ngIf="joinTableError">{{ joinTableError }}</div>
+          </div>
+
+          <div class="form-field-group checkbox-field checkbox-row">
+            <mat-checkbox [(ngModel)]="joinTableUniquePair">Unique pair</mat-checkbox>
+            <mat-checkbox [(ngModel)]="required">Required</mat-checkbox>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-field-group">
+            <mat-form-field appearance="fill" class="form-field">
+              <mat-label>Join column name</mat-label>
+              <input matInput [(ngModel)]="joinColumnNameForJoinTable" placeholder="Source side join column, for example: user_id" />
+            </mat-form-field>
+          </div>
+
+          <div class="form-field-group">
+            <mat-form-field appearance="fill" class="form-field">
+              <mat-label>Join column referenced</mat-label>
+              <input matInput [(ngModel)]="joinColumnReferencedForJoinTable" placeholder="Source referenced column, for example: id" />
+            </mat-form-field>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-field-group">
+            <mat-form-field appearance="fill" class="form-field">
+              <mat-label>Inverse join column name</mat-label>
+              <input matInput [(ngModel)]="inverseJoinColumnNameForJoinTable" placeholder="Target side join column, for example: role_id" />
+            </mat-form-field>
+          </div>
+
+          <div class="form-field-group">
+            <mat-form-field appearance="fill" class="form-field">
+              <mat-label>Inverse join referenced</mat-label>
+              <input matInput [(ngModel)]="inverseJoinColumnReferencedForJoinTable" placeholder="Target referenced column, for example: id" />
+            </mat-form-field>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-field-group">
+            <mat-form-field appearance="fill" class="form-field">
+              <mat-label>Join table on delete</mat-label>
+              <mat-select [(ngModel)]="joinTableOnDelete">
+                <mat-option [value]="''">Not specified</mat-option>
+                <mat-option *ngFor="let option of onDeleteOptions" [value]="option">
+                  {{ getOnDeleteOptionLabel(option) }}
+                </mat-option>
+              </mat-select>
+            </mat-form-field>
+          </div>
+        </div>
+      </div>
       </div>
     </div>
   </div>

@@ -525,6 +525,36 @@ public class ModelGenerator {
 		List<String> ann = new ArrayList<>();
 
 		switch (r.getType()) {
+		case OneToOne -> {
+			imports.add("jakarta.persistence.OneToOne");
+			imports.add("jakarta.persistence.FetchType");
+			String cascade = toCascadeArray(r.getCascade());
+			String optional = r.getOptional() == null ? "true" : r.getOptional().toString();
+
+			if (Strings.isNotBlank(r.getMappedBy())) {
+				ann.add("@OneToOne(mappedBy = \"" + r.getMappedBy().trim() + "\", fetch = FetchType.LAZY, optional = "
+						+ optional + cascade + (Boolean.TRUE.equals(r.getOrphanRemoval()) ? ", orphanRemoval = true" : "")
+						+ ")");
+			} else {
+				ann.add("@OneToOne(fetch = FetchType.LAZY, optional = " + optional + cascade
+						+ (Boolean.TRUE.equals(r.getOrphanRemoval()) ? ", orphanRemoval = true" : "") + ")");
+				JoinColumnSpecDTO jc = r.getJoinColumn();
+				if (jc != null) {
+					imports.add("jakarta.persistence.JoinColumn");
+					StringBuilder s = new StringBuilder("@JoinColumn(");
+					List<String> args = new ArrayList<>();
+					if (Strings.isNotBlank(jc.getName()))
+						args.add("name = \"" + jc.getName() + "\"");
+					if (jc.getNullable() != null)
+						args.add("nullable = " + jc.getNullable());
+					if (Strings.isNotBlank(jc.getReferencedColumnName()))
+						args.add("referencedColumnName = \"" + jc.getReferencedColumnName() + "\"");
+					s.append(String.join(", ", args)).append(")");
+					ann.add(s.toString());
+				}
+			}
+			fieldType = targetType;
+		}
 		case OneToMany -> {
 			imports.add("jakarta.persistence.OneToMany");
 			imports.add("jakarta.persistence.FetchType");
@@ -591,8 +621,15 @@ public class ModelGenerator {
 	private String toCascadeArray(List<String> cascade) {
 		if (cascade == null || cascade.isEmpty())
 			return "";
+
+		List<String> normalized = cascade.stream().filter(Strings::isNotBlank).map(String::trim).distinct().toList();
+		if (normalized.isEmpty())
+			return "";
+		if (normalized.stream().anyMatch(c -> "ALL".equalsIgnoreCase(c))) {
+			return ", cascade = {jakarta.persistence.CascadeType.ALL}";
+		}
 		return ", cascade = {"
-				+ cascade.stream().map(s -> "jakarta.persistence.CascadeType." + s).collect(joining(", ")) + "}";
+				+ normalized.stream().map(s -> "jakarta.persistence.CascadeType." + s).collect(joining(", ")) + "}";
 	}
 
 	private String joinTableAnnotation(JoinTableSpecDTO jt) {

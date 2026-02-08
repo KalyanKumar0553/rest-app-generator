@@ -11,9 +11,12 @@ import com.src.main.dto.ProjectCreateResponseDTO;
 import com.src.main.dto.ProjectSummaryDTO;
 import com.src.main.exception.GenericException;
 import com.src.main.model.ProjectEntity;
+import com.src.main.model.ProjectRunEntity;
 import com.src.main.repository.ProjectRepository;
+import com.src.main.repository.ProjectRunRepository;
 import com.src.main.util.ProjectMetaDataConstants;
 import com.src.main.util.ProjectRunStatus;
+import com.src.main.util.ProjectRunType;
 
 import jakarta.transaction.Transactional;
 import jakarta.validation.ConstraintViolationException;
@@ -26,6 +29,7 @@ import lombok.AllArgsConstructor;
 public class ProjectServiceImpl implements ProjectService {
 
 	private final ProjectRepository repo;
+	private final ProjectRunRepository projectRunRepository;
 	private final Validator validator;
 
 	static class Input {
@@ -89,10 +93,20 @@ public class ProjectServiceImpl implements ProjectService {
 			p.setSpringBootVersion(springBootVersion);
 			p.setJdkVersion(jdkVersion);
 			p.setYaml(yamlText);
+			p.setOwnerId("public");
 			p.setCreatedAt(OffsetDateTime.now());
 			p.setUpdatedAt(OffsetDateTime.now());
-			repo.save(p);
-			return new ProjectCreateResponseDTO(p.getId().toString(), ProjectRunStatus.QUEUED.name());	
+			ProjectEntity savedProject = repo.saveAndFlush(p);
+
+			ProjectRunEntity run = new ProjectRunEntity();
+			run.setProject(savedProject);
+			run.setOwnerId("public");
+			run.setType(ProjectRunType.GENERATE_CODE);
+			run.setStatus(ProjectRunStatus.QUEUED);
+			run.setRunNumber((int) projectRunRepository.countByProjectIdAndType(savedProject.getId(), ProjectRunType.GENERATE_CODE) + 1);
+			projectRunRepository.save(run);
+
+			return new ProjectCreateResponseDTO(savedProject.getId().toString(), ProjectRunStatus.QUEUED.name());	
 		} catch (Exception e) {
 			throw new GenericException(HttpStatus.INTERNAL_SERVER_ERROR,e.getMessage());
 		}

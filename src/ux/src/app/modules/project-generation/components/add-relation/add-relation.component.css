@@ -38,6 +38,58 @@
   padding-top: 8px;
 }
 
+.checkbox-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(180px, 1fr));
+  gap: 10px 16px;
+  align-items: start;
+  padding-top: 0;
+}
+
+.relation-config {
+  margin-top: 6px;
+  padding: 0;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  background-color: #f9fafb;
+}
+
+.relation-config-header {
+  width: 100%;
+  border: none;
+  background: transparent;
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  border-radius: 12px;
+}
+
+.relation-config-header:hover {
+  background: rgba(148, 163, 184, 0.08);
+}
+
+.relation-config-body {
+  padding: 0 16px 16px;
+}
+
+.config-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #374151;
+  margin: 0;
+}
+
+::ng-deep .checkbox-row .mat-mdc-checkbox {
+  width: auto;
+  display: inline-flex;
+}
+
+::ng-deep .checkbox-row .mdc-form-field {
+  white-space: nowrap;
+}
+
 .checkbox-label {
   display: flex;
   align-items: center;
@@ -98,6 +150,11 @@
   .form-row {
     flex-direction: column;
     gap: 16px;
+  }
+
+  .checkbox-row {
+    grid-template-columns: 1fr;
+    gap: 8px;
   }
 }
 

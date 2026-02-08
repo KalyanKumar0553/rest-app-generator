@@ -1,0 +1,142 @@
+<div class="add-entity-container">
+  <div class="entity-form">
+    <mat-form-field appearance="fill" class="full-width">
+      <mat-label>Name</mat-label>
+      <input
+        matInput
+        [(ngModel)]="dataObjectName"
+        (ngModelChange)="onDataObjectNameChange()"
+        placeholder="Data object name"
+        required>
+      <mat-error *ngIf="nameError">{{ nameError }}</mat-error>
+    </mat-form-field>
+
+    <mat-form-field appearance="fill" class="full-width">
+      <mat-label>DTO category</mat-label>
+      <mat-select [(ngModel)]="dtoType">
+        <mat-option value="request">Request</mat-option>
+        <mat-option value="response">Response</mat-option>
+      </mat-select>
+    </mat-form-field>
+
+    <div class="dto-mapper-panel" *ngIf="hasAvailableModels">
+      <mat-checkbox
+        [(ngModel)]="mapperEnabled"
+        (change)="onMapperEnabledChange()">
+        Configure mapper
+      </mat-checkbox>
+
+      <div class="mapper-config" *ngIf="mapperEnabled">
+        <app-searchable-multi-select
+          [label]="'Select models'"
+          [searchPlaceholder]="'Please Enter Text to Search'"
+          [options]="mapperModelOptions"
+          [(selectedValues)]="mapperModels"
+          [emptyMessage]="'No models found'">
+        </app-searchable-multi-select>
+      </div>
+    </div>
+
+    <div class="fields-section">
+      <div class="fields-header">
+        <div class="fields-title">
+          <h3 class="section-title">Properties</h3>
+          <span class="fields-count">{{ fields.length }}</span>
+        </div>
+        <button class="add-field-btn" type="button" (click)="addField()" aria-label="Add property">
+          <mat-icon>add_circle</mat-icon>
+          <span>Add property</span>
+        </button>
+      </div>
+
+      <div class="fields-panel">
+        <app-search-sort
+          [searchConfig]="searchConfig"
+          [sortOptions]="sortOptions"
+          (searchSortChange)="onFieldSearchSortChange($event)">
+          <div class="fields-toolbar">
+            <div class="fields-meta">
+              <span>Showing {{ visibleFields.length }} of {{ fields.length }}</span>
+              <span class="filter-hint" *ngIf="hasActiveFilters">Filtered view</span>
+            </div>
+
+            <div class="fields-scroll">
+              <div class="fields-list" *ngIf="visibleFields.length > 0; else emptyFields">
+                <div class="field-accordion" *ngFor="let item of visibleFields">
+                  <div class="field-accordion-header">
+                    <div class="field-info">
+                      <div class="field-name-row">
+                        <span class="field-name-text">{{ item.field.name || 'Untitled property' }}</span>
+                        <span class="field-type-pill">{{ item.field.type }}</span>
+                        <span class="field-badge badge-constraints" *ngIf="getConstraintCount(item.field) > 0">
+                          {{ getConstraintLabel(item.field) }}
+                        </span>
+                      </div>
+                      <div class="field-subtext" *ngIf="item.field.type === 'String' && item.field.maxLength">
+                        Max length: {{ item.field.maxLength }}
+                      </div>
+                      <div class="field-subtext" *ngIf="item.field.jsonProperty">
+                        JSON property: {{ item.field.jsonProperty }}
+                      </div>
+                    </div>
+                    <div class="field-actions">
+                      <button
+                        class="field-action-btn"
+                        type="button"
+                        (click)="startEditField(item.index)"
+                        aria-label="Edit property">
+                        <mat-icon>edit</mat-icon>
+                      </button>
+                      <button
+                        class="field-action-btn danger"
+                        type="button"
+                        (click)="requestDeleteField(item.index)"
+                        aria-label="Delete property">
+                        <mat-icon>delete</mat-icon>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <ng-template #emptyFields>
+                <div class="fields-empty">
+                  <div class="empty-icon">
+                    <mat-icon>search_off</mat-icon>
+                  </div>
+                  <p *ngIf="fields.length === 0">No properties yet. Add your first property to get started.</p>
+                  <p *ngIf="fields.length > 0">No properties match your search. Try a different keyword.</p>
+                </div>
+              </ng-template>
+            </div>
+          </div>
+        </app-search-sort>
+      </div>
+    </div>
+  </div>
+</div>
+
+<app-modal
+  [isOpen]="isFieldConfigOpen && fieldDraft !== null"
+  [title]="fieldConfigMode === 'add' ? 'Add property' : 'Edit property'"
+  [size]="'medium'"
+  [showFooter]="false"
+  (close)="onFieldConfigCancel()">
+  <app-edit-property
+    *ngIf="fieldDraft"
+    [field]="fieldDraft"
+    [fieldTypes]="fieldTypes"
+    [mode]="fieldConfigMode"
+    (save)="onFieldConfigSave($event)"
+    (cancel)="onFieldConfigCancel()">
+  </app-edit-property>
+</app-modal>
+
+<app-confirmation-modal
+  *ngIf="showFieldDeleteModal"
+  [title]="fieldDeleteModalConfig.title"
+  [message]="fieldDeleteModalConfig.message"
+  [buttons]="fieldDeleteModalConfig.buttons"
+  (confirm)="confirmDeleteField()"
+  (cancel)="cancelDeleteField()">
+</app-confirmation-modal>

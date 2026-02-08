@@ -1,10 +1,29 @@
-import { Component, EventEmitter, Input, Output, OnChanges, SimpleChanges } from '@angular/core';
+import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { MatButtonModule } from '@angular/material/button';
+import { MatCheckboxModule } from '@angular/material/checkbox';
+
+type OnDeleteOption = 'NONE' | 'CASCADE' | 'SET_NULL';
+
+export interface JoinColumnConfig {
+  name?: string;
+  nullable?: boolean;
+  referencedColumnName?: string;
+  index?: boolean;
+  onDelete?: OnDeleteOption;
+}
+
+export interface JoinTableConfig {
+  name?: string;
+  joinColumns?: JoinColumnConfig[];
+  inverseJoinColumns?: JoinColumnConfig[];
+  uniquePair?: boolean;
+  onDelete?: OnDeleteOption;
+}
 
 export interface Relation {
   sourceEntity: string;
@@ -13,6 +32,17 @@ export interface Relation {
   targetFieldName?: string;
   relationType: string;
   required?: boolean;
+
+  mappedBy?: string;
+  cascade?: string[];
+  orphanRemoval?: boolean;
+  orderBy?: string;
+  orderColumn?: { name?: string };
+
+  optional?: boolean;
+  joinColumn?: JoinColumnConfig;
+
+  joinTable?: JoinTableConfig;
 }
 
 interface Entity {
@@ -29,7 +59,8 @@ interface Entity {
     MatFormFieldModule,
     MatInputModule,
     MatSelectModule,
-    MatButtonModule
+    MatButtonModule,
+    MatCheckboxModule
   ],
   templateUrl: './add-relation.component.html',
   styleUrls: ['./add-relation.component.css']
@@ -49,11 +80,35 @@ export class AddRelationComponent implements OnChanges {
   relationType = '';
   required = false;
 
+  mappedBy = '';
+  cascade: string[] = [];
+  orphanRemoval = false;
+  orderBy = '';
+  orderColumnName = '';
+
+  optional = true;
+  joinColumnName = '';
+  joinColumnNullable = true;
+  joinColumnReferencedColumnName = '';
+  joinColumnIndex = false;
+  joinColumnOnDelete: OnDeleteOption | '' = '';
+
+  joinTableName = '';
+  joinColumnNameForJoinTable = '';
+  joinColumnReferencedForJoinTable = '';
+  inverseJoinColumnNameForJoinTable = '';
+  inverseJoinColumnReferencedForJoinTable = '';
+  joinTableUniquePair = false;
+  joinTableOnDelete: OnDeleteOption | '' = '';
+
   sourceEntityError = '';
   sourceFieldNameError = '';
   targetEntityError = '';
   targetFieldNameError = '';
   relationTypeError = '';
+  mappedByError = '';
+  joinTableError = '';
+  relationConfigExpanded = true;
 
   relationTypes = [
     'OneToOne',
@@ -61,6 +116,41 @@ export class AddRelationComponent implements OnChanges {
     'ManyToOne',
     'ManyToMany'
   ];
+
+  cascadeOptions = ['ALL', 'PERSIST', 'MERGE', 'REMOVE', 'REFRESH', 'DETACH'];
+  onDeleteOptions: OnDeleteOption[] = ['NONE', 'CASCADE', 'SET_NULL'];
+
+  getCascadeOptionLabel(option: string): string {
+    switch (option) {
+      case 'ALL':
+        return 'All operations';
+      case 'PERSIST':
+        return 'Persist';
+      case 'MERGE':
+        return 'Merge';
+      case 'REMOVE':
+        return 'Remove';
+      case 'REFRESH':
+        return 'Refresh';
+      case 'DETACH':
+        return 'Detach';
+      default:
+        return option;
+    }
+  }
+
+  getOnDeleteOptionLabel(option: OnDeleteOption): string {
+    switch (option) {
+      case 'NONE':
+        return 'No action';
+      case 'CASCADE':
+        return 'Cascade delete';
+      case 'SET_NULL':
+        return 'Set related value to null';
+      default:
+        return option;
+    }
+  }
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['isOpen']) {
@@ -85,6 +175,28 @@ export class AddRelationComponent implements OnChanges {
     this.targetFieldName = relation.targetFieldName || '';
     this.relationType = relation.relationType;
     this.required = relation.required || false;
+
+    this.mappedBy = relation.mappedBy || '';
+    this.cascade = this.normalizeCascadeSelection([...(relation.cascade ?? [])]);
+    this.orphanRemoval = Boolean(relation.orphanRemoval);
+    this.orderBy = relation.orderBy || '';
+    this.orderColumnName = relation.orderColumn?.name || '';
+
+    this.optional = relation.optional ?? true;
+    this.joinColumnName = relation.joinColumn?.name || '';
+    this.joinColumnNullable = relation.joinColumn?.nullable ?? true;
+    this.joinColumnReferencedColumnName = relation.joinColumn?.referencedColumnName || '';
+    this.joinColumnIndex = Boolean(relation.joinColumn?.index);
+    this.joinColumnOnDelete = relation.joinColumn?.onDelete || '';
+
+    this.joinTableName = relation.joinTable?.name || '';
+    this.joinColumnNameForJoinTable = relation.joinTable?.joinColumns?.[0]?.name || '';
+    this.joinColumnReferencedForJoinTable = relation.joinTable?.joinColumns?.[0]?.referencedColumnName || '';
+    this.inverseJoinColumnNameForJoinTable = relation.joinTable?.inverseJoinColumns?.[0]?.name || '';
+    this.inverseJoinColumnReferencedForJoinTable = relation.joinTable?.inverseJoinColumns?.[0]?.referencedColumnName || '';
+    this.joinTableUniquePair = Boolean(relation.joinTable?.uniquePair);
+    this.joinTableOnDelete = relation.joinTable?.onDelete || '';
+
     this.clearErrors();
   }
 
@@ -95,6 +207,8 @@ export class AddRelationComponent implements OnChanges {
     this.targetFieldName = '';
     this.relationType = '';
     this.required = false;
+
+    this.resetRelationConfig();
     this.clearErrors();
   }
 
@@ -104,6 +218,8 @@ export class AddRelationComponent implements OnChanges {
     this.targetEntityError = '';
     this.targetFieldNameError = '';
     this.relationTypeError = '';
+    this.mappedByError = '';
+    this.joinTableError = '';
   }
 
   onSourceEntityChange(): void {
@@ -128,6 +244,14 @@ export class AddRelationComponent implements OnChanges {
 
   onRelationTypeChange(): void {
     this.relationTypeError = '';
+    this.mappedByError = '';
+    this.joinTableError = '';
+    this.resetRelationConfig();
+    this.relationConfigExpanded = true;
+  }
+
+  onCascadeChange(): void {
+    this.cascade = this.normalizeCascadeSelection(this.cascade);
   }
 
   validateSourceEntity(): boolean {
@@ -210,14 +334,43 @@ export class AddRelationComponent implements OnChanges {
     return true;
   }
 
+  validateRelationConfig(): boolean {
+    this.mappedByError = '';
+    this.joinTableError = '';
+
+    if (this.relationType === 'OneToMany' && !this.mappedBy.trim()) {
+      this.mappedByError = 'Mapped by is required for OneToMany.';
+      return false;
+    }
+
+    if (this.relationType === 'ManyToMany') {
+      const hasAnyJoinTableValue = Boolean(
+        this.joinTableName.trim() ||
+        this.joinColumnNameForJoinTable.trim() ||
+        this.joinColumnReferencedForJoinTable.trim() ||
+        this.inverseJoinColumnNameForJoinTable.trim() ||
+        this.inverseJoinColumnReferencedForJoinTable.trim() ||
+        this.joinTableOnDelete
+      );
+
+      if (hasAnyJoinTableValue && !this.joinTableName.trim()) {
+        this.joinTableError = 'Join table name is required when join table details are provided.';
+        return false;
+      }
+    }
+
+    return true;
+  }
+
   validateAll(): boolean {
     const isSourceEntityValid = this.validateSourceEntity();
     const isSourceFieldNameValid = this.validateSourceFieldName();
     const isTargetEntityValid = this.validateTargetEntity();
     const isTargetFieldNameValid = this.validateTargetFieldName();
     const isRelationTypeValid = this.validateRelationType();
+    const isRelationConfigValid = this.validateRelationConfig();
 
-    return isSourceEntityValid && isSourceFieldNameValid && isTargetEntityValid && isTargetFieldNameValid && isRelationTypeValid;
+    return isSourceEntityValid && isSourceFieldNameValid && isTargetEntityValid && isTargetFieldNameValid && isRelationTypeValid && isRelationConfigValid;
   }
 
   onSave(): void {
@@ -234,6 +387,45 @@ export class AddRelationComponent implements OnChanges {
       required: this.required
     };
 
+    const normalizedCascade = this.normalizeCascadeSelection(this.cascade);
+    if (normalizedCascade.length > 0) {
+      relation.cascade = normalizedCascade;
+    }
+
+    if (this.relationType === 'OneToOne') {
+      relation.optional = this.optional;
+      relation.mappedBy = this.mappedBy.trim() || undefined;
+      relation.orphanRemoval = this.orphanRemoval;
+      if (!relation.mappedBy) {
+        const joinColumn = this.buildJoinColumnConfig();
+        if (joinColumn) {
+          relation.joinColumn = joinColumn;
+        }
+      }
+    }
+
+    if (this.relationType === 'OneToMany') {
+      relation.mappedBy = this.mappedBy.trim();
+      relation.orphanRemoval = this.orphanRemoval;
+      relation.orderBy = this.orderBy.trim() || undefined;
+      relation.orderColumn = this.orderColumnName.trim() ? { name: this.orderColumnName.trim() } : undefined;
+    }
+
+    if (this.relationType === 'ManyToOne') {
+      relation.optional = this.optional;
+      const joinColumn = this.buildJoinColumnConfig();
+      if (joinColumn) {
+        relation.joinColumn = joinColumn;
+      }
+    }
+
+    if (this.relationType === 'ManyToMany') {
+      const joinTable = this.buildJoinTableConfig();
+      if (joinTable) {
+        relation.joinTable = joinTable;
+      }
+    }
+
     this.save.emit(relation);
     this.resetForm();
   }
@@ -241,6 +433,140 @@ export class AddRelationComponent implements OnChanges {
   onCancel(): void {
     this.resetForm();
     this.cancel.emit();
+  }
+
+  isOneToMany(): boolean {
+    return this.relationType === 'OneToMany';
+  }
+
+  isOneToOne(): boolean {
+    return this.relationType === 'OneToOne';
+  }
+
+  isManyToOne(): boolean {
+    return this.relationType === 'ManyToOne';
+  }
+
+  isManyToMany(): boolean {
+    return this.relationType === 'ManyToMany';
+  }
+
+  toggleRelationConfig(): void {
+    this.relationConfigExpanded = !this.relationConfigExpanded;
+  }
+
+  private buildJoinColumnConfig(): JoinColumnConfig | undefined {
+    const config: JoinColumnConfig = {};
+    if (this.joinColumnName.trim()) {
+      config.name = this.joinColumnName.trim();
+    }
+    config.nullable = this.joinColumnNullable;
+    if (this.joinColumnReferencedColumnName.trim()) {
+      config.referencedColumnName = this.joinColumnReferencedColumnName.trim();
+    }
+    if (this.joinColumnIndex) {
+      config.index = true;
+    }
+    if (this.joinColumnOnDelete) {
+      config.onDelete = this.joinColumnOnDelete;
+    }
+
+    return this.hasJoinColumnValues(config) ? config : undefined;
+  }
+
+  private buildJoinTableConfig(): JoinTableConfig | undefined {
+    const config: JoinTableConfig = {};
+
+    if (this.joinTableName.trim()) {
+      config.name = this.joinTableName.trim();
+    }
+
+    const joinColumn: JoinColumnConfig = {};
+    if (this.joinColumnNameForJoinTable.trim()) {
+      joinColumn.name = this.joinColumnNameForJoinTable.trim();
+    }
+    if (this.joinColumnReferencedForJoinTable.trim()) {
+      joinColumn.referencedColumnName = this.joinColumnReferencedForJoinTable.trim();
+    }
+    if (this.hasJoinColumnValues(joinColumn)) {
+      config.joinColumns = [joinColumn];
+    }
+
+    const inverseJoinColumn: JoinColumnConfig = {};
+    if (this.inverseJoinColumnNameForJoinTable.trim()) {
+      inverseJoinColumn.name = this.inverseJoinColumnNameForJoinTable.trim();
+    }
+    if (this.inverseJoinColumnReferencedForJoinTable.trim()) {
+      inverseJoinColumn.referencedColumnName = this.inverseJoinColumnReferencedForJoinTable.trim();
+    }
+    if (this.hasJoinColumnValues(inverseJoinColumn)) {
+      config.inverseJoinColumns = [inverseJoinColumn];
+    }
+
+    if (this.joinTableUniquePair) {
+      config.uniquePair = true;
+    }
+
+    if (this.joinTableOnDelete) {
+      config.onDelete = this.joinTableOnDelete;
+    }
+
+    return this.hasJoinTableValues(config) ? config : undefined;
+  }
+
+  private hasJoinColumnValues(config: JoinColumnConfig | undefined): boolean {
+    return Boolean(
+      config && (
+        config.name ||
+        config.referencedColumnName ||
+        config.index ||
+        config.onDelete ||
+        config.nullable !== undefined
+      )
+    );
+  }
+
+  private hasJoinTableValues(config: JoinTableConfig | undefined): boolean {
+    return Boolean(
+      config && (
+        config.name ||
+        (config.joinColumns && config.joinColumns.length > 0) ||
+        (config.inverseJoinColumns && config.inverseJoinColumns.length > 0) ||
+        config.uniquePair ||
+        config.onDelete
+      )
+    );
+  }
+
+  private resetRelationConfig(): void {
+    this.mappedBy = '';
+    this.cascade = [];
+    this.orphanRemoval = false;
+    this.orderBy = '';
+    this.orderColumnName = '';
+
+    this.optional = true;
+    this.joinColumnName = '';
+    this.joinColumnNullable = true;
+    this.joinColumnReferencedColumnName = '';
+    this.joinColumnIndex = false;
+    this.joinColumnOnDelete = '';
+
+    this.joinTableName = '';
+    this.joinColumnNameForJoinTable = '';
+    this.joinColumnReferencedForJoinTable = '';
+    this.inverseJoinColumnNameForJoinTable = '';
+    this.inverseJoinColumnReferencedForJoinTable = '';
+    this.joinTableUniquePair = false;
+    this.joinTableOnDelete = '';
+  }
+
+  private normalizeCascadeSelection(cascade: string[]): string[] {
+    const unique = Array.from(new Set((cascade ?? []).filter(Boolean)));
+    if (unique.includes('ALL')) {
+      return ['ALL'];
+    }
+    return unique;
   }
 
   private getFieldNamesForEntity(entityName: string): string[] {

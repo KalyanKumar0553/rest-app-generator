@@ -1,0 +1,27 @@
+<mat-form-field appearance="fill" class="searchable-multi-select full-width">
+  <mat-label>{{ label }}</mat-label>
+  <mat-select
+    [ngModel]="selectedValues"
+    (ngModelChange)="onSelectionChange($event)"
+    [disabled]="disabled"
+    (openedChange)="onOpenedChange($event)"
+    multiple>
+    <mat-option disabled class="search-option">
+      <input
+        class="search-input"
+        [(ngModel)]="searchTerm"
+        [attr.placeholder]="searchPlaceholder"
+        [attr.aria-label]="searchPlaceholder"
+        (click)="$event.stopPropagation()"
+        (keydown)="onSearchKeydown($event)">
+    </mat-option>
+
+    <mat-option *ngFor="let option of filteredOptions" [value]="option">
+      {{ option }}
+    </mat-option>
+
+    <mat-option *ngIf="filteredOptions.length === 0" disabled>
+      {{ emptyMessage }}
+    </mat-option>
+  </mat-select>
+</mat-form-field>

@@ -6,12 +6,8 @@ import java.util.UUID;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
-import com.src.main.util.ProjectRunStatus;
-
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import lombok.Data;
@@ -30,10 +26,10 @@ public class ProjectEntity {
 	@Column
 	private String artifact;
 	
-	@Column
+	@Column(name = "group_id")
 	private String groupId;
 	
-	@Column
+	@Column(name = "build_tool")
 	private String buildTool;
 	
 	@Column
@@ -54,16 +50,16 @@ public class ProjectEntity {
 	@Column
 	String description;
 	
-	@Column
+	@Column(name = "spring_boot_version")
 	String springBootVersion;
 	
-	@Column
+	@Column(name = "jdk_version")
     private String jdkVersion;
     
-	@Column
+	@Column(name = "include_openapi")
 	private boolean includeOpenapi;
     
-	@Column
+	@Column(name = "angular_integration")
 	private boolean angularIntegration;
     
 	

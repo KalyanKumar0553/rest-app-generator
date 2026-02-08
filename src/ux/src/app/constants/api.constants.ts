@@ -24,10 +24,17 @@ export const API_ENDPOINTS = {
   },
   PROJECT: {
     LIST: '/api/projects',
-    CREATE: '/api/projects/create',
+    CREATE: '/api/projects',
     GET: (id: string) => `/api/projects/${id}`,
     UPDATE: (id: string) => `/api/projects/${id}/update`,
     DELETE: (id: string) => `/api/projects/${id}/delete`
+  },
+  RUN: {
+    LIST_BY_PROJECT: (projectId: string) => `/api/runs/project/${projectId}`,
+    DOWNLOAD: (runId: string) => `/api/runs/${runId}/download`
+  },
+  PROJECT_VIEW: {
+    GENERATE_ZIP: '/api/project-view/generate-zip'
   },
   DEPENDENCIES: {
     LIST: '/api/openapi/dependencies'

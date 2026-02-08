@@ -36,7 +36,7 @@ public class GradleWrapperInstaller {
 
 			trySetExecutable(gradlew);
 
-			copyClasspath("/templates/gradle/wrapper/gradle-wrapper.jar", wrapperJar);
+			copyClasspathIfPresent("/templates/gradle/wrapper/gradle-wrapper.jar", wrapperJar);
 
 			String distroType = "bin";
 			Properties p = new Properties();
@@ -57,6 +57,19 @@ public class GradleWrapperInstaller {
 		try (InputStream in = GradleWrapperInstaller.class.getResourceAsStream(resourcePath)) {
 			if (in == null) {
 				throw new IOException("Missing classpath resource: " + resourcePath);
+			}
+			Files.createDirectories(dest.getParent());
+			try (OutputStream out = Files.newOutputStream(dest, StandardOpenOption.CREATE,
+					StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.WRITE)) {
+				in.transferTo(out);
+			}
+		}
+	}
+
+	private static void copyClasspathIfPresent(String resourcePath, Path dest) throws IOException {
+		try (InputStream in = GradleWrapperInstaller.class.getResourceAsStream(resourcePath)) {
+			if (in == null) {
+				return;
 			}
 			Files.createDirectories(dest.getParent());
 			try (OutputStream out = Files.newOutputStream(dest, StandardOpenOption.CREATE,

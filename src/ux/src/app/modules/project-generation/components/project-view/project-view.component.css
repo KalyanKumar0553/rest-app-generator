@@ -1,0 +1,113 @@
+.project-view {
+  display: grid;
+  grid-template-columns: 34% 66%;
+  border: 1px solid #cdd5d3;
+  border-radius: 10px;
+  overflow: hidden;
+  max-height: 72vh;
+  min-height: 520px;
+}
+
+.project-view-sidebar {
+  border-right: 1px solid #cdd5d3;
+  display: flex;
+  flex-direction: column;
+  background: #f4f7f7;
+}
+
+.project-view-sidebar-header,
+.project-view-preview-header {
+  height: 56px;
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  font-size: 20px;
+  font-weight: 600;
+  color: #ffffff;
+  background: #8ca0a3;
+}
+
+.project-view-tree {
+  flex: 1;
+  overflow: auto;
+  padding: 10px 0;
+}
+
+.project-view-node {
+  width: 100%;
+  border: none;
+  background: transparent;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 34px;
+  font-size: 14px;
+  color: #334155;
+  text-align: left;
+  cursor: pointer;
+}
+
+.project-view-node:hover {
+  background: #e8efee;
+}
+
+.project-view-node.selected {
+  background: #d8e8e5;
+  font-weight: 600;
+}
+
+.project-view-sidebar-footer {
+  border-top: 1px solid #d5dcda;
+  padding: 16px;
+}
+
+.project-view-preview {
+  display: flex;
+  flex-direction: column;
+  background: #f7f8f7;
+}
+
+.project-view-preview-body {
+  flex: 1;
+  overflow: auto;
+  font-family: 'SFMono-Regular', Menlo, Consolas, monospace;
+  font-size: 14px;
+}
+
+.project-view-error {
+  margin: 20px;
+  color: #b91c1c;
+}
+
+.project-view-line {
+  display: grid;
+  grid-template-columns: 54px 1fr;
+  min-height: 24px;
+}
+
+.project-view-line-number {
+  background: #e5e7eb;
+  color: #6b7280;
+  text-align: right;
+  padding: 2px 10px 2px 0;
+  user-select: none;
+  border-right: 1px solid #d1d5db;
+}
+
+.project-view-line-content {
+  padding: 2px 14px;
+  white-space: pre;
+}
+
+@media (max-width: 768px) {
+  .project-view {
+    grid-template-columns: 1fr;
+    min-height: 420px;
+  }
+
+  .project-view-sidebar {
+    border-right: none;
+    border-bottom: 1px solid #cdd5d3;
+    max-height: 220px;
+  }
+}

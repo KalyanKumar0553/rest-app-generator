@@ -258,9 +258,6 @@
             <span *ngIf="!isLoading">Setup Entities</span>
             <span *ngIf="isLoading">Loading...</span>
           </button>
-          <button mat-raised-button type="button" (click)="saveProject()" [disabled]="isLoading">
-            Save Project
-          </button>
         </div>
       </div>
     </div>
@@ -290,11 +287,63 @@
             <span *ngIf="!isLoading">Setup Data Objects</span>
             <span *ngIf="isLoading">Loading...</span>
           </button>
-          <button mat-raised-button type="button" (click)="saveProject()" [disabled]="isLoading">
+        </div>
+      </div>
+    </div>
+
+    <div class="content-body" *ngIf="activeSection === 'data-objects'" id="data-objects">
+      <div class="sticky-header">
+        <div class="top-actions">
+          <button class="back-btn-desktop" (click)="handleHome()" aria-label="Go to home" mat-stroked-button>
+            <i class="bi bi-house-door"></i>
+            Home
+          </button>
+        </div>
+      </div>
+
+      <div class="scrollable-content">
+        <app-data-objects
+          [dataObjects]="dataObjects"
+          [entities]="entities"
+          (dataObjectsChange)="onDataObjectsChange($event)">
+        </app-data-objects>
+      </div>
+
+      <div class="sticky-footer">
+        <div class="action-section">
+          <button mat-raised-button type="button" (click)="saveProjectAndInvokeApi()" [disabled]="isLoading || isGeneratingFromDtoSave">
             Save Project
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="content-body" *ngIf="activeSection === 'explore'" id="explore">
+      <div class="sticky-header">
+        <div class="top-actions">
+          <button class="back-btn-desktop" (click)="handleHome()" aria-label="Go to home" mat-stroked-button>
+            <i class="bi bi-house-door"></i>
+            Home
+          </button>
+        </div>
+      </div>
+
+      <div class="scrollable-content">
+        <div class="explore-empty-card">
+          <h3>Project Explorer</h3>
+          <p>Open the latest generated zip and browse folders/files.</p>
+          <button mat-raised-button color="primary" type="button" (click)="handleExploreTab('explore')" [disabled]="isExploreSyncing">
+            {{ isExploreSyncing ? 'Checking...' : 'Open Latest Zip' }}
           </button>
         </div>
       </div>
     </div>
   </main>
 </div>
+
+<app-project-view
+  [isOpen]="showExploreModal"
+  [zipBlob]="exploreZipBlob"
+  [zipFileName]="exploreZipFileName"
+  (close)="closeExploreModal()">
+</app-project-view>
