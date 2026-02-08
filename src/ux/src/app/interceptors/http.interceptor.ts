@@ -34,9 +34,16 @@ export class HttpRequestInterceptor implements HttpInterceptor {
   private addHeaders(request: HttpRequest<any>): HttpRequest<any> {
     const token = this.localStorageService.getItem(STORAGE_KEYS.ACCESS_TOKEN);
 
-    let headers = request.headers
-      .set('Content-Type', 'application/json')
-      .set('Accept', 'application/json');
+    let headers = request.headers;
+
+    if (!headers.has('Accept')) {
+      headers = headers.set('Accept', 'application/json');
+    }
+
+    const isFormData = typeof FormData !== 'undefined' && request.body instanceof FormData;
+    if (!headers.has('Content-Type') && request.body != null && !isFormData) {
+      headers = headers.set('Content-Type', 'application/json');
+    }
 
     if (token && !this.isPublicEndpoint(request.url)) {
       headers = headers.set('Authorization', `Bearer ${token}`);
@@ -52,7 +59,10 @@ export class HttpRequestInterceptor implements HttpInterceptor {
       '/api/auth/forgot-password',
       '/api/auth/send-otp',
       '/api/auth/verify-otp',
-      '/api/auth/reset-password-with-otp'
+      '/api/auth/reset-password-with-otp',
+      '/api/projects',
+      '/api/project-view/generate-zip',
+      '/api/openapi/dependencies'
     ];
     return publicEndpoints.some(endpoint => url.includes(endpoint));
   }

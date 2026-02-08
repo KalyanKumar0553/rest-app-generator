@@ -1,0 +1,41 @@
+<app-modal
+  [isOpen]="isOpen"
+  [title]="'Project Explorer'"
+  [size]="'xlarge'"
+  [showFooter]="false"
+  (close)="onClose()">
+  <div class="project-view">
+    <div class="project-view-sidebar">
+      <div class="project-view-sidebar-header">{{ zipFileName }}</div>
+      <div class="project-view-tree">
+        <button
+          type="button"
+          class="project-view-node"
+          *ngFor="let node of visibleNodes"
+          [style.padding-left.px]="node.depth * 16 + 12"
+          [class.selected]="!node.isDirectory && node.path === selectedFilePath"
+          (click)="node.isDirectory ? toggleNode(node) : selectFile(node)">
+          <i class="bi" [ngClass]="node.isDirectory ? (node.expanded ? 'bi-caret-down-fill' : 'bi-caret-right-fill') : 'bi-dot'"></i>
+          <i class="bi" [ngClass]="node.isDirectory ? 'bi-folder2-open' : 'bi-file-earmark-text'"></i>
+          <span>{{ node.name }}</span>
+        </button>
+      </div>
+      <div class="project-view-sidebar-footer">
+        <button mat-raised-button color="primary" type="button" (click)="downloadZip()">Download</button>
+      </div>
+    </div>
+
+    <div class="project-view-preview">
+      <div class="project-view-preview-header">{{ selectedFileName || 'Select a file' }}</div>
+      <div class="project-view-preview-body" *ngIf="selectedFileError">
+        <p class="project-view-error">{{ selectedFileError }}</p>
+      </div>
+      <div class="project-view-preview-body" *ngIf="!selectedFileError">
+        <div class="project-view-line" *ngFor="let line of getPreviewLines(); let i = index">
+          <span class="project-view-line-number">{{ i + 1 }}</span>
+          <span class="project-view-line-content">{{ line }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</app-modal>

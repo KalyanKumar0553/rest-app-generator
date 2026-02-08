@@ -13,12 +13,14 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import com.src.main.dto.ProjectCreateResponseDTO;
 import com.src.main.dto.ProjectRunDetailsResponseDTO;
 import com.src.main.dto.ProjectSummaryDTO;
 import com.src.main.mapper.ProjectRunMapper;
 import com.src.main.model.ProjectRunEntity;
+import com.src.main.service.ProjectEventStreamService;
 import com.src.main.service.ProjectOrchestrationService;
 import com.src.main.service.ProjectService;
 import com.src.main.util.AppConstants;
@@ -33,6 +35,7 @@ public class ProjectController {
 
 	private final ProjectService service;
 	private final ProjectOrchestrationService orchestrationService;
+	private final ProjectEventStreamService projectEventStreamService;
 
 
 	@PostMapping(consumes = { "text/yaml", "application/x-yaml",MediaType.TEXT_PLAIN_VALUE }, produces = MediaType.APPLICATION_JSON_VALUE)
@@ -75,4 +78,9 @@ public class ProjectController {
         ProjectRunEntity run = orchestrationService.generateCode(projectId, userId);
         return ResponseEntity.accepted().body(ProjectRunMapper.toDto(run));
     }
+
+	@GetMapping(value = "/{projectId}/events", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+	public SseEmitter streamProjectEvents(@PathVariable UUID projectId) {
+		return projectEventStreamService.subscribe(projectId);
+	}
 }

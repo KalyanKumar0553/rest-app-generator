@@ -14,7 +14,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class RelationSpecDTO {
 	public enum Type {
-		OneToMany, ManyToOne, ManyToMany
+		OneToOne, OneToMany, ManyToOne, ManyToMany
 	}
 
 	private String name;

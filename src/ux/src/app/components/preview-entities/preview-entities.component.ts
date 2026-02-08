@@ -10,6 +10,7 @@ export interface PreviewEntityField {
 
 export interface PreviewEntity {
   name: string;
+  dtoType?: 'request' | 'response';
   fields?: PreviewEntityField[];
 }
 
@@ -35,6 +36,7 @@ export class PreviewEntitiesComponent {
   @Output() editEntity = new EventEmitter<{ entity: PreviewEntity; index: number }>();
   @Output() deleteEntity = new EventEmitter<{ entity: PreviewEntity; index: number }>();
   @Output() viewMore = new EventEmitter<{ entity: PreviewEntity; index: number }>();
+  @Output() viewRelations = new EventEmitter<{ entity: PreviewEntity; index: number }>();
 
   getVisibleFields(entity: PreviewEntity): PreviewEntityField[] {
     const fields = entity.fields ?? [];
@@ -45,17 +47,13 @@ export class PreviewEntitiesComponent {
     return (entity.fields?.length ?? 0) > 5;
   }
 
-  getEntityRelations(entityName: string): string[] {
+  getEntityRelations(entityName: string): PreviewRelation[] {
     if (!this.relations?.length) {
       return [];
     }
 
     return this.relations
-      .filter(relation => relation.sourceEntity === entityName || relation.targetEntity === entityName)
-      .map(relation => {
-        const otherEntity = relation.sourceEntity === entityName ? relation.targetEntity : relation.sourceEntity;
-        return relation.relationType ? `${relation.relationType}: ${otherEntity}` : otherEntity;
-      });
+      .filter(relation => relation.sourceEntity === entityName || relation.targetEntity === entityName);
   }
 
   onEdit(entity: PreviewEntity, index: number): void {
@@ -68,5 +66,9 @@ export class PreviewEntitiesComponent {
 
   onViewMore(entity: PreviewEntity, index: number): void {
     this.viewMore.emit({ entity, index });
+  }
+
+  onViewRelations(entity: PreviewEntity, index: number): void {
+    this.viewRelations.emit({ entity, index });
   }
 }

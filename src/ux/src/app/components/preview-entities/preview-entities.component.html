@@ -2,7 +2,12 @@
   <div class="preview-entities__grid" *ngIf="entities.length > 0; else emptyState">
     <div class="entity-card" *ngFor="let entity of entities; let i = index" tabindex="0">
       <div class="entity-card__header">
-        <span class="entity-card__title">{{ entity.name }}</span>
+        <div class="entity-card__title-group">
+          <span class="entity-card__title">{{ entity.name }}</span>
+          <span class="entity-card__type-badge" *ngIf="entity.dtoType">
+            {{ entity.dtoType === 'request' ? 'Request DTO' : 'Response DTO' }}
+          </span>
+        </div>
         <div class="entity-card__actions" *ngIf="showActions">
           <button class="entity-action-btn" type="button" (click)="onEdit(entity, i); $event.stopPropagation()" aria-label="Edit entity">
             <i class="bi bi-pencil"></i>
@@ -15,12 +20,13 @@
 
       <ng-container *ngIf="getEntityRelations(entity.name) as entityRelations">
         <div class="entity-card__relations" *ngIf="entityRelations.length > 0">
-          <span class="relation-label">Relations</span>
-          <div class="relation-list">
-            <span class="relation-pill" *ngFor="let relation of entityRelations">
-              {{ relation }}
-            </span>
-          </div>
+          <button
+            type="button"
+            class="relation-count-btn"
+            (click)="onViewRelations(entity, i)">
+            Relations
+            <span class="relation-count-badge">{{ entityRelations.length }}</span>
+          </button>
         </div>
       </ng-container>
 

@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Base64;
 import java.util.Map;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
@@ -24,6 +25,7 @@ import com.src.main.exception.GenericException;
 import com.src.main.model.ProjectEntity;
 import com.src.main.model.ProjectRunEntity;
 import com.src.main.repository.ProjectRunRepository;
+import com.src.main.service.ProjectEventStreamService;
 import com.src.main.sm.config.Events;
 import com.src.main.sm.config.States;
 import com.src.main.util.ProjectMetaDataConstants;
@@ -39,6 +41,7 @@ public class ProjectWorkflowService {
 
 	private final StateMachineFactory<States, Events> factory;
 	private final ProjectRunRepository runRepository;
+	private final ProjectEventStreamService projectEventStreamService;
 	
 	public void runFullWorkflow(ProjectRunEntity run){
 		try {
@@ -47,6 +50,12 @@ public class ProjectWorkflowService {
 			log.info("Completed full workflow for run {}", run.getId());
         } catch (Exception ex) {
             log.error("Workflow failed for project {} with runID {}", run.getProject().getId(),run.getId(), ex);
+			run.setStatus(ProjectRunStatus.ERROR);
+			run.setErrorMessage(ex.getMessage());
+			runRepository.saveAndFlush(run);
+			projectEventStreamService.publish(run.getProject().getId(), "generation",
+					Map.of("projectId", run.getProject().getId().toString(), "status", "ERROR",
+							"message", ex.getMessage() == null ? "Generation failed." : ex.getMessage()));
         }
 	}
 
@@ -76,15 +85,30 @@ public class ProjectWorkflowService {
 		sm.addStateListener(new StateMachineListenerAdapter<>() {
 			@Override
 			public void stateChanged(State<States, Events> from, State<States, Events> to) {
-				if (to.getId() == States.DONE || to.getId() == States.ERROR) {
+				if (to.getId() == States.DONE) {
 					try {
 						byte[] zipData = getZipData(temp);
 						run.setZip(zipData);
 						run.setStatus(ProjectRunStatus.SUCCESS);
+						run.setErrorMessage(null);
 						runRepository.saveAndFlush(run);
+						projectEventStreamService.publish(run.getProject().getId(), "generation",
+								Map.of("projectId", run.getProject().getId().toString(), "status", "SUCCESS",
+										"fileName", run.getProject().getArtifact() + ".zip",
+										"zipBase64", Base64.getEncoder().encodeToString(zipData)));
 					} catch (IOException e) {
 						throw new GenericException(HttpStatus.INTERNAL_SERVER_ERROR,e.getMessage());
 					}
+				}
+				if (to.getId() == States.ERROR) {
+					run.setStatus(ProjectRunStatus.ERROR);
+					if (run.getErrorMessage() == null || run.getErrorMessage().isBlank()) {
+						run.setErrorMessage("Generation failed.");
+					}
+					runRepository.saveAndFlush(run);
+					projectEventStreamService.publish(run.getProject().getId(), "generation",
+							Map.of("projectId", run.getProject().getId().toString(), "status", "ERROR",
+									"message", run.getErrorMessage()));
 				}
 			}
 		});

@@ -54,6 +54,7 @@ export class FieldFilterService {
     const tokens = [
       field.name,
       field.type,
+      field.jsonProperty,
       field.maxLength ? String(field.maxLength) : '',
       constraintTokens,
       legacyConstraints
@@ -71,6 +72,8 @@ export class FieldFilterService {
         return field.name?.toLowerCase() ?? '';
       case 'type':
         return field.type?.toLowerCase() ?? '';
+      case 'jsonProperty':
+        return field.jsonProperty?.toLowerCase() ?? '';
       case 'constraintCount':
         return this.getConstraintCount(field);
       case 'maxLength':

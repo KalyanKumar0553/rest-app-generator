@@ -277,8 +277,6 @@ app-search-sort {
 }
 
 .relations-panel-body {
-  max-height: 220px;
-  overflow-y: auto;
   overscroll-behavior: contain;
   padding-right: 6px;
 }

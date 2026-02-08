@@ -1,0 +1,36 @@
+.full-width {
+  width: 100%;
+}
+
+.search-option {
+  min-height: 56px !important;
+  height: auto !important;
+  opacity: 1 !important;
+  cursor: default !important;
+  pointer-events: auto !important;
+}
+
+.search-option .search-input {
+  width: 100%;
+  padding: 8px 0;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: #111827;
+  font-size: 14px;
+}
+
+.search-option .search-input::placeholder {
+  color: #6b7280;
+  opacity: 1;
+}
+
+::ng-deep .search-option .mat-pseudo-checkbox,
+::ng-deep .search-option .mat-mdc-option-pseudo-checkbox,
+::ng-deep .search-option .mdc-list-item__start {
+  display: none !important;
+}
+
+::ng-deep .search-option .mdc-list-item__primary-text {
+  width: 100%;
+}

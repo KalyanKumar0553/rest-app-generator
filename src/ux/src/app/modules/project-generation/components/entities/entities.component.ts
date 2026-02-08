@@ -73,6 +73,9 @@ export class EntitiesComponent implements OnInit {
 
   showAddRelationModal = false;
   showRelationsPreviewModal = false;
+  showEntityRelationsPreviewModal = false;
+  selectedEntityRelations: Relation[] = [];
+  selectedEntityNameForRelations = '';
   editingRelation: Relation | null = null;
   editingRelationIndex: number | null = null;
   deletingRelationIndex: number | null = null;
@@ -222,6 +225,29 @@ export class EntitiesComponent implements OnInit {
 
   closeRelationsPreview(): void {
     this.showRelationsPreviewModal = false;
+  }
+
+  openEntityRelationsPreview(event: { entity: Entity; index: number }): void {
+    const entityName = event.entity?.name;
+    if (!entityName) {
+      return;
+    }
+    const related = this.relations.filter(
+      relation => relation.sourceEntity === entityName || relation.targetEntity === entityName
+    );
+    if (related.length === 0) {
+      this.toastService.error('No relations available for this entity.');
+      return;
+    }
+    this.selectedEntityRelations = related;
+    this.selectedEntityNameForRelations = entityName;
+    this.showEntityRelationsPreviewModal = true;
+  }
+
+  closeEntityRelationsPreview(): void {
+    this.showEntityRelationsPreviewModal = false;
+    this.selectedEntityRelations = [];
+    this.selectedEntityNameForRelations = '';
   }
 
   editRelation(relation: Relation, index: number): void {

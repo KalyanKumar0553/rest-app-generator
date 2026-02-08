@@ -61,6 +61,7 @@
         [relations]="relations"
         [showActions]="true"
         (viewMore)="openEntityDetailFromMain($event)"
+        (viewRelations)="openEntityRelationsPreview($event)"
         (editEntity)="editEntityFromList($event)"
         (deleteEntity)="deleteEntityFromList($event)">
       </app-preview-entities>
@@ -204,6 +205,18 @@
   [showFooter]="false"
   (close)="closeRelationsPreview()">
   <app-preview-relations [relations]="relations" [isOpen]="showRelationsPreviewModal"></app-preview-relations>
+</app-modal>
+
+<app-modal
+  [isOpen]="showEntityRelationsPreviewModal"
+  [title]="'Relations for ' + selectedEntityNameForRelations"
+  [size]="'xlarge'"
+  [showFooter]="false"
+  (close)="closeEntityRelationsPreview()">
+  <app-preview-relations
+    [relations]="selectedEntityRelations"
+    [isOpen]="showEntityRelationsPreviewModal">
+  </app-preview-relations>
 </app-modal>
 
 <app-modal
