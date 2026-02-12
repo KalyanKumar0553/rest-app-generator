@@ -1,5 +1,6 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { APP_SETTINGS } from '../../../settings/app-settings';
 
 @Component({
   selector: 'app-benefits',
@@ -9,6 +10,7 @@ import { CommonModule } from '@angular/common';
   styleUrls: ['./benefits.component.css']
 })
 export class BenefitsComponent {
+  readonly appSettings = APP_SETTINGS;
   benefits = [
     {
       icon: '⏱',

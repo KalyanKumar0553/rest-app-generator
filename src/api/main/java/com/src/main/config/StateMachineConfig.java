@@ -39,6 +39,10 @@ public class StateMachineConfig extends EnumStateMachineConfigurerAdapter<States
 				.stateEntry(States.DTO_GENERATION, runStep(States.DTO_GENERATION, Events.DTO_DONE, Events.DTO_FAIL))
 				.stateEntry(States.MODEL_GENERATION,
 						runStep(States.MODEL_GENERATION, Events.MODEL_DONE, Events.MODEL_FAIL))
+				.stateEntry(States.SWAGGER_GENERATION,
+						runStep(States.SWAGGER_GENERATION, Events.SWAGGER_DONE, Events.SWAGGER_FAIL))
+				.stateEntry(States.REST_GENERATION,
+						runStep(States.REST_GENERATION, Events.REST_DONE, Events.REST_FAIL))
 				.stateEntry(States.APPLICATION_FILES,
 						runStep(States.APPLICATION_FILES, Events.APPFILES_DONE, Events.APPFILES_FAIL))
 				.stateEntry(States.SCAFFOLD, runStep(States.SCAFFOLD, Events.SCAFFOLD_DONE, Events.SCAFFOLD_FAIL))
@@ -52,10 +56,20 @@ public class StateMachineConfig extends EnumStateMachineConfigurerAdapter<States
 				.withExternal().source(States.DTO_GENERATION).target(States.MODEL_GENERATION).event(Events.DTO_DONE)
 				.and().withExternal().source(States.DTO_GENERATION).target(States.ERROR).event(Events.DTO_FAIL).and()
 
-				// MODEL → APP FILES on success; MODEL → ERROR on fail
-				.withExternal().source(States.MODEL_GENERATION).target(States.APPLICATION_FILES)
+				// MODEL → SWAGGER GENERATION on success; MODEL → ERROR on fail
+				.withExternal().source(States.MODEL_GENERATION).target(States.SWAGGER_GENERATION)
 				.event(Events.MODEL_DONE).and().withExternal().source(States.MODEL_GENERATION).target(States.ERROR)
 				.event(Events.MODEL_FAIL).and()
+
+				// SWAGGER GENERATION → REST GENERATION / ERROR
+				.withExternal().source(States.SWAGGER_GENERATION).target(States.REST_GENERATION)
+				.event(Events.SWAGGER_DONE).and().withExternal().source(States.SWAGGER_GENERATION).target(States.ERROR)
+				.event(Events.SWAGGER_FAIL).and()
+
+				// REST GENERATION → APP FILES / ERROR
+				.withExternal().source(States.REST_GENERATION).target(States.APPLICATION_FILES)
+				.event(Events.REST_DONE).and().withExternal().source(States.REST_GENERATION).target(States.ERROR)
+				.event(Events.REST_FAIL).and()
 
 				// APP FILES → SCAFFOLD / ERROR
 				.withExternal().source(States.APPLICATION_FILES).target(States.SCAFFOLD).event(Events.APPFILES_DONE)
@@ -69,6 +83,8 @@ public class StateMachineConfig extends EnumStateMachineConfigurerAdapter<States
 				// Global FAIL shortcuts → ERROR
 				.withExternal().source(States.DTO_GENERATION).target(States.ERROR).event(Events.FAIL).and()
 				.withExternal().source(States.MODEL_GENERATION).target(States.ERROR).event(Events.FAIL).and()
+				.withExternal().source(States.SWAGGER_GENERATION).target(States.ERROR).event(Events.FAIL).and()
+				.withExternal().source(States.REST_GENERATION).target(States.ERROR).event(Events.FAIL).and()
 				.withExternal().source(States.APPLICATION_FILES).target(States.ERROR).event(Events.FAIL).and()
 				.withExternal().source(States.SCAFFOLD).target(States.ERROR).event(Events.FAIL);
 	}

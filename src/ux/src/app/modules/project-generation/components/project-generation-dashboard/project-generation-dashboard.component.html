@@ -11,7 +11,7 @@
   <div class="container">
     <div class="header-content">
       <div class="logo">
-        <span class="logo-text">Bootify</span>
+        <span class="logo-text">{{ appSettings.appName }}</span>
         <i class="bi bi-code-slash logo-icon"></i>
       </div>
       <div class="spacer"></div>
@@ -28,7 +28,7 @@
   <aside class="sidebar" [class.open]="isSidebarOpen">
     <div class="sidebar-header">
       <div class="logo">
-        <span class="logo-text">Bootify</span>
+        <span class="logo-text">{{ appSettings.appName }}</span>
         <i class="bi bi-code-slash logo-icon"></i>
       </div>
     </div>
@@ -69,12 +69,22 @@
           <div class="panel-content">
             <mat-form-field appearance="fill" class="full-width">
               <mat-label>Project group</mat-label>
-              <input matInput [(ngModel)]="projectSettings.projectGroup" placeholder="io.bootify">
+              <input
+                matInput
+                [(ngModel)]="projectSettings.projectGroup"
+                (ngModelChange)="onProjectGroupChange()"
+                [placeholder]="appSettings.defaultProjectGroup">
+              <mat-error *ngIf="projectGroupError">{{ projectGroupError }}</mat-error>
             </mat-form-field>
 
             <mat-form-field appearance="fill" class="full-width">
               <mat-label>Project name</mat-label>
-              <input matInput [(ngModel)]="projectSettings.projectName" placeholder="my-app">
+              <input
+                matInput
+                [(ngModel)]="projectSettings.projectName"
+                (ngModelChange)="onProjectNameChange()"
+                placeholder="my-app">
+              <mat-error *ngIf="projectNameError">{{ projectNameError }}</mat-error>
             </mat-form-field>
 
             <div class="form-row">
@@ -137,13 +147,6 @@
                 <mat-icon class="inline-icon" matTooltip="Automatically pluralize table names">info</mat-icon>
               </mat-checkbox>
             </div>
-
-            <div class="form-row">
-              <mat-checkbox [(ngModel)]="databaseSettings.addDateCreatedLastUpdated">
-                Add dateCreated/lastUpdated to entities
-                <mat-icon class="inline-icon" matTooltip="Add timestamp fields to all entities">info</mat-icon>
-              </mat-checkbox>
-            </div>
           </div>
         </mat-expansion-panel>
 
@@ -156,11 +159,31 @@
 
           <div class="panel-content">
             <div class="form-row">
-              <label class="field-label">Appl. format</label>
-              <mat-radio-group [(ngModel)]="developerPreferences.applFormat" class="radio-group-horizontal">
-                <mat-radio-button value="yaml">Yaml</mat-radio-button>
-                <mat-radio-button value="properties">Properties</mat-radio-button>
-              </mat-radio-group>
+              <div class="appl-format-row">
+                <label class="field-label">Appl. format</label>
+                <button type="button" mat-stroked-button class="profile-add-btn" (click)="onAddProfileClick()">
+                  <mat-icon>add</mat-icon>
+                  Add profile
+                </button>
+              </div>
+              <div class="appl-format-controls">
+                <mat-radio-group [(ngModel)]="developerPreferences.applFormat" class="radio-group-horizontal">
+                  <mat-radio-button value="yaml">Yaml</mat-radio-button>
+                  <mat-radio-button value="properties">Properties</mat-radio-button>
+                </mat-radio-group>
+              </div>
+            </div>
+
+            <div class="form-row" *ngIf="developerPreferences.profiles.length > 0">
+              <label class="field-label">Profiles</label>
+              <div class="profile-tags">
+                <div class="profile-tag" *ngFor="let profile of developerPreferences.profiles">
+                  <span>{{ profile }}</span>
+                  <button type="button" class="profile-tag-remove" (click)="removeProfile(profile)" aria-label="Remove profile">
+                    <mat-icon>close</mat-icon>
+                  </button>
+                </div>
+              </div>
             </div>
 
             <div class="form-row">
@@ -170,7 +193,6 @@
               <mat-radio-group [(ngModel)]="developerPreferences.packages" class="radio-group-horizontal">
                 <mat-radio-button value="technical">Technical</mat-radio-button>
                 <mat-radio-button value="domain">Domain driven</mat-radio-button>
-                <mat-radio-button value="mixed">Mixed</mat-radio-button>
               </mat-radio-group>
             </div>
 
@@ -218,7 +240,7 @@
           <div class="panel-content">
             <div class="form-row">
               <label class="field-label">Dependencies
-                <mat-icon class="inline-icon" matTooltip="Bootify.io already adds required dependencies. Add your custom dependencies here.">info</mat-icon>
+                <mat-icon class="inline-icon" [matTooltip]="appSettings.websiteName + ' already adds required dependencies. Add your custom dependencies here.'">info</mat-icon>
               </label>
             </div>
 
@@ -328,22 +350,46 @@
         </div>
       </div>
 
-      <div class="scrollable-content">
-        <div class="explore-empty-card">
-          <h3>Project Explorer</h3>
-          <p>Open the latest generated zip and browse folders/files.</p>
-          <button mat-raised-button color="primary" type="button" (click)="handleExploreTab('explore')" [disabled]="isExploreSyncing">
-            {{ isExploreSyncing ? 'Checking...' : 'Open Latest Zip' }}
-          </button>
+      <div class="scrollable-content explore-content">
+        <div class="explore-empty-card" *ngIf="!exploreZipBlob">
+          <div class="explore-empty-header">
+            <h3>Project Explorer</h3>
+            <button
+              class="reload-btn"
+              type="button"
+              (click)="reloadExplore()"
+              [disabled]="isExploreSyncing"
+              aria-label="Reload project explorer"
+              mat-stroked-button>
+              <mat-icon>{{ isExploreSyncing ? 'sync' : 'refresh' }}</mat-icon>
+              <span>{{ isExploreSyncing ? 'Syncing...' : 'Reload' }}</span>
+            </button>
+          </div>
+          <p class="explore-empty-body">No synced zip available. Click reload to fetch the latest configured project.</p>
         </div>
+        <app-project-view
+          *ngIf="exploreZipBlob"
+          [isOpen]="activeSection === 'explore'"
+          [isSyncing]="isExploreSyncing"
+          [zipBlob]="exploreZipBlob"
+          [zipFileName]="exploreZipFileName"
+          (reload)="reloadExplore()">
+        </app-project-view>
       </div>
     </div>
   </main>
 </div>
 
-<app-project-view
-  [isOpen]="showExploreModal"
-  [zipBlob]="exploreZipBlob"
-  [zipFileName]="exploreZipFileName"
-  (close)="closeExploreModal()">
-</app-project-view>
+<app-modal
+  [isOpen]="showProfileModal"
+  [title]="'Add Profiles'"
+  [size]="'medium'"
+  [showFooter]="false"
+  (close)="closeProfileModal()">
+  <app-add-profile
+    [isOpen]="showProfileModal"
+    [profiles]="developerPreferences.profiles"
+    (save)="onProfilesSave($event)"
+    (cancel)="closeProfileModal()">
+  </app-add-profile>
+</app-modal>

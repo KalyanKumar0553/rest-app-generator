@@ -31,7 +31,6 @@ public class ScaffoldExecutor implements StepExecutor {
 	private static final Logger log = LoggerFactory.getLogger(ScaffoldExecutor.class);
 	
 	private static final String TPL_README = "templates/project/README.md.mustache";
-	private static final String TPL_GITIGNORE = "templates/project/gitignore.mustache";
 	private static final String TPL_VALIDATION_MESSAGES = "templates/project/messages.properties.mustache";
 	private static final String TPL_MAIN = "templates/project/main.mustache";
 	
@@ -67,12 +66,12 @@ public class ScaffoldExecutor implements StepExecutor {
 		final String generator = strOr(data, ProjectMetaDataConstants.GENERATOR, ProjectMetaDataConstants.GENERATOR, ProjectMetaDataConstants.DEFAULT_GRADLE_GENERATOR);
 		final String packageName = strOr(data, ProjectMetaDataConstants.PACKAGE_NAME, null, groupId);
 		
-		final boolean openapi = boolOr(data, ProjectMetaDataConstants.EXTRAS_OPENAPI, true);
 		final boolean angular = boolOr(data, ProjectMetaDataConstants.EXTRAS_ANGULAR_INTEGRATION, false);
 		
 		final Path root = resolveRoot(data);
 		
 		final Map<String, Object> yaml = (Map<String, Object>) data.getVariables().get("yaml");
+		final boolean openapi = resolveOpenApiEnabled(data, yaml);
 		
 		final List<String> depReq = (List<String>) data.getVariables().getOrDefault(ProjectMetaDataConstants.DEPENDENCIES,List.of("web", "validation", "actuator", "test"));
 
@@ -137,6 +136,38 @@ public class ScaffoldExecutor implements StepExecutor {
 		return Boolean.parseBoolean(v.toString());
 	}
 
+	@SuppressWarnings("unchecked")
+	private static boolean resolveOpenApiEnabled(ExtendedState data, Map<String, Object> yaml) {
+		Object explicit = data.getVariables().get(ProjectMetaDataConstants.EXTRAS_OPENAPI);
+		if (explicit != null) {
+			return parseBoolean(explicit, true);
+		}
+		if (yaml != null) {
+			Object raw = yaml.get("enableOpenapi");
+			if (raw == null && yaml.get("app") instanceof Map<?, ?> appRaw) {
+				raw = ((Map<String, Object>) appRaw).get("enableOpenapi");
+			}
+			if (raw != null) {
+				return parseBoolean(raw, true);
+			}
+		}
+		return true;
+	}
+
+	private static boolean parseBoolean(Object value, boolean defaultValue) {
+		if (value == null) {
+			return defaultValue;
+		}
+		if (value instanceof Boolean bool) {
+			return bool;
+		}
+		String normalized = String.valueOf(value).trim().toLowerCase();
+		if (normalized.isEmpty()) {
+			return defaultValue;
+		}
+		return "true".equals(normalized) || "1".equals(normalized) || "yes".equals(normalized) || "y".equals(normalized);
+	}
+
 	private static void createMinimalLayout(Path root, String packageName, String buildTool) throws Exception {
 		Path mainJava = root.resolve("src/main/java/" + packageName.replace('.', '/'));
 		Path mainRes = root.resolve("src/main/resources");
@@ -166,15 +197,10 @@ public class ScaffoldExecutor implements StepExecutor {
 		// Template rendering helper (assuming tpl is your Mustache or TemplateEngine
 		// instance)
 		String readmeRendered = tpl.render(TPL_README, Map.of("appName", appName));
-		String gitignoreRendered = tpl.render(TPL_GITIGNORE, Map.of());
 
 		// Write README.md
 		Path readmePath = root.resolve("README.md");
 		Files.writeString(readmePath, readmeRendered, StandardCharsets.UTF_8);
-
-		// Write .gitignore
-		Path gitignorePath = root.resolve(".gitignore");
-		Files.writeString(gitignorePath, gitignoreRendered, StandardCharsets.UTF_8);
 	}
 
 	private static String toPascal(String s) {

@@ -2,7 +2,7 @@
   <div class="container">
     <div class="header-content">
       <div class="logo" (click)="navigateToHome()">
-        <span class="logo-text">Bootify</span>
+        <span class="logo-text">{{ appSettings.appName }}</span>
         <i class="bi bi-code-slash logo-icon"></i>
       </div>
 
@@ -13,7 +13,7 @@
       <nav class="nav">
         <a href="#" class="nav-link">Learn</a>
         <a href="#" class="nav-link start-project" (click)="handleStartProjectClick($event)">Start Project</a>
-        <a href="#" class="nav-link" (click)="handleAccountClick($event)">Account</a>
+        <!-- <a href="#" class="nav-link" (click)="handleAccountClick($event)">Account</a> -->
       </nav>
     </div>
   </div>
@@ -30,8 +30,8 @@
   </div>
   <nav class="sidenav-nav">
     <a href="#" class="sidenav-link" (click)="closeMenu()">Learn</a>
-    <a href="#" class="sidenav-link" (click)="closeMenu()">Pricing</a>
+    <!-- <a href="#" class="sidenav-link" (click)="closeMenu()">Pricing</a> -->
     <a href="#" class="sidenav-link start-project" (click)="handleStartProjectClick($event)">Start Project</a>
-    <a href="#" class="sidenav-link" (click)="handleAccountClick($event)">Account</a>
+    <!-- <a href="#" class="sidenav-link" (click)="handleAccountClick($event)">Account</a> -->
   </nav>
 </aside>

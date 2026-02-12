@@ -14,5 +14,8 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class AppSpecDTO {
 	private String basePackage;
+	private String packages;
+	private Boolean enableOpenapi;
+	private List<String> profiles;
 	private List<ModelSpecDTO> models;
 }

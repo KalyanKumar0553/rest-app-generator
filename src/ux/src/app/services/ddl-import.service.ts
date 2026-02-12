@@ -48,6 +48,7 @@ export class DdlImportService {
       .map(line => line.trim())
       .filter(line => line.length > 0);
 
+    const primaryKeyColumns = this.extractPrimaryKeyColumns(lines);
     const fields: DdlField[] = [];
 
     for (const line of lines) {
@@ -64,7 +65,8 @@ export class DdlImportService {
       const rawType = columnMatch[3];
       const length = columnMatch[5] ? Number(columnMatch[5]) : undefined;
       const normalizedType = this.mapType(rawType);
-      const isPrimaryKey = /\bprimary\s+key\b/i.test(line);
+      const normalizedRawName = this.normalizeIdentifier(rawName);
+      const isPrimaryKey = /\bprimary\s+key\b/i.test(line) || primaryKeyColumns.has(normalizedRawName);
 
       fields.push({
         name: this.toCamelCase(rawName),
@@ -75,7 +77,57 @@ export class DdlImportService {
       });
     }
 
-    return fields;
+    return this.ensurePrimaryKeyField(fields);
+  }
+
+  private extractPrimaryKeyColumns(lines: string[]): Set<string> {
+    const primaryKeyColumns = new Set<string>();
+
+    for (const line of lines) {
+      const tablePrimaryKeyMatch = /(?:^constraint\s+[a-zA-Z0-9_`"\[\]]+\s+)?primary\s+key\s*\(([^)]+)\)/i.exec(line);
+      if (!tablePrimaryKeyMatch) {
+        continue;
+      }
+
+      const rawColumns = tablePrimaryKeyMatch[1]
+        .split(',')
+        .map(column => this.normalizeIdentifier(column))
+        .filter(Boolean);
+
+      rawColumns.forEach(column => primaryKeyColumns.add(column));
+    }
+
+    return primaryKeyColumns;
+  }
+
+  private ensurePrimaryKeyField(fields: DdlField[]): DdlField[] {
+    if (fields.some(field => Boolean(field.primaryKey))) {
+      return fields;
+    }
+
+    const idField = fields.find(field => this.normalizeIdentifier(field.name) === 'id');
+    if (idField) {
+      idField.primaryKey = true;
+      idField.required = true;
+      return fields;
+    }
+
+    return [
+      {
+        name: 'id',
+        type: 'Long',
+        primaryKey: true,
+        required: true
+      },
+      ...fields
+    ];
+  }
+
+  private normalizeIdentifier(value: string): string {
+    return value
+      .trim()
+      .replace(/^[`"\[]+|[`"\]]+$/g, '')
+      .toLowerCase();
   }
 
   private mapType(rawType: string): string {

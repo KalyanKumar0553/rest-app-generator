@@ -34,7 +34,7 @@
 .entity-card {
   border: 1px solid rgba(79, 95, 102, 0.35);
   border-radius: 0;
-  background: linear-gradient(180deg, #ffffff 0%, #f7fafb 100%);
+  background: linear-gradient(180deg, var(--color-background-white) 0%, #f7fafb 100%);
   min-width: 220px;
   max-width: 300px;
   flex: 0 0 auto;
@@ -115,7 +115,7 @@
   background: none;
   border: none;
   cursor: pointer;
-  color: #6b7280;
+  color: var(--theme-neutral-text);
   font-size: 18px;
   padding: 2px;
   display: inline-flex;
@@ -125,7 +125,7 @@
 }
 
 .entity-action-btn:hover {
-  color: #1f2937;
+  color: var(--neutral-800);
 }
 
 .entity-card__relations {
@@ -182,7 +182,7 @@
   height: 20px;
   border-radius: 999px;
   background-color: #5f7078;
-  color: #ffffff;
+  color: var(--color-background-white);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -193,7 +193,7 @@
   padding: 0;
   display: flex;
   flex-direction: column;
-  color: #4b5563;
+  color: var(--neutral-600);
   font-size: 14px;
 }
 
@@ -219,7 +219,7 @@
   background: none;
   border: 1px solid rgba(79, 95, 102, 0.35);
   border-radius: 999px;
-  color: #6b7280;
+  color: var(--theme-neutral-text);
   font-weight: 600;
   display: inline-flex;
   align-items: center;
@@ -236,7 +236,7 @@
 }
 
 .empty-state {
-  color: #6b7280;
+  color: var(--theme-neutral-text);
   font-size: 15px;
   padding: 12px 0;
 }

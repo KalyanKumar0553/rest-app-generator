@@ -21,6 +21,10 @@ interface Entity {
   name: string;
   mappedSuperclass?: boolean;
   addRestEndpoints?: boolean;
+  auditable?: boolean;
+  softDelete?: boolean;
+  immutable?: boolean;
+  naturalIdCache?: boolean;
   fields?: Field[];
 }
 
@@ -462,6 +466,10 @@ export class EntitiesComponent implements OnInit {
       name: entity.name,
       mappedSuperclass: false,
       addRestEndpoints: this.importAddRestEndpoints,
+      auditable: false,
+      softDelete: false,
+      immutable: false,
+      naturalIdCache: false,
       fields: entity.fields.map(field => ({
         name: field.name,
         type: field.type,
@@ -533,6 +541,10 @@ export class EntitiesComponent implements OnInit {
     return {
       ...existing,
       addRestEndpoints: incoming.addRestEndpoints,
+      auditable: existing.auditable ?? false,
+      softDelete: existing.softDelete ?? false,
+      immutable: existing.immutable ?? false,
+      naturalIdCache: existing.naturalIdCache ?? false,
       fields: mergedFields
     };
   }

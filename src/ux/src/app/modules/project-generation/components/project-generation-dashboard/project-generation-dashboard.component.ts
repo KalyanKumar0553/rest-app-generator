@@ -15,9 +15,11 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatAutocompleteModule } from '@angular/material/autocomplete';
 import { ConfirmationModalComponent } from '../../../../components/confirmation-modal/confirmation-modal.component';
+import { ModalComponent } from '../../../../components/modal/modal.component';
 import { EntitiesComponent } from '../entities/entities.component';
 import { DataObjectsComponent } from '../data-objects/data-objects.component';
 import { ProjectViewComponent } from '../project-view/project-view.component';
+import { AddProfileComponent } from '../add-profile/add-profile.component';
 import { SidenavComponent, NavItem } from '../../../../components/shared/sidenav/sidenav.component';
 import { AuthService } from '../../../../services/auth.service';
 import { ToastService } from '../../../../services/toast.service';
@@ -25,6 +27,9 @@ import { HttpClient } from '@angular/common/http';
 import { API_CONFIG, API_ENDPOINTS } from '../../../../constants/api.constants';
 import { InfoBannerComponent } from '../../../../components/info-banner/info-banner.component';
 import { finalize } from 'rxjs/operators';
+import { ValidatorService } from '../../../../services/validator.service';
+import { buildMavenNamingRules } from '../../validators/naming-validation';
+import { APP_SETTINGS } from '../../../../settings/app-settings';
 
 interface ProjectSettings {
   projectGroup: string;
@@ -38,7 +43,6 @@ interface DatabaseSettings {
   database: string;
   dbGeneration: string;
   pluralizeTableNames: boolean;
-  addDateCreatedLastUpdated: boolean;
 }
 
 interface DeveloperPreferences {
@@ -46,6 +50,7 @@ interface DeveloperPreferences {
   packages: 'technical' | 'domain' | 'mixed';
   enableOpenAPI: boolean;
   useDockerCompose: boolean;
+  profiles: string[];
   javaVersion: string;
   deployment: string;
 }
@@ -76,8 +81,10 @@ interface ProjectRunSummary {
     MatProgressSpinnerModule,
     MatAutocompleteModule,
     ConfirmationModalComponent,
+    ModalComponent,
     EntitiesComponent,
     DataObjectsComponent,
+    AddProfileComponent,
     ProjectViewComponent,
     SidenavComponent,
     InfoBannerComponent
@@ -87,6 +94,7 @@ interface ProjectRunSummary {
 })
 export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
   private destroy$ = new Subject<void>();
+  readonly appSettings = APP_SETTINGS;
 
   isSidebarOpen = false;
   isLoading = false;
@@ -100,7 +108,6 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
     { icon: 'storage', label: 'Entities', value: 'entities' },
     { icon: 'category', label: 'Data Objects', value: 'data-objects' },
     { icon: 'search', label: 'Explore', value: 'explore' },
-    { icon: 'download', label: 'Download', value: 'download' }
   ];
 
   entities: any[] = [];
@@ -108,7 +115,6 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
   relations: any[] = [];
 
   showBackConfirmation = false;
-  showExploreModal = false;
   isExploreSyncing = false;
   isGeneratingFromDtoSave = false;
   backendProjectId: string | null = null;
@@ -125,7 +131,7 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
   };
 
   projectSettings: ProjectSettings = {
-    projectGroup: 'io.bootify',
+    projectGroup: APP_SETTINGS.defaultProjectGroup,
     projectName: 'my-app',
     buildType: 'gradle',
     language: 'java',
@@ -135,8 +141,7 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
   databaseSettings: DatabaseSettings = {
     database: 'PostgreSQL',
     dbGeneration: 'Hibernate (update)',
-    pluralizeTableNames: false,
-    addDateCreatedLastUpdated: false
+    pluralizeTableNames: false
   };
 
   developerPreferences: DeveloperPreferences = {
@@ -144,15 +149,19 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
     packages: 'technical',
     enableOpenAPI: false,
     useDockerCompose: false,
+    profiles: [],
     javaVersion: '21',
     deployment: 'None'
   };
+  showProfileModal = false;
 
   dependencies = '';
   dependencyInput = '';
   selectedDependencies: string[] = [];
   filteredDependencies: string[] = [];
   availableDependencies: string[] = [];
+  projectGroupError = '';
+  projectNameError = '';
 
   frontendOptions = ['None', 'React', 'Vue', 'Angular'];
   databaseOptions = ['PostgreSQL', 'MySQL', 'H2', 'MongoDB'];
@@ -165,7 +174,8 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
     private route: ActivatedRoute,
     private authService: AuthService,
     private toastService: ToastService,
-    private http: HttpClient
+    private http: HttpClient,
+    private validatorService: ValidatorService
   ) {}
 
   ngOnInit(): void {
@@ -272,6 +282,10 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
   }
 
   saveProjectAndInvokeApi(): void {
+    if (!this.validateProjectNaming()) {
+      this.activeSection = 'general';
+      return;
+    }
     this.saveProject();
     if (this.isLoggedIn) {
       this.generateAndDownloadProjectFromBackend();
@@ -296,8 +310,7 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
 
   navigateToSection(section: string): void {
     if (section === 'explore') {
-      const previousSection = this.activeSection;
-      this.handleExploreTab(previousSection);
+      this.activeSection = 'explore';
       this.closeSidebar();
       return;
     }
@@ -307,6 +320,11 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
 
   handleExploreTab(previousSection: string): void {
     if (this.isExploreSyncing) {
+      return;
+    }
+
+    if (!this.validateProjectNaming()) {
+      this.activeSection = 'general';
       return;
     }
 
@@ -354,7 +372,6 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
           try {
             await this.downloadAndPrepareExploreZip(latestRun.id, projectId);
             this.activeSection = 'explore';
-            this.showExploreModal = true;
           } catch {
             this.toastService.error('Failed to download generated zip.');
             this.activeSection = previousSection;
@@ -365,10 +382,6 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
           this.activeSection = previousSection;
         }
       });
-  }
-
-  closeExploreModal(): void {
-    this.showExploreModal = false;
   }
 
   private generateAndDownloadProjectFromBackend(): void {
@@ -427,7 +440,6 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
           this.exploreZipBlob = new Blob([zipData], { type: 'application/zip' });
           this.exploreZipFileName = `${this.toArtifactId(this.projectSettings.projectName || 'project')}.zip`;
           this.activeSection = 'explore';
-          this.showExploreModal = true;
           this.toastService.success('Project generated successfully.');
         },
         error: () => {
@@ -506,7 +518,6 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
       this.exploreZipBlob = new Blob([bytes], { type: 'application/zip' });
       this.exploreZipFileName = fileName || `${this.toArtifactId(this.projectSettings.projectName || 'project')}.zip`;
       this.activeSection = 'explore';
-      this.showExploreModal = true;
     } catch {
       this.toastService.error('Failed to download generated zip file.');
     }
@@ -570,13 +581,16 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
           this.exploreZipBlob = new Blob([zipData], { type: 'application/zip' });
           this.exploreZipFileName = `${this.toArtifactId(this.projectSettings.projectName || 'project')}.zip`;
           this.activeSection = 'explore';
-          this.showExploreModal = true;
         },
         error: () => {
           this.toastService.error('Failed to generate project preview zip.');
           this.activeSection = previousSection;
         }
       });
+  }
+
+  reloadExplore(): void {
+    this.handleExploreTab(this.activeSection);
   }
 
   handleHome(): void {
@@ -650,6 +664,18 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
     }
   }
 
+  onProjectGroupChange(): void {
+    if (this.projectGroupError) {
+      this.projectGroupError = '';
+    }
+  }
+
+  onProjectNameChange(): void {
+    if (this.projectNameError) {
+      this.projectNameError = '';
+    }
+  }
+
   onEntitiesChange(entities: any[]): void {
     this.entities = entities;
   }
@@ -705,6 +731,10 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
 
     const spec: any = {
       app,
+      applFormat: this.trimmed(project?.preferences?.applFormat) || 'yaml',
+      enableOpenapi: Boolean(project?.preferences?.enableOpenAPI),
+      packages: this.trimmed(project?.preferences?.packages) || 'technical',
+      profiles: this.mapProfiles(project?.preferences?.profiles),
       dependencies: this.extractDependencies(project),
       basePackage: projectGroup,
       models: this.mapModels(project?.entities, project?.relations),
@@ -736,6 +766,23 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
     return Array.from(new Set([...fromSelected, ...fromString]));
   }
 
+  onAddProfileClick(): void {
+    this.showProfileModal = true;
+  }
+
+  closeProfileModal(): void {
+    this.showProfileModal = false;
+  }
+
+  onProfilesSave(profiles: string[]): void {
+    this.developerPreferences.profiles = [...profiles];
+    this.closeProfileModal();
+  }
+
+  removeProfile(profile: string): void {
+    this.developerPreferences.profiles = this.developerPreferences.profiles.filter(item => item !== profile);
+  }
+
   private mapModels(entities: any, relations: any): any[] {
     const entityList = Array.isArray(entities) ? entities : [];
     const relationList = Array.isArray(relations) ? relations : [];
@@ -751,10 +798,13 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
       const model: any = {
         name: this.trimmed(entity?.name) || 'Entity',
         tableName: this.toSnakeCase(this.trimmed(entity?.name) || 'entity'),
+        addRestEndpoints: Boolean(entity?.addRestEndpoints),
         options: {
           entity: !Boolean(entity?.mappedSuperclass),
-          immutable: false,
-          auditing: false
+          immutable: Boolean(entity?.immutable),
+          auditing: Boolean(entity?.auditable),
+          softDelete: Boolean(entity?.softDelete),
+          naturalIdCache: Boolean(entity?.naturalIdCache)
         },
         id: this.mapId(idField),
         fields: nonIdFields.map((field: any) => this.mapModelField(field))
@@ -766,6 +816,32 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
 
       return model;
     });
+  }
+
+  private mapProfiles(profiles: unknown): string[] {
+    if (!Array.isArray(profiles)) {
+      return [];
+    }
+    const normalized = profiles
+      .map(profile => this.normalizeProfileName(profile))
+      .filter((profile): profile is string => Boolean(profile))
+      .filter(profile => this.isValidProfileName(profile));
+    return Array.from(new Set(normalized));
+  }
+
+  private normalizeProfileName(value: unknown): string | null {
+    if (value === null || value === undefined) {
+      return null;
+    }
+    const trimmed = String(value).trim();
+    if (!trimmed) {
+      return null;
+    }
+    return trimmed.toLowerCase();
+  }
+
+  private isValidProfileName(profile: string): boolean {
+    return /^[a-z0-9._-]+$/.test(profile);
   }
 
   private mapId(primaryKeyField: any): any {
@@ -1164,6 +1240,41 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
       .replace(/[\s_]+/g, '-')
       .replace(/-+/g, '-')
       .toLowerCase();
+  }
+
+  private validateProjectNaming(): boolean {
+    const projectName = this.trimmed(this.projectSettings.projectName);
+    if (!projectName) {
+      this.projectNameError = 'Project name is required.';
+      this.toastService.error(this.projectNameError);
+      return false;
+    }
+
+    const validationTarget = {
+      projectGroup: this.projectSettings.projectGroup,
+      artifactId: this.toArtifactId(projectName)
+    };
+
+    const valid = this.validatorService.validate(
+      validationTarget,
+      buildMavenNamingRules({
+        groupField: 'projectGroup',
+        artifactField: 'artifactId',
+        setGroupError: (message) => {
+          this.projectGroupError = message;
+        },
+        setArtifactError: (message) => {
+          this.projectNameError = `Project name generates invalid artifact id. ${message}`;
+        }
+      })
+    );
+
+    if (valid) {
+      this.projectGroupError = '';
+      this.projectNameError = '';
+    }
+
+    return valid;
   }
 
   private isNotNullConstraint(constraint: any): boolean {

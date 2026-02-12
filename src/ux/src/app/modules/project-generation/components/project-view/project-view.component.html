@@ -1,41 +1,58 @@
-<app-modal
-  [isOpen]="isOpen"
-  [title]="'Project Explorer'"
-  [size]="'xlarge'"
-  [showFooter]="false"
-  (close)="onClose()">
-  <div class="project-view">
-    <div class="project-view-sidebar">
-      <div class="project-view-sidebar-header">{{ zipFileName }}</div>
-      <div class="project-view-tree">
-        <button
-          type="button"
-          class="project-view-node"
-          *ngFor="let node of visibleNodes"
-          [style.padding-left.px]="node.depth * 16 + 12"
-          [class.selected]="!node.isDirectory && node.path === selectedFilePath"
-          (click)="node.isDirectory ? toggleNode(node) : selectFile(node)">
-          <i class="bi" [ngClass]="node.isDirectory ? (node.expanded ? 'bi-caret-down-fill' : 'bi-caret-right-fill') : 'bi-dot'"></i>
-          <i class="bi" [ngClass]="node.isDirectory ? 'bi-folder2-open' : 'bi-file-earmark-text'"></i>
-          <span>{{ node.name }}</span>
+<div class="project-view">
+  <div class="project-view-sidebar">
+    <div class="project-view-sidebar-header">
+      <span class="project-view-title">{{ zipFileName }}</span>
+      <div class="project-view-header-actions">
+        <button type="button" class="project-view-icon-btn" (click)="onReload()" [disabled]="isSyncing" aria-label="Reload project explorer">
+          <i class="bi bi-arrow-clockwise" [class.spinning]="isSyncing"></i>
+        </button>
+        <button type="button" class="project-view-icon-btn" (click)="downloadZip()" [disabled]="isSyncing" aria-label="Download zip">
+          <i class="bi bi-download"></i>
         </button>
       </div>
-      <div class="project-view-sidebar-footer">
-        <button mat-raised-button color="primary" type="button" (click)="downloadZip()">Download</button>
-      </div>
     </div>
+    <div class="project-view-tree" *ngIf="!isSyncing">
+      <button
+        type="button"
+        class="project-view-node"
+        *ngFor="let node of visibleNodes"
+        [style.padding-left.px]="node.depth * 16 + 12"
+        [class.selected]="!node.isDirectory && node.path === selectedFilePath"
+        (click)="node.isDirectory ? toggleNode(node) : selectFile(node)">
+        <i class="bi" [ngClass]="node.isDirectory ? (node.expanded ? 'bi-caret-down-fill' : 'bi-caret-right-fill') : 'bi-dot'"></i>
+        <i class="bi" [ngClass]="node.isDirectory ? 'bi-folder2-open' : 'bi-file-earmark-text'"></i>
+        <span>{{ node.name }}</span>
+      </button>
+    </div>
+  </div>
 
-    <div class="project-view-preview">
-      <div class="project-view-preview-header">{{ selectedFileName || 'Select a file' }}</div>
-      <div class="project-view-preview-body" *ngIf="selectedFileError">
-        <p class="project-view-error">{{ selectedFileError }}</p>
-      </div>
-      <div class="project-view-preview-body" *ngIf="!selectedFileError">
-        <div class="project-view-line" *ngFor="let line of getPreviewLines(); let i = index">
-          <span class="project-view-line-number">{{ i + 1 }}</span>
-          <span class="project-view-line-content">{{ line }}</span>
+  <div class="project-view-preview">
+    <div class="project-view-preview-header">{{ selectedFileName || 'Select a file' }}</div>
+    <div class="project-view-preview-body" *ngIf="!isSyncing && selectedFileError">
+      <p class="project-view-error">{{ selectedFileError }}</p>
+    </div>
+    <div class="project-view-preview-body" *ngIf="!isSyncing && !selectedFileError">
+      <div class="project-view-editor-wrap">
+        <div class="project-view-gutter">
+          <div class="project-view-gutter-inner" [style.transform]="'translateY(' + (-editorScrollTop) + 'px)'">
+            <div class="project-view-line-number" *ngFor="let lineNumber of selectedFileLineNumbers">
+              {{ lineNumber }}
+            </div>
+          </div>
         </div>
+        <textarea
+          class="project-view-editor"
+          [value]="selectedFileContent"
+          readonly
+          spellcheck="false"
+          (scroll)="onEditorScroll($event)"
+          aria-label="Project file content preview"></textarea>
       </div>
     </div>
   </div>
-</app-modal>
+
+  <div class="project-view-sync-overlay" *ngIf="isSyncing">
+    <mat-spinner diameter="44"></mat-spinner>
+    <p>Resyncing project...</p>
+  </div>
+</div>

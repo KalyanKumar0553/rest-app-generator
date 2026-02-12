@@ -59,24 +59,25 @@ public class ProjectViewService {
 			vars.put("autostart", Boolean.TRUE);
 			vars.put(ProjectMetaDataConstants.ROOT_DIR, tempDir.toString());
 			vars.put(ProjectMetaDataConstants.YAML, spec);
-			vars.put(ProjectMetaDataConstants.GROUP_ID,
-					String.valueOf(app.getOrDefault(ProjectMetaDataConstants.GROUP_ID, ProjectMetaDataConstants.DEFAULT_GROUP)));
-			vars.put(ProjectMetaDataConstants.ARTIFACT_ID, String
-					.valueOf(app.getOrDefault(ProjectMetaDataConstants.ARTIFACT_ID, ProjectMetaDataConstants.DEFAULT_ARTIFACT)));
-			vars.put(ProjectMetaDataConstants.VERSION,
-					String.valueOf(app.getOrDefault(ProjectMetaDataConstants.VERSION, ProjectMetaDataConstants.DEFAULT_VERSION)));
-			vars.put(ProjectMetaDataConstants.BUILD_TOOL, String
-					.valueOf(app.getOrDefault(ProjectMetaDataConstants.BUILD_TOOL, ProjectMetaDataConstants.DEFAULT_BUILD_TOOL)));
-			vars.put(ProjectMetaDataConstants.PACKAGING, String
-					.valueOf(app.getOrDefault(ProjectMetaDataConstants.PACKAGING, ProjectMetaDataConstants.DEFAULT_PACKAGING)));
-			vars.put(ProjectMetaDataConstants.GENERATOR, String
-					.valueOf(app.getOrDefault(ProjectMetaDataConstants.GENERATOR, ProjectMetaDataConstants.DEFAULT_GRADLE_GENERATOR)));
-			vars.put(ProjectMetaDataConstants.NAME,
-					String.valueOf(app.getOrDefault(ProjectMetaDataConstants.NAME, ProjectMetaDataConstants.DEFAULT_NAME)));
-			vars.put(ProjectMetaDataConstants.DESCRIPTION, String
-					.valueOf(app.getOrDefault(ProjectMetaDataConstants.DESCRIPTION, ProjectMetaDataConstants.DEFAULT_DESCRIPTION)));
-			vars.put(ProjectMetaDataConstants.JDK_VERSION,
-					String.valueOf(app.getOrDefault(ProjectMetaDataConstants.JDK_VERSION, ProjectMetaDataConstants.DEFAULT_JDK)));
+			vars.put(ProjectMetaDataConstants.GROUP_ID, String.valueOf(
+					app.getOrDefault(ProjectMetaDataConstants.GROUP_ID, ProjectMetaDataConstants.DEFAULT_GROUP)));
+			vars.put(ProjectMetaDataConstants.ARTIFACT_ID, String.valueOf(
+					app.getOrDefault(ProjectMetaDataConstants.ARTIFACT_ID, ProjectMetaDataConstants.DEFAULT_ARTIFACT)));
+			vars.put(ProjectMetaDataConstants.VERSION, String.valueOf(
+					app.getOrDefault(ProjectMetaDataConstants.VERSION, ProjectMetaDataConstants.DEFAULT_VERSION)));
+			vars.put(ProjectMetaDataConstants.BUILD_TOOL, String.valueOf(app
+					.getOrDefault(ProjectMetaDataConstants.BUILD_TOOL, ProjectMetaDataConstants.DEFAULT_BUILD_TOOL)));
+			vars.put(ProjectMetaDataConstants.PACKAGING, String.valueOf(
+					app.getOrDefault(ProjectMetaDataConstants.PACKAGING, ProjectMetaDataConstants.DEFAULT_PACKAGING)));
+			vars.put(ProjectMetaDataConstants.GENERATOR,
+					String.valueOf(app.getOrDefault(ProjectMetaDataConstants.GENERATOR,
+							ProjectMetaDataConstants.DEFAULT_GRADLE_GENERATOR)));
+			vars.put(ProjectMetaDataConstants.NAME, String
+					.valueOf(app.getOrDefault(ProjectMetaDataConstants.NAME, ProjectMetaDataConstants.DEFAULT_NAME)));
+			vars.put(ProjectMetaDataConstants.DESCRIPTION, String.valueOf(app
+					.getOrDefault(ProjectMetaDataConstants.DESCRIPTION, ProjectMetaDataConstants.DEFAULT_DESCRIPTION)));
+			vars.put(ProjectMetaDataConstants.JDK_VERSION, String.valueOf(
+					app.getOrDefault(ProjectMetaDataConstants.JDK_VERSION, ProjectMetaDataConstants.DEFAULT_JDK)));
 
 			stateMachine.start();
 			boolean finished = latch.await(Duration.ofMinutes(2).toMillis(), TimeUnit.MILLISECONDS);

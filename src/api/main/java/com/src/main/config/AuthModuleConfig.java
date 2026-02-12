@@ -14,6 +14,16 @@ public class AuthModuleConfig {
 		return new BeanFactoryPostProcessor() {
 			@Override
 			public void postProcessBeanFactory(ConfigurableListableBeanFactory beanFactory) throws BeansException {
+				String[] otpSenderBeans = new String[] { "communicationOtpSender", "loggingOtpSender",
+						"otpSenderRouter", "otpSender" };
+
+				for (String beanName : otpSenderBeans) {
+					if (!beanFactory.containsBeanDefinition(beanName)) {
+						continue;
+					}
+					beanFactory.getBeanDefinition(beanName).setPrimary(false);
+				}
+
 				if (beanFactory.containsBeanDefinition("otpSenderRouter")) {
 					beanFactory.getBeanDefinition("otpSenderRouter").setPrimary(true);
 				}

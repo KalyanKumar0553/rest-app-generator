@@ -1,0 +1,24 @@
+<div class="profile-modal-content">
+  <mat-form-field appearance="fill" class="full-width profile-input-field">
+    <mat-label>Profile</mat-label>
+    <input
+      matInput
+      [(ngModel)]="profileInput"
+      (keydown)="onProfileInputKeydown($event)"
+      placeholder="Enter profile and press Enter (e.g. dev)">
+  </mat-form-field>
+
+  <div class="profile-tags" *ngIf="profileDrafts.length > 0">
+    <div class="profile-tag" *ngFor="let profile of profileDrafts">
+      <span>{{ profile }}</span>
+      <button type="button" class="profile-tag-remove" (click)="removeProfileDraft(profile)" aria-label="Remove profile">
+        <mat-icon>close</mat-icon>
+      </button>
+    </div>
+  </div>
+
+  <div class="profile-modal-actions">
+    <button mat-raised-button type="button" (click)="onCancel()">Cancel</button>
+    <button mat-raised-button color="primary" type="button" (click)="onSave()">Save</button>
+  </div>
+</div>

@@ -65,6 +65,7 @@ export class PreviewRelationsComponent implements AfterViewInit, OnChanges, OnDe
     }
 
     const elements = this.buildElements(this.relations);
+    const styles = this.resolveGraphTheme();
 
     this.destroyGraph();
     this.cy = cytoscape({
@@ -80,10 +81,10 @@ export class PreviewRelationsComponent implements AfterViewInit, OnChanges, OnDe
             'text-max-width': '148px',
             'text-halign': 'center',
             'text-valign': 'center',
-            'background-color': '#e7eff1',
-            'border-color': '#4f5f66',
+            'background-color': styles.nodeBg,
+            'border-color': styles.nodeBorder,
             'border-width': 1,
-            color: '#2f3b41',
+            color: styles.nodeText,
             'font-size': 14,
             'font-weight': 600,
             width: 180,
@@ -94,15 +95,15 @@ export class PreviewRelationsComponent implements AfterViewInit, OnChanges, OnDe
           selector: 'edge',
           style: {
             width: 2,
-            'line-color': '#7a8f97',
-            'target-arrow-color': '#7a8f97',
+            'line-color': styles.edgeColor,
+            'target-arrow-color': styles.edgeColor,
             'target-arrow-shape': 'triangle',
             'curve-style': 'bezier',
             label: 'data(label)',
             'font-size': 12,
             'font-weight': 600,
-            color: '#334155',
-            'text-background-color': '#ffffff',
+            color: styles.edgeText,
+            'text-background-color': styles.edgeLabelBg,
             'text-background-opacity': 0.95,
             'text-background-padding': '3px'
           }
@@ -172,5 +173,29 @@ export class PreviewRelationsComponent implements AfterViewInit, OnChanges, OnDe
       this.cy.destroy();
       this.cy = null;
     }
+  }
+
+  private resolveGraphTheme(): {
+    nodeBg: string;
+    nodeBorder: string;
+    nodeText: string;
+    edgeColor: string;
+    edgeText: string;
+    edgeLabelBg: string;
+  } {
+    const css = getComputedStyle(document.documentElement);
+    return {
+      nodeBg: this.readCssVar(css, '--color-background-secondary', '#e7eff1'),
+      nodeBorder: this.readCssVar(css, '--color-text-secondary', '#4f5f66'),
+      nodeText: this.readCssVar(css, '--color-text-primary', '#2f3b41'),
+      edgeColor: this.readCssVar(css, '--color-text-secondary', '#7a8f97'),
+      edgeText: this.readCssVar(css, '--neutral-700', '#334155'),
+      edgeLabelBg: this.readCssVar(css, '--color-background-white', '#ffffff')
+    };
+  }
+
+  private readCssVar(css: CSSStyleDeclaration, name: string, fallback: string): string {
+    const value = css.getPropertyValue(name).trim();
+    return value || fallback;
   }
 }

@@ -15,11 +15,16 @@ import { ModalComponent } from '../../../../components/modal/modal.component';
 import { ValidatorService } from '../../../../services/validator.service';
 import { buildEntityNameRules, buildFieldListRules, buildFieldRules } from '../../validators/entity-validation';
 import { FieldFilterService } from '../../../../services/field-filter.service';
+import { SearchableMultiSelectComponent } from '../../../../components/searchable-multi-select/searchable-multi-select.component';
 
 interface Entity {
   name: string;
   mappedSuperclass: boolean;
   addRestEndpoints: boolean;
+  auditable?: boolean;
+  softDelete?: boolean;
+  immutable?: boolean;
+  naturalIdCache?: boolean;
   fields: Field[];
 }
 
@@ -36,6 +41,7 @@ interface Entity {
     MatButtonModule,
     MatIconModule,
     SearchSortComponent,
+    SearchableMultiSelectComponent,
     ConfirmationModalComponent,
     FieldConfigComponent,
     ModalComponent
@@ -53,6 +59,11 @@ export class AddEntityComponent implements OnChanges {
   entityName = '';
   mappedSuperclass = false;
   addRestEndpoints = false;
+  auditable = false;
+  softDelete = false;
+  immutable = false;
+  naturalIdCache = false;
+  selectedAdditionalConfigurations: string[] = [];
   nameError = '';
 
   fields: Field[] = [];
@@ -108,6 +119,13 @@ export class AddEntityComponent implements OnChanges {
     'byte[]'
   ];
 
+  additionalConfigurationOptions: string[] = [
+    'Auditable',
+    'Soft Delete',
+    'Immutable',
+    'Natural ID Cache'
+  ];
+
   constructor(
     private validatorService: ValidatorService,
     private fieldFilterService: FieldFilterService
@@ -139,6 +157,11 @@ export class AddEntityComponent implements OnChanges {
     this.entityName = entity.name;
     this.mappedSuperclass = entity.mappedSuperclass;
     this.addRestEndpoints = entity.addRestEndpoints;
+    this.auditable = Boolean(entity.auditable);
+    this.softDelete = Boolean(entity.softDelete);
+    this.immutable = Boolean(entity.immutable);
+    this.naturalIdCache = Boolean(entity.naturalIdCache);
+    this.syncAdditionalConfigurationsFromFlags();
     this.fields = JSON.parse(JSON.stringify(entity.fields));
     this.nameError = '';
     this.updateVisibleFields();
@@ -148,6 +171,11 @@ export class AddEntityComponent implements OnChanges {
     this.entityName = '';
     this.mappedSuperclass = false;
     this.addRestEndpoints = false;
+    this.auditable = false;
+    this.softDelete = false;
+    this.immutable = false;
+    this.naturalIdCache = false;
+    this.selectedAdditionalConfigurations = [];
     this.nameError = '';
     this.fields = [];
     this.tempFields = [];
@@ -253,6 +281,10 @@ export class AddEntityComponent implements OnChanges {
       name: this.entityName,
       mappedSuperclass: this.mappedSuperclass,
       addRestEndpoints: this.addRestEndpoints,
+      auditable: this.auditable,
+      softDelete: this.softDelete,
+      immutable: this.immutable,
+      naturalIdCache: this.naturalIdCache,
       fields: JSON.parse(JSON.stringify(this.fields))
     };
 
@@ -269,19 +301,36 @@ export class AddEntityComponent implements OnChanges {
 
   onMappedSuperclassChange(): void {
     if (this.mappedSuperclass) {
-      this.tempFields = JSON.parse(JSON.stringify(this.fields));
-      this.fields = [];
       this.addRestEndpoints = false;
       this.closeFieldConfig();
-    } else {
-      if (this.tempFields.length > 0) {
-        this.fields = JSON.parse(JSON.stringify(this.tempFields));
-        this.tempFields = [];
-      } else {
-        this.fields = [];
-      }
     }
     this.updateVisibleFields();
+  }
+
+  onAdditionalConfigurationsChange(values: string[]): void {
+    this.selectedAdditionalConfigurations = Array.isArray(values) ? [...values] : [];
+    const selectedSet = new Set(this.selectedAdditionalConfigurations);
+    this.auditable = selectedSet.has('Auditable');
+    this.softDelete = selectedSet.has('Soft Delete');
+    this.immutable = selectedSet.has('Immutable');
+    this.naturalIdCache = selectedSet.has('Natural ID Cache');
+  }
+
+  private syncAdditionalConfigurationsFromFlags(): void {
+    const selected: string[] = [];
+    if (this.auditable) {
+      selected.push('Auditable');
+    }
+    if (this.softDelete) {
+      selected.push('Soft Delete');
+    }
+    if (this.immutable) {
+      selected.push('Immutable');
+    }
+    if (this.naturalIdCache) {
+      selected.push('Natural ID Cache');
+    }
+    this.selectedAdditionalConfigurations = selected;
   }
 
   startEditField(index: number): void {

@@ -1,6 +1,7 @@
 package com.src.main.service;
 
 import java.time.OffsetDateTime;
+import java.util.List;
 import java.util.Map;
 
 import org.springframework.http.HttpStatus;
@@ -113,9 +114,9 @@ public class ProjectServiceImpl implements ProjectService {
 	}
 
 	@Override
-	public java.util.List<ProjectSummaryDTO> list() {
-		java.util.List<ProjectEntity> all = repo.findAll();
-		java.util.List<ProjectSummaryDTO> out = new java.util.ArrayList<>();
+	public List<ProjectSummaryDTO> list() {
+		List<ProjectEntity> all = repo.findAll();
+		List<ProjectSummaryDTO> out = new java.util.ArrayList<>();
 		for (ProjectEntity p : all) {
 			out.add(new ProjectSummaryDTO(p.getId().toString(), p.getArtifact(), p.getId()));
 		}

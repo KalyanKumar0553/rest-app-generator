@@ -1,8 +1,7 @@
 import { ValidationRule } from '../../../services/validator.service';
 import { Field } from '../components/field-item/field-item.component';
 import { areConstraintsValid } from '../constants/field-constraints';
-
-const FIELD_NAME_PATTERN = /^[a-zA-Z0-9]+$/;
+import { isValidJavaIdentifier } from './naming-validation';
 
 export interface EntityNameValidationParams {
   entityName: string;
@@ -49,6 +48,12 @@ export const buildEntityNameRules = (params: EntityNameValidationParams): Valida
         {
           type: 'required',
           message: `${label} name is required.`,
+          messageType: 'error'
+        },
+        {
+          type: 'custom',
+          predicate: (value) => isValidJavaIdentifier(String(value ?? '')),
+          message: `${label} name must be a valid Java identifier and not a Java keyword.`,
           messageType: 'error'
         },
         {
@@ -102,10 +107,10 @@ export const buildFieldRules = (params: FieldValidationParams): ValidationRule[]
       messageType: 'error'
     },
     {
-      type: 'pattern',
-      regex: FIELD_NAME_PATTERN,
-      message: 'Field name must be alphanumeric without spaces.',
-      messageType: 'warning'
+      type: 'custom',
+      predicate: (value) => isValidJavaIdentifier(String(value ?? '')),
+      message: 'Field name must be a valid Java identifier and not a Java keyword.',
+      messageType: 'error'
     },
     {
       type: 'unique',

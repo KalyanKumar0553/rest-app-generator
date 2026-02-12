@@ -6,9 +6,12 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.LinkedHashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.springframework.statemachine.ExtendedState;
 import org.springframework.stereotype.Component;
@@ -31,12 +34,15 @@ public class ApplicationFileGenerationExecutor implements StepExecutor {
 		if (yaml == null) {
 			return StepResult.error("YAML_NOT_FOUND", "YAML not found in ExtendedState");
 		}
+		String applicationFormat = resolveApplicationFormat(yaml);
+		boolean useYaml = "yaml".equals(applicationFormat) || "yml".equals(applicationFormat);
+
 		Object defaultPropsObj = yaml.get("properties");
-		if (defaultPropsObj instanceof Map) {
-			Map<String, Object> propsObj = (Map<String, Object>)defaultPropsObj;
-			propsObj.put("spring.messages.basename","messages");
-			propsObj.put("spring.messages.encoding","UTF-8");
-			propsObj.put("spring.messages.fallback-to-system-locale","false");
+		Map<String, Object> propsObj = defaultPropsObj instanceof Map ? castMap(defaultPropsObj) : new LinkedHashMap<>();
+		ensureDefaultApplicationProperties(propsObj);
+		if (useYaml) {
+			writeYamlFile(root, "application.yml", propsObj);
+		} else {
 			writePropertiesFile(root, "application.properties", propsObj);
 		}
 		Object profilesObj = yaml.get("profiles");
@@ -49,14 +55,48 @@ public class ApplicationFileGenerationExecutor implements StepExecutor {
 					continue;
 
 				Map<String, Object> profileMap = castMap(node);
-				Object propsObj = profileMap.get("properties");
-				if (propsObj instanceof Map) {
-					writePropertiesFile(root, "application-" + profile + ".properties", (Map<String, Object>) propsObj);
+				Object profilePropsObj = profileMap.get("properties");
+				if (profilePropsObj instanceof Map) {
+					Map<String, Object> profileProps = castMap(profilePropsObj);
+					if (useYaml) {
+						writeYamlFile(root, "application-" + profile + ".yml", profileProps);
+					} else {
+						writePropertiesFile(root, "application-" + profile + ".properties", profileProps);
+					}
+				}
+			}
+		} else {
+			for (String profile : extractProfileNames(profilesObj)) {
+				Map<String, Object> profileProps = new LinkedHashMap<>();
+				if (useYaml) {
+					writeYamlFile(root, "application-" + profile + ".yml", profileProps);
+				} else {
+					writePropertiesFile(root, "application-" + profile + ".properties", profileProps);
 				}
 			}
 		}
 
 		return StepResult.ok(Map.of("status", "Success"));
+	}
+
+	@SuppressWarnings("unchecked")
+	private static String resolveApplicationFormat(Map<String, Object> yaml) {
+		if (yaml == null) {
+			return "yaml";
+		}
+		Object raw = yaml.get("applFormat");
+		if (raw == null && yaml.get("preferences") instanceof Map<?, ?> preferences) {
+			raw = ((Map<String, Object>) preferences).get("applFormat");
+		}
+		if (raw == null && yaml.get("app") instanceof Map<?, ?> app) {
+			raw = ((Map<String, Object>) app).get("applFormat");
+		}
+
+		String normalized = raw == null ? "" : String.valueOf(raw).trim().toLowerCase();
+		if ("properties".equals(normalized) || "yaml".equals(normalized) || "yml".equals(normalized)) {
+			return normalized;
+		}
+		return "yaml";
 	}
 
 	private static void writePropertiesFile(Path projectRoot, String fileName, Map<String, Object> props)
@@ -74,9 +114,60 @@ public class ApplicationFileGenerationExecutor implements StepExecutor {
 		Files.write(resources.resolve(fileName), lines, StandardCharsets.UTF_8);
 	}
 
+	private static void ensureDefaultApplicationProperties(Map<String, Object> propsObj) {
+		propsObj.putIfAbsent("spring", new LinkedHashMap<String, Object>());
+		Map<String, Object> spring = castMap(propsObj.get("spring"));
+		propsObj.put("spring", spring);
+
+		spring.putIfAbsent("messages", new LinkedHashMap<String, Object>());
+		Map<String, Object> messages = castMap(spring.get("messages"));
+		spring.put("messages", messages);
+
+		messages.putIfAbsent("basename", "messages");
+		messages.putIfAbsent("encoding", "UTF-8");
+		messages.putIfAbsent("fallback-to-system-locale", "false");
+	}
+
+	@SuppressWarnings("unchecked")
+	private static List<String> extractProfileNames(Object profilesObj) {
+		if (!(profilesObj instanceof List<?> rawList)) {
+			return List.of();
+		}
+
+		Set<String> unique = new LinkedHashSet<>();
+		for (Object item : rawList) {
+			String normalized = normalizeProfileName(item);
+			if (normalized != null) {
+				unique.add(normalized);
+			}
+		}
+		return new ArrayList<>(unique);
+	}
+
+	private static String normalizeProfileName(Object value) {
+		if (value == null) {
+			return null;
+		}
+		String profile = String.valueOf(value).trim().toLowerCase();
+		if (profile.isBlank()) {
+			return null;
+		}
+		if (!profile.matches("[a-z0-9._-]+")) {
+			return null;
+		}
+		return profile;
+	}
+
 	private static void writeYamlFile(Path projectRoot, String fileName, Map<String, Object> props) throws IOException {
 		Path resources = projectRoot.resolve("src/main/resources");
 		Files.createDirectories(resources);
+		Path yamlPath = resources.resolve(fileName);
+
+		if (props == null || props.isEmpty()) {
+			Files.writeString(yamlPath, "", StandardCharsets.UTF_8);
+			return;
+		}
+
 		DumperOptions options = new DumperOptions();
 		options.setIndent(2);
 		options.setPrettyFlow(true);
@@ -86,7 +177,6 @@ public class ApplicationFileGenerationExecutor implements StepExecutor {
 		representer.getPropertyUtils().setSkipMissingProperties(true);
 
 		Yaml yaml = new Yaml(representer, options);
-		Path yamlPath = resources.resolve(fileName);
 		try (OutputStreamWriter writer = new OutputStreamWriter(Files.newOutputStream(yamlPath),
 				StandardCharsets.UTF_8)) {
 			yaml.dump(props, writer);
@@ -128,6 +218,9 @@ public class ApplicationFileGenerationExecutor implements StepExecutor {
 	}
 
 	private static String joinList(List<?> list) {
+		if (list == null) {
+			list = Collections.emptyList();
+		}
 		if (list.isEmpty())
 			return "";
 		StringBuilder sb = new StringBuilder();

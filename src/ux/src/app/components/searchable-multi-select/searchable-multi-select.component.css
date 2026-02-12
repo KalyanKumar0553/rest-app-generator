@@ -16,12 +16,12 @@
   border: none;
   outline: none;
   background: transparent;
-  color: #111827;
+  color: var(--neutral-900);
   font-size: 14px;
 }
 
 .search-option .search-input::placeholder {
-  color: #6b7280;
+  color: var(--theme-neutral-text);
   opacity: 1;
 }
 

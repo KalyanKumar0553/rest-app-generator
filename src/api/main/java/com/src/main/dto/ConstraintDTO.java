@@ -100,7 +100,6 @@ public class ConstraintDTO {
 		return param("messageKey", key);
 	}
 
-	// handy factories
 	public static ConstraintDTO of(String name) {
 		return new ConstraintDTO(name, new LinkedHashMap<>());
 	}

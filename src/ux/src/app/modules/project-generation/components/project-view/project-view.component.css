@@ -1,10 +1,11 @@
 .project-view {
+  position: relative;
   display: grid;
   grid-template-columns: 34% 66%;
+  height: 72vh;
   border: 1px solid #cdd5d3;
   border-radius: 10px;
   overflow: hidden;
-  max-height: 72vh;
   min-height: 520px;
 }
 
@@ -13,6 +14,8 @@
   display: flex;
   flex-direction: column;
   background: #f4f7f7;
+  min-height: 0;
+  min-width: 0;
 }
 
 .project-view-sidebar-header,
@@ -20,21 +23,66 @@
   height: 56px;
   display: flex;
   align-items: center;
+  justify-content: space-between;
   padding: 0 16px;
   font-size: 20px;
   font-weight: 600;
-  color: #ffffff;
+  color: var(--color-background-white);
   background: #8ca0a3;
+}
+
+.project-view-title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.project-view-header-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.project-view-icon-btn {
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.15);
+  color: var(--color-background-white);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.project-view-icon-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.project-view-icon-btn:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.project-view-icon-btn .spinning {
+  animation: project-view-spin 1s linear infinite;
 }
 
 .project-view-tree {
   flex: 1;
   overflow: auto;
   padding: 10px 0;
+  min-height: 0;
+  min-width: 0;
+  scroll-behavior: smooth;
 }
 
 .project-view-node {
-  width: 100%;
+  width: fit-content;
+  min-width: 100%;
   border: none;
   background: transparent;
   display: flex;
@@ -56,52 +104,145 @@
   font-weight: 600;
 }
 
-.project-view-sidebar-footer {
-  border-top: 1px solid #d5dcda;
-  padding: 16px;
-}
-
 .project-view-preview {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-rows: 56px minmax(0, 1fr);
   background: #f7f8f7;
+  min-height: 0;
+  min-width: 0;
 }
 
 .project-view-preview-body {
-  flex: 1;
-  overflow: auto;
+  display: block;
   font-family: 'SFMono-Regular', Menlo, Consolas, monospace;
   font-size: 14px;
+  min-height: 0;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .project-view-error {
   margin: 20px;
-  color: #b91c1c;
+  color: var(--error-700);
 }
 
-.project-view-line {
+.project-view-editor-wrap {
+  --editor-font-size: 14px;
+  --editor-line-height: 21px;
+  --editor-content-padding: 12px;
   display: grid;
-  grid-template-columns: 54px 1fr;
-  min-height: 24px;
+  grid-template-columns: 56px minmax(0, 1fr);
+  height: 100%;
+  min-height: 0;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.project-view-gutter {
+  border-right: 1px solid var(--color-border-dark);
+  background: var(--color-border);
+  overflow: hidden;
+  user-select: none;
+  min-height: 0;
+}
+
+.project-view-gutter-inner {
+  padding-top: var(--editor-content-padding);
+  padding-bottom: var(--editor-content-padding);
+  will-change: transform;
 }
 
 .project-view-line-number {
-  background: #e5e7eb;
-  color: #6b7280;
+  height: var(--editor-line-height);
+  line-height: var(--editor-line-height);
   text-align: right;
-  padding: 2px 10px 2px 0;
-  user-select: none;
-  border-right: 1px solid #d1d5db;
+  padding: 0 10px 0 0;
+  color: var(--theme-neutral-text);
+  font-size: var(--editor-font-size);
+  font-family: 'SFMono-Regular', Menlo, Consolas, monospace;
 }
 
-.project-view-line-content {
-  padding: 2px 14px;
+.project-view-editor {
+  width: 100%;
+  height: 100%;
+  resize: none;
+  border: none;
+  outline: none;
+  background: #f7f8f7;
+  color: var(--neutral-800);
+  padding: var(--editor-content-padding) 14px;
+  font-family: 'SFMono-Regular', Menlo, Consolas, monospace;
+  font-size: var(--editor-font-size);
+  line-height: var(--editor-line-height);
   white-space: pre;
+  overflow: auto;
+  scroll-behavior: smooth;
+  scrollbar-width: thin;
+  scrollbar-color: #8ca0a3 var(--color-border);
+  min-height: 0;
+  min-width: 0;
+  display: block;
+}
+
+.project-view-editor::-webkit-scrollbar,
+.project-view-tree::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.project-view-editor::-webkit-scrollbar-track,
+.project-view-tree::-webkit-scrollbar-track {
+  background: var(--color-border);
+  border-radius: 8px;
+}
+
+.project-view-editor::-webkit-scrollbar-thumb,
+.project-view-tree::-webkit-scrollbar-thumb {
+  background: #8ca0a3;
+  border-radius: 8px;
+  border: 2px solid var(--color-border);
+}
+
+.project-view-editor::-webkit-scrollbar-thumb:hover,
+.project-view-tree::-webkit-scrollbar-thumb:hover {
+  background: #73898c;
+}
+
+.project-view-sync-overlay {
+  position: absolute;
+  top: 56px;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  background: rgba(247, 248, 247, 0.94);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  z-index: 3;
+}
+
+.project-view-sync-overlay p {
+  margin: 0;
+  font-size: 14px;
+  color: #475569;
+  font-weight: 500;
+}
+
+@keyframes project-view-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 @media (max-width: 768px) {
   .project-view {
     grid-template-columns: 1fr;
+    height: auto;
     min-height: 420px;
   }
 

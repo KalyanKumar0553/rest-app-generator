@@ -10,6 +10,7 @@ import { MockApiService } from '../../../../services/mock-api.service';
 import { ConfirmationModalComponent, ModalButton } from '../../../../components/confirmation-modal/confirmation-modal.component';
 import { SearchSortComponent, SearchConfig, SortOption, SearchSortEvent } from '../../../../components/search-sort/search-sort.component';
 import { SidenavComponent, NavItem } from '../../../../components/shared/sidenav/sidenav.component';
+import { APP_SETTINGS } from '../../../../settings/app-settings';
 
 export interface Project {
   id: string;
@@ -28,6 +29,7 @@ export interface Project {
   styleUrls: ['./dashboard.component.css']
 })
 export class DashboardComponent implements OnInit {
+  readonly appSettings = APP_SETTINGS;
   userEmail: string = '';
   userName: string = '';
   userRoles: string[] = [];

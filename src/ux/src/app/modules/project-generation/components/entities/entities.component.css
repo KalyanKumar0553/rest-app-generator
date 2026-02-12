@@ -19,7 +19,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  color: var(--theme-modal-header-text, #ffffff);
+  color: var(--theme-modal-header-text, var(--color-background-white));
   width: 100%;
 }
 
@@ -33,7 +33,7 @@
 .entity-detail-title {
   font-size: 22px;
   font-weight: 600;
-  color: var(--theme-modal-header-text, #ffffff);
+  color: var(--theme-modal-header-text, var(--color-background-white));
 }
 
 .entity-detail-tag {
@@ -43,7 +43,7 @@
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  color: var(--theme-modal-header-text, #ffffff);
+  color: var(--theme-modal-header-text, var(--color-background-white));
   border: 1px solid rgba(255, 255, 255, 0.6);
 }
 
@@ -58,7 +58,7 @@
   border-radius: 999px;
   font-size: 12px;
   font-weight: 600;
-  color: var(--theme-modal-header-text, #ffffff);
+  color: var(--theme-modal-header-text, var(--color-background-white));
   background-color: rgba(255, 255, 255, 0.16);
   border: 1px solid rgba(255, 255, 255, 0.35);
 }
@@ -71,20 +71,20 @@
 }
 
 .import-link {
-  color: #6b7280;
+  color: var(--theme-neutral-text);
   text-decoration: underline;
   font-size: 14px;
   transition: color 0.2s ease;
 }
 
 .import-link:hover {
-  color: #1f2937;
+  color: var(--neutral-800);
 }
 
 .import-upload-btn {
   border: none;
   background: none;
-  color: #6b7280;
+  color: var(--theme-neutral-text);
   font-size: 18px;
   cursor: pointer;
   display: inline-flex;
@@ -96,7 +96,7 @@
 }
 
 .import-upload-btn:hover {
-  color: #1f2937;
+  color: var(--neutral-800);
 }
 
 .schema-upload-input {
@@ -106,7 +106,7 @@
 
 
 .expansion-panel {
-  background-color: #ffffff;
+  background-color: var(--color-background-white);
   border-radius: 8px;
   margin-bottom: 24px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
@@ -119,13 +119,13 @@
   align-items: center;
   padding: 20px 24px;
   cursor: pointer;
-  background-color: #ffffff;
-  border-bottom: 1px solid #e5e7eb;
+  background-color: var(--color-background-white);
+  border-bottom: 1px solid var(--color-border);
   transition: background-color 0.2s ease;
 }
 
 .panel-header:hover {
-  background-color: #f9fafb;
+  background-color: var(--neutral-50);
 }
 
 .panel-title-section {
@@ -138,7 +138,7 @@
   background: none;
   border: none;
   cursor: pointer;
-  color: #6b7280;
+  color: var(--theme-neutral-text);
   font-size: 20px;
   padding: 0;
   display: flex;
@@ -151,7 +151,7 @@
 .panel-title {
   font-size: 20px;
   font-weight: 600;
-  color: #1f2937;
+  color: var(--neutral-800);
   margin: 0;
 }
 
@@ -187,7 +187,7 @@
   background: none;
   border: none;
   cursor: pointer;
-  color: #6b7280;
+  color: var(--theme-neutral-text);
   font-size: 14px;
   text-decoration: underline;
   font-weight: 500;
@@ -200,14 +200,14 @@
 }
 
 .graph-link-btn:hover {
-  color: #1f2937;
+  color: var(--neutral-800);
 }
 
 .filter-btn {
   background: none;
   border: none;
   cursor: pointer;
-  color: #6b7280;
+  color: var(--theme-neutral-text);
   font-size: 22px;
   padding: 0;
   display: flex;
@@ -218,23 +218,23 @@
 }
 
 .filter-btn.active {
-  color: #1f2937;
+  color: var(--neutral-800);
 }
 
 .filter-btn:disabled {
   cursor: not-allowed;
-  color: #9ca3af;
+  color: var(--color-text-muted);
 }
 
 .filter-btn:hover {
-  color: #1f2937;
+  color: var(--neutral-800);
 }
 
 .icon-btn {
   background: none;
   border: none;
   cursor: pointer;
-  color: #6b7280;
+  color: var(--theme-neutral-text);
   font-size: 18px;
   padding: 4px;
   display: flex;
@@ -244,24 +244,24 @@
 }
 
 .icon-btn:hover {
-  color: #1f2937;
+  color: var(--neutral-800);
 }
 
 .icon-btn.danger {
   background-color: rgba(239, 68, 68, 0.12);
-  color: var(--theme-error-text-color, #ef4444);
+  color: var(--theme-error-text-color, var(--color-error));
   border-radius: 10px;
 }
 
 .icon-btn.danger:hover {
   background-color: rgba(239, 68, 68, 0.2);
-  color: var(--theme-error-text-color, #ef4444);
+  color: var(--theme-error-text-color, var(--color-error));
 }
 
 .empty-state {
   text-align: center;
   padding: 60px 20px;
-  color: #6b7280;
+  color: var(--theme-neutral-text);
   font-size: 15px;
 }
 
@@ -300,10 +300,10 @@ app-search-sort {
 }
 
 .relation-card {
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--color-border);
   border-radius: 8px;
   padding: 20px;
-  background-color: #f9fafb;
+  background-color: var(--neutral-50);
   transition: box-shadow 0.2s ease;
 }
 
@@ -321,7 +321,7 @@ app-search-sort {
 .relation-text {
   font-size: 16px;
   font-weight: 600;
-  color: #1f2937;
+  color: var(--neutral-800);
 }
 
 .relation-actions {
@@ -339,7 +339,7 @@ app-search-sort {
 
 .relation-type-badge {
   background-color: #8b9fa6;
-  color: #ffffff;
+  color: var(--color-background-white);
   padding: 4px 12px;
   border-radius: 12px;
   font-weight: 500;
@@ -347,13 +347,13 @@ app-search-sort {
 }
 
 .relation-field {
-  color: #6b7280;
+  color: var(--theme-neutral-text);
   font-weight: 500;
 }
 
 .relation-required {
   background-color: #dc6454;
-  color: #ffffff;
+  color: var(--color-background-white);
   padding: 4px 10px;
   border-radius: 10px;
   font-size: 12px;

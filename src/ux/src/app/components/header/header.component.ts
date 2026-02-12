@@ -5,6 +5,7 @@ import { filter } from 'rxjs/operators';
 import { LocalStorageService } from '../../services/local-storage.service';
 import { AuthService } from '../../services/auth.service';
 import { ModalService } from '../../services/modal.service';
+import { APP_SETTINGS } from '../../settings/app-settings';
 
 @Component({
   selector: 'app-header',
@@ -16,6 +17,7 @@ import { ModalService } from '../../services/modal.service';
 export class HeaderComponent implements OnInit {
   isMenuOpen = false;
   isDashboardRoute = false;
+  readonly appSettings = APP_SETTINGS;
 
   constructor(
     private router: Router,

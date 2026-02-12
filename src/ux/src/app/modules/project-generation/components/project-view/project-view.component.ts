@@ -1,8 +1,8 @@
 import { CommonModule } from '@angular/common';
 import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import JSZip from 'jszip';
-import { ModalComponent } from '../../../../components/modal/modal.component';
 
 interface ZipTreeNode {
   name: string;
@@ -16,15 +16,17 @@ interface ZipTreeNode {
 @Component({
   selector: 'app-project-view',
   standalone: true,
-  imports: [CommonModule, MatButtonModule, ModalComponent],
+  imports: [CommonModule, MatButtonModule, MatProgressSpinnerModule],
   templateUrl: './project-view.component.html',
   styleUrls: ['./project-view.component.css']
 })
 export class ProjectViewComponent implements OnChanges {
   @Input() isOpen = false;
+  @Input() isSyncing = false;
   @Input() zipBlob: Blob | null = null;
   @Input() zipFileName = 'project.zip';
   @Output() close = new EventEmitter<void>();
+  @Output() reload = new EventEmitter<void>();
 
   zipTree: ZipTreeNode[] = [];
   visibleNodes: ZipTreeNode[] = [];
@@ -32,6 +34,8 @@ export class ProjectViewComponent implements OnChanges {
   selectedFileName = '';
   selectedFileContent = '';
   selectedFileError = '';
+  selectedFileLineNumbers: number[] = [];
+  editorScrollTop = 0;
 
   ngOnChanges(changes: SimpleChanges): void {
     if ((changes['isOpen'] || changes['zipBlob']) && this.isOpen && this.zipBlob) {
@@ -41,6 +45,13 @@ export class ProjectViewComponent implements OnChanges {
 
   onClose(): void {
     this.close.emit();
+  }
+
+  onReload(): void {
+    if (this.isSyncing) {
+      return;
+    }
+    this.reload.emit();
   }
 
   toggleNode(node: ZipTreeNode): void {
@@ -60,6 +71,8 @@ export class ProjectViewComponent implements OnChanges {
     this.selectedFileName = node.name;
     this.selectedFileContent = '';
     this.selectedFileError = '';
+    this.editorScrollTop = 0;
+    this.updateLineNumbers();
 
     try {
       const zip = await JSZip.loadAsync(this.zipBlob);
@@ -75,6 +88,7 @@ export class ProjectViewComponent implements OnChanges {
       }
 
       this.selectedFileContent = await file.async('string');
+      this.updateLineNumbers();
     } catch {
       this.selectedFileError = 'Failed to read file content.';
     }
@@ -94,8 +108,9 @@ export class ProjectViewComponent implements OnChanges {
     window.URL.revokeObjectURL(url);
   }
 
-  getPreviewLines(): string[] {
-    return this.selectedFileContent ? this.selectedFileContent.split('\n') : [];
+  onEditorScroll(event: Event): void {
+    const target = event.target as HTMLTextAreaElement | null;
+    this.editorScrollTop = target ? target.scrollTop : 0;
   }
 
   private async prepareTree(): Promise<void> {
@@ -107,6 +122,8 @@ export class ProjectViewComponent implements OnChanges {
     this.selectedFilePath = '';
     this.selectedFileContent = '';
     this.selectedFileError = '';
+    this.editorScrollTop = 0;
+    this.updateLineNumbers();
 
     try {
       const zip = await JSZip.loadAsync(this.zipBlob);
@@ -123,6 +140,7 @@ export class ProjectViewComponent implements OnChanges {
       this.zipTree = [];
       this.visibleNodes = [];
       this.selectedFileError = 'Failed to parse zip content.';
+      this.updateLineNumbers();
     }
   }
 
@@ -209,5 +227,10 @@ export class ProjectViewComponent implements OnChanges {
       return true;
     }
     return textExtensions.has(extension);
+  }
+
+  private updateLineNumbers(): void {
+    const lineCount = this.selectedFileContent ? this.selectedFileContent.split('\n').length : 0;
+    this.selectedFileLineNumbers = Array.from({ length: lineCount }, (_, i) => i + 1);
   }
 }

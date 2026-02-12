@@ -67,16 +67,43 @@ public class ModelGenerator {
 		}
 		Validate.notEmpty(spec.getModels(), "No models defined in YAML");
 
-		String modelPkg = basePackage + ".model";
-		Path outDir = projectRoot.resolve(PathUtils.javaSrcPathFromPackage(modelPkg));
-		Files.createDirectories(outDir);
+		boolean domainStructure = "domain".equalsIgnoreCase(StringUtils.firstNonBlank(spec.getPackages(), "technical"));
+		Map<String, String> modelPackageByType = new LinkedHashMap<>();
+		for (ModelSpecDTO m : spec.getModels()) {
+			String className = CaseUtils.toPascal(m.getName());
+			modelPackageByType.put(className, resolveModelPackage(m, domainStructure));
+		}
 
 		for (ModelSpecDTO m : spec.getModels()) {
-			renderModel(m, modelPkg, outDir, spec);
+			String modelPkg = resolveModelPackage(m, domainStructure);
+			Path outDir = projectRoot.resolve(PathUtils.javaSrcPathFromPackage(modelPkg));
+			Files.createDirectories(outDir);
+			renderModel(m, modelPkg, outDir, spec, modelPackageByType);
 		}
 	}
 
-	private void renderModel(ModelSpecDTO m, String modelPkg, Path outDir, AppSpecDTO root) throws Exception {
+	private String resolveModelPackage(ModelSpecDTO model, boolean domainStructure) {
+		if (!domainStructure) {
+			return basePackage + ".model";
+		}
+		String entitySegment = normalizePackageSegment(model.getName());
+		return basePackage + ".domain." + entitySegment + ".model";
+	}
+
+	private String normalizePackageSegment(String value) {
+		String normalized = CaseUtils.toSnake(StringUtils.firstNonBlank(value, "entity"));
+		normalized = normalized.replaceAll("[^a-zA-Z0-9_]", "_").replaceAll("_+", "_").toLowerCase();
+		if (normalized.isBlank()) {
+			return "entity";
+		}
+		if (!Character.isJavaIdentifierStart(normalized.charAt(0))) {
+			normalized = "x_" + normalized;
+		}
+		return normalized;
+	}
+
+	private void renderModel(ModelSpecDTO m, String modelPkg, Path outDir, AppSpecDTO root,
+			Map<String, String> modelPackageByType) throws Exception {
 		String className = CaseUtils.toPascal(m.getName());
 		String tableName = StringUtils.firstNonBlank(m.getTableName(), CaseUtils.toSnake(m.getName()));
 		String schema = Strings.trimToNull(m.getSchema());
@@ -177,7 +204,7 @@ public class ModelGenerator {
 		List<RelationBlock> rels = new ArrayList<>();
 		if (m.getRelations() != null) {
 			for (RelationSpecDTO r : m.getRelations()) {
-				rels.add(buildRelationBlock(m, r, imports));
+				rels.add(buildRelationBlock(m, r, imports, modelPkg, modelPackageByType));
 			}
 		}
 		ctx.put("relations", rels);
@@ -516,11 +543,16 @@ public class ModelGenerator {
 		return col != null ? col : new ColumnSpecDTO();
 	}
 
-	private RelationBlock buildRelationBlock(ModelSpecDTO m, RelationSpecDTO r, Set<String> imports) {
+	private RelationBlock buildRelationBlock(ModelSpecDTO m, RelationSpecDTO r, Set<String> imports,
+			String currentModelPackage, Map<String, String> modelPackageByType) {
 		RelationBlock rb = new RelationBlock();
 		rb.setName(CaseUtils.toCamel(r.getName()));
 
 		String targetType = CaseUtils.toPascal(r.getTarget());
+		String targetModelPackage = modelPackageByType.get(targetType);
+		if (targetModelPackage != null && !targetModelPackage.equals(currentModelPackage)) {
+			imports.add(targetModelPackage + "." + targetType);
+		}
 		String fieldType;
 		List<String> ann = new ArrayList<>();
 

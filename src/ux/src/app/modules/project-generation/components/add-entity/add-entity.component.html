@@ -36,6 +36,17 @@
       </div>
     </div>
 
+    <div class="form-group">
+      <app-searchable-multi-select
+        [label]="'Additional Configuration'"
+        [searchPlaceholder]="'Please Enter Text to Search'"
+        [options]="additionalConfigurationOptions"
+        [selectedValues]="selectedAdditionalConfigurations"
+        (selectedValuesChange)="onAdditionalConfigurationsChange($event)"
+        [emptyMessage]="'No configuration options found'">
+      </app-searchable-multi-select>
+    </div>
+
     <div class="fields-section">
       <div class="fields-header">
         <div class="fields-title">

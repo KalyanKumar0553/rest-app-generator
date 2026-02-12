@@ -2,23 +2,23 @@
   display: flex;
   flex-direction: column;
   gap: 20px;
-  color: var(--theme-modal-body-text, #374151);
+  color: var(--theme-modal-body-text, var(--neutral-700));
 }
 
 .import-preview__intro {
   margin: 0;
   font-size: 16px;
   line-height: 1.6;
-  color: var(--theme-modal-body-text, #374151);
+  color: var(--theme-modal-body-text, var(--neutral-700));
 }
 
 .inline-code {
   display: inline-block;
   padding: 2px 8px;
   border-radius: 4px;
-  background-color: var(--theme-neutral-bg, #f3f4f6);
-  border: 1px solid var(--theme-neutral-border, #e5e7eb);
-  color: var(--theme-error-text-color, #ef4444);
+  background-color: var(--theme-neutral-bg, var(--color-background-muted));
+  border: 1px solid var(--theme-neutral-border, var(--color-border));
+  color: var(--theme-error-text-color, var(--color-error));
   font-family: "SFMono-Regular", Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
   font-size: 0.95em;
 }

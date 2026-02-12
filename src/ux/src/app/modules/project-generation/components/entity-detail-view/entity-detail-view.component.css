@@ -1,5 +1,5 @@
 .entity-detail-container {
-  background-color: #ffffff;
+  background-color: var(--color-background-white);
   min-height: 400px;
   max-height: 80vh;
   display: flex;
@@ -22,12 +22,12 @@
 .section-title {
   font-size: 18px;
   font-weight: 600;
-  color: #1f2937;
+  color: var(--neutral-800);
   margin: 0 0 16px 0;
 }
 
 .fields-table {
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--color-border);
   border-radius: 8px;
   overflow: hidden;
 }
@@ -37,11 +37,11 @@
   grid-template-columns: 200px 1fr 250px 90px;
   gap: 16px;
   padding: 12px 16px;
-  background-color: #f9fafb;
-  border-bottom: 1px solid #e5e7eb;
+  background-color: var(--neutral-50);
+  border-bottom: 1px solid var(--color-border);
   font-size: 14px;
   font-weight: 600;
-  color: #6b7280;
+  color: var(--theme-neutral-text);
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
@@ -56,7 +56,7 @@
   grid-template-columns: 200px 1fr 250px 90px;
   gap: 16px;
   padding: 16px;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--color-border);
   transition: background-color 0.2s ease;
 }
 
@@ -65,7 +65,7 @@
 }
 
 .table-row:hover {
-  background-color: #f9fafb;
+  background-color: var(--neutral-50);
 }
 
 .col-type {
@@ -77,11 +77,11 @@
 
 .field-type-badge {
   font-weight: 500;
-  color: #1f2937;
+  color: var(--neutral-800);
 }
 
 .field-length {
-  color: #6b7280;
+  color: var(--theme-neutral-text);
   font-size: 14px;
 }
 
@@ -90,7 +90,7 @@
   align-items: center;
   font-size: 15px;
   font-weight: 500;
-  color: #1f2937;
+  color: var(--neutral-800);
 }
 
 .col-constraints {
@@ -127,7 +127,7 @@
 
 .delete-field-btn:disabled {
   cursor: not-allowed;
-  color: #9ca3af;
+  color: var(--color-text-muted);
   background-color: transparent;
 }
 
@@ -155,8 +155,8 @@
 }
 
 .constraint-badge.none {
-  background-color: #f3f4f6;
-  color: #6b7280;
+  background-color: var(--color-background-muted);
+  color: var(--theme-neutral-text);
 }
 
 @media (max-width: 768px) {
@@ -193,7 +193,7 @@
   .col-type::before {
     content: "Type: ";
     font-weight: 600;
-    color: #6b7280;
+    color: var(--theme-neutral-text);
     font-size: 12px;
     text-transform: uppercase;
   }
@@ -201,7 +201,7 @@
   .col-name::before {
     content: "Name: ";
     font-weight: 600;
-    color: #6b7280;
+    color: var(--theme-neutral-text);
     font-size: 12px;
     text-transform: uppercase;
   }
@@ -209,7 +209,7 @@
   .col-constraints::before {
     content: "Constraints: ";
     font-weight: 600;
-    color: #6b7280;
+    color: var(--theme-neutral-text);
     font-size: 12px;
     text-transform: uppercase;
     margin-bottom: 8px;
@@ -218,7 +218,7 @@
   .col-actions::before {
     content: "Actions: ";
     font-weight: 600;
-    color: #6b7280;
+    color: var(--theme-neutral-text);
     font-size: 12px;
     text-transform: uppercase;
     margin-bottom: 8px;

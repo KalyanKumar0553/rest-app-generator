@@ -24,29 +24,29 @@
 .search-icon {
   position: absolute;
   left: 16px;
-  color: #9ca3af;
+  color: var(--color-text-muted);
   pointer-events: none;
 }
 
 .search-input {
   width: 100%;
   padding: 12px 16px 12px 48px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--color-border);
   border-radius: 8px;
   font-size: 15px;
-  color: #1f2937;
-  background-color: #ffffff;
+  color: var(--neutral-800);
+  background-color: var(--color-background-white);
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .search-input:focus {
   outline: none;
-  border-color: #8b9fa6;
-  box-shadow: 0 0 0 3px rgba(139, 159, 166, 0.1);
+  border-color: var(--theme-input-focus-border-color);
+  box-shadow: 0 0 0 3px var(--theme-input-focus-shadow);
 }
 
 .search-input::placeholder {
-  color: #9ca3af;
+  color: var(--color-text-muted);
 }
 
 .clear-btn {
@@ -56,7 +56,7 @@
   border: none;
   padding: 4px;
   cursor: pointer;
-  color: #9ca3af;
+  color: var(--color-text-muted);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -65,8 +65,8 @@
 }
 
 .clear-btn:hover {
-  color: #6b7280;
-  background-color: #f3f4f6;
+  color: var(--theme-neutral-text);
+  background-color: var(--color-background-muted);
 }
 
 .sort-container {
@@ -78,21 +78,21 @@
   display: flex;
   align-items: center;
   gap: 0;
-  background-color: #ffffff;
-  border: 1px solid #e5e7eb;
+  background-color: var(--color-background-white);
+  border: 1px solid var(--color-border);
   border-radius: 8px;
   overflow: hidden;
   transition: all 0.2s ease;
 }
 
 .sort-button:hover {
-  border-color: #8b9fa6;
-  background-color: #f9fafb;
+  border-color: var(--theme-input-focus-border-color);
+  background-color: var(--neutral-50);
 }
 
 .sort-button.active {
-  border-color: #8b9fa6;
-  background-color: #f3f4f6;
+  border-color: var(--theme-input-focus-border-color);
+  background-color: var(--color-background-muted);
 }
 
 .sort-main-btn {
@@ -103,14 +103,14 @@
   background: none;
   border: none;
   font-size: 15px;
-  color: #6b7280;
+  color: var(--theme-neutral-text);
   cursor: pointer;
   white-space: nowrap;
   flex: 1;
 }
 
 .sort-button.active .sort-main-btn {
-  color: #1f2937;
+  color: var(--neutral-800);
   padding-right: 12px;
 }
 
@@ -126,7 +126,7 @@
   display: flex;
   align-items: center;
   gap: 0;
-  border-left: 1px solid #e5e7eb;
+  border-left: 1px solid var(--color-border);
 }
 
 
@@ -145,8 +145,8 @@
   position: fixed;
   min-width: 220px;
   max-height: 400px;
-  background-color: #ffffff;
-  border: 1px solid #e5e7eb;
+  background-color: var(--color-background-white);
+  border: 1px solid var(--color-border);
   border-radius: 8px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   z-index: 1000;
@@ -163,17 +163,17 @@
 }
 
 .dropdown-menu::-webkit-scrollbar-track {
-  background: #f3f4f6;
+  background: var(--color-background-muted);
   border-radius: 0 8px 8px 0;
 }
 
 .dropdown-menu::-webkit-scrollbar-thumb {
-  background: #d1d5db;
+  background: var(--color-border-dark);
   border-radius: 3px;
 }
 
 .dropdown-menu::-webkit-scrollbar-thumb:hover {
-  background: #9ca3af;
+  background: var(--color-text-muted);
 }
 
 .dropdown-item {
@@ -183,29 +183,29 @@
   background: none;
   border: none;
   font-size: 15px;
-  color: #1f2937;
+  color: var(--neutral-800);
   cursor: pointer;
   transition: background-color 0.2s ease;
   text-align: left;
 }
 
 .dropdown-item:hover {
-  background-color: #f9fafb;
+  background-color: var(--neutral-50);
 }
 
 .dropdown-item.selected {
-  background-color: #f3f4f6;
-  color: #8b9fa6;
+  background-color: var(--color-background-muted);
+  color: var(--color-text-secondary);
   font-weight: 500;
 }
 
 .direction-btn {
   background: none;
   border: none;
-  border-right: 1px solid #e5e7eb;
+  border-right: 1px solid var(--color-border);
   padding: 8px 10px;
   cursor: pointer;
-  color: #6b7280;
+  color: var(--theme-neutral-text);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -214,12 +214,12 @@
 }
 
 .direction-btn:hover {
-  background-color: #f9fafb;
+  background-color: var(--neutral-50);
 }
 
 .direction-btn.selected {
-  background-color: #8b9fa6;
-  color: #ffffff;
+  background-color: var(--color-text-secondary);
+  color: var(--color-background-white);
 }
 
 .clear-sort-btn {
@@ -227,7 +227,7 @@
   border: none;
   padding: 8px 12px;
   cursor: pointer;
-  color: #9ca3af;
+  color: var(--color-text-muted);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -236,8 +236,8 @@
 }
 
 .clear-sort-btn:hover {
-  color: #6b7280;
-  background-color: #e5e7eb;
+  color: var(--theme-neutral-text);
+  background-color: var(--color-border);
 }
 
 @media (max-width: 768px) {
