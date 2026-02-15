@@ -143,6 +143,17 @@
   opacity: 0.8;
 }
 
+.company-link {
+  color: var(--color-text-inverse);
+  text-decoration: none;
+  font-weight: 600;
+  transition: color 0.2s ease;
+}
+
+.company-link:hover {
+  color: var(--color-primary);
+}
+
 /* Mobile Responsive */
 @media (max-width: 768px) {
   .footer {

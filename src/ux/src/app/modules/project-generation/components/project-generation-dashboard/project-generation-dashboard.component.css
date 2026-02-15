@@ -184,7 +184,7 @@
   top: 0;
   background-color: var(--color-background-secondary);
   z-index: 10;
-  padding: 32px 32px 0 32px;
+  padding: 32px 0px 0 0px;
 }
 
 .scrollable-content {
@@ -394,6 +394,10 @@
   font-size: 18px;
   font-weight: 600;
   color: var(--color-text-primary);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .project-spec-modal {
@@ -545,6 +549,10 @@
     padding: 24px 16px;
   }
 
+  .scrollable-content {
+    padding: 0;
+  }
+
   .top-actions {
     display: none;
   }
@@ -585,6 +593,40 @@
   .radio-group-horizontal {
     flex-direction: column;
     gap: 12px;
+  }
+
+  .build-type-group {
+    flex-direction: row;
+    flex-wrap: nowrap;
+    gap: 20px;
+    align-items: center;
+    overflow: hidden;
+  }
+
+  .language-group {
+    flex-direction: row;
+    flex-wrap: nowrap;
+    gap: 20px;
+    align-items: center;
+    overflow: hidden;
+  }
+
+  .build-type-group .mat-mdc-radio-button,
+  .language-group .mat-mdc-radio-button {
+    min-width: 0;
+    flex: 1 1 0;
+  }
+
+  .build-type-group ::ng-deep .mat-mdc-radio-button .mdc-label,
+  .language-group ::ng-deep .mat-mdc-radio-button .mdc-label {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  ::ng-deep .mat-expansion-panel-header-title {
+    font-size: clamp(0.95rem, 3.2vw, 1rem);
   }
 }
 

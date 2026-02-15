@@ -77,4 +77,10 @@ export class HeaderComponent implements OnInit {
     this.closeMenu();
     this.router.navigate(['/project-generation']);
   }
+
+  handleLearnClick(event: Event): void {
+    event.preventDefault();
+    this.closeMenu();
+    this.router.navigate(['/in-progress']);
+  }
 }

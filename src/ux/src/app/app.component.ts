@@ -17,7 +17,7 @@ import { AuthService } from './services/auth.service';
   styleUrls: ['./app.component.css']
 })
 export class AppComponent implements OnInit {
-  title = 'QuadProSol - IT Solutions';
+  title = 'BootRid - Rapid API Developement Tool';
   isNavigating = false;
   isDashboardRoute = false;
   isProjectGenerationRoute = false;

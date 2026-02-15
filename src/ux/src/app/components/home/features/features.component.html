@@ -1,46 +1,65 @@
 <section class="feature-section">
   <div class="container">
-    <h2 class="section-title">Jumpstart your development</h2>
+    <div class="carousel-shell" (mouseenter)="pauseAutoSlide()" (mouseleave)="resumeAutoSlide()">
+      <button class="nav-btn nav-btn-prev" type="button" (click)="previousSlide()" aria-label="Previous slide">
+        &#8249;
+      </button>
 
-    <div class="feature-grid">
-      <div class="feature-card" *ngFor="let feature of features" [class.reverse]="feature.reverse">
-        <div class="feature-visual">
-          <div *ngIf="feature.visual === 'mockup'" class="visual-mockup">
-            <div class="mockup-sidebar"></div>
-            <div class="mockup-content">
-              <div class="mockup-line"></div>
-              <div class="mockup-line short"></div>
-              <div class="mockup-line"></div>
+      <div class="carousel-viewport">
+        <div class="feature-grid" [style.transform]="'translateX(-' + (currentIndex * 100) + '%)'">
+          <article class="feature-card" *ngFor="let feature of features" [class.reverse]="feature.reverse" [class.banner-slide]="feature.visual === 'banner'">
+            <div class="feature-visual">
+              <div *ngIf="feature.visual === 'mockup'" class="visual-mockup">
+                <div class="mockup-sidebar"></div>
+                <div class="mockup-content">
+                  <div class="mockup-line"></div>
+                  <div class="mockup-line short"></div>
+                  <div class="mockup-line"></div>
+                </div>
+              </div>
+
+              <div *ngIf="feature.visual === 'schema'" class="visual-mockup schema">
+                <div class="schema-item"></div>
+                <div class="schema-item"></div>
+                <div class="schema-item"></div>
+              </div>
+
+              <div *ngIf="feature.visual === 'code'" class="code-preview">
+                <div class="code-line"></div>
+                <div class="code-line short"></div>
+                <div class="code-line"></div>
+              </div>
+
+              <div *ngIf="feature.visual === 'icon'" class="advanced-icon">⚙</div>
+
+              <div *ngIf="feature.visual === 'banner'" class="banner-embed">
+                <app-banner></app-banner>
+              </div>
             </div>
-          </div>
 
-          <div *ngIf="feature.visual === 'schema'" class="visual-mockup schema">
-            <div class="schema-item"></div>
-            <div class="schema-item"></div>
-            <div class="schema-item"></div>
-          </div>
-
-          <div *ngIf="feature.visual === 'code'" class="code-preview">
-            <div class="code-line"></div>
-            <div class="code-line short"></div>
-            <div class="code-line"></div>
-          </div>
-
-          <div *ngIf="feature.visual === 'icon'" class="advanced-icon">⚙</div>
+            <div class="feature-text" *ngIf="feature.visual !== 'banner'">
+              <h3 class="feature-title">{{ feature.title }}</h3>
+              <p class="feature-description">{{ feature.description }}</p>
+              <button class="cta-button" type="button" (click)="startProject()">Start Project</button>
+            </div>
+          </article>
         </div>
 
-        <div class="feature-text">
-          <div class="feature-number">{{ feature.number }}</div>
-          <h3 class="feature-title">{{ feature.title }}</h3>
-          <p class="feature-description">{{ feature.description }}</p>
-          <button *ngIf="feature.hasButton && feature.buttonType === 'primary'" class="cta-button small">
-            {{ feature.buttonText }}
-          </button>
-          <button *ngIf="feature.hasButton && feature.buttonType === 'secondary'" class="cta-button-secondary">
-            {{ feature.buttonText }}
+        <div class="carousel-dots">
+          <button
+            *ngFor="let feature of features; index as index"
+            class="dot-btn"
+            type="button"
+            [class.active]="index === currentIndex"
+            [attr.aria-label]="'Go to slide ' + (index + 1)"
+            (click)="goToSlide(index)">
           </button>
         </div>
       </div>
+
+      <button class="nav-btn nav-btn-next" type="button" (click)="nextSlide()" aria-label="Next slide">
+        &#8250;
+      </button>
     </div>
   </div>
 </section>

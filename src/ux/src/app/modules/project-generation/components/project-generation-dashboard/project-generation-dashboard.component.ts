@@ -601,6 +601,11 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
     }
   }
 
+  openInProgress(event: Event): void {
+    event.preventDefault();
+    this.router.navigate(['/in-progress']);
+  }
+
   confirmBack(): void {
     this.showBackConfirmation = false;
     this.navigateHome();

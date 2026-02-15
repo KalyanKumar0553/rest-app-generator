@@ -16,6 +16,7 @@ import { Field } from '../field-item/field-item.component';
 import { DdlEntity, DdlImportService } from '../../../../services/ddl-import.service';
 import { ToastService } from '../../../../services/toast.service';
 import { InfoBannerComponent } from '../../../../components/info-banner/info-banner.component';
+import { Router } from '@angular/router';
 
 interface Entity {
   name: string;
@@ -119,8 +120,14 @@ export class EntitiesComponent implements OnInit {
 
   constructor(
     private ddlImportService: DdlImportService,
-    private toastService: ToastService
+    private toastService: ToastService,
+    private router: Router
   ) {}
+
+  openInProgress(event: Event): void {
+    event.preventDefault();
+    this.router.navigate(['/in-progress']);
+  }
 
   ngOnInit(): void {
     this.updateVisibleEntities();
@@ -512,8 +519,11 @@ export class EntitiesComponent implements OnInit {
       this.importPreviewEntities = parsed;
       this.showImportSchemaModal = false;
       this.showImportSchemaPreviewModal = true;
-    } catch {
-      this.toastService.error('Invalid SQL data.');
+    } catch (error: unknown) {
+      const message = error instanceof Error && error.message
+        ? error.message
+        : 'Invalid SQL data.';
+      this.toastService.error(message);
     }
   }
 

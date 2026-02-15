@@ -10,7 +10,7 @@
 <div class="mobile-header">
   <div class="container">
     <div class="header-content">
-      <div class="logo">
+      <div class="logo" (click)="handleHome()">
         <span class="logo-text">{{ appSettings.appName }}</span>
         <i class="bi bi-code-slash logo-icon"></i>
       </div>
@@ -27,7 +27,7 @@
 <div class="project-dashboard-container">
   <aside class="sidebar" [class.open]="isSidebarOpen">
     <div class="sidebar-header">
-      <div class="logo">
+      <div class="logo" (click)="handleHome()">
         <span class="logo-text">{{ appSettings.appName }}</span>
         <i class="bi bi-code-slash logo-icon"></i>
       </div>
@@ -52,7 +52,7 @@
 
         <app-info-banner storageKey="general-info">
           <span>
-            Define global project settings. Learn <a href="#" class="info-link">in the docs</a>.
+            Define global project settings. Learn <a href="#" class="info-link" (click)="openInProgress($event)">in the docs</a>.
           </span>
         </app-info-banner>
       </div>
@@ -89,7 +89,7 @@
 
             <div class="form-row">
               <label class="field-label">Build type</label>
-              <mat-radio-group [(ngModel)]="projectSettings.buildType" class="radio-group-horizontal">
+              <mat-radio-group [(ngModel)]="projectSettings.buildType" class="radio-group-horizontal build-type-group">
                 <mat-radio-button value="gradle">Gradle</mat-radio-button>
                 <mat-radio-button value="maven">Maven</mat-radio-button>
               </mat-radio-group>
@@ -97,12 +97,13 @@
 
             <div class="form-row">
               <label class="field-label">Language</label>
-              <mat-radio-group [(ngModel)]="projectSettings.language" class="radio-group-horizontal">
+              <mat-radio-group [(ngModel)]="projectSettings.language" class="radio-group-horizontal language-group">
                 <mat-radio-button value="java">Java</mat-radio-button>
                 <mat-radio-button value="kotlin">Kotlin</mat-radio-button>
               </mat-radio-group>
             </div>
 
+            <!--
             <mat-form-field appearance="fill" class="full-width">
               <mat-label>Frontend</mat-label>
               <mat-select [(ngModel)]="projectSettings.frontend">
@@ -112,6 +113,7 @@
               </mat-select>
               <mat-icon matSuffix matTooltip="Select a frontend framework for your project">info</mat-icon>
             </mat-form-field>
+            -->
           </div>
         </mat-expansion-panel>
 

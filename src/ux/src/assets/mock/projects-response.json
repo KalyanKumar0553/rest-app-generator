@@ -5,7 +5,7 @@
     "projects": [
       {
         "id": "STARTUP0VL6N",
-        "name": "io.restinit.my-app",
+        "name": "io.bootrid.my-app",
         "description": "E-commerce platform with payment integration",
         "createdAt": "2025-11-23T15:12:00Z",
         "updatedAt": "2025-11-25T10:30:00Z",

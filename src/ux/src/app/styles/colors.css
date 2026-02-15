@@ -1,6 +1,6 @@
-/* Rest-Init Color System */
+/* BootRid Color System */
 :root {
-  /* Brand Colors - Based on Rest-Init Design */
+  /* Brand Colors - Based on BootRid Design */
   --brand-background: #dff1ef;
   --brand-text: #49565d;
   --brand-accent: #e89b8e;
@@ -63,6 +63,7 @@
   --color-text-muted: var(--neutral-500);
   --color-text-inverse: #ffffff;
   --color-background: var(--brand-background);
+  --color-background-primary: var(--color-primary);
   --color-background-white: #ffffff;
   --color-background-secondary: #f5faf9;
   --color-background-muted: var(--neutral-100);

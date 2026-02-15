@@ -197,14 +197,13 @@
   .modal-container {
     border-radius: 0;
     max-height: 90vh;
-    height: 90vh;
+    height: auto;
     max-width: 90vw;
     border-radius: 13px;
   }
 
   .modal-header {
     padding: 16px;
-    padding-top: 60px;
   }
 
   .modal-title {

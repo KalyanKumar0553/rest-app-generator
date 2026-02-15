@@ -2,8 +2,13 @@
   <div class="container">
     <h2 class="signup-title">Sign up for product updates</h2>
     <div class="signup-form">
-      <input type="email" placeholder="Your e-mail" class="email-input">
-      <button class="submit-button">Submit</button>
+      <input
+        #emailInput
+        type="email"
+        placeholder="Your e-mail"
+        class="email-input"
+        (keyup.enter)="submit(emailInput)">
+      <button class="submit-button" type="button" (click)="submit(emailInput)">Submit</button>
     </div>
     <p class="signup-note">Get an update every one or while. Stop receiving anytime. <a href="#">Privacy</a></p>
   </div>

@@ -22,6 +22,8 @@ export class DdlImportService {
       return [];
     }
 
+    this.validateOnlyCreateTableStatements(sql);
+
     const entities: DdlEntity[] = [];
     const createTableRegex = /create\s+table\s+([`"\[]?)([a-zA-Z0-9_]+)\1\s*\(([^;]*?)\)\s*;/gi;
     let match: RegExpExecArray | null = null;
@@ -40,6 +42,26 @@ export class DdlImportService {
     }
 
     return entities;
+  }
+
+  private validateOnlyCreateTableStatements(sql: string): void {
+    const withoutBlockComments = sql.replace(/\/\*[\s\S]*?\*\//g, ' ');
+    const withoutLineComments = withoutBlockComments
+      .replace(/--.*$/gm, ' ')
+      .replace(/#.*$/gm, ' ');
+
+    const statements = withoutLineComments
+      .split(';')
+      .map(statement => statement.trim())
+      .filter(Boolean);
+
+    const invalidStatement = statements.find(
+      statement => !/^create\s+table\b/i.test(statement)
+    );
+
+    if (invalidStatement) {
+      throw new Error('Only CREATE TABLE SQL queries are allowed for import.');
+    }
   }
 
   private parseColumns(columnsBlock: string): DdlField[] {

@@ -1,9 +1,7 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { BannerComponent } from './banner/banner.component';
 import { FeaturesComponent } from './features/features.component';
 import { BenefitsComponent } from './benefits/benefits.component';
-import { CtaComponent } from './cta/cta.component';
 import { SignupComponent } from './signup/signup.component';
 import { LoginModalComponent } from '../../modules/auth/components/login-modal/login-modal.component';
 import { ModalService } from '../../services/modal.service';
@@ -14,10 +12,8 @@ import { Subscription } from 'rxjs';
   standalone: true,
   imports: [
     CommonModule,
-    BannerComponent,
     FeaturesComponent,
     BenefitsComponent,
-    CtaComponent,
     SignupComponent,
     LoginModalComponent
   ],
