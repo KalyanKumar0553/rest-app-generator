@@ -363,7 +363,7 @@
               [disabled]="isExploreSyncing"
               aria-label="Reload project explorer"
               mat-stroked-button>
-              <mat-icon>{{ isExploreSyncing ? 'sync' : 'refresh' }}</mat-icon>
+              <mat-icon [class.spinning]="isExploreSyncing">{{ isExploreSyncing ? 'sync' : 'refresh' }}</mat-icon>
               <span>{{ isExploreSyncing ? 'Syncing...' : 'Reload' }}</span>
             </button>
           </div>

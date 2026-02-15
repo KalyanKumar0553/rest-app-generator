@@ -501,6 +501,19 @@
   gap: 8px;
 }
 
+.reload-btn .spinning {
+  animation: reload-spin 1s linear infinite;
+}
+
+@keyframes reload-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .explore-empty-header {
   display: flex;
   align-items: center;
