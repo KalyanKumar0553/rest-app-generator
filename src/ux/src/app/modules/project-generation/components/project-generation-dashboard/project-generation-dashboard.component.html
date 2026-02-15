@@ -11,8 +11,8 @@
   <div class="container">
     <div class="header-content">
       <div class="logo" (click)="handleHome()">
+        <span class="logo-icon">&lt;/&gt;</span>
         <span class="logo-text">{{ appSettings.appName }}</span>
-        <i class="bi bi-code-slash logo-icon"></i>
       </div>
       <div class="spacer"></div>
       <button class="menu-toggle" (click)="toggleSidebar()" aria-label="Toggle menu">
@@ -28,8 +28,8 @@
   <aside class="sidebar" [class.open]="isSidebarOpen">
     <div class="sidebar-header">
       <div class="logo" (click)="handleHome()">
+        <span class="logo-icon">&lt;/&gt;</span>
         <span class="logo-text">{{ appSettings.appName }}</span>
-        <i class="bi bi-code-slash logo-icon"></i>
       </div>
     </div>
 

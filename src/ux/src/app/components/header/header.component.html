@@ -2,8 +2,8 @@
   <div class="container">
     <div class="header-content">
       <div class="logo" (click)="navigateToHome()">
+        <span class="logo-icon">&lt;/&gt;</span>
         <span class="logo-text">{{ appSettings.appName }}</span>
-        <i class="bi bi-code-slash logo-icon"></i>
       </div>
 
       <button class="menu-toggle" (click)="toggleMenu()" aria-label="Toggle menu">
@@ -23,7 +23,10 @@
 
 <aside class="sidenav" *ngIf="!isDashboardRoute" [class.active]="isMenuOpen">
   <div class="sidenav-header">
-    <span class="sidenav-title">Menu</span>
+    <div class="logo" (click)="navigateToHome(); closeMenu()">
+      <span class="logo-icon">&lt;/&gt;</span>
+      <span class="logo-text">{{ appSettings.appName }}</span>
+    </div>
     <button class="close-btn" (click)="closeMenu()" aria-label="Close menu">
       <i class="bi bi-x-lg"></i>
     </button>
