@@ -58,6 +58,8 @@ target/
 .DS_Store
 android/*
 www/*
+src/ux/www/
+src/ux/www/*
 
 Thumbs.db
 # Java / Maven
