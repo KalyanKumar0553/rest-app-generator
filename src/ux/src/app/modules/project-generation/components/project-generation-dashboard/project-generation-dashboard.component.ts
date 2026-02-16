@@ -15,6 +15,7 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatAutocompleteModule } from '@angular/material/autocomplete';
 import { ConfirmationModalComponent } from '../../../../components/confirmation-modal/confirmation-modal.component';
+import { ModalButton } from '../../../../components/confirmation-modal/confirmation-modal.component';
 import { ModalComponent } from '../../../../components/modal/modal.component';
 import { EntitiesComponent } from '../entities/entities.component';
 import { DataObjectsComponent } from '../data-objects/data-objects.component';
@@ -116,6 +117,9 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
   relations: any[] = [];
 
   showBackConfirmation = false;
+  showRecentProjectPrompt = false;
+  private hasCheckedRecentProjectPrompt = false;
+  private recentProjectToResume: { id: number } | null = null;
   isExploreSyncing = false;
   isGeneratingFromDtoSave = false;
   backendProjectId: string | null = null;
@@ -129,6 +133,15 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
     buttons: [
       { text: 'Cancel', type: 'cancel' as const, action: 'cancel' as const },
       { text: 'Discard Changes', type: 'danger' as const, action: 'confirm' as const }
+    ]
+  };
+
+  recentProjectPromptConfig: { title: string; message: string; buttons: ModalButton[] } = {
+    title: 'Load Recent project',
+    message: "You've worked on an another project before. Would you like to continue there?",
+    buttons: [
+      { text: 'Resume Last Project', type: 'confirm', action: 'confirm' },
+      { text: 'Create New project', type: 'cancel', action: 'cancel' }
     ]
   };
 
@@ -190,6 +203,12 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
         if (params['projectId']) {
           this.projectId = +params['projectId'];
           this.loadProject(this.projectId);
+          return;
+        }
+
+        if (!this.hasCheckedRecentProjectPrompt) {
+          this.hasCheckedRecentProjectPrompt = true;
+          this.promptForRecentProjectIfAvailable();
         }
       });
 
@@ -313,7 +332,8 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
 
   navigateToSection(section: string): void {
     if (section === 'explore') {
-      this.activeSection = 'explore';
+      const previousSection = this.activeSection;
+      this.handleExploreTab(previousSection);
       this.closeSidebar();
       return;
     }
@@ -338,7 +358,6 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
 
     const yamlSpec = this.buildCurrentProjectYaml();
     if (this.useCachedZipIfAvailable(yamlSpec, true)) {
-      this.toastService.success('Loaded project zip from local cache.');
       return;
     }
 
@@ -400,7 +419,6 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
 
     const yamlSpec = this.buildCurrentProjectYaml();
     if (this.useCachedZipIfAvailable(yamlSpec, true)) {
-      this.toastService.success('Loaded project zip from local cache.');
       return;
     }
 
@@ -438,7 +456,6 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
 
     const yamlSpec = this.buildCurrentProjectYaml();
     if (this.useCachedZipIfAvailable(yamlSpec, true)) {
-      this.toastService.success('Loaded project zip from local cache.');
       return;
     }
 
@@ -583,7 +600,6 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
   private generateExploreZipWithoutProjectId(previousSection: string): void {
     const yamlSpec = this.buildCurrentProjectYaml();
     if (this.useCachedZipIfAvailable(yamlSpec, true)) {
-      this.toastService.success('Loaded project zip from local cache.');
       return;
     }
 
@@ -718,6 +734,24 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
 
   cancelBack(): void {
     this.showBackConfirmation = false;
+  }
+
+  confirmRecentProjectResume(): void {
+    const recentProjectId = this.recentProjectToResume?.id;
+    this.showRecentProjectPrompt = false;
+    this.recentProjectToResume = null;
+
+    if (!recentProjectId) {
+      return;
+    }
+
+    this.projectId = recentProjectId;
+    this.loadProject(recentProjectId);
+  }
+
+  cancelRecentProjectResume(): void {
+    this.showRecentProjectPrompt = false;
+    this.recentProjectToResume = null;
   }
 
   navigateHome(): void {
@@ -891,6 +925,11 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
 
   removeProfile(profile: string): void {
     this.developerPreferences.profiles = this.developerPreferences.profiles.filter(item => item !== profile);
+  }
+
+  onHelpIconInteraction(event: Event): void {
+    event.preventDefault();
+    event.stopPropagation();
   }
 
   private mapModels(entities: any, relations: any): any[] {
@@ -1396,6 +1435,34 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
     }
     const [firstKey] = Object.keys(constraint);
     return firstKey === 'NotNull';
+  }
+
+  private promptForRecentProjectIfAvailable(): void {
+    const projects = this.getSavedProjects();
+    if (!projects.length) {
+      return;
+    }
+
+    const latestProject = projects
+      .filter(project => this.hasNumber(project?.id))
+      .sort((left, right) => Number(right.id) - Number(left.id))[0];
+
+    if (!latestProject) {
+      return;
+    }
+
+    this.recentProjectToResume = { id: Number(latestProject.id) };
+    this.showRecentProjectPrompt = true;
+  }
+
+  private getSavedProjects(): any[] {
+    try {
+      const raw = localStorage.getItem('projects');
+      const parsed = raw ? JSON.parse(raw) : [];
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
   }
 
 }

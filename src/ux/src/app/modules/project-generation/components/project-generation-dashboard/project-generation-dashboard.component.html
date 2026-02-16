@@ -7,6 +7,15 @@
   (cancel)="cancelBack()"
 ></app-confirmation-modal>
 
+<app-confirmation-modal
+  *ngIf="showRecentProjectPrompt"
+  [title]="recentProjectPromptConfig.title"
+  [message]="recentProjectPromptConfig.message"
+  [buttons]="recentProjectPromptConfig.buttons"
+  (confirm)="confirmRecentProjectResume()"
+  (cancel)="cancelRecentProjectResume()"
+></app-confirmation-modal>
+
 <div class="mobile-header">
   <div class="container">
     <div class="header-content">
@@ -146,7 +155,8 @@
             <div class="form-row">
               <mat-checkbox [(ngModel)]="databaseSettings.pluralizeTableNames">
                 Pluralize table names
-                <mat-icon class="inline-icon" matTooltip="Automatically pluralize table names">info</mat-icon>
+                <mat-icon class="inline-icon" matTooltip="Automatically pluralize table names"
+                  (mousedown)="onHelpIconInteraction($event)" (click)="onHelpIconInteraction($event)">info</mat-icon>
               </mat-checkbox>
             </div>
           </div>
@@ -190,7 +200,8 @@
 
             <div class="form-row">
               <label class="field-label">Packages
-                <mat-icon class="inline-icon" matTooltip="Package organization structure">info</mat-icon>
+                <mat-icon class="inline-icon" matTooltip="Package organization structure"
+                  (mousedown)="onHelpIconInteraction($event)" (click)="onHelpIconInteraction($event)">info</mat-icon>
               </label>
               <mat-radio-group [(ngModel)]="developerPreferences.packages" class="radio-group-horizontal">
                 <mat-radio-button value="technical">Technical</mat-radio-button>
@@ -201,14 +212,16 @@
             <div class="form-row">
               <mat-checkbox [(ngModel)]="developerPreferences.enableOpenAPI">
                 Enable OpenAPI/Swagger UI
-                <mat-icon class="inline-icon" matTooltip="Generate OpenAPI documentation">info</mat-icon>
+                <mat-icon class="inline-icon" matTooltip="Generate OpenAPI documentation"
+                  (mousedown)="onHelpIconInteraction($event)" (click)="onHelpIconInteraction($event)">info</mat-icon>
               </mat-checkbox>
             </div>
 
             <div class="form-row">
               <mat-checkbox [(ngModel)]="developerPreferences.useDockerCompose">
                 Use Docker compose for development
-                <mat-icon class="inline-icon" matTooltip="Include Docker Compose configuration">info</mat-icon>
+                <mat-icon class="inline-icon" matTooltip="Include Docker Compose configuration"
+                  (mousedown)="onHelpIconInteraction($event)" (click)="onHelpIconInteraction($event)">info</mat-icon>
               </mat-checkbox>
             </div>
 
@@ -242,7 +255,8 @@
           <div class="panel-content">
             <div class="form-row">
               <label class="field-label">Dependencies
-                <mat-icon class="inline-icon" [matTooltip]="appSettings.websiteName + ' already adds required dependencies. Add your custom dependencies here.'">info</mat-icon>
+                <mat-icon class="inline-icon" [matTooltip]="appSettings.websiteName + ' already adds required dependencies. Add your custom dependencies here.'"
+                  (mousedown)="onHelpIconInteraction($event)" (click)="onHelpIconInteraction($event)">info</mat-icon>
               </label>
             </div>
 

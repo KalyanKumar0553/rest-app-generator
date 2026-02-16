@@ -95,6 +95,11 @@
   cursor: pointer;
 }
 
+.project-view-node-spacer {
+  width: 1em;
+  flex: 0 0 1em;
+}
+
 .project-view-node:hover {
   background: #e8efee;
 }

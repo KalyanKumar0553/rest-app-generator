@@ -19,7 +19,8 @@
         [style.padding-left.px]="node.depth * 16 + 12"
         [class.selected]="!node.isDirectory && node.path === selectedFilePath"
         (click)="node.isDirectory ? toggleNode(node) : selectFile(node)">
-        <i class="bi" [ngClass]="node.isDirectory ? (node.expanded ? 'bi-caret-down-fill' : 'bi-caret-right-fill') : 'bi-dot'"></i>
+        <i class="bi" *ngIf="node.isDirectory" [ngClass]="node.expanded ? 'bi-caret-down-fill' : 'bi-caret-right-fill'"></i>
+        <span class="project-view-node-spacer" *ngIf="!node.isDirectory" aria-hidden="true"></span>
         <i class="bi" [ngClass]="node.isDirectory ? 'bi-folder2-open' : 'bi-file-earmark-text'"></i>
         <span>{{ node.name }}</span>
       </button>
