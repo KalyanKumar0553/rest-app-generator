@@ -314,13 +314,15 @@
   }
 
   .typed-wrap {
+    width: min(100%, 36ch);
     max-width: 100%;
-    white-space: normal;
-    border-right: none;
+    white-space: nowrap;
+    border-right: 2px solid var(--color-primary);
   }
 
   .typed-text {
-    animation: none;
+    max-width: 100%;
+    animation: type-in 4s steps(36, end) infinite, caret 0.9s steps(1, end) infinite;
   }
 
   .loading-screen {
