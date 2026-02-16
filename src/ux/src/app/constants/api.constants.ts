@@ -36,6 +36,9 @@ export const API_ENDPOINTS = {
   PROJECT_VIEW: {
     GENERATE_ZIP: '/api/project-view/generate-zip'
   },
+  ANALYTICS: {
+    TRACK_HOME_VISIT: '/api/analytics/visits/home'
+  },
   DEPENDENCIES: {
     LIST: '/api/openapi/dependencies'
   }
