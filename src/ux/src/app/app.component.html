@@ -1,13 +1,20 @@
 <ion-app>
   <div class="app-container">
-    <app-header class="app-header-fixed"></app-header>
-    <main class="main-content-scrollable" [class.loading]="isNavigating" [class.no-margins]="isDashboardRoute" [class.no-padding]="isProjectGenerationRoute">
-      <div class="loading-overlay" *ngIf="isNavigating">
-        <div class="loading-spinner"></div>
-      </div>
-      <router-outlet></router-outlet>
+    <app-header class="app-header-fixed" *ngIf="!isNavigating"></app-header>
+    <main class="main-content-scrollable" [class.no-margins]="isDashboardRoute" [class.no-padding]="isProjectGenerationRoute">
+      <ng-container *ngIf="isNavigating; else appContent">
+        <app-inprogress
+          mode="loading"
+          loadingTitle="Loading your workspace"
+          loadingMessage="Building your next view..."
+          loadingHint="BootRid is getting everything ready."
+        ></app-inprogress>
+      </ng-container>
+      <ng-template #appContent>
+        <router-outlet></router-outlet>
+      </ng-template>
     </main>
-    <app-footer class="app-footer-fixed"></app-footer>
+    <app-footer class="app-footer-fixed" *ngIf="!isNavigating"></app-footer>
     <app-toast></app-toast>
   </div>
 </ion-app>

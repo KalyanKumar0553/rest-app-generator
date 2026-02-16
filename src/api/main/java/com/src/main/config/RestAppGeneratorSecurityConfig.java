@@ -16,10 +16,12 @@ public class RestAppGeneratorSecurityConfig {
 	@Bean
 	@Order(Ordered.HIGHEST_PRECEDENCE)
 	public SecurityFilterChain publicProjectCreateSecurityFilterChain(HttpSecurity http) throws Exception {
-		http.securityMatcher("/api/projects/**", "/api/runs/**", "/api/openapi/**", "/api/project-view/**")
+		http.securityMatcher("/api/projects/**", "/api/runs/**", "/api/openapi/**", "/api/project-view/**",
+				"/api/analytics/**")
 				.authorizeHttpRequests(authorize -> authorize
 						.requestMatchers(HttpMethod.OPTIONS, "/api/**").permitAll()
 						.requestMatchers(HttpMethod.POST, "/api/project-view/generate-zip").permitAll()
+						.requestMatchers(HttpMethod.POST, "/api/analytics/visits/home").permitAll()
 						.requestMatchers(HttpMethod.GET, "/api/openapi/**").permitAll()
 						.anyRequest().authenticated())
 				.csrf(csrf -> csrf.disable()).cors(withDefaults());

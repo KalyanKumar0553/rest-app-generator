@@ -1,4 +1,4 @@
-<section class="inprogress-page">
+<section class="inprogress-page" *ngIf="mode === 'page'; else loadingTemplate">
   <div class="inprogress-shell">
     <div class="status-orb" aria-hidden="true">
       <div class="orb-core"></div>
@@ -23,3 +23,23 @@
     </div>
   </div>
 </section>
+
+<ng-template #loadingTemplate>
+  <section class="loading-screen" role="status" aria-live="polite" aria-label="Application loading">
+    <div class="loading-shell">
+      <div class="loading-graphic" aria-hidden="true">
+        <div class="loading-orbit orbit-one"></div>
+        <div class="loading-orbit orbit-two"></div>
+        <div class="loading-core">
+          <span class="loading-core-mark">&lt;/&gt;</span>
+        </div>
+      </div>
+      <h2 class="loading-title">{{ loadingTitle }}</h2>
+      <p class="loading-message">{{ loadingMessage }}</p>
+      <div class="loading-progress-track" aria-hidden="true">
+        <span class="loading-progress-fill"></span>
+      </div>
+      <p class="loading-hint">{{ loadingHint }}</p>
+    </div>
+  </section>
+</ng-template>

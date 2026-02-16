@@ -8,11 +8,12 @@ import { CommonModule } from '@angular/common';
 import { filter } from 'rxjs/operators';
 import { HttpClientModule } from '@angular/common/http';
 import { AuthService } from './services/auth.service';
+import { InprogressComponent } from './components/inprogress/inprogress.component';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [CommonModule, IonApp, RouterOutlet, HeaderComponent, FooterComponent, ToastComponent, HttpClientModule],
+  imports: [CommonModule, IonApp, RouterOutlet, HeaderComponent, FooterComponent, ToastComponent, HttpClientModule, InprogressComponent],
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.css']
 })

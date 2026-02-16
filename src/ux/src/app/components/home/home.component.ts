@@ -5,6 +5,7 @@ import { BenefitsComponent } from './benefits/benefits.component';
 import { SignupComponent } from './signup/signup.component';
 import { LoginModalComponent } from '../../modules/auth/components/login-modal/login-modal.component';
 import { ModalService } from '../../services/modal.service';
+import { VisitTrackingService } from '../../services/visit-tracking.service';
 import { Subscription } from 'rxjs';
 
 @Component({
@@ -24,9 +25,18 @@ export class HomeComponent implements OnInit, OnDestroy {
   showLoginModal = false;
   private modalSubscription?: Subscription;
 
-  constructor(private modalService: ModalService) {}
+  constructor(
+    private modalService: ModalService,
+    private visitTrackingService: VisitTrackingService
+  ) {}
 
   ngOnInit(): void {
+    this.visitTrackingService.trackHomeVisit().subscribe({
+      error: () => {
+        // Tracking must be non-blocking.
+      }
+    });
+
     this.modalSubscription = this.modalService.showLoginModal$.subscribe(
       (show) => {
         this.showLoginModal = show;

@@ -19,6 +19,105 @@
   overflow: hidden;
 }
 
+.loading-screen {
+  min-height: 100%;
+  width: 100%;
+  display: grid;
+  place-items: center;
+  padding: 24px 20px;
+}
+
+.loading-shell {
+  width: min(520px, 100%);
+  border: 1px solid var(--color-border);
+  background: linear-gradient(145deg, var(--color-background-white), var(--color-background));
+  border-radius: 22px;
+  box-shadow: var(--shadow-xl);
+  padding: 30px 24px;
+  text-align: center;
+}
+
+.loading-graphic {
+  width: 120px;
+  height: 120px;
+  margin: 0 auto 14px;
+  position: relative;
+  display: grid;
+  place-items: center;
+}
+
+.loading-core {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: var(--gradient-primary);
+  display: grid;
+  place-items: center;
+  box-shadow: var(--shadow-md);
+  animation: loading-bob 1.8s ease-in-out infinite;
+}
+
+.loading-core-mark {
+  color: var(--color-text-inverse);
+  font-size: 1.1rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.loading-orbit {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 2px solid var(--color-primary);
+  opacity: 0.45;
+}
+
+.orbit-one {
+  animation: orbit-spin 1.6s linear infinite;
+}
+
+.orbit-two {
+  inset: 12px;
+  border-color: var(--color-text-secondary);
+  animation: orbit-spin 2.2s linear reverse infinite;
+}
+
+.loading-title {
+  margin: 0;
+  color: var(--color-text-primary);
+  font-size: clamp(1.35rem, 2.9vw, 1.8rem);
+}
+
+.loading-message {
+  margin: 8px 0 0;
+  color: var(--color-text-primary);
+  font-size: 1rem;
+}
+
+.loading-progress-track {
+  margin: 16px auto 0;
+  width: min(340px, 100%);
+  height: 8px;
+  border-radius: 999px;
+  background-color: var(--color-border-light);
+  overflow: hidden;
+}
+
+.loading-progress-fill {
+  display: block;
+  width: 38%;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--gradient-primary);
+  animation: progress-slide 1.2s ease-in-out infinite alternate;
+}
+
+.loading-hint {
+  margin: 12px 0 0;
+  color: var(--color-text-secondary);
+  font-size: 0.92rem;
+}
+
 .status-orb {
   width: 126px;
   height: 126px;
@@ -151,6 +250,33 @@
   }
 }
 
+@keyframes orbit-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes loading-bob {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-3px);
+  }
+}
+
+@keyframes progress-slide {
+  0% {
+    transform: translateX(-55%);
+  }
+  100% {
+    transform: translateX(155%);
+  }
+}
+
 @keyframes type-in {
   0% {
     width: 0;
@@ -195,5 +321,23 @@
 
   .typed-text {
     animation: none;
+  }
+
+  .loading-screen {
+    padding: 20px 12px;
+  }
+
+  .loading-shell {
+    padding: 24px 16px;
+  }
+
+  .loading-graphic {
+    width: 104px;
+    height: 104px;
+  }
+
+  .loading-core {
+    width: 52px;
+    height: 52px;
   }
 }

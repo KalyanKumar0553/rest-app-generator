@@ -62,7 +62,8 @@ export class HttpRequestInterceptor implements HttpInterceptor {
       '/api/auth/reset-password-with-otp',
       '/api/projects',
       '/api/project-view/generate-zip',
-      '/api/openapi/dependencies'
+      '/api/openapi/dependencies',
+      '/api/analytics/visits/home'
     ];
     return publicEndpoints.some(endpoint => url.includes(endpoint));
   }

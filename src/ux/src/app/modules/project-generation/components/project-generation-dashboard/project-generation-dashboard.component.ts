@@ -30,6 +30,7 @@ import { finalize } from 'rxjs/operators';
 import { ValidatorService } from '../../../../services/validator.service';
 import { buildMavenNamingRules } from '../../validators/naming-validation';
 import { APP_SETTINGS } from '../../../../settings/app-settings';
+import { LocalStorageService } from '../../../../services/local-storage.service';
 
 interface ProjectSettings {
   projectGroup: string;
@@ -119,6 +120,7 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
   isGeneratingFromDtoSave = false;
   backendProjectId: string | null = null;
   private projectEventsSource: EventSource | null = null;
+  private pendingGenerationYamlSpec: string | null = null;
   exploreZipBlob: Blob | null = null;
   exploreZipFileName = 'project.zip';
   backConfirmationConfig = {
@@ -175,7 +177,8 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
     private authService: AuthService,
     private toastService: ToastService,
     private http: HttpClient,
-    private validatorService: ValidatorService
+    private validatorService: ValidatorService,
+    private localStorageService: LocalStorageService
   ) {}
 
   ngOnInit(): void {
@@ -333,6 +336,12 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
       return;
     }
 
+    const yamlSpec = this.buildCurrentProjectYaml();
+    if (this.useCachedZipIfAvailable(yamlSpec, true)) {
+      this.toastService.success('Loaded project zip from local cache.');
+      return;
+    }
+
     const projectId = this.backendProjectId?.trim();
     if (!projectId) {
       this.toastService.error('Please save project first to generate and explore zip.');
@@ -370,7 +379,7 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
           }
 
           try {
-            await this.downloadAndPrepareExploreZip(latestRun.id, projectId);
+            await this.downloadAndPrepareExploreZip(latestRun.id, projectId, yamlSpec);
             this.activeSection = 'explore';
           } catch {
             this.toastService.error('Failed to download generated zip.');
@@ -390,7 +399,13 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
     }
 
     const yamlSpec = this.buildCurrentProjectYaml();
+    if (this.useCachedZipIfAvailable(yamlSpec, true)) {
+      this.toastService.success('Loaded project zip from local cache.');
+      return;
+    }
+
     this.isGeneratingFromDtoSave = true;
+    this.pendingGenerationYamlSpec = yamlSpec;
 
     this.createProjectOnBackend(yamlSpec)
       .pipe(finalize(() => {
@@ -401,6 +416,7 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
           const projectId = response?.projectId?.trim();
           if (!projectId) {
             this.toastService.error('Project saved but project id is missing in response.');
+            this.pendingGenerationYamlSpec = null;
             return;
           }
 
@@ -409,6 +425,7 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
           this.connectProjectEvents(projectId);
         },
         error: () => {
+          this.pendingGenerationYamlSpec = null;
           this.toastService.error('Failed to save and start project generation.');
         }
       });
@@ -420,6 +437,11 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
     }
 
     const yamlSpec = this.buildCurrentProjectYaml();
+    if (this.useCachedZipIfAvailable(yamlSpec, true)) {
+      this.toastService.success('Loaded project zip from local cache.');
+      return;
+    }
+
     const url = `${API_CONFIG.BASE_URL}${API_ENDPOINTS.PROJECT_VIEW.GENERATE_ZIP}`;
     this.isGeneratingFromDtoSave = true;
 
@@ -439,6 +461,7 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
 
           this.exploreZipBlob = new Blob([zipData], { type: 'application/zip' });
           this.exploreZipFileName = `${this.toArtifactId(this.projectSettings.projectName || 'project')}.zip`;
+          this.cacheZipFromArrayBuffer(yamlSpec, zipData, this.exploreZipFileName);
           this.activeSection = 'explore';
           this.toastService.success('Project generated successfully.');
         },
@@ -478,7 +501,8 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
         const fileName = typeof payload.fileName === 'string' && payload.fileName.trim()
           ? payload.fileName.trim()
           : 'project.zip';
-        this.downloadZipFile(payload.zipBase64, fileName);
+        const yamlForCache = this.pendingGenerationYamlSpec || this.buildCurrentProjectYaml();
+        this.downloadZipFile(payload.zipBase64, fileName, yamlForCache);
         this.toastService.success('Project zip is ready.');
         this.closeProjectEventsSource();
       } else if (status === 'ERROR') {
@@ -507,16 +531,12 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
     }
   }
 
-  private downloadZipFile(base64Payload: string, fileName: string): void {
+  private downloadZipFile(base64Payload: string, fileName: string, yamlSpec: string): void {
     try {
-      const binary = window.atob(base64Payload);
-      const bytes = new Uint8Array(binary.length);
-      for (let i = 0; i < binary.length; i += 1) {
-        bytes[i] = binary.charCodeAt(i);
-      }
-
-      this.exploreZipBlob = new Blob([bytes], { type: 'application/zip' });
+      const bytes = this.base64ToUint8Array(base64Payload);
+      this.exploreZipBlob = new Blob([bytes.buffer as ArrayBuffer], { type: 'application/zip' });
       this.exploreZipFileName = fileName || `${this.toArtifactId(this.projectSettings.projectName || 'project')}.zip`;
+      this.cacheZipFromBase64(yamlSpec, base64Payload, this.exploreZipFileName);
       this.activeSection = 'explore';
     } catch {
       this.toastService.error('Failed to download generated zip file.');
@@ -528,6 +548,7 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
       this.projectEventsSource.close();
       this.projectEventsSource = null;
     }
+    this.pendingGenerationYamlSpec = null;
   }
 
   private getLatestRun(runs: ProjectRunSummary[] | null | undefined): ProjectRunSummary | null {
@@ -547,7 +568,7 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
     return sorted[0] ?? null;
   }
 
-  private async downloadAndPrepareExploreZip(runId: string, projectId: string): Promise<void> {
+  private async downloadAndPrepareExploreZip(runId: string, projectId: string, yamlSpec: string): Promise<void> {
     const downloadUrl = `${API_CONFIG.BASE_URL}${API_ENDPOINTS.RUN.DOWNLOAD(runId)}`;
     const zipData = await firstValueFrom(this.http.get(downloadUrl, { responseType: 'arraybuffer' }));
     if (!zipData) {
@@ -556,10 +577,16 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
 
     this.exploreZipBlob = new Blob([zipData], { type: 'application/zip' });
     this.exploreZipFileName = `${this.toArtifactId(this.projectSettings.projectName || projectId)}.zip`;
+    this.cacheZipFromArrayBuffer(yamlSpec, zipData, this.exploreZipFileName);
   }
 
   private generateExploreZipWithoutProjectId(previousSection: string): void {
     const yamlSpec = this.buildCurrentProjectYaml();
+    if (this.useCachedZipIfAvailable(yamlSpec, true)) {
+      this.toastService.success('Loaded project zip from local cache.');
+      return;
+    }
+
     this.isExploreSyncing = true;
     const url = `${API_CONFIG.BASE_URL}${API_ENDPOINTS.PROJECT_VIEW.GENERATE_ZIP}`;
 
@@ -580,6 +607,7 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
 
           this.exploreZipBlob = new Blob([zipData], { type: 'application/zip' });
           this.exploreZipFileName = `${this.toArtifactId(this.projectSettings.projectName || 'project')}.zip`;
+          this.cacheZipFromArrayBuffer(yamlSpec, zipData, this.exploreZipFileName);
           this.activeSection = 'explore';
         },
         error: () => {
@@ -591,6 +619,83 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
 
   reloadExplore(): void {
     this.handleExploreTab(this.activeSection);
+  }
+
+  private useCachedZipIfAvailable(yamlSpec: string, switchToExplore: boolean): boolean {
+    const cacheKey = this.getZipCacheKey();
+    const cachedEntry = this.localStorageService.getProjectZipCache(cacheKey);
+    if (!cachedEntry || cachedEntry.yamlSpec !== yamlSpec || !cachedEntry.zipBase64) {
+      return false;
+    }
+
+    try {
+      const bytes = this.base64ToUint8Array(cachedEntry.zipBase64);
+      this.exploreZipBlob = new Blob([bytes.buffer as ArrayBuffer], { type: 'application/zip' });
+      this.exploreZipFileName = cachedEntry.fileName || `${this.toArtifactId(this.projectSettings.projectName || 'project')}.zip`;
+      if (switchToExplore) {
+        this.activeSection = 'explore';
+      }
+      return true;
+    } catch {
+      this.localStorageService.clearProjectZipCache(cacheKey);
+      return false;
+    }
+  }
+
+  private cacheZipFromArrayBuffer(yamlSpec: string, zipData: ArrayBuffer, fileName: string): void {
+    if (!zipData || zipData.byteLength === 0) {
+      return;
+    }
+
+    this.localStorageService.setProjectZipCache(this.getZipCacheKey(), {
+      yamlSpec,
+      zipBase64: this.arrayBufferToBase64(zipData),
+      fileName: fileName || 'project.zip',
+      updatedAt: Date.now()
+    });
+  }
+
+  private cacheZipFromBase64(yamlSpec: string, zipBase64: string, fileName: string): void {
+    if (!yamlSpec || !zipBase64) {
+      return;
+    }
+
+    this.localStorageService.setProjectZipCache(this.getZipCacheKey(), {
+      yamlSpec,
+      zipBase64,
+      fileName: fileName || 'project.zip',
+      updatedAt: Date.now()
+    });
+  }
+
+  private getZipCacheKey(): string {
+    const backendId = this.trimmed(this.backendProjectId);
+    const localProjectId = this.projectId ? String(this.projectId) : '';
+    const artifactId = this.toArtifactId(this.projectSettings.projectName || 'project');
+    const scope = this.isLoggedIn ? 'auth' : 'guest';
+    return [scope, backendId || localProjectId || artifactId].join(':');
+  }
+
+  private base64ToUint8Array(base64Payload: string): Uint8Array {
+    const binary = window.atob(base64Payload);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i += 1) {
+      bytes[i] = binary.charCodeAt(i);
+    }
+    return bytes;
+  }
+
+  private arrayBufferToBase64(buffer: ArrayBuffer): string {
+    const bytes = new Uint8Array(buffer);
+    const chunkSize = 0x8000;
+    let binary = '';
+
+    for (let i = 0; i < bytes.length; i += chunkSize) {
+      const chunk = bytes.subarray(i, i + chunkSize);
+      binary += String.fromCharCode(...chunk);
+    }
+
+    return window.btoa(binary);
   }
 
   handleHome(): void {
