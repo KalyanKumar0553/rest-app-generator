@@ -2,7 +2,7 @@ package com.src.main.dto;
 
 import java.util.Objects;
 
-public record MavenDependency(String groupId, String artifactId, String scope, boolean optional) {
+public record MavenDependencyDTO(String groupId, String artifactId, String scope, boolean optional) {
 
 	public String scopeOrCompile() {
 		if (scope == null || scope.isBlank())
@@ -50,7 +50,7 @@ public record MavenDependency(String groupId, String artifactId, String scope, b
 	public boolean equals(Object o) {
 		if (this == o)
 			return true;
-		if (!(o instanceof MavenDependency that))
+		if (!(o instanceof MavenDependencyDTO that))
 			return false;
 		return Objects.equals(groupId, that.groupId) && Objects.equals(artifactId, that.artifactId)
 				&& Objects.equals(scopeOrCompile(), that.scopeOrCompile());

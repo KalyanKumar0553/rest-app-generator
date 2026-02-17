@@ -16,7 +16,7 @@ import org.springframework.statemachine.ExtendedState;
 import org.springframework.stereotype.Component;
 
 import com.src.main.dto.InitializrProjectModel;
-import com.src.main.dto.MavenDependency;
+import com.src.main.dto.MavenDependencyDTO;
 import com.src.main.dto.StepResult;
 import com.src.main.common.util.StringUtils;
 import com.src.main.service.DependencyResolver;
@@ -83,7 +83,7 @@ public class ScaffoldExecutor implements StepExecutor {
 
 
 		createMinimalLayout(root, packageName, buildTool);
-		List<MavenDependency> deps = dependencyResolver.resolveForMaven(depReq, bootVersion, openapi);
+		List<MavenDependencyDTO> deps = dependencyResolver.resolveForMaven(depReq, bootVersion, openapi);
 
 		InitializrProjectModel model = new InitializrProjectModel(groupId, artifactId, version, name, description,
 				packaging, generator, jdkVersion, bootVersion, openapi, angular);

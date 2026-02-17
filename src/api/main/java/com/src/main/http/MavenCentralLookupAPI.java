@@ -12,7 +12,7 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import com.src.main.config.MavenCentralProperties;
-import com.src.main.dto.MavenDependency;
+import com.src.main.dto.MavenDependencyDTO;
 import com.src.main.util.AppConstants;
 
 import reactor.netty.http.client.HttpClient;
@@ -32,7 +32,7 @@ public class MavenCentralLookupAPI implements RemoteDependencyLookup {
 
 	@Override
 	@Cacheable(cacheNames = "depLookup", key = "#keyword", unless = "#result == null")
-	public Optional<MavenDependency> findByKeyword(String keyword) {
+	public Optional<MavenDependencyDTO> findByKeyword(String keyword) {
 		if (!StringUtils.hasText(keyword))
 			return Optional.empty();
 		String query = AppConstants.MAVEN_URL.formatted(keyword.trim());
@@ -49,7 +49,7 @@ public class MavenCentralLookupAPI implements RemoteDependencyLookup {
 			var doc = resp.getJSONArray("docs").getJSONObject(0);
 			String g = doc.getString("g");
 			String a = doc.getString("a");
-			return Optional.of(new MavenDependency(g, a, null, false));
+			return Optional.of(new MavenDependencyDTO(g, a, null, false));
 		} catch (Exception ex) {
 			log.warn("Maven Central lookup failed for '{}': {}", keyword, ex.toString());
 			return Optional.empty();

@@ -7,7 +7,7 @@ import java.util.Objects;
 import org.springframework.stereotype.Component;
 
 import com.src.main.dto.InitializrProjectModel;
-import com.src.main.dto.MavenDependency;
+import com.src.main.dto.MavenDependencyDTO;
 
 import io.spring.initializr.generator.buildsystem.Dependency;
 import io.spring.initializr.generator.buildsystem.DependencyScope;
@@ -23,7 +23,7 @@ public class InitializrPomGenerator {
 	private static final String SPRINGDOC_VERSION = "2.6.0";
 	private static final String SWAGGER_CORE_VERSION = "2.2.22";
 
-	public String generatePom(InitializrProjectModel model, List<MavenDependency> deps) {
+	public String generatePom(InitializrProjectModel model, List<MavenDependencyDTO> deps) {
 		Objects.requireNonNull(model, "model must not be null");
 		MavenBuild build = new MavenBuild();
 		String groupId = req(model.getGroupId(), "groupId");
@@ -43,7 +43,7 @@ public class InitializrPomGenerator {
 		build.settings().packaging(packaging);
 		build.properties().version("java", jdk);
 		if (deps != null) {
-			for (MavenDependency md : deps) {
+			for (MavenDependencyDTO md : deps) {
 				if (md == null)
 					continue;
 				String g = trimOrNull(md.groupId());
@@ -109,7 +109,7 @@ public class InitializrPomGenerator {
 		return (v == null || v.isBlank()) ? null : v.trim();
 	}
 
-	private static boolean hasJpaDependency(List<MavenDependency> deps) {
+	private static boolean hasJpaDependency(List<MavenDependencyDTO> deps) {
 		if (deps == null || deps.isEmpty()) {
 			return false;
 		}

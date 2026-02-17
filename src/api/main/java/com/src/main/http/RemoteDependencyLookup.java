@@ -2,8 +2,8 @@ package com.src.main.http;
 
 import java.util.Optional;
 
-import com.src.main.dto.MavenDependency;
+import com.src.main.dto.MavenDependencyDTO;
 
 public interface RemoteDependencyLookup {
-    Optional<MavenDependency> findByKeyword(String keyword);
+    Optional<MavenDependencyDTO> findByKeyword(String keyword);
 }
