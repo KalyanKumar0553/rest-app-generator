@@ -11,42 +11,38 @@ public class {{className}}{{#implements}} implements {{.}}{{/implements}} {
 
     private static final long serialVersionUID = 1L;
 
-    {{!-- ===================== ID BLOCK ===================== --}}
     {{#idBlock}}
     {{#annotations}}
     {{{.}}}
     {{/annotations}}
     private {{{type}}} {{name}};
-    {{/idBlock}}
 
-    {{!-- ===================== REGULAR FIELDS ===================== --}}
+    {{/idBlock}}
     {{#fields}}
     {{#annotations}}
     {{{.}}}
     {{/annotations}}
     private {{{type}}} {{name}};
-    {{/fields}}
 
-    {{!-- ===================== RELATION FIELDS ===================== --}}
+    {{/fields}}
     {{#relations}}
     {{#annotations}}
     {{{.}}}
     {{/annotations}}
     private {{{declarationType}}} {{name}};
-    {{/relations}}
 
-    {{!-- ===================== AUDITING FIELDS ===================== --}}
+    {{/relations}}
     {{#auditing.enabled}}
     @CreatedDate
     private OffsetDateTime createdAt;
 
     @LastModifiedDate
     private OffsetDateTime updatedAt;
-    {{/auditing.enabled}}
 
-    {{!-- ===================== SOFT DELETE FIELDS ===================== --}}
+    {{/auditing.enabled}}
     {{#softDelete.enabled}}
     private Boolean deleted = false;
+
     private OffsetDateTime deletedAt;
     {{/softDelete.enabled}}
 }

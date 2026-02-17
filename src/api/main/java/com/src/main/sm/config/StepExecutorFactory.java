@@ -6,6 +6,7 @@ import java.util.Map;
 import org.springframework.stereotype.Component;
 
 import com.src.main.sm.executor.ApplicationFileGenerationExecutor;
+import com.src.main.sm.executor.DockerGenerationExecutor;
 import com.src.main.sm.executor.DtoGenerationExecutor;
 import com.src.main.sm.executor.ModelGenerationExecutor;
 import com.src.main.sm.executor.RestGenerationExecutor;
@@ -21,11 +22,13 @@ public class StepExecutorFactory {
 		 ApplicationFileGenerationExecutor appFileExecutor,
 		 ModelGenerationExecutor modelExecutor,
 		 SwaggerGenerationExecutor swaggerGenerationExecutor,
+		 DockerGenerationExecutor dockerGenerationExecutor,
 		 RestGenerationExecutor restGenerationExecutor
 		 ) {
      registry.put(States.DTO_GENERATION, dtoGenerationExecutor);
      registry.put(States.SCAFFOLD, scaffoldExecutor);
      registry.put(States.APPLICATION_FILES, appFileExecutor);
+     registry.put(States.DOCKER_GENERATION, dockerGenerationExecutor);
      registry.put(States.MODEL_GENERATION, modelExecutor);
      registry.put(States.SWAGGER_GENERATION, swaggerGenerationExecutor);
      registry.put(States.REST_GENERATION, restGenerationExecutor);

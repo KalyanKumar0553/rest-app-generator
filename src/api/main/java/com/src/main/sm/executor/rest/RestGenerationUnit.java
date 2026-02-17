@@ -13,12 +13,14 @@ public class RestGenerationUnit {
 	private final String repositoryPackage;
 	private final String servicePackage;
 	private final String controllerPackage;
+	private final String supportPackage;
 	private final String repositoryClass;
 	private final String serviceClass;
 	private final String controllerClass;
+	private final String supportClass;
 
 	public RestGenerationUnit(String entityName, String idName, String idType, String endpointPath, String modelPackage,
-			String repositoryPackage, String servicePackage, String controllerPackage) {
+			String repositoryPackage, String servicePackage, String controllerPackage, String supportPackage) {
 		this.entityName = entityName;
 		this.idName = idName;
 		this.idType = idType;
@@ -27,9 +29,11 @@ public class RestGenerationUnit {
 		this.repositoryPackage = repositoryPackage;
 		this.servicePackage = servicePackage;
 		this.controllerPackage = controllerPackage;
+		this.supportPackage = supportPackage;
 		this.repositoryClass = entityName + "Repository";
 		this.serviceClass = entityName + "Service";
 		this.controllerClass = entityName + "Controller";
+		this.supportClass = "RestUtils";
 	}
 
 	public String getEntityName() {
@@ -64,6 +68,10 @@ public class RestGenerationUnit {
 		return controllerPackage;
 	}
 
+	public String getSupportPackage() {
+		return supportPackage;
+	}
+
 	public String getRepositoryClass() {
 		return repositoryClass;
 	}
@@ -76,6 +84,10 @@ public class RestGenerationUnit {
 		return controllerClass;
 	}
 
+	public String getSupportClass() {
+		return supportClass;
+	}
+
 	public Map<String, Object> toTemplateModel() {
 		Map<String, Object> model = new LinkedHashMap<>();
 		model.put("entityName", entityName);
@@ -86,9 +98,11 @@ public class RestGenerationUnit {
 		model.put("repositoryPackage", repositoryPackage);
 		model.put("servicePackage", servicePackage);
 		model.put("controllerPackage", controllerPackage);
+		model.put("supportPackage", supportPackage);
 		model.put("repositoryClass", repositoryClass);
 		model.put("serviceClass", serviceClass);
 		model.put("controllerClass", controllerClass);
+		model.put("supportClass", supportClass);
 		return model;
 	}
 }

@@ -15,6 +15,7 @@ public interface ProjectMetaDataConstants {
 	String DEPENDENCIES = "dependencies";
 	String EXTRAS_OPENAPI = "extras.openapi";
 	String EXTRAS_ANGULAR_INTEGRATION = "extras.angularIntegration";
+	String EXTRAS_DOCKER_COMPOSE = "extras.dockerCompose";
 	String BUILD_TOOL = "buildTool";
 	
 	String SPRING_BOOT_VERSION = "springBootVersion";

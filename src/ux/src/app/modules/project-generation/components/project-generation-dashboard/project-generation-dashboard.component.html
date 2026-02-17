@@ -16,6 +16,15 @@
   (cancel)="cancelRecentProjectResume()"
 ></app-confirmation-modal>
 
+<app-confirmation-modal
+  *ngIf="showEntitiesDeleteConfirmation"
+  [title]="entitiesDeleteConfirmationConfig.title"
+  [message]="entitiesDeleteConfirmationConfig.message"
+  [buttons]="entitiesDeleteConfirmationConfig.buttons"
+  (confirm)="confirmEntitiesDelete()"
+  (cancel)="cancelEntitiesDelete()"
+></app-confirmation-modal>
+
 <div class="mobile-header">
   <div class="container">
     <div class="header-content">
@@ -43,7 +52,7 @@
     </div>
 
     <app-sidenav
-      [navItems]="navItems"
+      [navItems]="visibleNavItems"
       [activeItem]="activeSection"
       (itemClick)="navigateToSection($event)">
     </app-sidenav>
@@ -136,14 +145,14 @@
           <div class="panel-content">
             <mat-form-field appearance="fill" class="full-width">
               <mat-label>Database</mat-label>
-              <mat-select [(ngModel)]="databaseSettings.database">
-                <mat-option *ngFor="let option of databaseOptions" [value]="option">
-                  {{ option }}
+              <mat-select [(ngModel)]="databaseSettings.database" (ngModelChange)="onDatabaseSelectionChange($event)">
+                <mat-option *ngFor="let option of databaseOptions" [value]="option.value">
+                  {{ option.label }}
                 </mat-option>
               </mat-select>
             </mat-form-field>
 
-            <mat-form-field appearance="fill" class="full-width">
+            <mat-form-field appearance="fill" class="full-width" *ngIf="shouldShowDbGeneration()">
               <mat-label>DB Generation</mat-label>
               <mat-select [(ngModel)]="databaseSettings.dbGeneration">
                 <mat-option *ngFor="let option of dbGenerationOptions" [value]="option">
@@ -152,7 +161,7 @@
               </mat-select>
             </mat-form-field>
 
-            <div class="form-row">
+            <div class="form-row" *ngIf="shouldShowPluralizeTableNames()">
               <mat-checkbox [(ngModel)]="databaseSettings.pluralizeTableNames">
                 Pluralize table names
                 <mat-icon class="inline-icon" matTooltip="Automatically pluralize table names"
@@ -291,9 +300,9 @@
 
       <div class="sticky-footer">
         <div class="action-section">
-          <button mat-raised-button color="primary" type="button" (click)="setupEntities()" [disabled]="isLoading">
+          <button mat-raised-button color="primary" type="button" (click)="handleGeneralPrimaryAction()" [disabled]="isLoading">
             <mat-spinner *ngIf="isLoading" diameter="20" class="button-spinner"></mat-spinner>
-            <span *ngIf="!isLoading">Setup Entities</span>
+            <span *ngIf="!isLoading">{{ isEntitiesTabVisible() ? 'Setup Entities' : 'Setup Data Object' }}</span>
             <span *ngIf="isLoading">Loading...</span>
           </button>
         </div>

@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, ActivatedRoute } from '@angular/router';
@@ -45,6 +45,11 @@ interface DatabaseSettings {
   database: string;
   dbGeneration: string;
   pluralizeTableNames: boolean;
+}
+
+interface DatabaseOption {
+  value: string;
+  label: string;
 }
 
 interface DeveloperPreferences {
@@ -117,7 +122,11 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
   relations: any[] = [];
 
   showBackConfirmation = false;
+  showEntitiesDeleteConfirmation = false;
   showRecentProjectPrompt = false;
+  private previousDatabaseSelection = 'POSTGRES';
+  private pendingDatabaseSelection: string | null = null;
+  private databaseSelectionBeforeConfirmation: string | null = null;
   private hasCheckedRecentProjectPrompt = false;
   private recentProjectToResume: { id: number } | null = null;
   isExploreSyncing = false;
@@ -133,6 +142,14 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
     buttons: [
       { text: 'Cancel', type: 'cancel' as const, action: 'cancel' as const },
       { text: 'Discard Changes', type: 'danger' as const, action: 'confirm' as const }
+    ]
+  };
+  entitiesDeleteConfirmationConfig: { title: string; message: string; buttons: ModalButton[] } = {
+    title: 'Confirmation',
+    message: 'All Configured Entities will be deleted. Want to Continue ?',
+    buttons: [
+      { text: 'Continue', type: 'danger', action: 'confirm' },
+      { text: 'Cancel', type: 'cancel', action: 'cancel' }
     ]
   };
 
@@ -154,7 +171,7 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
   };
 
   databaseSettings: DatabaseSettings = {
-    database: 'PostgreSQL',
+    database: 'POSTGRES',
     dbGeneration: 'Hibernate (update)',
     pluralizeTableNames: false
   };
@@ -179,7 +196,18 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
   projectNameError = '';
 
   frontendOptions = ['None', 'React', 'Vue', 'Angular'];
-  databaseOptions = ['PostgreSQL', 'MySQL', 'H2', 'MongoDB'];
+  databaseOptions: DatabaseOption[] = [
+    { value: 'NONE', label: 'None' },
+    { value: 'MSSQL', label: 'MSSQL Server' },
+    { value: 'MYSQL', label: 'MySQL' },
+    { value: 'MARIADB', label: 'MariaDB' },
+    { value: 'ORACLE', label: 'Oracle' },
+    { value: 'POSTGRES', label: 'PostgreSQL' },
+    { value: 'MONGODB', label: 'MongoDB' },
+    { value: 'DERBY', label: 'Apache Derby' },
+    { value: 'H2', label: 'H2 Database' },
+    { value: 'HSQL', label: 'HyperSQL' }
+  ];
   dbGenerationOptions = ['Hibernate (update)', 'Hibernate (create)', 'Liquibase', 'Flyway'];
   javaVersionOptions = ['17', '21'];
   deploymentOptions = ['None', 'Docker', 'Kubernetes', 'Cloud'];
@@ -191,8 +219,21 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
     private toastService: ToastService,
     private http: HttpClient,
     private validatorService: ValidatorService,
-    private localStorageService: LocalStorageService
+    private localStorageService: LocalStorageService,
+    private cdr: ChangeDetectorRef
   ) {}
+
+  get visibleNavItems(): NavItem[] {
+    const isNoneDatabase = this.toDatabaseCode(this.databaseSettings.database) === 'NONE';
+    if (!isNoneDatabase) {
+      return this.navItems;
+    }
+    return this.navItems.filter(item => item.value !== 'entities');
+  }
+
+  isEntitiesTabVisible(): boolean {
+    return this.toDatabaseCode(this.databaseSettings.database) !== 'NONE';
+  }
 
   ngOnInit(): void {
     this.isLoggedIn = this.authService.isLoggedIn();
@@ -255,6 +296,8 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
         this.relations = projectData.relations || [];
         this.projectSettings = projectData.settings || this.projectSettings;
         this.databaseSettings = projectData.database || this.databaseSettings;
+        this.databaseSettings.database = this.toDatabaseCode(this.databaseSettings.database);
+        this.previousDatabaseSelection = this.databaseSettings.database;
         this.developerPreferences = projectData.preferences || this.developerPreferences;
         this.dependencies = projectData.dependencies || '';
         this.toastService.success('Project loaded successfully');
@@ -331,6 +374,11 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
   }
 
   navigateToSection(section: string): void {
+    if (section === 'entities' && this.toDatabaseCode(this.databaseSettings.database) === 'NONE') {
+      this.activeSection = 'general';
+      this.closeSidebar();
+      return;
+    }
     if (section === 'explore') {
       const previousSection = this.activeSection;
       this.handleExploreTab(previousSection);
@@ -854,6 +902,14 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
     }
   }
 
+  async handleGeneralPrimaryAction(): Promise<void> {
+    if (this.isEntitiesTabVisible()) {
+      await this.setupEntities();
+      return;
+    }
+    await this.setupDataObjects();
+  }
+
   private convertObjectToYaml(value: any): string {
     return this.toYaml(value, 0).trim() + '\n';
   }
@@ -861,6 +917,7 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
   private mapProjectToGeneratorSpec(project: any): any {
     const projectGroup = this.trimmed(project?.settings?.projectGroup) || 'com.example';
     const projectName = this.trimmed(project?.settings?.projectName) || 'demo-app';
+    const databaseCode = this.toDatabaseCode(project?.database?.database);
 
     const app = {
       name: projectName,
@@ -875,8 +932,10 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
 
     const spec: any = {
       app,
+      database: databaseCode,
       applFormat: this.trimmed(project?.preferences?.applFormat) || 'yaml',
       enableOpenapi: Boolean(project?.preferences?.enableOpenAPI),
+      useDockerCompose: Boolean(project?.preferences?.useDockerCompose),
       packages: this.trimmed(project?.preferences?.packages) || 'technical',
       profiles: this.mapProfiles(project?.preferences?.profiles),
       dependencies: this.extractDependencies(project),
@@ -884,6 +943,10 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
       models: this.mapModels(project?.entities, project?.relations),
       dtos: this.mapDtos(project?.dataObjects)
     };
+    if (databaseCode !== 'NONE') {
+      spec.dbGeneration = this.trimmed(project?.database?.dbGeneration) || 'Hibernate (update)';
+      spec.pluralizeTableNames = Boolean(project?.database?.pluralizeTableNames);
+    }
 
     if (!spec.dependencies.length) {
       delete spec.dependencies;
@@ -896,6 +959,48 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
     }
 
     return spec;
+  }
+
+  private toDatabaseCode(value: unknown): string {
+    const raw = this.trimmed(value) || '';
+    const normalized = raw.toLowerCase();
+    if (['NONE', 'OTHER', 'MSSQL', 'MYSQL', 'MARIADB', 'ORACLE', 'POSTGRES', 'MONGODB', 'DERBY', 'H2', 'HSQL'].includes(raw.toUpperCase())) {
+      return raw.toUpperCase();
+    }
+    switch (normalized) {
+      case 'none':
+        return 'NONE';
+      case 'other':
+        return 'OTHER';
+      case 'mssql':
+      case 'mssql server':
+      case 'sql server':
+        return 'MSSQL';
+      case 'mysql':
+        return 'MYSQL';
+      case 'mariadb':
+        return 'MARIADB';
+      case 'oracle':
+        return 'ORACLE';
+      case 'postgres':
+      case 'postgresql':
+        return 'POSTGRES';
+      case 'mongodb':
+      case 'mongo':
+        return 'MONGODB';
+      case 'derby':
+      case 'apache derby':
+        return 'DERBY';
+      case 'h2':
+      case 'h2 database':
+        return 'H2';
+      case 'hsql':
+      case 'hypersql':
+      case 'hsql database':
+        return 'HSQL';
+      default:
+        return 'POSTGRES';
+    }
   }
 
   private extractDependencies(project: any): string[] {
@@ -930,6 +1035,68 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
   onHelpIconInteraction(event: Event): void {
     event.preventDefault();
     event.stopPropagation();
+  }
+
+  onDatabaseSelectionChange(value: string): void {
+    const selectedCode = this.toDatabaseCode(value);
+    if (selectedCode === 'NONE' && this.hasConfiguredEntities()) {
+      this.databaseSelectionBeforeConfirmation = this.previousDatabaseSelection;
+      this.pendingDatabaseSelection = selectedCode;
+      this.restoreDatabaseSelection(this.databaseSelectionBeforeConfirmation || this.previousDatabaseSelection);
+      this.showEntitiesDeleteConfirmation = true;
+      return;
+    }
+
+    this.applyDatabaseSelection(selectedCode);
+  }
+
+  confirmEntitiesDelete(): void {
+    if (this.pendingDatabaseSelection !== 'NONE') {
+      this.showEntitiesDeleteConfirmation = false;
+      return;
+    }
+
+    this.entities = [];
+    this.relations = [];
+    this.applyDatabaseSelection('NONE');
+    this.showEntitiesDeleteConfirmation = false;
+    this.pendingDatabaseSelection = null;
+    this.databaseSelectionBeforeConfirmation = null;
+  }
+
+  cancelEntitiesDelete(): void {
+    this.showEntitiesDeleteConfirmation = false;
+    this.pendingDatabaseSelection = null;
+    this.restoreDatabaseSelection(this.databaseSelectionBeforeConfirmation || this.previousDatabaseSelection);
+    this.databaseSelectionBeforeConfirmation = null;
+  }
+
+  private applyDatabaseSelection(code: string): void {
+    this.databaseSettings.database = code;
+    this.previousDatabaseSelection = code;
+    if (code === 'NONE' && this.activeSection === 'entities') {
+      this.activeSection = 'general';
+    }
+  }
+
+  private hasConfiguredEntities(): boolean {
+    return this.entities.length > 0 || this.relations.length > 0;
+  }
+
+  shouldShowDbGeneration(): boolean {
+    return this.toDatabaseCode(this.databaseSettings.database) !== 'NONE';
+  }
+
+  shouldShowPluralizeTableNames(): boolean {
+    return this.toDatabaseCode(this.databaseSettings.database) !== 'NONE';
+  }
+
+  private restoreDatabaseSelection(value: string): void {
+    const selection = this.toDatabaseCode(value);
+    setTimeout(() => {
+      this.databaseSettings.database = selection;
+      this.cdr.detectChanges();
+    }, 0);
   }
 
   private mapModels(entities: any, relations: any): any[] {

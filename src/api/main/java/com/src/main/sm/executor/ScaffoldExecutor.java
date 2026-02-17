@@ -5,6 +5,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -17,6 +18,7 @@ import org.springframework.stereotype.Component;
 import com.src.main.dto.InitializrProjectModel;
 import com.src.main.dto.MavenDependency;
 import com.src.main.dto.StepResult;
+import com.src.main.common.util.StringUtils;
 import com.src.main.service.DependencyResolver;
 import com.src.main.sm.config.StepExecutor;
 import com.src.main.util.GradleVersionResolver;
@@ -32,6 +34,7 @@ public class ScaffoldExecutor implements StepExecutor {
 	
 	private static final String TPL_README = "templates/project/README.md.mustache";
 	private static final String TPL_VALIDATION_MESSAGES = "templates/project/messages.properties.mustache";
+	private static final String TPL_VALIDATION_CONFIG = "templates/validation/validation-message-config.java.mustache";
 	private static final String TPL_MAIN = "templates/project/main.mustache";
 	
 	private final DependencyResolver dependencyResolver;
@@ -71,15 +74,19 @@ public class ScaffoldExecutor implements StepExecutor {
 		final Path root = resolveRoot(data);
 		
 		final Map<String, Object> yaml = (Map<String, Object>) data.getVariables().get("yaml");
-		final boolean openapi = resolveOpenApiEnabled(data, yaml);
+		final boolean openapi = resolveOpenApiEnabled(data, yaml) && hasRestEndpointEntities(yaml);
+		final boolean includeJpa = hasEntities(yaml);
 		
-		final List<String> depReq = (List<String>) data.getVariables().getOrDefault(ProjectMetaDataConstants.DEPENDENCIES,List.of("web", "validation", "actuator", "test"));
+		final List<String> depReqRaw = (List<String>) data.getVariables()
+				.getOrDefault(ProjectMetaDataConstants.DEPENDENCIES, List.of("web", "validation", "actuator", "test"));
+		final List<String> depReq = includeJpa ? ensureJpaDependencies(depReqRaw) : removeJpaDependencies(depReqRaw);
 
 
 		createMinimalLayout(root, packageName, buildTool);
 		List<MavenDependency> deps = dependencyResolver.resolveForMaven(depReq, bootVersion, openapi);
 
-		InitializrProjectModel model = new InitializrProjectModel(groupId, artifactId, version, name, description, packaging,generator,jdkVersion, bootVersion, openapi, angular);
+		InitializrProjectModel model = new InitializrProjectModel(groupId, artifactId, version, name, description,
+				packaging, generator, jdkVersion, bootVersion, openapi, angular);
 
 		log.info("Scaffolding project: {} ",model);
 
@@ -127,6 +134,10 @@ public class ScaffoldExecutor implements StepExecutor {
 		return v == null ? dflt : v.toString();
 	}
 
+	private static String str(Object value) {
+		return value == null ? null : String.valueOf(value);
+	}
+
 	private static boolean boolOr(ExtendedState data, String key, boolean dflt) {
 		Object v = data.getVariables().get(key);
 		if (v == null)
@@ -140,7 +151,7 @@ public class ScaffoldExecutor implements StepExecutor {
 	private static boolean resolveOpenApiEnabled(ExtendedState data, Map<String, Object> yaml) {
 		Object explicit = data.getVariables().get(ProjectMetaDataConstants.EXTRAS_OPENAPI);
 		if (explicit != null) {
-			return parseBoolean(explicit, true);
+			return parseBoolean(explicit, false);
 		}
 		if (yaml != null) {
 			Object raw = yaml.get("enableOpenapi");
@@ -148,10 +159,10 @@ public class ScaffoldExecutor implements StepExecutor {
 				raw = ((Map<String, Object>) appRaw).get("enableOpenapi");
 			}
 			if (raw != null) {
-				return parseBoolean(raw, true);
+				return parseBoolean(raw, false);
 			}
 		}
-		return true;
+		return false;
 	}
 
 	private static boolean parseBoolean(Object value, boolean defaultValue) {
@@ -166,6 +177,71 @@ public class ScaffoldExecutor implements StepExecutor {
 			return defaultValue;
 		}
 		return "true".equals(normalized) || "1".equals(normalized) || "yes".equals(normalized) || "y".equals(normalized);
+	}
+
+	@SuppressWarnings("unchecked")
+	private static boolean hasEntities(Map<String, Object> yaml) {
+		if (yaml == null) {
+			return false;
+		}
+		Object modelsRaw = yaml.get("models");
+		if (!(modelsRaw instanceof List<?> models)) {
+			return false;
+		}
+		return models.stream().anyMatch(item -> item instanceof Map<?, ?>);
+	}
+
+	@SuppressWarnings("unchecked")
+	private static boolean hasRestEndpointEntities(Map<String, Object> yaml) {
+		if (yaml == null) {
+			return false;
+		}
+		Object modelsRaw = yaml.get("models");
+		if (!(modelsRaw instanceof List<?> models)) {
+			return false;
+		}
+		for (Object item : models) {
+			if (!(item instanceof Map<?, ?> modelRaw)) {
+				continue;
+			}
+			Object addRestEndpoints = ((Map<String, Object>) modelRaw).get("addRestEndpoints");
+			if (parseBoolean(addRestEndpoints, false)) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	private static List<String> removeJpaDependencies(List<String> dependencies) {
+		if (dependencies == null || dependencies.isEmpty()) {
+			return List.of();
+		}
+		List<String> filtered = new ArrayList<>();
+		for (String dependency : dependencies) {
+			if (dependency == null) {
+				continue;
+			}
+			String token = dependency.trim().toLowerCase();
+			if ("jpa".equals(token) || "data-jpa".equals(token) || "spring-boot-starter-data-jpa".equals(token)) {
+				continue;
+			}
+			filtered.add(dependency);
+		}
+		return filtered;
+	}
+
+	private static List<String> ensureJpaDependencies(List<String> dependencies) {
+		List<String> merged = new ArrayList<>();
+		if (dependencies != null) {
+			merged.addAll(dependencies);
+		}
+		boolean hasJpa = merged.stream().filter(item -> item != null).map(String::trim).map(String::toLowerCase)
+				.anyMatch(token -> "jpa".equals(token) || "data-jpa".equals(token)
+						|| "spring-boot-starter-data-jpa".equals(token));
+		if (!hasJpa) {
+			merged.add("data-jpa");
+		}
+		return merged;
 	}
 
 	private static void createMinimalLayout(Path root, String packageName, String buildTool) throws Exception {
@@ -188,6 +264,7 @@ public class ScaffoldExecutor implements StepExecutor {
 		Path resDir = root.resolve("src/main/resources");
 		Files.createDirectories(resDir);
 		writeMessagesIfAny(root, yaml);
+		writeValidationConfigIfAny(root, yaml);
 	}
 
 	private void writeDocsAndGitignore(Path root, String appName) throws Exception {
@@ -218,6 +295,19 @@ public class ScaffoldExecutor implements StepExecutor {
 	@SuppressWarnings("unchecked")
 	private void writeMessagesIfAny(Path root, Map<String, Object> yaml) {
 		try {
+			if (yaml == null) {
+				return;
+			}
+			Object messagesRaw = yaml.get("messages");
+			if (!(messagesRaw instanceof Map<?, ?> messagesMap) || messagesMap.isEmpty()) {
+				return;
+			}
+			boolean hasValidationKey = messagesMap.keySet().stream().map(String::valueOf)
+					.anyMatch(key -> key.startsWith("validation."));
+			if (!hasValidationKey) {
+				return;
+			}
+
 			Path resDir = root.resolve("src/main/resources");
 			Files.createDirectories(resDir);
 			Path target = resDir.resolve("messages.properties");
@@ -230,7 +320,7 @@ public class ScaffoldExecutor implements StepExecutor {
 
 			// collect messages from YAML
 			List<Map<String, String>> entries = List.of();
-			if (yaml != null && yaml.get("messages") instanceof Map<?, ?> msgs) {
+			if (yaml.get("messages") instanceof Map<?, ?> msgs) {
 				entries = ((Map<String, Object>) msgs).entrySet().stream().sorted(Map.Entry.comparingByKey())
 						.map(e -> Map.of("key", String.valueOf(e.getKey()), "value",
 								e.getValue() == null ? "" : String.valueOf(e.getValue())))
@@ -278,6 +368,37 @@ public class ScaffoldExecutor implements StepExecutor {
 			}
 		}
 		return sb.toString();
+	}
+
+	@SuppressWarnings("unchecked")
+	private void writeValidationConfigIfAny(Path root, Map<String, Object> yaml) {
+		try {
+			if (yaml == null) {
+				return;
+			}
+			Object messagesRaw = yaml.get("messages");
+			if (!(messagesRaw instanceof Map<?, ?> messagesMap) || messagesMap.isEmpty()) {
+				return;
+			}
+			boolean hasValidationKey = messagesMap.keySet().stream().map(String::valueOf)
+					.anyMatch(key -> key.startsWith("validation."));
+			if (!hasValidationKey) {
+				return;
+			}
+
+			String basePackage = StringUtils.firstNonBlank(str(yaml.get("basePackage")), ProjectMetaDataConstants.DEFAULT_GROUP);
+			String packageStructure = StringUtils.firstNonBlank(str(yaml.get("packages")), "technical");
+			String configPackage = "domain".equalsIgnoreCase(packageStructure)
+					? basePackage + ".domain.config"
+					: basePackage + ".config";
+
+			Path outDir = root.resolve("src/main/java/" + configPackage.replace('.', '/'));
+			Files.createDirectories(outDir);
+			String content = tpl.render(TPL_VALIDATION_CONFIG, Map.of("packageName", configPackage));
+			Files.writeString(outDir.resolve("ValidationMessageConfig.java"), content, UTF_8);
+		} catch (Exception ex) {
+			log.warn("Failed to write ValidationMessageConfig: {}", ex.getMessage());
+		}
 	}
 
 	/** Minimal .properties escaping for keys. */

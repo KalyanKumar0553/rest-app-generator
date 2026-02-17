@@ -24,6 +24,7 @@ public final class RestGenerationSupport {
 		String repositoryPackage;
 		String servicePackage;
 		String controllerPackage;
+		String utilPackage;
 
 		if (domainStructure) {
 			String domainRoot = basePackage + ".domain." + normalizedEntity;
@@ -31,15 +32,22 @@ public final class RestGenerationSupport {
 			repositoryPackage = domainRoot + ".repository";
 			servicePackage = domainRoot + ".service";
 			controllerPackage = domainRoot + ".controller";
+			utilPackage = basePackage + ".domain.util";
 		} else {
 			modelPackage = basePackage + ".model";
 			repositoryPackage = basePackage + ".repository";
 			servicePackage = basePackage + ".service";
 			controllerPackage = basePackage + ".controller";
+			utilPackage = basePackage + ".util";
 		}
 
 		return new RestGenerationUnit(entityName, idName, idType, endpointPath, modelPackage, repositoryPackage,
-				servicePackage, controllerPackage);
+				servicePackage, controllerPackage, utilPackage);
+	}
+
+	public static String resolveUtilPackage(String basePackage, String packageStructure) {
+		boolean domainStructure = "domain".equalsIgnoreCase(StringUtils.firstNonBlank(packageStructure, "technical"));
+		return domainStructure ? basePackage + ".domain.util" : basePackage + ".util";
 	}
 
 	private static String normalizePackageSegment(String value) {

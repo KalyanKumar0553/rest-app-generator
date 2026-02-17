@@ -45,6 +45,8 @@ public class StateMachineConfig extends EnumStateMachineConfigurerAdapter<States
 						runStep(States.REST_GENERATION, Events.REST_DONE, Events.REST_FAIL))
 				.stateEntry(States.APPLICATION_FILES,
 						runStep(States.APPLICATION_FILES, Events.APPFILES_DONE, Events.APPFILES_FAIL))
+				.stateEntry(States.DOCKER_GENERATION,
+						runStep(States.DOCKER_GENERATION, Events.DOCKER_DONE, Events.DOCKER_FAIL))
 				.stateEntry(States.SCAFFOLD, runStep(States.SCAFFOLD, Events.SCAFFOLD_DONE, Events.SCAFFOLD_FAIL))
 				.state(States.DONE).state(States.ERROR);
 	}
@@ -71,9 +73,14 @@ public class StateMachineConfig extends EnumStateMachineConfigurerAdapter<States
 				.event(Events.REST_DONE).and().withExternal().source(States.REST_GENERATION).target(States.ERROR)
 				.event(Events.REST_FAIL).and()
 
-				// APP FILES → SCAFFOLD / ERROR
-				.withExternal().source(States.APPLICATION_FILES).target(States.SCAFFOLD).event(Events.APPFILES_DONE)
+				// APP FILES → DOCKER / ERROR
+				.withExternal().source(States.APPLICATION_FILES).target(States.DOCKER_GENERATION).event(Events.APPFILES_DONE)
 				.and().withExternal().source(States.APPLICATION_FILES).target(States.ERROR).event(Events.APPFILES_FAIL)
+				.and()
+
+				// DOCKER → SCAFFOLD / ERROR
+				.withExternal().source(States.DOCKER_GENERATION).target(States.SCAFFOLD).event(Events.DOCKER_DONE)
+				.and().withExternal().source(States.DOCKER_GENERATION).target(States.ERROR).event(Events.DOCKER_FAIL)
 				.and()
 
 				// SCAFFOLD → DONE / ERROR
@@ -86,6 +93,7 @@ public class StateMachineConfig extends EnumStateMachineConfigurerAdapter<States
 				.withExternal().source(States.SWAGGER_GENERATION).target(States.ERROR).event(Events.FAIL).and()
 				.withExternal().source(States.REST_GENERATION).target(States.ERROR).event(Events.FAIL).and()
 				.withExternal().source(States.APPLICATION_FILES).target(States.ERROR).event(Events.FAIL).and()
+				.withExternal().source(States.DOCKER_GENERATION).target(States.ERROR).event(Events.FAIL).and()
 				.withExternal().source(States.SCAFFOLD).target(States.ERROR).event(Events.FAIL);
 	}
 

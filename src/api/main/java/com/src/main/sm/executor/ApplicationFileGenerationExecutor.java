@@ -39,7 +39,10 @@ public class ApplicationFileGenerationExecutor implements StepExecutor {
 
 		Object defaultPropsObj = yaml.get("properties");
 		Map<String, Object> propsObj = defaultPropsObj instanceof Map ? castMap(defaultPropsObj) : new LinkedHashMap<>();
-		ensureDefaultApplicationProperties(propsObj);
+		boolean includeJpa = hasEntities(yaml);
+		boolean includeMessageSettings = hasValidationMessages(yaml);
+		String database = resolveDatabaseCode(yaml);
+		ensureDefaultApplicationProperties(propsObj, includeJpa, includeMessageSettings, database);
 		if (useYaml) {
 			writeYamlFile(root, "application.yml", propsObj);
 		} else {
@@ -114,18 +117,192 @@ public class ApplicationFileGenerationExecutor implements StepExecutor {
 		Files.write(resources.resolve(fileName), lines, StandardCharsets.UTF_8);
 	}
 
-	private static void ensureDefaultApplicationProperties(Map<String, Object> propsObj) {
-		propsObj.putIfAbsent("spring", new LinkedHashMap<String, Object>());
-		Map<String, Object> spring = castMap(propsObj.get("spring"));
-		propsObj.put("spring", spring);
+	private static void ensureDefaultApplicationProperties(Map<String, Object> propsObj, boolean includeJpa,
+			boolean includeMessageSettings, String database) {
+		propsObj.putIfAbsent("server", new LinkedHashMap<String, Object>());
+		Map<String, Object> server = castMap(propsObj.get("server"));
+		propsObj.put("server", server);
+		server.putIfAbsent("port", 8080);
 
-		spring.putIfAbsent("messages", new LinkedHashMap<String, Object>());
-		Map<String, Object> messages = castMap(spring.get("messages"));
-		spring.put("messages", messages);
+		boolean hadSpringSection = propsObj.get("spring") instanceof Map<?, ?>;
+		Map<String, Object> spring = hadSpringSection ? castMap(propsObj.get("spring")) : null;
+		if (spring != null) {
+			propsObj.put("spring", spring);
+		}
+		boolean needsSpringSection = includeMessageSettings || includeJpa;
+		if (spring == null && needsSpringSection) {
+			spring = new LinkedHashMap<>();
+			propsObj.put("spring", spring);
+		}
+		if (includeMessageSettings) {
+			spring.putIfAbsent("messages", new LinkedHashMap<String, Object>());
+			Map<String, Object> messages = castMap(spring.get("messages"));
+			spring.put("messages", messages);
+			messages.putIfAbsent("basename", "messages");
+			messages.putIfAbsent("encoding", "UTF-8");
+			messages.putIfAbsent("fallback-to-system-locale", false);
+		}
 
-		messages.putIfAbsent("basename", "messages");
-		messages.putIfAbsent("encoding", "UTF-8");
-		messages.putIfAbsent("fallback-to-system-locale", "false");
+		if (!includeJpa) {
+			if (!hadSpringSection && spring != null && spring.isEmpty()) {
+				propsObj.remove("spring");
+			}
+			return;
+		}
+		String db = database == null ? "POSTGRES" : database.trim().toUpperCase();
+		if ("NONE".equals(db) || "OTHER".equals(db)) {
+			return;
+		}
+		if ("MONGODB".equals(db)) {
+			spring.putIfAbsent("data", new LinkedHashMap<String, Object>());
+			Map<String, Object> data = castMap(spring.get("data"));
+			spring.put("data", data);
+			data.putIfAbsent("mongodb", new LinkedHashMap<String, Object>());
+			Map<String, Object> mongodb = castMap(data.get("mongodb"));
+			data.put("mongodb", mongodb);
+			mongodb.putIfAbsent("uri", "${SPRING_DATA_MONGODB_URI:mongodb://localhost:27017/basicdb}");
+			return;
+		}
+		spring.putIfAbsent("datasource", new LinkedHashMap<String, Object>());
+		Map<String, Object> datasource = castMap(spring.get("datasource"));
+		spring.put("datasource", datasource);
+
+		switch (db) {
+		case "MSSQL":
+			datasource.putIfAbsent("url",
+					"${SPRING_DATASOURCE_URL:jdbc:sqlserver://localhost:1433;databaseName=basicdb}");
+			datasource.putIfAbsent("username", "${SPRING_DATASOURCE_USERNAME:sa}");
+			datasource.putIfAbsent("password", "${SPRING_DATASOURCE_PASSWORD:password}");
+			datasource.putIfAbsent("driver-class-name", "com.microsoft.sqlserver.jdbc.SQLServerDriver");
+			break;
+		case "MYSQL":
+			datasource.putIfAbsent("url",
+					"${SPRING_DATASOURCE_URL:jdbc:mysql://localhost:3306/basicdb?useSSL=false&serverTimezone=UTC}");
+			datasource.putIfAbsent("username", "${SPRING_DATASOURCE_USERNAME:root}");
+			datasource.putIfAbsent("password", "${SPRING_DATASOURCE_PASSWORD:password}");
+			datasource.putIfAbsent("driver-class-name", "com.mysql.cj.jdbc.Driver");
+			break;
+		case "MARIADB":
+			datasource.putIfAbsent("url", "${SPRING_DATASOURCE_URL:jdbc:mariadb://localhost:3306/basicdb}");
+			datasource.putIfAbsent("username", "${SPRING_DATASOURCE_USERNAME:root}");
+			datasource.putIfAbsent("password", "${SPRING_DATASOURCE_PASSWORD:password}");
+			datasource.putIfAbsent("driver-class-name", "org.mariadb.jdbc.Driver");
+			break;
+		case "ORACLE":
+			datasource.putIfAbsent("url", "${SPRING_DATASOURCE_URL:jdbc:oracle:thin:@localhost:1521:xe}");
+			datasource.putIfAbsent("username", "${SPRING_DATASOURCE_USERNAME:system}");
+			datasource.putIfAbsent("password", "${SPRING_DATASOURCE_PASSWORD:oracle}");
+			datasource.putIfAbsent("driver-class-name", "oracle.jdbc.OracleDriver");
+			break;
+		case "DERBY":
+			datasource.putIfAbsent("url", "${SPRING_DATASOURCE_URL:jdbc:derby:memory:basicdb;create=true}");
+			datasource.putIfAbsent("username", "${SPRING_DATASOURCE_USERNAME:app}");
+			datasource.putIfAbsent("password", "${SPRING_DATASOURCE_PASSWORD:app}");
+			datasource.putIfAbsent("driver-class-name", "org.apache.derby.jdbc.EmbeddedDriver");
+			break;
+		case "H2":
+			datasource.putIfAbsent("url",
+					"${SPRING_DATASOURCE_URL:jdbc:h2:mem:basicdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE}");
+			datasource.putIfAbsent("username", "${SPRING_DATASOURCE_USERNAME:sa}");
+			datasource.putIfAbsent("password", "${SPRING_DATASOURCE_PASSWORD:}");
+			datasource.putIfAbsent("driver-class-name", "org.h2.Driver");
+			break;
+		case "HSQL":
+			datasource.putIfAbsent("url", "${SPRING_DATASOURCE_URL:jdbc:hsqldb:mem:basicdb}");
+			datasource.putIfAbsent("username", "${SPRING_DATASOURCE_USERNAME:sa}");
+			datasource.putIfAbsent("password", "${SPRING_DATASOURCE_PASSWORD:}");
+			datasource.putIfAbsent("driver-class-name", "org.hsqldb.jdbc.JDBCDriver");
+			break;
+		default:
+			datasource.putIfAbsent("url", "${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/basicdb}");
+			datasource.putIfAbsent("username", "${SPRING_DATASOURCE_USERNAME:postgres}");
+			datasource.putIfAbsent("password", "${SPRING_DATASOURCE_PASSWORD:postgres}");
+			datasource.putIfAbsent("driver-class-name", "org.postgresql.Driver");
+			break;
+		}
+
+		spring.putIfAbsent("jpa", new LinkedHashMap<String, Object>());
+		Map<String, Object> jpa = castMap(spring.get("jpa"));
+		spring.put("jpa", jpa);
+		jpa.putIfAbsent("properties", new LinkedHashMap<String, Object>());
+		Map<String, Object> jpaProperties = castMap(jpa.get("properties"));
+		jpa.put("properties", jpaProperties);
+		jpaProperties.putIfAbsent("hibernate", new LinkedHashMap<String, Object>());
+		Map<String, Object> hibernate = castMap(jpaProperties.get("hibernate"));
+		jpaProperties.put("hibernate", hibernate);
+		switch (db) {
+		case "MSSQL":
+			hibernate.putIfAbsent("dialect", "org.hibernate.dialect.SQLServerDialect");
+			break;
+		case "MYSQL":
+			hibernate.putIfAbsent("dialect", "org.hibernate.dialect.MySQLDialect");
+			break;
+		case "MARIADB":
+			hibernate.putIfAbsent("dialect", "org.hibernate.dialect.MariaDBDialect");
+			break;
+		case "ORACLE":
+			hibernate.putIfAbsent("dialect", "org.hibernate.dialect.OracleDialect");
+			break;
+		case "DERBY":
+			hibernate.putIfAbsent("dialect", "org.hibernate.dialect.DerbyDialect");
+			break;
+		case "H2":
+			hibernate.putIfAbsent("dialect", "org.hibernate.dialect.H2Dialect");
+			break;
+		case "HSQL":
+			hibernate.putIfAbsent("dialect", "org.hibernate.dialect.HSQLDialect");
+			break;
+		default:
+			hibernate.putIfAbsent("dialect", "org.hibernate.dialect.PostgreSQLDialect");
+			break;
+		}
+	}
+
+	@SuppressWarnings("unchecked")
+	private static boolean hasEntities(Map<String, Object> yaml) {
+		if (yaml == null) {
+			return false;
+		}
+		Object modelsRaw = yaml.get("models");
+		if (!(modelsRaw instanceof List<?> models)) {
+			return false;
+		}
+		return models.stream().anyMatch(item -> item instanceof Map<?, ?>);
+	}
+
+	@SuppressWarnings("unchecked")
+	private static String resolveDatabaseCode(Map<String, Object> yaml) {
+		if (yaml == null) {
+			return "POSTGRES";
+		}
+		Object db = yaml.get("database");
+		if (db != null) {
+			return String.valueOf(db);
+		}
+		if (yaml.get("app") instanceof Map<?, ?> appRaw) {
+			Object appDb = ((Map<String, Object>) appRaw).get("database");
+			if (appDb != null) {
+				return String.valueOf(appDb);
+			}
+		}
+		return "POSTGRES";
+	}
+
+	@SuppressWarnings("unchecked")
+	private static boolean hasValidationMessages(Map<String, Object> yaml) {
+		if (yaml == null) {
+			return false;
+		}
+		Object messagesRaw = yaml.get("messages");
+		if (!(messagesRaw instanceof Map<?, ?> messagesMap) || messagesMap.isEmpty()) {
+			return false;
+		}
+		for (Object key : messagesMap.keySet()) {
+			if (key != null && String.valueOf(key).startsWith("validation.")) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	@SuppressWarnings("unchecked")

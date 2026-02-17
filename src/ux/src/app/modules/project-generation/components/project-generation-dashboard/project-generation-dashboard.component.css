@@ -608,34 +608,20 @@
   }
 
   .radio-group-horizontal {
-    flex-direction: column;
-    gap: 12px;
-  }
-
-  .build-type-group {
     flex-direction: row;
     flex-wrap: nowrap;
-    gap: 20px;
+    gap: 16px;
     align-items: center;
-    overflow: hidden;
+    overflow-x: auto;
+    overflow-y: hidden;
   }
 
-  .language-group {
-    flex-direction: row;
-    flex-wrap: nowrap;
-    gap: 20px;
-    align-items: center;
-    overflow: hidden;
-  }
-
-  .build-type-group .mat-mdc-radio-button,
-  .language-group .mat-mdc-radio-button {
+  .radio-group-horizontal .mat-mdc-radio-button {
     min-width: 0;
-    flex: 1 1 0;
+    flex: 0 0 auto;
   }
 
-  .build-type-group ::ng-deep .mat-mdc-radio-button .mdc-label,
-  .language-group ::ng-deep .mat-mdc-radio-button .mdc-label {
+  .radio-group-horizontal ::ng-deep .mat-mdc-radio-button .mdc-label {
     display: block;
     overflow: hidden;
     text-overflow: ellipsis;

@@ -1,12 +1,12 @@
-package com.src.main.sm.executor;
+package com.src.main.sm.executor.model;
 
 import static java.util.stream.Collectors.joining;
+import static com.src.main.sm.executor.model.ModelGenerationSupport.*;
 
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -30,6 +30,7 @@ import com.src.main.dto.JoinColumnSpecDTO;
 import com.src.main.dto.JoinTableSpecDTO;
 import com.src.main.dto.ModelSpecDTO;
 import com.src.main.dto.RelationSpecDTO;
+import com.src.main.sm.executor.TemplateEngine;
 import com.src.main.util.PathUtils;
 import com.src.main.common.util.CaseUtils;
 import com.src.main.common.util.StringUtils;
@@ -67,6 +68,9 @@ public class ModelGenerator {
 		}
 		Validate.notEmpty(spec.getModels(), "No models defined in YAML");
 
+		Map<String, String> validationMessages = collectValidationMessages(spec);
+		mergeValidationMessagesIntoYaml(yaml, validationMessages);
+
 		boolean domainStructure = "domain".equalsIgnoreCase(StringUtils.firstNonBlank(spec.getPackages(), "technical"));
 		Map<String, String> modelPackageByType = new LinkedHashMap<>();
 		for (ModelSpecDTO m : spec.getModels()) {
@@ -80,6 +84,14 @@ public class ModelGenerator {
 			Files.createDirectories(outDir);
 			renderModel(m, modelPkg, outDir, spec, modelPackageByType);
 		}
+	}
+
+	private Map<String, String> collectValidationMessages(AppSpecDTO spec) {
+		return ModelGenerationSupport.collectValidationMessages(spec);
+	}
+
+	private void mergeValidationMessagesIntoYaml(Map<String, Object> yaml, Map<String, String> messages) {
+		ModelGenerationSupport.mergeValidationMessagesIntoYaml(yaml, messages);
 	}
 
 	private String resolveModelPackage(ModelSpecDTO model, boolean domainStructure) {
@@ -106,6 +118,9 @@ public class ModelGenerator {
 			Map<String, String> modelPackageByType) throws Exception {
 		String className = CaseUtils.toPascal(m.getName());
 		String tableName = StringUtils.firstNonBlank(m.getTableName(), CaseUtils.toSnake(m.getName()));
+		if (Boolean.TRUE.equals(root.getPluralizeTableNames())) {
+			tableName = pluralizeSnakeTableName(tableName);
+		}
 		String schema = Strings.trimToNull(m.getSchema());
 
 		// Build the data model for mustache
@@ -233,7 +248,7 @@ public class ModelGenerator {
 
 		}
 
-		ctx.put("implements", "java.io.Serializable");
+		ctx.put("implements", "Serializable");
 
 		// ----- Imports (already de-dup + sorted via TreeSet)
 		ctx.put("imports", new ArrayList<>(imports));
@@ -245,6 +260,34 @@ public class ModelGenerator {
 		Files.writeString(outFile, content, StandardCharsets.UTF_8);
 
 		log.info("Generated model: {}", outFile);
+	}
+
+	private String pluralizeSnakeTableName(String value) {
+		String name = StringUtils.firstNonBlank(value, "");
+		if (name.isBlank()) {
+			return name;
+		}
+
+		if (name.endsWith("_")) {
+			String prefix = name.substring(0, name.length() - 1);
+			return pluralizeSnakeTableName(prefix) + "_";
+		}
+
+		if (name.endsWith("ies")) {
+			return name;
+		}
+		if (name.endsWith("s") || name.endsWith("x") || name.endsWith("z") || name.endsWith("ch")
+				|| name.endsWith("sh")) {
+			return name + "es";
+		}
+		if (name.endsWith("y") && name.length() > 1) {
+			char beforeY = name.charAt(name.length() - 2);
+			boolean vowel = beforeY == 'a' || beforeY == 'e' || beforeY == 'i' || beforeY == 'o' || beforeY == 'u';
+			if (!vowel) {
+				return name.substring(0, name.length() - 1) + "ies";
+			}
+		}
+		return name + "s";
 	}
 
 	private boolean hasCompositeUniques(ModelSpecDTO m) {
@@ -475,70 +518,6 @@ public class ModelGenerator {
 
 	/* ==== helpers (null-safe, type-safe, with defaults) ==== */
 
-	private static String getString(Map<String, Object> m, String key, String def) {
-		if (m == null)
-			return def;
-		Object v = m.get(key);
-		return (v == null) ? def : String.valueOf(v);
-	}
-
-	private static String getStringAny(Map<String, Object> m, String[] keys, String def) {
-		if (m == null)
-			return def;
-		for (String k : keys) {
-			Object v = m.get(k);
-			if (v != null)
-				return String.valueOf(v);
-		}
-		return def;
-	}
-
-	private static Integer getInt(Map<String, Object> m, String key, Integer def) {
-		if (m == null)
-			return def;
-		Object v = m.get(key);
-		if (v == null)
-			return def;
-		if (v instanceof Number n)
-			return n.intValue();
-		try {
-			return Integer.parseInt(String.valueOf(v));
-		} catch (Exception e) {
-			return def;
-		}
-	}
-
-	private static Long getLong(Map<String, Object> m, String key, Long def) {
-		if (m == null)
-			return def;
-		Object v = m.get(key);
-		if (v == null)
-			return def;
-		if (v instanceof Number n)
-			return n.longValue();
-		try {
-			return Long.parseLong(String.valueOf(v));
-		} catch (Exception e) {
-			return def;
-		}
-	}
-
-	private static boolean getBoolean(Map<String, Object> m, String key, boolean def) {
-		if (m == null)
-			return def;
-		Object v = m.get(key);
-		if (v == null)
-			return def;
-		if (v instanceof Boolean b)
-			return b;
-		String s = String.valueOf(v).trim().toLowerCase();
-		return switch (s) {
-		case "true", "1", "yes", "y" -> true;
-		case "false", "0", "no", "n" -> false;
-		default -> def;
-		};
-	}
-
 	private ColumnSpecDTO ensureColumn(ColumnSpecDTO col) {
 		return col != null ? col : new ColumnSpecDTO();
 	}
@@ -701,252 +680,13 @@ public class ModelGenerator {
 		return new FieldNameAndType(name, type);
 	}
 
-	private String buildMinAnnotation(long value, String msgKey) {
-		if (msgKey != null) {
-			return String.format("@Min(value = %d, message = \"{%s}\")", value, msgKey);
-		}
-		return String.format("@Min(value = %d)", value);
-	}
-
-	private String buildMaxAnnotation(long value, String msgKey) {
-		if (msgKey != null) {
-			return String.format("@Max(value = %d, message = \"{%s}\")", value, msgKey);
-		}
-		return String.format("@Max(value = %d)", value);
-	}
-
-	private String buildMessageKey(ModelSpecDTO m, FieldSpecDTO f, String key) {
-		return "validation." + CaseUtils.toSnake(m.getName()) + "." + CaseUtils.toSnake(f.getName()) + "." + key;
-	}
-
-	private String resolveJavaType(String rawType, Set<String> imports) {
-		if (rawType == null)
-			return null;
-
-		String type = rawType.trim();
-
-		// 1) Handle generics: List<Address>, Map<String, Integer> etc.
-		if (type.contains("<") && type.contains(">")) {
-			String outer = type.substring(0, type.indexOf("<")).trim();
-			String inner = type.substring(type.indexOf("<") + 1, type.lastIndexOf(">")).trim();
-
-			// Import outer generic type
-			addImportIfNeeded(outer, imports);
-
-			// Recursively resolve inner type(s)
-			String resolvedInner;
-			if (inner.contains(",")) {
-				// Map<K,V>
-				String[] parts = inner.split(",");
-				resolvedInner = Arrays.stream(parts).map(String::trim).map(t -> resolveJavaType(t, imports))
-						.collect(Collectors.joining(", "));
-			} else {
-				resolvedInner = resolveJavaType(inner, imports);
-			}
-
-			return outer + "<" + resolvedInner + ">";
-		}
-
-		// 2) Non-generic simple types
-		return switch (type) {
-		case "String" -> {
-			imports.add("java.lang.String");
-			yield "String";
-		}
-		case "Integer" -> {
-			imports.add("java.lang.Integer");
-			yield "Integer";
-		}
-		case "Long" -> {
-			imports.add("java.lang.Long");
-			yield "Long";
-		}
-		case "Boolean" -> {
-			imports.add("java.lang.Boolean");
-			yield "Boolean";
-		}
-		case "BigDecimal" -> {
-			imports.add("java.math.BigDecimal");
-			yield "BigDecimal";
-		}
-		case "UUID" -> {
-			imports.add("java.util.UUID");
-			yield "UUID";
-		}
-		case "LocalDate" -> {
-			imports.add("java.time.LocalDate");
-			yield "LocalDate";
-		}
-		case "LocalDateTime" -> {
-			imports.add("java.time.LocalDateTime");
-			yield "LocalDateTime";
-		}
-		case "OffsetDateTime" -> {
-			imports.add("java.time.OffsetDateTime");
-			yield "OffsetDateTime";
-		}
-		default -> {
-			// 3) Custom classes or fully-qualified types
-			if (type.contains(".")) {
-				imports.add(type);
-				yield type.substring(type.lastIndexOf('.') + 1);
-			}
-			yield type;
-		}
-		};
-	}
-
-	private void addImportIfNeeded(String outer, Set<String> imports) {
-		switch (outer) {
-		case "List" -> imports.add("java.util.List");
-		case "Set" -> imports.add("java.util.Set");
-		case "Map" -> imports.add("java.util.Map");
-		default -> {
-			if (outer.contains(".")) {
-				imports.add(outer);
-			}
-		}
-		}
-	}
-
 	private boolean isRelationPlaceholder(FieldSpecDTO f) {
 		// fields[] is strictly scalar/value objects per our spec; relations come from
 		// relations[]
 		return false;
 	}
 
-	private String msgAnno(String base, ModelSpecDTO m, FieldSpecDTO f, String key) {
-		String messageKey = "validation." + CaseUtils.toSnake(m.getName()) + "." + CaseUtils.toSnake(f.getName()) + "."
-				+ key;
-		if (base.contains("(")) {
-			return base.substring(0, base.length() - 1) + ", message=\"{" + messageKey + "}\")";
-		}
-		return base + "(message=\"{" + messageKey + "}\")";
-	}
-
-	private String escapeJava(String s) {
-		return s == null ? "" : s.replace("\\", "\\\\").replace("\"", "\\\"");
-	}
-
-	// --- Mustache blocks (simple DTOs) ---
-
-	public static class IdBlock {
-		private String name;
-		private String type;
-		private List<String> annotations;
-
-		public String getName() {
-			return name;
-		}
-
-		public void setName(String name) {
-			this.name = name;
-		}
-
-		public String getType() {
-			return type;
-		}
-
-		public void setType(String type) {
-			this.type = type;
-		}
-
-		public List<String> getAnnotations() {
-			return annotations;
-		}
-
-		public void setAnnotations(List<String> annotations) {
-			this.annotations = annotations;
-		}
-	}
-
-	public static class FieldBlock {
-		private String name;
-		private String type;
-		private List<String> annotations;
-
-		public String getName() {
-			return name;
-		}
-
-		public void setName(String name) {
-			this.name = name;
-		}
-
-		public String getType() {
-			return type;
-		}
-
-		public void setType(String type) {
-			this.type = type;
-		}
-
-		public List<String> getAnnotations() {
-			return annotations;
-		}
-
-		public void setAnnotations(List<String> annotations) {
-			this.annotations = annotations;
-		}
-	}
-
-	public static class RelationBlock {
-		private String name;
-		private String declarationType;
-		private String targetType;
-		private List<String> annotations;
-
-		public String getName() {
-			return name;
-		}
-
-		public void setName(String name) {
-			this.name = name;
-		}
-
-		public String getDeclarationType() {
-			return declarationType;
-		}
-
-		public void setDeclarationType(String declarationType) {
-			this.declarationType = declarationType;
-		}
-
-		public String getTargetType() {
-			return targetType;
-		}
-
-		public void setTargetType(String targetType) {
-			this.targetType = targetType;
-		}
-
-		public List<String> getAnnotations() {
-			return annotations;
-		}
-
-		public void setAnnotations(List<String> annotations) {
-			this.annotations = annotations;
-		}
-	}
-
-	public static class AuditingBlock {
-		private boolean enabled;
-		private List<String> annotations = new ArrayList<>();
-
-		public boolean isEnabled() {
-			return enabled;
-		}
-
-		public void setEnabled(boolean enabled) {
-			this.enabled = enabled;
-		}
-
-		public List<String> getAnnotations() {
-			return annotations;
-		}
-
-		public void setAnnotations(List<String> annotations) {
-			this.annotations = annotations;
-		}
+	private String resolveJavaType(String rawType, Set<String> imports) {
+		return ModelGenerationSupport.resolveJavaType(rawType, imports);
 	}
 }

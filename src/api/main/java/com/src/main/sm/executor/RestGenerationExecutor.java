@@ -17,6 +17,7 @@ import com.src.main.sm.executor.rest.RestControllerGenerator;
 import com.src.main.sm.executor.rest.RestGenerationSupport;
 import com.src.main.sm.executor.rest.RestGenerationUnit;
 import com.src.main.sm.executor.rest.RestRepositoryGenerator;
+import com.src.main.sm.executor.rest.RestSharedSupportGenerator;
 import com.src.main.sm.executor.rest.RestServiceGenerator;
 import com.src.main.util.ProjectMetaDataConstants;
 
@@ -26,13 +27,15 @@ public class RestGenerationExecutor implements StepExecutor {
 	private final RestControllerGenerator controllerGenerator;
 	private final RestServiceGenerator serviceGenerator;
 	private final RestRepositoryGenerator repositoryGenerator;
+	private final RestSharedSupportGenerator sharedSupportGenerator;
 	private final ObjectMapper mapper = new ObjectMapper();
 
 	public RestGenerationExecutor(RestControllerGenerator controllerGenerator, RestServiceGenerator serviceGenerator,
-			RestRepositoryGenerator repositoryGenerator) {
+			RestRepositoryGenerator repositoryGenerator, RestSharedSupportGenerator sharedSupportGenerator) {
 		this.controllerGenerator = controllerGenerator;
 		this.serviceGenerator = serviceGenerator;
 		this.repositoryGenerator = repositoryGenerator;
+		this.sharedSupportGenerator = sharedSupportGenerator;
 	}
 
 	@Override
@@ -55,6 +58,8 @@ public class RestGenerationExecutor implements StepExecutor {
 					(String) data.getVariables().get(ProjectMetaDataConstants.GROUP_ID), ProjectMetaDataConstants.DEFAULT_GROUP);
 			String packageStructure = StringUtils.firstNonBlank(str(yaml.get("packages")), spec.getPackages(),
 					"technical");
+			String utilPackage = RestGenerationSupport.resolveUtilPackage(basePackage, packageStructure);
+			sharedSupportGenerator.generate(root, utilPackage);
 
 			int generatedCount = 0;
 			for (ModelSpecDTO model : models) {

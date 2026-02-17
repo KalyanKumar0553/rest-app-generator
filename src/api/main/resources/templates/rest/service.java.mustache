@@ -1,27 +1,16 @@
 package {{servicePackage}};
 
-import java.lang.reflect.Field;
-import java.lang.reflect.Modifier;
-import java.math.BigDecimal;
-import java.time.Instant;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.OffsetDateTime;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 
-import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.ReflectionUtils;
 import org.springframework.web.server.ResponseStatusException;
 
-import jakarta.persistence.criteria.Predicate;
 import {{modelPackage}}.{{entityName}};
 import {{repositoryPackage}}.{{repositoryClass}};
+import {{supportPackage}}.{{supportClass}};
 
 @Service
 @Transactional(readOnly = true)
@@ -41,7 +30,7 @@ public class {{serviceClass}} {
     @Transactional
     public {{entityName}} update({{idType}} id, {{entityName}} request) {
         {{entityName}} existing = getById(id);
-        mergeNonNullFields(request, existing, "{{idName}}");
+        {{supportClass}}.mergeNonNullFields(request, existing, "{{idName}}");
         return repository.save(existing);
     }
 
@@ -71,100 +60,6 @@ public class {{serviceClass}} {
         if (queryParams == null || queryParams.isEmpty()) {
             return getAll();
         }
-        return repository.findAll(buildSpecification(queryParams));
-    }
-
-    private Specification<{{entityName}}> buildSpecification(Map<String, String> queryParams) {
-        return (root, query, criteriaBuilder) -> {
-            List<Predicate> predicates = new ArrayList<>();
-            queryParams.forEach((fieldName, rawValue) -> {
-                if (rawValue == null || rawValue.isBlank()) {
-                    return;
-                }
-                Class<?> fieldType = resolveFieldType(fieldName);
-                Object converted = convertValue(rawValue, fieldType);
-                predicates.add(criteriaBuilder.equal(root.get(fieldName), converted));
-            });
-            return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
-        };
-    }
-
-    private Class<?> resolveFieldType(String fieldName) {
-        Field field = ReflectionUtils.findField({{entityName}}.class, fieldName);
-        if (field == null) {
-            throw new IllegalArgumentException("Unknown query field: " + fieldName);
-        }
-        return field.getType();
-    }
-
-    private Object convertValue(String value, Class<?> type) {
-        if (type == String.class) {
-            return value;
-        }
-        if (type == Integer.class || type == int.class) {
-            return Integer.valueOf(value);
-        }
-        if (type == Long.class || type == long.class) {
-            return Long.valueOf(value);
-        }
-        if (type == Boolean.class || type == boolean.class) {
-            return Boolean.valueOf(value);
-        }
-        if (type == Double.class || type == double.class) {
-            return Double.valueOf(value);
-        }
-        if (type == Float.class || type == float.class) {
-            return Float.valueOf(value);
-        }
-        if (type == BigDecimal.class) {
-            return new BigDecimal(value);
-        }
-        if (type == UUID.class) {
-            return UUID.fromString(value);
-        }
-        if (type == LocalDate.class) {
-            return LocalDate.parse(value);
-        }
-        if (type == LocalDateTime.class) {
-            return LocalDateTime.parse(value);
-        }
-        if (type == OffsetDateTime.class) {
-            return OffsetDateTime.parse(value);
-        }
-        if (type == Instant.class) {
-            return Instant.parse(value);
-        }
-        if (type.isEnum()) {
-            @SuppressWarnings({ "rawtypes", "unchecked" })
-            Object enumValue = Enum.valueOf((Class<? extends Enum>) type.asSubclass(Enum.class), value);
-            return enumValue;
-        }
-        throw new IllegalArgumentException("Unsupported query field type for field: " + type.getSimpleName());
-    }
-
-    private void mergeNonNullFields({{entityName}} source, {{entityName}} target, String idField) {
-        for (Field field : collectFields({{entityName}}.class)) {
-            int modifiers = field.getModifiers();
-            if (Modifier.isStatic(modifiers) || Modifier.isFinal(modifiers) || field.getName().equals(idField)) {
-                continue;
-            }
-            ReflectionUtils.makeAccessible(field);
-            Object value = ReflectionUtils.getField(field, source);
-            if (value != null) {
-                ReflectionUtils.setField(field, target, value);
-            }
-        }
-    }
-
-    private List<Field> collectFields(Class<?> type) {
-        List<Field> fields = new ArrayList<>();
-        Class<?> current = type;
-        while (current != null && current != Object.class) {
-            for (Field field : current.getDeclaredFields()) {
-                fields.add(field);
-            }
-            current = current.getSuperclass();
-        }
-        return fields;
+        return repository.findAll({{supportClass}}.buildSpecification(queryParams, {{entityName}}.class));
     }
 }

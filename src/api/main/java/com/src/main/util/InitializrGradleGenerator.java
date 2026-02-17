@@ -27,6 +27,8 @@ public class InitializrGradleGenerator {
 	private final GroovyDslGradleSettingsWriter groovySettingsWriter = new GroovyDslGradleSettingsWriter();
 	private final KotlinDslGradleBuildWriter kotlinBuildWriter = new KotlinDslGradleBuildWriter();
 	private final KotlinDslGradleSettingsWriter kotlinSettingsWriter = new KotlinDslGradleSettingsWriter();
+	private static final String SPRINGDOC_VERSION = "2.6.0";
+	private static final String SWAGGER_CORE_VERSION = "2.2.22";
 
 	public GradleFiles generateFiles(InitializrProjectModel model, List<MavenDependency> deps) {
 		Objects.requireNonNull(model, "model must not be null");
@@ -40,7 +42,7 @@ public class InitializrGradleGenerator {
 
 		GradleBuild build = createBaseBuild(groupId, artifact, bootVer, appVer, packaging, jdk);
 		addModelDependencies(build, deps);
-		addStandardDependencies(build, packaging);
+		addStandardDependencies(build, packaging, model.isIncludeOpenapi(), hasJpaDependency(deps));
 
 		String buildContent = renderBuild(build, kotlin, jdk);
 		String settingsContent = renderSettings(artifact, build, kotlin);
@@ -99,28 +101,44 @@ public class InitializrGradleGenerator {
 		}
 	}
 
-	private void addStandardDependencies(GradleBuild build, String packaging) {
+	private void addStandardDependencies(GradleBuild build, String packaging, boolean includeOpenApi, boolean includeJpa) {
 		// Lombok
 		build.dependencies().add("lombok",
 				Dependency.withCoordinates("org.projectlombok", "lombok").scope(DependencyScope.COMPILE_ONLY));
 		build.dependencies().add("lombok-ap",
 				Dependency.withCoordinates("org.projectlombok", "lombok").scope(DependencyScope.ANNOTATION_PROCESSOR));
 
-		// Spring Data JPA
-		build.dependencies().add("spring-data-jpa",
-				Dependency.withCoordinates("org.springframework.boot", "spring-boot-starter-data-jpa")
-						.scope(DependencyScope.COMPILE));
+		if (includeJpa) {
+			// Spring Data JPA
+			build.dependencies().add("spring-data-jpa",
+					Dependency.withCoordinates("org.springframework.boot", "spring-boot-starter-data-jpa")
+							.scope(DependencyScope.COMPILE));
 
-		// Jakarta Persistence API
-		build.dependencies().add("jakarta-persistence-api",
-				Dependency.withCoordinates("jakarta.persistence", "jakarta.persistence-api")
-						.version(VersionReference.ofValue("3.1.0")).scope(DependencyScope.COMPILE_ONLY));
+			// Jakarta Persistence API
+			build.dependencies().add("jakarta-persistence-api",
+					Dependency.withCoordinates("jakarta.persistence", "jakarta.persistence-api")
+							.version(VersionReference.ofValue("3.1.0")).scope(DependencyScope.COMPILE_ONLY));
+		}
 
 		// Tomcat provided for WAR
 		if (isWarPackaged(packaging)) {
 			build.dependencies().add("tomcat",
 					Dependency.withCoordinates("org.springframework.boot", "spring-boot-starter-tomcat")
 							.scope(DependencyScope.PROVIDED_RUNTIME));
+		}
+		if (includeOpenApi) {
+			build.dependencies().add("springdoc-openapi-ui",
+					Dependency.withCoordinates("org.springdoc", "springdoc-openapi-starter-webmvc-ui")
+							.version(VersionReference.ofValue(SPRINGDOC_VERSION))
+							.scope(DependencyScope.COMPILE));
+			build.dependencies().add("swagger-models",
+					Dependency.withCoordinates("io.swagger.core.v3", "swagger-models")
+							.version(VersionReference.ofValue(SWAGGER_CORE_VERSION))
+							.scope(DependencyScope.COMPILE));
+			build.dependencies().add("swagger-annotations",
+					Dependency.withCoordinates("io.swagger.core.v3", "swagger-annotations")
+							.version(VersionReference.ofValue(SWAGGER_CORE_VERSION))
+							.scope(DependencyScope.COMPILE));
 		}
 	}
 
@@ -200,6 +218,15 @@ public class InitializrGradleGenerator {
 
 	private static String trimOrNull(String v) {
 		return (v == null || v.isBlank()) ? null : v.trim();
+	}
+
+	private static boolean hasJpaDependency(List<MavenDependency> deps) {
+		if (deps == null || deps.isEmpty()) {
+			return false;
+		}
+		return deps.stream().filter(Objects::nonNull)
+				.anyMatch(d -> "org.springframework.boot".equalsIgnoreCase(d.groupId())
+						&& "spring-boot-starter-data-jpa".equalsIgnoreCase(d.artifactId()));
 	}
 
 	private DependencyScope toScope(String raw) {

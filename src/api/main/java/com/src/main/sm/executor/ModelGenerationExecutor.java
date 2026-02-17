@@ -8,7 +8,7 @@ import org.springframework.stereotype.Component;
 
 import com.src.main.dto.StepResult;
 import com.src.main.sm.config.StepExecutor;
-import com.src.main.util.AppConstants;
+import com.src.main.sm.executor.model.ModelGenerationService;
 import com.src.main.util.ProjectMetaDataConstants;
 
 /**
@@ -18,10 +18,10 @@ import com.src.main.util.ProjectMetaDataConstants;
 @Component
 public class ModelGenerationExecutor implements StepExecutor {
 
-    private final TemplateEngine tpl;
+    private final ModelGenerationService modelGenerationService;
 
-    public ModelGenerationExecutor(TemplateEngine tpl) {
-        this.tpl = tpl;
+    public ModelGenerationExecutor(ModelGenerationService modelGenerationService) {
+        this.modelGenerationService = modelGenerationService;
     }
 
 	private static String str(Object o) {
@@ -35,8 +35,7 @@ public class ModelGenerationExecutor implements StepExecutor {
     		Path root = Path.of((String) data.getVariables().get(ProjectMetaDataConstants.ROOT_DIR));
     		Map<String, Object> yaml = (Map<String, Object>) data.getVariables().get("yaml");
     		String basePkg = (yaml != null) ? str(yaml.get("basePackage")) : null;
-            ModelGenerator generator = new ModelGenerator(tpl, basePkg);
-            generator.generate(yaml, root);
+            modelGenerationService.generate(yaml, root, basePkg);
             Map<String, Object> output = Map.of("status", "Success");
     		return StepResult.ok(output);
         } catch (Exception ex) {
