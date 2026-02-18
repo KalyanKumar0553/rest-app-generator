@@ -291,11 +291,6 @@ export class AddRelationComponent implements OnChanges {
       return false;
     }
 
-    if (this.targetEntity === this.sourceEntity) {
-      this.targetEntityError = 'Target entity must be different from source entity.';
-      return false;
-    }
-
     this.targetEntityError = '';
     return true;
   }

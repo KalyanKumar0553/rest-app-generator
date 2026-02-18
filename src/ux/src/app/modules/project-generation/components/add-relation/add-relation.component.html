@@ -3,56 +3,6 @@
     <div class="form-row">
       <div class="form-field-group">
         <mat-form-field appearance="fill" class="form-field">
-          <mat-label>Source entity</mat-label>
-          <mat-select
-            [(ngModel)]="sourceEntity"
-            (selectionChange)="onSourceEntityChange()"
-            required>
-            <mat-option *ngFor="let entity of entities" [value]="entity.name">
-              {{ entity.name }}
-            </mat-option>
-          </mat-select>
-        </mat-form-field>
-        <div class="input-error" *ngIf="sourceEntityError">{{ sourceEntityError }}</div>
-      </div>
-
-      <div class="form-field-group" *ngIf="showSourceFieldName()">
-        <mat-form-field appearance="fill" class="form-field">
-          <mat-label>From name</mat-label>
-          <input matInput [(ngModel)]="sourceFieldName" (ngModelChange)="onSourceFieldNameChange()" [disabled]="!sourceEntity" />
-        </mat-form-field>
-        <div class="input-error" *ngIf="sourceFieldNameError">{{ sourceFieldNameError }}</div>
-      </div>
-    </div>
-
-    <div class="form-row">
-      <div class="form-field-group">
-        <mat-form-field appearance="fill" class="form-field">
-          <mat-label>Target entity</mat-label>
-          <mat-select
-            [(ngModel)]="targetEntity"
-            (selectionChange)="onTargetEntityChange()"
-            required>
-            <mat-option *ngFor="let entity of entities" [value]="entity.name">
-              {{ entity.name }}
-            </mat-option>
-          </mat-select>
-        </mat-form-field>
-        <div class="input-error" *ngIf="targetEntityError">{{ targetEntityError }}</div>
-      </div>
-
-      <div class="form-field-group" *ngIf="showTargetFieldName()">
-        <mat-form-field appearance="fill" class="form-field">
-          <mat-label>Target name</mat-label>
-          <input matInput [(ngModel)]="targetFieldName" (ngModelChange)="onTargetFieldNameChange()" [disabled]="!targetEntity" />
-        </mat-form-field>
-        <div class="input-error" *ngIf="targetFieldNameError">{{ targetFieldNameError }}</div>
-      </div>
-    </div>
-
-    <div class="form-row">
-      <div class="form-field-group">
-        <mat-form-field appearance="fill" class="form-field">
           <mat-label>Relation type</mat-label>
           <mat-select
             [(ngModel)]="relationType"
@@ -65,41 +15,95 @@
         </mat-form-field>
         <div class="input-error" *ngIf="relationTypeError">{{ relationTypeError }}</div>
       </div>
+    </div>
 
-      <div class="form-field-group">
-        <div class="checkbox-field">
-          <mat-checkbox [(ngModel)]="unidirectional" (change)="onUnidirectionalChange()">
-            Unidirectional
-          </mat-checkbox>
+    <ng-container *ngIf="relationType">
+      <div class="form-row">
+        <div class="form-field-group">
+          <mat-form-field appearance="fill" class="form-field">
+            <mat-label>Source entity</mat-label>
+            <mat-select
+              [(ngModel)]="sourceEntity"
+              (selectionChange)="onSourceEntityChange()"
+              required>
+              <mat-option *ngFor="let entity of entities" [value]="entity.name">
+                {{ entity.name }}
+              </mat-option>
+            </mat-select>
+          </mat-form-field>
+          <div class="input-error" *ngIf="sourceEntityError">{{ sourceEntityError }}</div>
+        </div>
+
+        <div class="form-field-group" *ngIf="showSourceFieldName()">
+          <mat-form-field appearance="fill" class="form-field">
+            <mat-label>From name</mat-label>
+            <input matInput [(ngModel)]="sourceFieldName" (ngModelChange)="onSourceFieldNameChange()" [disabled]="!sourceEntity" />
+          </mat-form-field>
+          <div class="input-error" *ngIf="sourceFieldNameError">{{ sourceFieldNameError }}</div>
         </div>
       </div>
-    </div>
 
-    <div class="form-row" *ngIf="isManyToMany()">
-      <div class="form-field-group">
-        <mat-form-field appearance="fill" class="form-field">
-          <mat-label>Intermediate table name</mat-label>
-          <input matInput [(ngModel)]="joinTableName" placeholder="Enter intermediate table name, for example: user_roles" />
-        </mat-form-field>
-        <div class="input-error" *ngIf="joinTableError">{{ joinTableError }}</div>
+      <div class="form-row">
+        <div class="form-field-group">
+          <mat-form-field appearance="fill" class="form-field">
+            <mat-label>Target entity</mat-label>
+            <mat-select
+              [(ngModel)]="targetEntity"
+              (selectionChange)="onTargetEntityChange()"
+              required>
+              <mat-option *ngFor="let entity of entities" [value]="entity.name">
+                {{ entity.name }}
+              </mat-option>
+            </mat-select>
+          </mat-form-field>
+          <div class="input-error" *ngIf="targetEntityError">{{ targetEntityError }}</div>
+        </div>
+
+        <div class="form-field-group" *ngIf="showTargetFieldName()">
+          <mat-form-field appearance="fill" class="form-field">
+            <mat-label>Target name</mat-label>
+            <input matInput [(ngModel)]="targetFieldName" (ngModelChange)="onTargetFieldNameChange()" [disabled]="!targetEntity" />
+          </mat-form-field>
+          <div class="input-error" *ngIf="targetFieldNameError">{{ targetFieldNameError }}</div>
+        </div>
       </div>
 
-      <div class="form-field-group">
+      <div class="form-row">
+        <div class="form-field-group">
+          <div class="checkbox-field">
+            <mat-checkbox [(ngModel)]="unidirectional" (change)="onUnidirectionalChange()">
+              Unidirectional
+            </mat-checkbox>
+          </div>
+        </div>
       </div>
-    </div>
 
-    <div class="form-row">
-      <div class="form-field-group">
-        <mat-form-field appearance="fill" class="form-field">
-          <mat-label>Cascade</mat-label>
-          <mat-select [(ngModel)]="cascade" (selectionChange)="onCascadeChange()" multiple>
-            <mat-option *ngFor="let option of cascadeOptions" [value]="option">
-              {{ getCascadeOptionLabel(option) }}
-            </mat-option>
-          </mat-select>
-        </mat-form-field>
+      <div class="form-row" *ngIf="isManyToMany()">
+        <div class="form-field-group">
+          <mat-form-field appearance="fill" class="form-field">
+            <mat-label>Intermediate table name</mat-label>
+            <input matInput [(ngModel)]="joinTableName" placeholder="Enter intermediate table name, for example: user_roles" />
+          </mat-form-field>
+          <div class="input-error" *ngIf="joinTableError">{{ joinTableError }}</div>
+        </div>
+
+        <div class="form-field-group">
+        </div>
       </div>
-    </div>
+
+      <div class="form-row">
+        <div class="form-field-group">
+          <mat-form-field appearance="fill" class="form-field">
+            <mat-label>Cascade</mat-label>
+            <mat-select [(ngModel)]="cascade" (selectionChange)="onCascadeChange()" multiple>
+              <mat-option *ngFor="let option of cascadeOptions" [value]="option">
+                {{ getCascadeOptionLabel(option) }}
+              </mat-option>
+            </mat-select>
+          </mat-form-field>
+        </div>
+      </div>
+    </ng-container>
 
     <div class="relation-config" *ngIf="relationType">
       <button type="button" class="relation-config-header" (click)="toggleRelationConfig()" aria-label="Toggle relation configuration">
