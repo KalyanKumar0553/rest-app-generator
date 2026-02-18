@@ -30,6 +30,7 @@ export interface Relation {
   sourceFieldName: string;
   targetEntity: string;
   targetFieldName?: string;
+  unidirectional?: boolean;
   relationType: string;
   required?: boolean;
 
@@ -78,6 +79,7 @@ export class AddRelationComponent implements OnChanges {
   targetEntity = '';
   targetFieldName = '';
   relationType = '';
+  unidirectional = false;
   required = false;
 
   mappedBy = '';
@@ -174,6 +176,7 @@ export class AddRelationComponent implements OnChanges {
     this.targetEntity = relation.targetEntity;
     this.targetFieldName = relation.targetFieldName || '';
     this.relationType = relation.relationType;
+    this.unidirectional = relation.unidirectional ?? !relation.targetFieldName;
     this.required = relation.required || false;
 
     this.mappedBy = relation.mappedBy || '';
@@ -206,6 +209,7 @@ export class AddRelationComponent implements OnChanges {
     this.targetEntity = '';
     this.targetFieldName = '';
     this.relationType = '';
+    this.unidirectional = false;
     this.required = false;
 
     this.resetRelationConfig();
@@ -247,7 +251,12 @@ export class AddRelationComponent implements OnChanges {
     this.mappedByError = '';
     this.joinTableError = '';
     this.resetRelationConfig();
+    this.applyFieldVisibilityRules();
     this.relationConfigExpanded = true;
+  }
+
+  onUnidirectionalChange(): void {
+    this.applyFieldVisibilityRules();
   }
 
   onCascadeChange(): void {
@@ -264,16 +273,14 @@ export class AddRelationComponent implements OnChanges {
   }
 
   validateSourceFieldName(): boolean {
+    if (!this.shouldRequireSourceFieldName()) {
+      this.sourceFieldNameError = '';
+      return true;
+    }
     if (!this.sourceFieldName.trim()) {
       this.sourceFieldNameError = 'Source field name is required.';
       return false;
     }
-    const availableFieldNames = this.getFieldNamesForEntity(this.sourceEntity);
-    if (!availableFieldNames.includes(this.sourceFieldName)) {
-      this.sourceFieldNameError = 'Select a valid source field.';
-      return false;
-    }
-
     this.sourceFieldNameError = '';
     return true;
   }
@@ -294,35 +301,16 @@ export class AddRelationComponent implements OnChanges {
   }
 
   validateTargetFieldName(): boolean {
+    if (!this.shouldRequireTargetFieldName()) {
+      this.targetFieldNameError = '';
+      return true;
+    }
     if (!this.targetFieldName.trim()) {
       this.targetFieldNameError = 'Target field name is required.';
       return false;
     }
-
-    const availableFieldNames = this.getFieldNamesForEntity(this.targetEntity);
-    if (!availableFieldNames.includes(this.targetFieldName)) {
-      this.targetFieldNameError = 'Select a valid target field.';
-      return false;
-    }
-
     this.targetFieldNameError = '';
     return true;
-  }
-
-  getSourceEntityFields(): string[] {
-    const fields = this.getFieldNamesForEntity(this.sourceEntity);
-    if (this.sourceFieldName && !fields.includes(this.sourceFieldName)) {
-      return [...fields, this.sourceFieldName];
-    }
-    return fields;
-  }
-
-  getTargetEntityFields(): string[] {
-    const fields = this.getFieldNamesForEntity(this.targetEntity);
-    if (this.targetFieldName && !fields.includes(this.targetFieldName)) {
-      return [...fields, this.targetFieldName];
-    }
-    return fields;
   }
 
   validateRelationType(): boolean {
@@ -338,23 +326,9 @@ export class AddRelationComponent implements OnChanges {
     this.mappedByError = '';
     this.joinTableError = '';
 
-    if (this.relationType === 'OneToMany' && !this.mappedBy.trim()) {
-      this.mappedByError = 'Mapped by is required for OneToMany.';
-      return false;
-    }
-
     if (this.relationType === 'ManyToMany') {
-      const hasAnyJoinTableValue = Boolean(
-        this.joinTableName.trim() ||
-        this.joinColumnNameForJoinTable.trim() ||
-        this.joinColumnReferencedForJoinTable.trim() ||
-        this.inverseJoinColumnNameForJoinTable.trim() ||
-        this.inverseJoinColumnReferencedForJoinTable.trim() ||
-        this.joinTableOnDelete
-      );
-
-      if (hasAnyJoinTableValue && !this.joinTableName.trim()) {
-        this.joinTableError = 'Join table name is required when join table details are provided.';
+      if (!this.joinTableName.trim()) {
+        this.joinTableError = 'Intermediate table name is required for ManyToMany.';
         return false;
       }
     }
@@ -378,11 +352,13 @@ export class AddRelationComponent implements OnChanges {
       return;
     }
 
+    const resolvedSourceFieldName = this.sourceFieldName.trim() || this.targetFieldName.trim() || 'relation';
     const relation: Relation = {
       sourceEntity: this.sourceEntity,
-      sourceFieldName: this.sourceFieldName,
+      sourceFieldName: resolvedSourceFieldName,
       targetEntity: this.targetEntity,
-      targetFieldName: this.targetFieldName || undefined,
+      targetFieldName: this.shouldRequireTargetFieldName() ? (this.targetFieldName || undefined) : undefined,
+      unidirectional: this.unidirectional,
       relationType: this.relationType,
       required: this.required
     };
@@ -405,7 +381,7 @@ export class AddRelationComponent implements OnChanges {
     }
 
     if (this.relationType === 'OneToMany') {
-      relation.mappedBy = this.mappedBy.trim();
+      relation.mappedBy = this.mappedBy.trim() || this.targetFieldName.trim() || undefined;
       relation.orphanRemoval = this.orphanRemoval;
       relation.orderBy = this.orderBy.trim() || undefined;
       relation.orderColumn = this.orderColumnName.trim() ? { name: this.orderColumnName.trim() } : undefined;
@@ -449,6 +425,42 @@ export class AddRelationComponent implements OnChanges {
 
   isManyToMany(): boolean {
     return this.relationType === 'ManyToMany';
+  }
+
+  shouldShowRequiredOption(): boolean {
+    if (this.isManyToMany()) {
+      return false;
+    }
+    return Boolean(
+      this.sourceEntity &&
+      this.targetEntity &&
+      this.sourceEntity !== this.targetEntity
+    );
+  }
+
+  showSourceFieldName(): boolean {
+    if (this.isOneToMany()) {
+      return !this.unidirectional;
+    }
+    return true;
+  }
+
+  showTargetFieldName(): boolean {
+    if (this.isOneToMany()) {
+      return true;
+    }
+    if (this.isOneToOne() || this.isManyToOne() || this.isManyToMany()) {
+      return !this.unidirectional;
+    }
+    return true;
+  }
+
+  shouldRequireSourceFieldName(): boolean {
+    return this.showSourceFieldName();
+  }
+
+  shouldRequireTargetFieldName(): boolean {
+    return this.showTargetFieldName();
   }
 
   toggleRelationConfig(): void {
@@ -561,6 +573,15 @@ export class AddRelationComponent implements OnChanges {
     this.joinTableOnDelete = '';
   }
 
+  private applyFieldVisibilityRules(): void {
+    if (!this.showSourceFieldName()) {
+      this.sourceFieldNameError = '';
+    }
+    if (!this.showTargetFieldName()) {
+      this.targetFieldNameError = '';
+    }
+  }
+
   private normalizeCascadeSelection(cascade: string[]): string[] {
     const unique = Array.from(new Set((cascade ?? []).filter(Boolean)));
     if (unique.includes('ALL')) {
@@ -569,16 +590,4 @@ export class AddRelationComponent implements OnChanges {
     return unique;
   }
 
-  private getFieldNamesForEntity(entityName: string): string[] {
-    if (!entityName) {
-      return [];
-    }
-    const entity = this.entities.find(item => item.name === entityName);
-    if (!entity?.fields?.length) {
-      return [];
-    }
-    return entity.fields
-      .map(field => field?.name?.trim() ?? '')
-      .filter(Boolean);
-  }
 }

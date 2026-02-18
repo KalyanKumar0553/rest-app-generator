@@ -16,18 +16,10 @@
         <div class="input-error" *ngIf="sourceEntityError">{{ sourceEntityError }}</div>
       </div>
 
-      <div class="form-field-group">
+      <div class="form-field-group" *ngIf="showSourceFieldName()">
         <mat-form-field appearance="fill" class="form-field">
-          <mat-label>Source field name</mat-label>
-          <mat-select
-            [(ngModel)]="sourceFieldName"
-            (selectionChange)="onSourceFieldNameChange()"
-            [disabled]="!sourceEntity"
-            required>
-            <mat-option *ngFor="let fieldName of getSourceEntityFields()" [value]="fieldName">
-              {{ fieldName }}
-            </mat-option>
-          </mat-select>
+          <mat-label>From name</mat-label>
+          <input matInput [(ngModel)]="sourceFieldName" (ngModelChange)="onSourceFieldNameChange()" [disabled]="!sourceEntity" />
         </mat-form-field>
         <div class="input-error" *ngIf="sourceFieldNameError">{{ sourceFieldNameError }}</div>
       </div>
@@ -49,18 +41,10 @@
         <div class="input-error" *ngIf="targetEntityError">{{ targetEntityError }}</div>
       </div>
 
-      <div class="form-field-group">
+      <div class="form-field-group" *ngIf="showTargetFieldName()">
         <mat-form-field appearance="fill" class="form-field">
-          <mat-label>Target field name</mat-label>
-          <mat-select
-            [(ngModel)]="targetFieldName"
-            (selectionChange)="onTargetFieldNameChange()"
-            required
-            [disabled]="!targetEntity">
-            <mat-option *ngFor="let fieldName of getTargetEntityFields()" [value]="fieldName">
-              {{ fieldName }}
-            </mat-option>
-          </mat-select>
+          <mat-label>Target name</mat-label>
+          <input matInput [(ngModel)]="targetFieldName" (ngModelChange)="onTargetFieldNameChange()" [disabled]="!targetEntity" />
         </mat-form-field>
         <div class="input-error" *ngIf="targetFieldNameError">{{ targetFieldNameError }}</div>
       </div>
@@ -82,6 +66,29 @@
         <div class="input-error" *ngIf="relationTypeError">{{ relationTypeError }}</div>
       </div>
 
+      <div class="form-field-group">
+        <div class="checkbox-field">
+          <mat-checkbox [(ngModel)]="unidirectional" (change)="onUnidirectionalChange()">
+            Unidirectional
+          </mat-checkbox>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-row" *ngIf="isManyToMany()">
+      <div class="form-field-group">
+        <mat-form-field appearance="fill" class="form-field">
+          <mat-label>Intermediate table name</mat-label>
+          <input matInput [(ngModel)]="joinTableName" placeholder="Enter intermediate table name, for example: user_roles" />
+        </mat-form-field>
+        <div class="input-error" *ngIf="joinTableError">{{ joinTableError }}</div>
+      </div>
+
+      <div class="form-field-group">
+      </div>
+    </div>
+
+    <div class="form-row">
       <div class="form-field-group">
         <mat-form-field appearance="fill" class="form-field">
           <mat-label>Cascade</mat-label>
@@ -113,7 +120,7 @@
           <div class="form-field-group checkbox-field checkbox-row">
             <mat-checkbox [(ngModel)]="optional">Optional</mat-checkbox>
             <mat-checkbox [(ngModel)]="orphanRemoval">Orphan removal</mat-checkbox>
-            <mat-checkbox [(ngModel)]="required">Required</mat-checkbox>
+            <mat-checkbox *ngIf="shouldShowRequiredOption()" [(ngModel)]="required">Required</mat-checkbox>
           </div>
         </div>
 
@@ -181,7 +188,7 @@
 
         <div class="form-field-group checkbox-field checkbox-row">
           <mat-checkbox [(ngModel)]="orphanRemoval">Orphan removal</mat-checkbox>
-          <mat-checkbox [(ngModel)]="required">Required</mat-checkbox>
+          <mat-checkbox *ngIf="shouldShowRequiredOption()" [(ngModel)]="required">Required</mat-checkbox>
         </div>
       </div>
 
@@ -189,7 +196,7 @@
         <div class="form-row">
           <div class="form-field-group checkbox-field checkbox-row">
             <mat-checkbox [(ngModel)]="optional">Optional</mat-checkbox>
-            <mat-checkbox [(ngModel)]="required">Required</mat-checkbox>
+            <mat-checkbox *ngIf="shouldShowRequiredOption()" [(ngModel)]="required">Required</mat-checkbox>
             <mat-checkbox [(ngModel)]="joinColumnNullable">Join column nullable</mat-checkbox>
             <mat-checkbox [(ngModel)]="joinColumnIndex">Join column index hint</mat-checkbox>
           </div>
@@ -227,17 +234,11 @@
 
       <div *ngIf="isManyToMany()">
         <div class="form-row">
-          <div class="form-field-group">
-            <mat-form-field appearance="fill" class="form-field">
-              <mat-label>Join table name</mat-label>
-              <input matInput [(ngModel)]="joinTableName" placeholder="Link table name, for example: user_roles" />
-            </mat-form-field>
-            <div class="input-error" *ngIf="joinTableError">{{ joinTableError }}</div>
-          </div>
-
           <div class="form-field-group checkbox-field checkbox-row">
             <mat-checkbox [(ngModel)]="joinTableUniquePair">Unique pair</mat-checkbox>
-            <mat-checkbox [(ngModel)]="required">Required</mat-checkbox>
+          </div>
+
+          <div class="form-field-group">
           </div>
         </div>
 

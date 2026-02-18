@@ -12,9 +12,28 @@ const JAVA_KEYWORDS = new Set([
   'throw', 'throws', 'transient', 'try', 'void', 'volatile', 'while', 'true', 'false', 'null'
 ]);
 
+const DATABASE_RESERVED_KEYWORDS = new Set([
+  'add', 'alter', 'and', 'as', 'between', 'by', 'case', 'column', 'constraint', 'create', 'database',
+  'default', 'delete', 'desc', 'distinct', 'drop', 'exec', 'exists', 'from', 'group', 'having', 'in',
+  'index', 'insert', 'into', 'is', 'join', 'key', 'like', 'limit', 'not', 'null', 'on', 'or', 'order',
+  'primary', 'procedure', 'replace', 'schema', 'select', 'set', 'table', 'top', 'truncate', 'union',
+  'unique', 'update', 'values', 'view', 'where'
+]);
+
 export const isValidJavaIdentifier = (value: string): boolean => {
   const trimmed = String(value ?? '').trim();
   return JAVA_IDENTIFIER_PATTERN.test(trimmed) && !JAVA_KEYWORDS.has(trimmed);
+};
+
+export const findReservedJavaOrDatabaseKeyword = (value: string): string | null => {
+  const normalized = String(value ?? '').trim().toLowerCase();
+  if (!normalized) {
+    return null;
+  }
+  if (JAVA_KEYWORDS.has(normalized) || DATABASE_RESERVED_KEYWORDS.has(normalized)) {
+    return normalized;
+  }
+  return null;
 };
 
 export const isValidMavenGroupId = (value: string): boolean => {

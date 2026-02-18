@@ -1,7 +1,7 @@
 import { ValidationRule } from '../../../services/validator.service';
 import { Field } from '../components/field-item/field-item.component';
 import { areConstraintsValid } from '../constants/field-constraints';
-import { isValidJavaIdentifier } from './naming-validation';
+import { findReservedJavaOrDatabaseKeyword, isValidJavaIdentifier } from './naming-validation';
 
 export interface EntityNameValidationParams {
   entityName: string;
@@ -39,6 +39,7 @@ export const buildEntityNameRules = (params: EntityNameValidationParams): Valida
     }
     return true;
   });
+  const reservedKeyword = findReservedJavaOrDatabaseKeyword(params.entityName);
 
   return [
     {
@@ -54,6 +55,12 @@ export const buildEntityNameRules = (params: EntityNameValidationParams): Valida
           type: 'custom',
           predicate: (value) => isValidJavaIdentifier(String(value ?? '')),
           message: `${label} name must be a valid Java identifier and not a Java keyword.`,
+          messageType: 'error'
+        },
+        {
+          type: 'custom',
+          predicate: () => !reservedKeyword,
+          message: `Your input contains the keyword "${reservedKeyword}", which cannot be used in java/database context.`,
           messageType: 'error'
         },
         {
