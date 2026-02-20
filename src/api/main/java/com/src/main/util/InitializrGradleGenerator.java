@@ -90,15 +90,12 @@ public class InitializrGradleGenerator {
 		if (deps == null) {
 			return;
 		}
-		for (MavenDependencyDTO md : deps) {
-			if (md == null)
-				continue;
-			String g = trimOrNull(md.groupId());
-			String a = trimOrNull(md.artifactId());
-			if (g == null || a == null)
-				continue;
-			build.dependencies().add(g + ":" + a, Dependency.withCoordinates(g, a).scope(toScope(md.scope())));
-		}
+		deps.stream()
+				.filter(Objects::nonNull)
+				.map(md -> new String[] { trimOrNull(md.groupId()), trimOrNull(md.artifactId()), md.scope() })
+				.filter(parts -> parts[0] != null && parts[1] != null)
+				.forEach(parts -> build.dependencies().add(parts[0] + ":" + parts[1],
+						Dependency.withCoordinates(parts[0], parts[1]).scope(toScope(parts[2]))));
 	}
 
 	private void addStandardDependencies(GradleBuild build, String packaging, boolean includeOpenApi, boolean includeJpa) {

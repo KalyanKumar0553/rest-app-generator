@@ -28,9 +28,7 @@ public final class ModelGenerationSupport {
 		if (existingRaw instanceof Map<?, ?> existingMap) {
 			merged.putAll((Map<String, Object>) existingMap);
 		}
-		for (Map.Entry<String, String> entry : messages.entrySet()) {
-			merged.putIfAbsent(entry.getKey(), entry.getValue());
-		}
+		messages.forEach(merged::putIfAbsent);
 		yaml.put("messages", merged);
 	}
 
@@ -40,24 +38,19 @@ public final class ModelGenerationSupport {
 			return messages;
 		}
 
-		for (ModelSpecDTO model : spec.getModels()) {
-			if (model.getFields() == null) {
-				continue;
-			}
-			for (FieldSpecDTO field : model.getFields()) {
-				if (field.getConstraints() == null) {
-					continue;
-				}
-				for (ConstraintDTO constraint : field.getConstraints()) {
-					if (constraint == null || constraint.getName() == null || constraint.getName().isBlank()) {
-						continue;
-					}
-					String key = buildMessageKey(model, field, constraint.getName());
-					String message = resolveValidationMessage(field, constraint);
-					messages.putIfAbsent(key, message);
-				}
-			}
-		}
+		spec.getModels().stream()
+				.filter(model -> model.getFields() != null)
+				.forEach(model -> model.getFields().stream()
+						.filter(field -> field.getConstraints() != null)
+						.forEach(field -> field.getConstraints().stream()
+								.filter(constraint -> constraint != null
+										&& constraint.getName() != null
+										&& !constraint.getName().isBlank())
+								.forEach(constraint -> {
+									String key = buildMessageKey(model, field, constraint.getName());
+									String message = resolveValidationMessage(field, constraint);
+									messages.putIfAbsent(key, message);
+								})));
 
 		return messages;
 	}
@@ -205,12 +198,12 @@ public final class ModelGenerationSupport {
 	public static String getStringAny(Map<String, Object> m, String[] keys, String def) {
 		if (m == null)
 			return def;
-		for (String k : keys) {
-			Object v = m.get(k);
-			if (v != null)
-				return String.valueOf(v);
-		}
-		return def;
+		return Arrays.stream(keys)
+				.map(m::get)
+				.filter(java.util.Objects::nonNull)
+				.map(String::valueOf)
+				.findFirst()
+				.orElse(def);
 	}
 
 	public static Integer getInt(Map<String, Object> m, String key, Integer def) {

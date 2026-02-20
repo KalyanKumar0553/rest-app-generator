@@ -8,32 +8,41 @@ public class RestGenerationUnit {
 	private final String entityName;
 	private final String idName;
 	private final String idType;
+	private final String idTypeImport;
 	private final String endpointPath;
 	private final String modelPackage;
 	private final String repositoryPackage;
 	private final String servicePackage;
 	private final String controllerPackage;
 	private final String supportPackage;
+	private final String entitySupportClass;
+	private final String filterSupportClass;
+	private final String querySupportClass;
 	private final String repositoryClass;
 	private final String serviceClass;
 	private final String controllerClass;
-	private final String supportClass;
+	private final String allowedSortFieldsLiteral;
 
-	public RestGenerationUnit(String entityName, String idName, String idType, String endpointPath, String modelPackage,
-			String repositoryPackage, String servicePackage, String controllerPackage, String supportPackage) {
+	public RestGenerationUnit(String entityName, String idName, String idType, String idTypeImport, String endpointPath, String modelPackage,
+			String repositoryPackage, String servicePackage, String controllerPackage, String supportPackage,
+			String allowedSortFieldsLiteral) {
 		this.entityName = entityName;
 		this.idName = idName;
 		this.idType = idType;
+		this.idTypeImport = idTypeImport;
 		this.endpointPath = endpointPath;
 		this.modelPackage = modelPackage;
 		this.repositoryPackage = repositoryPackage;
 		this.servicePackage = servicePackage;
 		this.controllerPackage = controllerPackage;
 		this.supportPackage = supportPackage;
+		this.allowedSortFieldsLiteral = allowedSortFieldsLiteral;
 		this.repositoryClass = entityName + "Repository";
 		this.serviceClass = entityName + "Service";
 		this.controllerClass = entityName + "Controller";
-		this.supportClass = "RestUtils";
+		this.entitySupportClass = "RestEntityUtils";
+		this.filterSupportClass = "RestFilterUtils";
+		this.querySupportClass = "RestQueryUtils";
 	}
 
 	public String getEntityName() {
@@ -46,6 +55,10 @@ public class RestGenerationUnit {
 
 	public String getIdType() {
 		return idType;
+	}
+
+	public String getIdTypeImport() {
+		return idTypeImport;
 	}
 
 	public String getEndpointPath() {
@@ -72,6 +85,18 @@ public class RestGenerationUnit {
 		return supportPackage;
 	}
 
+	public String getEntitySupportClass() {
+		return entitySupportClass;
+	}
+
+	public String getFilterSupportClass() {
+		return filterSupportClass;
+	}
+
+	public String getQuerySupportClass() {
+		return querySupportClass;
+	}
+
 	public String getRepositoryClass() {
 		return repositoryClass;
 	}
@@ -84,8 +109,8 @@ public class RestGenerationUnit {
 		return controllerClass;
 	}
 
-	public String getSupportClass() {
-		return supportClass;
+	public String getAllowedSortFieldsLiteral() {
+		return allowedSortFieldsLiteral;
 	}
 
 	public Map<String, Object> toTemplateModel() {
@@ -93,16 +118,20 @@ public class RestGenerationUnit {
 		model.put("entityName", entityName);
 		model.put("idName", idName);
 		model.put("idType", idType);
+		model.put("idTypeImport", idTypeImport);
 		model.put("endpointPath", endpointPath);
 		model.put("modelPackage", modelPackage);
 		model.put("repositoryPackage", repositoryPackage);
 		model.put("servicePackage", servicePackage);
 		model.put("controllerPackage", controllerPackage);
 		model.put("supportPackage", supportPackage);
+		model.put("entitySupportClass", entitySupportClass);
+		model.put("filterSupportClass", filterSupportClass);
+		model.put("querySupportClass", querySupportClass);
 		model.put("repositoryClass", repositoryClass);
 		model.put("serviceClass", serviceClass);
 		model.put("controllerClass", controllerClass);
-		model.put("supportClass", supportClass);
+		model.put("allowedSortFieldsLiteral", allowedSortFieldsLiteral);
 		return model;
 	}
 }

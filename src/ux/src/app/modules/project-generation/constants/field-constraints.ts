@@ -7,7 +7,7 @@ export interface FieldConstraint {
   value2?: string;
 }
 
-type ConstraintFieldGroup = 'all' | 'string' | 'number' | 'date' | 'boolean' | 'binary' | 'collection' | 'object';
+type ConstraintFieldGroup = 'all' | 'string' | 'number' | 'date' | 'boolean' | 'binary' | 'collection' | 'object' | 'enum';
 
 export interface ConstraintInputConfig {
   label: string;
@@ -45,6 +45,8 @@ const FIELD_GROUP_BY_TYPE: Record<string, ConstraintFieldGroup> = {
   'byte[]': 'binary',
   Json: 'object'
 };
+
+const ENUM_CONSTRAINT_NAMES = ['NotNull', 'Null'];
 
 const CONSTRAINT_DEFINITIONS: ConstraintDefinition[] = [
   { name: 'NotNull', groups: ['all'], valueMode: 'none' },
@@ -126,10 +128,16 @@ export const getConstraintDefinition = (name: string | undefined | null): Constr
   return CONSTRAINT_DEFINITIONS.find(definition => definition.name === name.trim()) ?? null;
 };
 
-export const getConstraintOptionsForFieldType = (fieldType: string): string[] => {
-  const fieldGroup = resolveFieldGroup(fieldType);
+export const getConstraintOptionsForFieldType = (fieldType: string, availableFieldTypes: string[] = []): string[] => {
+  const fieldGroup = resolveFieldGroup(fieldType, availableFieldTypes);
   if (!fieldGroup) {
     return SORTED_CONSTRAINT_DEFINITIONS.map(definition => definition.name);
+  }
+
+  if (fieldGroup === 'enum') {
+    return ENUM_CONSTRAINT_NAMES
+      .filter(name => CONSTRAINT_DEFINITIONS.some(definition => definition.name === name))
+      .sort((a, b) => a.localeCompare(b));
   }
 
   return SORTED_CONSTRAINT_DEFINITIONS
@@ -137,7 +145,7 @@ export const getConstraintOptionsForFieldType = (fieldType: string): string[] =>
     .map(definition => definition.name);
 };
 
-const resolveFieldGroup = (fieldType: string): ConstraintFieldGroup | undefined => {
+const resolveFieldGroup = (fieldType: string, availableFieldTypes: string[] = []): ConstraintFieldGroup | undefined => {
   const normalized = (fieldType ?? '').trim();
   if (!normalized) {
     return undefined;
@@ -145,7 +153,21 @@ const resolveFieldGroup = (fieldType: string): ConstraintFieldGroup | undefined 
   if (/^List\s*<.+>$/.test(normalized) || normalized.endsWith('[]')) {
     return 'collection';
   }
-  return FIELD_GROUP_BY_TYPE[normalized];
+  const mappedGroup = FIELD_GROUP_BY_TYPE[normalized];
+  if (mappedGroup) {
+    return mappedGroup;
+  }
+
+  const knownTypes = new Set(
+    (availableFieldTypes ?? [])
+      .map(type => String(type ?? '').trim())
+      .filter(Boolean)
+  );
+  if (knownTypes.has(normalized)) {
+    return 'enum';
+  }
+
+  return undefined;
 };
 
 export const getConstraintValueMode = (name: string | undefined | null): ConstraintValueMode => {

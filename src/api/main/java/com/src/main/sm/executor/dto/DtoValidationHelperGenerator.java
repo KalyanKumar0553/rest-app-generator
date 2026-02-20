@@ -33,23 +33,25 @@ public class DtoValidationHelperGenerator {
 					TPL_VALIDATION_CONDITIONAL_REQUIRED, "ConditionalRequiredValidator.java",
 					TPL_VALIDATION_CONDITIONAL_REQUIRED_VALIDATOR);
 
-			for (Map.Entry<String, String> e : files.entrySet()) {
-				Path target = baseDir.resolve(e.getKey());
+			files.forEach((fileName, templatePath) -> {
+				Path target = baseDir.resolve(fileName);
 				if (Files.exists(target)) {
-					continue;
+					return;
 				}
-				String templatePath = e.getValue();
 				if (templatePath == null || templatePath.isBlank()) {
-					continue;
+					return;
 				}
 				String body;
 				try {
 					body = templateEngine.render(templatePath, Map.of("basePkg", basePkg));
 				} catch (Exception renderErr) {
-					continue;
+					return;
 				}
-				Files.writeString(target, body, StandardCharsets.UTF_8);
-			}
+				try {
+					Files.writeString(target, body, StandardCharsets.UTF_8);
+				} catch (Exception ignored) {
+				}
+			});
 		} catch (Exception ignored) {
 		}
 	}

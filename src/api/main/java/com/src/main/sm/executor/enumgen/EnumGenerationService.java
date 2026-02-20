@@ -4,9 +4,12 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import org.springframework.stereotype.Service;
 
@@ -32,31 +35,52 @@ public class EnumGenerationService {
 		Path outDir = root.resolve(PathUtils.javaSrcPathFromPackage(enumPackage));
 		Files.createDirectories(outDir);
 
-		for (EnumSpecResolved enumSpec : enums) {
-			Map<String, Object> model = new LinkedHashMap<>();
-			model.put("packageName", enumPackage);
-			model.put("enumName", enumSpec.name());
-			model.put("constants", withCommaMetadata(enumSpec.constants()));
-			String code = templateEngine.render(TEMPLATE, model);
-			Files.writeString(outDir.resolve(enumSpec.name() + ".java"), code, UTF_8);
+		try {
+			enums.forEach(enumSpec -> {
+				try {
+					writeEnumFile(outDir, enumPackage, enumSpec);
+				} catch (Exception ex) {
+					throw new RuntimeException(ex);
+				}
+			});
+		} catch (RuntimeException ex) {
+			if (ex.getCause() instanceof Exception cause) {
+				throw cause;
+			}
+			throw ex;
 		}
 	}
 
+	private void writeEnumFile(Path outDir, String enumPackage, EnumSpecResolved enumSpec) throws Exception {
+		String code = templateEngine.render(TEMPLATE, buildTemplateModel(enumPackage, enumSpec));
+		Files.writeString(outDir.resolve(enumSpec.name() + ".java"), code, UTF_8);
+	}
+
+	private Map<String, Object> buildTemplateModel(String enumPackage, EnumSpecResolved enumSpec) {
+		Map<String, Object> model = new LinkedHashMap<>();
+		model.put("packageName", enumPackage);
+		model.put("enumName", enumSpec.name());
+		model.put("constants", withCommaMetadata(enumSpec.constants()));
+		return model;
+	}
+
 	private List<Map<String, Object>> withCommaMetadata(List<String> constants) {
-		java.util.ArrayList<Map<String, Object>> items = new java.util.ArrayList<>();
+		ArrayList<Map<String, Object>> items = new ArrayList<>();
 		if (constants == null) {
 			return items;
 		}
-		for (int i = 0; i < constants.size(); i++) {
-			String value = constants.get(i);
-			if (value == null || value.isBlank()) {
-				continue;
-			}
-			java.util.LinkedHashMap<String, Object> item = new java.util.LinkedHashMap<>();
-			item.put("value", value);
-			item.put("last", i == constants.size() - 1);
-			items.add(item);
-		}
-		return items;
+		return IntStream.range(0, constants.size())
+				.mapToObj(i -> {
+					String value = constants.get(i);
+					if (value == null || value.isBlank()) {
+						return null;
+					}
+					LinkedHashMap<String, Object> item = new LinkedHashMap<>();
+					item.put("value", value);
+					item.put("last", i == constants.size() - 1);
+					return item;
+				})
+				.filter(java.util.Objects::nonNull)
+				.collect(Collectors.toCollection(ArrayList::new));
 	}
 }

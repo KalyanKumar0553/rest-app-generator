@@ -37,18 +37,20 @@ public final class DtoGenerationSupport {
 			return out;
 
 		if (raw instanceof List) {
-			for (Object n : (List<?>) raw) {
-				if (n instanceof Map) {
-					@SuppressWarnings("unchecked")
-					Map<String, Object> m = new HashMap<>((Map<String, Object>) n);
-					copyMessageKey(n, m);
-					if (!m.containsKey("kind") && m.containsKey("type")) {
-						m.put("kind", m.get("type"));
-					}
-					if (m.get("kind") != null)
-						out.add(m);
-				}
-			}
+			((List<?>) raw).stream()
+					.filter(Map.class::isInstance)
+					.map(Map.class::cast)
+					.map(n -> {
+						@SuppressWarnings("unchecked")
+						Map<String, Object> m = new HashMap<>((Map<String, Object>) n);
+						copyMessageKey(n, m);
+						if (!m.containsKey("kind") && m.containsKey("type")) {
+							m.put("kind", m.get("type"));
+						}
+						return m;
+					})
+					.filter(m -> m.get("kind") != null)
+					.forEach(out::add);
 			return out;
 		}
 
@@ -84,12 +86,10 @@ public final class DtoGenerationSupport {
 		};
 
 		if (raw instanceof List<?>) {
-			for (Object n : (List<?>) raw) {
-				if (n == null)
-					continue;
+			((List<?>) raw).stream().filter(Objects::nonNull).forEach(n -> {
 				if (n instanceof String s) {
 					add.accept(s, Map.of());
-					continue;
+					return;
 				}
 				if (n instanceof Map) {
 					@SuppressWarnings("unchecked")
@@ -98,7 +98,7 @@ public final class DtoGenerationSupport {
 					if (kind instanceof String ks && !ks.isBlank()) {
 						copyMessageKey(m, m);
 						add.accept(ks, m);
-						continue;
+						return;
 					}
 					if (m.size() == 1) {
 						Map.Entry<String, Object> e = m.entrySet().iterator().next();
@@ -108,7 +108,7 @@ public final class DtoGenerationSupport {
 								: new HashMap<>();
 						copyMessageKey(e.getValue(), vmap);
 						add.accept(k, vmap);
-						continue;
+						return;
 					}
 					Object type = m.get("type");
 					if (type instanceof String ts && !ts.isBlank()) {
@@ -116,19 +116,19 @@ public final class DtoGenerationSupport {
 						add.accept(ts, m);
 					}
 				}
-			}
+			});
 			return out;
 		}
 
 		if (raw instanceof Map<?, ?> map) {
-			for (Map.Entry<?, ?> e : map.entrySet()) {
+			map.entrySet().forEach(e -> {
 				String k = String.valueOf(e.getKey());
 				Map<String, Object> spec = (e.getValue() instanceof Map)
 						? new HashMap<>((Map<String, Object>) e.getValue())
 						: new HashMap<>();
 				copyMessageKey(e.getValue(), spec);
 				add.accept(k, spec);
-			}
+			});
 		}
 		return out;
 	}
@@ -433,15 +433,15 @@ public final class DtoGenerationSupport {
 
 	public static List<String> simplifyAnnotations(List<String> annotations, Set<String> imports) {
 		List<String> out = new ArrayList<>(annotations.size());
-		for (String a : annotations) {
+		annotations.forEach(a -> {
 			if (a == null || a.isBlank()) {
 				out.add(a);
-				continue;
+				return;
 			}
 			int at = a.indexOf('@');
 			if (at < 0) {
 				out.add(a);
-				continue;
+				return;
 			}
 			int start = at + 1;
 			int end = start;
@@ -453,7 +453,7 @@ public final class DtoGenerationSupport {
 			}
 			if (end <= start) {
 				out.add(a);
-				continue;
+				return;
 			}
 			String fq = a.substring(start, end).trim();
 			String simple = fq.contains(".") ? fq.substring(fq.lastIndexOf('.') + 1) : fq;
@@ -462,7 +462,7 @@ public final class DtoGenerationSupport {
 			} else {
 				out.add(a);
 			}
-		}
+		});
 		return out;
 	}
 
@@ -475,7 +475,7 @@ public final class DtoGenerationSupport {
 		List<String> thirdParty = new ArrayList<>();
 		List<String> project = new ArrayList<>();
 
-		for (String fq : imports) {
+		imports.forEach(fq -> {
 			if (fq.startsWith("java.") || fq.startsWith("javax.") || fq.startsWith("jakarta.")) {
 				javaJakarta.add(fq);
 			} else if (fq.startsWith("lombok.")) {
@@ -485,7 +485,7 @@ public final class DtoGenerationSupport {
 			} else {
 				thirdParty.add(fq);
 			}
-		}
+		});
 
 		Comparator<String> cmp = Comparator.naturalOrder();
 		javaJakarta.sort(cmp);
@@ -534,44 +534,44 @@ public final class DtoGenerationSupport {
 			messages.putAll((Map<String, Object>) existingMap);
 		}
 
-		for (Map<String, Object> dto : dtosForMessages) {
+		dtosForMessages.forEach(dto -> {
 			Object fieldsRaw = dto.get("fields");
 			if (fieldsRaw instanceof List<?> fields) {
-				for (Object fieldRaw : fields) {
+				fields.forEach(fieldRaw -> {
 					if (!(fieldRaw instanceof Map<?, ?> fieldMap)) {
-						continue;
+						return;
 					}
 					Object constraintsRaw = ((Map<String, Object>) fieldMap).get("constraints");
 					if (!(constraintsRaw instanceof List<?> constraints)) {
-						continue;
+						return;
 					}
-					for (Object cRaw : constraints) {
+					constraints.forEach(cRaw -> {
 						if (!(cRaw instanceof Map<?, ?> cMap)) {
-							continue;
+							return;
 						}
 						String key = str(((Map<String, Object>) cMap).get("key"));
 						String def = str(((Map<String, Object>) cMap).get("defaultMessage"));
 						if (key != null && !key.isBlank()) {
 							messages.putIfAbsent(key, (def == null || def.isBlank()) ? key : def);
 						}
-					}
-				}
+					});
+				});
 			}
 
 			Object classRaw = dto.get("classConstraints");
 			if (classRaw instanceof List<?> constraints) {
-				for (Object cRaw : constraints) {
+				constraints.forEach(cRaw -> {
 					if (!(cRaw instanceof Map<?, ?> cMap)) {
-						continue;
+						return;
 					}
 					String key = str(((Map<String, Object>) cMap).get("key"));
 					String def = str(((Map<String, Object>) cMap).get("defaultMessage"));
 					if (key != null && !key.isBlank()) {
 						messages.putIfAbsent(key, (def == null || def.isBlank()) ? key : def);
 					}
-				}
+				});
 			}
-		}
+		});
 
 		if (!messages.isEmpty()) {
 			yaml.put("messages", messages);
@@ -579,9 +579,7 @@ public final class DtoGenerationSupport {
 	}
 
 	private static void appendImports(StringBuilder sb, List<String> fqcns) {
-		for (String fq : fqcns) {
-			sb.append("import ").append(fq).append(";\n");
-		}
+		fqcns.forEach(fq -> sb.append("import ").append(fq).append(";\n"));
 	}
 
 	private static String wrap(String msgPart) {

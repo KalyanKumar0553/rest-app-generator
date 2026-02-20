@@ -1,7 +1,7 @@
 .sidenav {
   width: 100%;
-  background-color: #ffffff;
-  border-right: 1px solid #e5e7eb;
+  background-color: var(--theme-modal-container-bg);
+  border-right: 1px solid var(--theme-neutral-border);
   padding: 24px 0;
 }
 
@@ -20,29 +20,28 @@
   gap: 12px;
   padding: 12px 24px;
   cursor: pointer;
-  transition: background-color 0.2s ease, color 0.2s ease;
-  color: #6b7280;
+  transition: background-color 0.25s ease, transform 0.25s ease, box-shadow 0.25s ease;
   font-size: 14px;
   font-weight: 500;
   user-select: none;
 }
 
 .nav-item:hover {
-  background-color: #f3f4f6;
-  color: #1f2937;
+  background-color: var(--theme-neutral-bg);
 }
 
 .nav-item.active {
-  background-color: #e8f4f8;
-  color: #8b9fa6;
-  border-right: 3px solid #8b9fa6;
+  background-color: var(--color-background);
+  border-right: 3px solid var(--theme-primary-btn-bg);
+  transform: scale(1.02);
+  box-shadow: var(--shadow-sm);
 }
 
 .nav-icon {
   font-size: 20px;
   width: 20px;
   height: 20px;
-  color: inherit;
+  color: var(--theme-primary-btn-bg);
 }
 
 .nav-label {
@@ -50,6 +49,39 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  color: var(--theme-neutral-text);
+  transition: color 0.25s ease, font-weight 0.25s ease, transform 0.25s ease;
+}
+
+.nav-item:hover .nav-icon {
+  color: var(--theme-link-hover-color);
+}
+
+.nav-item:hover .nav-label {
+  color: var(--theme-link-color);
+}
+
+.nav-item.active .nav-icon {
+  color: var(--color-background-primary);
+}
+
+.nav-item.active .nav-label {
+  color: var(--color-primary);
+  font-weight: 700;
+  transform: scale(1.02);
+}
+
+.nav-item:focus-visible {
+  outline: 2px solid var(--theme-primary-btn-bg);
+  outline-offset: -2px;
+  background-color: var(--theme-neutral-bg);
+  transform: scale(1.02);
+}
+
+.nav-item:focus-visible .nav-label {
+  color: var(--theme-link-hover-color);
+  font-weight: 700;
+  transform: scale(1.02);
 }
 
 @media (max-width: 768px) {
@@ -63,5 +95,13 @@
 
   .nav-item {
     padding: 12px 20px;
+  }
+
+  .nav-item .nav-icon {
+    color: var(--theme-primary-btn-bg);
+  }
+
+  .nav-item .nav-label {
+    color: var(--theme-neutral-text);
   }
 }

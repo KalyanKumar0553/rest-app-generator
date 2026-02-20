@@ -1,0 +1,100 @@
+.expansion-panels {
+  margin-bottom: 32px;
+  padding-bottom: 16px;
+}
+
+.expansion-panels mat-expansion-panel {
+  margin-bottom: 16px;
+  box-shadow: var(--theme-modal-shadow) !important;
+}
+
+.panel-content {
+  padding: 16px 0;
+}
+
+.actuator-top-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.actuator-top-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.actuator-count-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background-color: var(--color-background);
+  border: 1px solid var(--color-border);
+  color: var(--color-text-primary);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.filter-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1px solid var(--theme-neutral-border);
+  background-color: var(--theme-modal-container-bg);
+  color: var(--theme-neutral-text);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+}
+
+.filter-btn.active {
+  background-color: var(--color-background);
+  color: var(--theme-link-hover-color);
+  border-color: var(--theme-primary-btn-bg);
+}
+
+.filter-btn:hover {
+  background-color: var(--theme-neutral-bg);
+  color: var(--theme-link-color);
+}
+
+.actuator-endpoint-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.actuator-endpoint-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.actuator-endpoint-item {
+  display: flex;
+  align-items: center;
+  min-height: 40px;
+  border: 1px solid var(--color-border-light);
+  border-radius: 8px;
+  padding: 0 12px;
+  background-color: var(--color-background-white);
+}
+
+.actuator-empty-state {
+  margin-top: 12px;
+  color: var(--theme-neutral-text);
+  font-size: 14px;
+}
+
+@media (max-width: 768px) {
+  .actuator-endpoint-row {
+    grid-template-columns: 1fr;
+  }
+}

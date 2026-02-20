@@ -1,0 +1,69 @@
+package {{supportPackage}};
+
+import java.lang.reflect.Field;
+import java.math.BigDecimal;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+
+import org.springframework.data.jpa.domain.Specification;
+import org.springframework.util.ReflectionUtils;
+
+import jakarta.persistence.criteria.Predicate;
+
+public final class RestFilterUtils {
+
+    private RestFilterUtils() {
+    }
+
+    public static <T> Specification<T> buildSpecification(Map<String, String> queryParams, Class<T> entityType) {
+        return (root, query, criteriaBuilder) -> {
+            List<Predicate> predicates = new ArrayList<>();
+            queryParams.forEach((fieldName, rawValue) -> {
+                if (rawValue == null || rawValue.isBlank()) {
+                    return;
+                }
+                Class<?> fieldType = resolveFieldType(entityType, fieldName);
+                Object converted = convertValue(rawValue, fieldType);
+                predicates.add(criteriaBuilder.equal(root.get(fieldName), converted));
+            });
+            return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
+        };
+    }
+
+    private static Class<?> resolveFieldType(Class<?> entityType, String fieldName) {
+        Field field = ReflectionUtils.findField(entityType, fieldName);
+        if (field == null) {
+            throw new IllegalArgumentException("Unknown query field: " + fieldName);
+        }
+        return field.getType();
+    }
+
+    private static Object convertValue(String value, Class<?> type) {
+        if (type.isEnum()) {
+            @SuppressWarnings({ "rawtypes", "unchecked" })
+            Object enumValue = Enum.valueOf((Class<? extends Enum>) type.asSubclass(Enum.class), value);
+            return enumValue;
+        }
+        return switch (type.getName()) {
+            case "java.lang.String" -> value;
+            case "java.lang.Integer", "int" -> Integer.valueOf(value);
+            case "java.lang.Long", "long" -> Long.valueOf(value);
+            case "java.lang.Boolean", "boolean" -> Boolean.valueOf(value);
+            case "java.lang.Double", "double" -> Double.valueOf(value);
+            case "java.lang.Float", "float" -> Float.valueOf(value);
+            case "java.math.BigDecimal" -> new BigDecimal(value);
+            case "java.util.UUID" -> UUID.fromString(value);
+            case "java.time.LocalDate" -> LocalDate.parse(value);
+            case "java.time.LocalDateTime" -> LocalDateTime.parse(value);
+            case "java.time.OffsetDateTime" -> OffsetDateTime.parse(value);
+            case "java.time.Instant" -> Instant.parse(value);
+            default -> throw new IllegalArgumentException("Unsupported query field type for field: " + type.getSimpleName());
+        };
+    }
+}

@@ -87,12 +87,7 @@ public class SwaggerGenerationExecutor implements StepExecutor {
 	}
 
 	private static Object firstNonNull(Object... values) {
-		for (Object value : values) {
-			if (value != null) {
-				return value;
-			}
-		}
-		return null;
+		return java.util.Arrays.stream(values).filter(java.util.Objects::nonNull).findFirst().orElse(null);
 	}
 
 	private static String str(Object value) {

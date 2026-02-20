@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import com.src.main.common.util.CaseUtils;
 import com.src.main.common.util.StringUtils;
@@ -24,27 +25,20 @@ public final class EnumGenerationSupport {
 	}
 
 	public static List<EnumSpecResolved> resolveEnums(List<EnumSpecDTO> enums) {
-		List<EnumSpecResolved> resolved = new ArrayList<>();
 		if (enums == null || enums.isEmpty()) {
-			return resolved;
+			return new ArrayList<>();
 		}
 		Set<String> seen = new LinkedHashSet<>();
-		for (EnumSpecDTO enumSpec : enums) {
-			if (enumSpec == null) {
-				continue;
-			}
-			String name = CaseUtils.toPascal(StringUtils.firstNonBlank(enumSpec.getName(), "").trim());
-			if (name.isBlank() || !seen.add(name)) {
-				continue;
-			}
-			List<String> constants = normalizeConstants(enumSpec.getConstants());
-			if (constants.isEmpty()) {
-				continue;
-			}
-			String storage = normalizeStorage(enumSpec.getStorage());
-			resolved.add(new EnumSpecResolved(name, storage, constants));
-		}
-		return resolved;
+		return enums.stream()
+				.filter(java.util.Objects::nonNull)
+				.map(enumSpec -> new EnumSpecResolved(
+						CaseUtils.toPascal(StringUtils.firstNonBlank(enumSpec.getName(), "").trim()),
+						normalizeStorage(enumSpec.getStorage()),
+						normalizeConstants(enumSpec.getConstants())))
+				.filter(spec -> !spec.name().isBlank())
+				.filter(spec -> !spec.constants().isEmpty())
+				.filter(spec -> seen.add(spec.name()))
+				.collect(Collectors.toCollection(ArrayList::new));
 	}
 
 	public static Map<String, EnumSpecResolved> byName(List<EnumSpecResolved> enums) {
@@ -52,11 +46,10 @@ public final class EnumGenerationSupport {
 		if (enums == null) {
 			return map;
 		}
-		for (EnumSpecResolved item : enums) {
-			if (item != null && item.name() != null) {
-				map.put(item.name(), item);
-			}
-		}
+		enums.stream()
+				.filter(java.util.Objects::nonNull)
+				.filter(item -> item.name() != null)
+				.forEach(item -> map.put(item.name(), item));
 		return map;
 	}
 
@@ -64,13 +57,10 @@ public final class EnumGenerationSupport {
 		if (constants == null || constants.isEmpty()) {
 			return List.of();
 		}
-		Set<String> dedup = new LinkedHashSet<>();
-		for (String constant : constants) {
-			String normalized = normalizeConstant(constant);
-			if (!normalized.isBlank()) {
-				dedup.add(normalized);
-			}
-		}
+		Set<String> dedup = constants.stream()
+				.map(EnumGenerationSupport::normalizeConstant)
+				.filter(normalized -> !normalized.isBlank())
+				.collect(Collectors.toCollection(LinkedHashSet::new));
 		return new ArrayList<>(dedup);
 	}
 

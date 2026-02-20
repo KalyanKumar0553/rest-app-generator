@@ -32,6 +32,11 @@ import { ValidatorService } from '../../../../services/validator.service';
 import { buildMavenNamingRules } from '../../validators/naming-validation';
 import { APP_SETTINGS } from '../../../../settings/app-settings';
 import { LocalStorageService } from '../../../../services/local-storage.service';
+import {
+  ActuatorConfigComponent,
+  ACTUATOR_ENDPOINT_OPTIONS,
+  DEFAULT_ACTUATOR_ENDPOINTS
+} from '../actuator-config/actuator-config.component';
 
 interface ProjectSettings {
   projectGroup: string;
@@ -56,6 +61,7 @@ interface DeveloperPreferences {
   applFormat: 'yaml' | 'properties';
   packages: 'technical' | 'domain' | 'mixed';
   enableOpenAPI: boolean;
+  enableActuator: boolean;
   useDockerCompose: boolean;
   profiles: string[];
   javaVersion: string;
@@ -91,6 +97,7 @@ interface ProjectRunSummary {
     ModalComponent,
     EntitiesComponent,
     DataObjectsComponent,
+    ActuatorConfigComponent,
     AddProfileComponent,
     ProjectViewComponent,
     SidenavComponent,
@@ -110,12 +117,13 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
   hasUnsavedChanges = false;
   activeSection = 'general';
 
-  navItems: NavItem[] = [
+  baseNavItems: NavItem[] = [
     { icon: 'public', label: 'General', value: 'general' },
     { icon: 'storage', label: 'Entities', value: 'entities' },
     { icon: 'category', label: 'Data Objects', value: 'data-objects' },
     { icon: 'search', label: 'Explore', value: 'explore' },
   ];
+  actuatorNavItem: NavItem = { icon: 'device_hub', label: 'Actuator', value: 'actuator' };
 
   entities: any[] = [];
   dataObjects: any[] = [];
@@ -181,12 +189,14 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
     applFormat: 'yaml',
     packages: 'technical',
     enableOpenAPI: false,
+    enableActuator: false,
     useDockerCompose: false,
     profiles: [],
     javaVersion: '21',
     deployment: 'None'
   };
   showProfileModal = false;
+  selectedActuatorEndpoints: string[] = [...DEFAULT_ACTUATOR_ENDPOINTS];
 
   dependencies = '';
   dependencyInput = '';
@@ -212,7 +222,6 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
   dbGenerationOptions = ['Hibernate (update)', 'Hibernate (create)', 'Liquibase', 'Flyway'];
   javaVersionOptions = ['17', '21'];
   deploymentOptions = ['None', 'Docker', 'Kubernetes', 'Cloud'];
-
   constructor(
     private router: Router,
     private route: ActivatedRoute,
@@ -225,11 +234,16 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
   ) {}
 
   get visibleNavItems(): NavItem[] {
+    const navItems = [...this.baseNavItems];
+    if (this.developerPreferences.enableActuator) {
+      navItems.splice(1, 0, this.actuatorNavItem);
+    }
+
     const isNoneDatabase = this.toDatabaseCode(this.databaseSettings.database) === 'NONE';
     if (!isNoneDatabase) {
-      return this.navItems;
+      return navItems;
     }
-    return this.navItems.filter(item => item.value !== 'entities');
+    return navItems.filter(item => item.value !== 'entities');
   }
 
   isEntitiesTabVisible(): boolean {
@@ -279,6 +293,9 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
       settings: this.projectSettings,
       database: this.databaseSettings,
       preferences: this.developerPreferences,
+      actuator: {
+        endpoints: [...this.selectedActuatorEndpoints]
+      },
       dependencies: this.dependencies,
       entities: this.entities,
       dataObjects: this.dataObjects,
@@ -301,7 +318,12 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
         this.databaseSettings = projectData.database || this.databaseSettings;
         this.databaseSettings.database = this.toDatabaseCode(this.databaseSettings.database);
         this.previousDatabaseSelection = this.databaseSettings.database;
-        this.developerPreferences = projectData.preferences || this.developerPreferences;
+        this.developerPreferences = {
+          ...this.developerPreferences,
+          ...(projectData.preferences || {}),
+          enableActuator: Boolean(projectData?.preferences?.enableActuator)
+        };
+        this.selectedActuatorEndpoints = this.sanitizeActuatorEndpoints(projectData?.actuator?.endpoints);
         this.dependencies = projectData.dependencies || '';
         this.toastService.success('Project loaded successfully');
       } else {
@@ -309,6 +331,7 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
         this.dataObjects = [];
         this.relations = [];
         this.enums = [];
+        this.selectedActuatorEndpoints = this.sanitizeActuatorEndpoints(this.selectedActuatorEndpoints);
       }
     } catch (error) {
       this.toastService.error('Failed to load project');
@@ -379,6 +402,11 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
 
   navigateToSection(section: string): void {
     if (section === 'entities' && this.toDatabaseCode(this.databaseSettings.database) === 'NONE') {
+      this.activeSection = 'general';
+      this.closeSidebar();
+      return;
+    }
+    if (section === 'actuator' && !this.developerPreferences.enableActuator) {
       this.activeSection = 'general';
       this.closeSidebar();
       return;
@@ -914,7 +942,31 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
     }
   }
 
+  async setupActuator(): Promise<void> {
+    this.isLoading = true;
+    try {
+      this.navigateToSection('actuator');
+      this.toastService.success('Actuator setup loaded');
+    } catch (error) {
+      this.toastService.error('Failed to proceed');
+      console.error('Error:', error);
+    } finally {
+      this.isLoading = false;
+    }
+  }
+
+  getGeneralPrimaryActionLabel(): string {
+    if (this.activeSection === 'general' && this.developerPreferences.enableActuator) {
+      return 'Setup Actuator';
+    }
+    return this.isEntitiesTabVisible() ? 'Setup Entities' : 'Setup Data Object';
+  }
+
   async handleGeneralPrimaryAction(): Promise<void> {
+    if (this.activeSection === 'general' && this.developerPreferences.enableActuator) {
+      await this.setupActuator();
+      return;
+    }
     if (this.isEntitiesTabVisible()) {
       await this.setupEntities();
       return;
@@ -947,6 +999,7 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
       database: databaseCode,
       applFormat: this.trimmed(project?.preferences?.applFormat) || 'yaml',
       enableOpenapi: Boolean(project?.preferences?.enableOpenAPI),
+      enableActuator: Boolean(project?.preferences?.enableActuator),
       useDockerCompose: Boolean(project?.preferences?.useDockerCompose),
       packages: this.trimmed(project?.preferences?.packages) || 'technical',
       profiles: this.mapProfiles(project?.preferences?.profiles),
@@ -959,6 +1012,13 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
     if (databaseCode !== 'NONE') {
       spec.dbGeneration = this.trimmed(project?.database?.dbGeneration) || 'Hibernate (update)';
       spec.pluralizeTableNames = Boolean(project?.database?.pluralizeTableNames);
+    }
+    if (Boolean(project?.preferences?.enableActuator)) {
+      spec.actuator = {
+        endpoints: {
+          include: this.sanitizeActuatorEndpoints(project?.actuator?.endpoints)
+        }
+      };
     }
 
     if (!spec.dependencies.length) {
@@ -1035,6 +1095,21 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
     this.showProfileModal = true;
   }
 
+  onEnableActuatorChange(enabled: boolean): void {
+    this.developerPreferences.enableActuator = Boolean(enabled);
+    if (!this.developerPreferences.enableActuator && this.activeSection === 'actuator') {
+      this.activeSection = 'general';
+      return;
+    }
+    if (this.developerPreferences.enableActuator && !this.selectedActuatorEndpoints.length) {
+      this.selectedActuatorEndpoints = this.sanitizeActuatorEndpoints(DEFAULT_ACTUATOR_ENDPOINTS);
+    }
+  }
+
+  onActuatorEndpointsChange(endpoints: string[]): void {
+    this.selectedActuatorEndpoints = this.sanitizeActuatorEndpoints(endpoints);
+  }
+
   closeProfileModal(): void {
     this.showProfileModal = false;
   }
@@ -1046,6 +1121,20 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
 
   removeProfile(profile: string): void {
     this.developerPreferences.profiles = this.developerPreferences.profiles.filter(item => item !== profile);
+  }
+
+  private sanitizeActuatorEndpoints(rawEndpoints: unknown): string[] {
+    const allowed = new Set(ACTUATOR_ENDPOINT_OPTIONS.map((option) => option.value));
+    if (!Array.isArray(rawEndpoints)) {
+      return [...DEFAULT_ACTUATOR_ENDPOINTS];
+    }
+
+    const cleaned = rawEndpoints
+      .map((item) => String(item || '').trim().toLowerCase())
+      .filter((item) => item && allowed.has(item));
+
+    const unique = Array.from(new Set(cleaned));
+    return unique.length ? unique : [...DEFAULT_ACTUATOR_ENDPOINTS];
   }
 
   onHelpIconInteraction(event: Event): void {

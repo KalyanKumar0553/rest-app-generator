@@ -1,0 +1,75 @@
+package {{supportPackage}};
+
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Set;
+
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+
+public final class RestQueryUtils {
+
+    private static final int DEFAULT_PAGE = 0;
+    private static final int DEFAULT_SIZE = 20;
+    private static final int MAX_SIZE = 200;
+    private static final Set<String> RESERVED_PARAMS = Set.of("page", "size", "sort");
+
+    private RestQueryUtils() {
+    }
+
+    public static Pageable resolvePageable(Map<String, String> queryParams, Set<String> allowedSortFields) {
+        int page = parseInt(queryParams == null ? null : queryParams.get("page"), DEFAULT_PAGE, 0, Integer.MAX_VALUE);
+        int size = parseInt(queryParams == null ? null : queryParams.get("size"), DEFAULT_SIZE, 1, MAX_SIZE);
+        Sort sort = resolveSort(queryParams == null ? null : queryParams.get("sort"), allowedSortFields);
+        return PageRequest.of(page, size, sort);
+    }
+
+    public static Map<String, String> extractFilterParams(Map<String, String> queryParams) {
+        if (queryParams == null || queryParams.isEmpty()) {
+            return Map.of();
+        }
+        Map<String, String> filters = new LinkedHashMap<>();
+        queryParams.entrySet().stream()
+                .filter(entry -> !RESERVED_PARAMS.contains(entry.getKey()))
+                .filter(entry -> entry.getValue() != null && !entry.getValue().isBlank())
+                .forEach(entry -> filters.put(entry.getKey(), entry.getValue()));
+        return filters;
+    }
+
+    private static Sort resolveSort(String sortRaw, Set<String> allowedSortFields) {
+        if (sortRaw == null || sortRaw.isBlank()) {
+            return Sort.unsorted();
+        }
+        String[] parts = sortRaw.split(",");
+        String field = parts[0].trim();
+        if (field.isBlank()) {
+            return Sort.unsorted();
+        }
+        if (allowedSortFields != null && !allowedSortFields.isEmpty() && !allowedSortFields.contains(field)) {
+            throw new IllegalArgumentException("Unsupported sort field: " + field);
+        }
+        Sort.Direction direction = parts.length > 1 && "desc".equalsIgnoreCase(parts[1].trim())
+                ? Sort.Direction.DESC
+                : Sort.Direction.ASC;
+        return Sort.by(direction, field);
+    }
+
+    private static int parseInt(String raw, int defaultValue, int min, int max) {
+        if (raw == null || raw.isBlank()) {
+            return defaultValue;
+        }
+        try {
+            int parsed = Integer.parseInt(raw.trim());
+            if (parsed < min) {
+                return min;
+            }
+            if (parsed > max) {
+                return max;
+            }
+            return parsed;
+        } catch (NumberFormatException ex) {
+            return defaultValue;
+        }
+    }
+}

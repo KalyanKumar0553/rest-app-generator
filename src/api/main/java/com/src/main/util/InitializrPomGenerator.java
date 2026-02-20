@@ -43,16 +43,15 @@ public class InitializrPomGenerator {
 		build.settings().packaging(packaging);
 		build.properties().version("java", jdk);
 		if (deps != null) {
-			for (MavenDependencyDTO md : deps) {
-				if (md == null)
-					continue;
-				String g = trimOrNull(md.groupId());
-				String a = trimOrNull(md.artifactId());
-				if (g == null || a == null)
-					continue;
-				String id = g + ":" + a;
-				build.dependencies().add(id, Dependency.withCoordinates(g, a).scope(toScope(md.scope())));
-			}
+			deps.stream()
+					.filter(Objects::nonNull)
+					.map(md -> new String[] { trimOrNull(md.groupId()), trimOrNull(md.artifactId()), md.scope() })
+					.filter(parts -> parts[0] != null && parts[1] != null)
+					.forEach(parts -> {
+						String id = parts[0] + ":" + parts[1];
+						build.dependencies().add(id,
+								Dependency.withCoordinates(parts[0], parts[1]).scope(toScope(parts[2])));
+					});
 		}
 		boolean includeJpa = hasJpaDependency(deps);
 		build.dependencies().add("lombok", Dependency.withCoordinates("org.projectlombok", "lombok")

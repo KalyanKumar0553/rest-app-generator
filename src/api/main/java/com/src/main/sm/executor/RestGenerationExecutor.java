@@ -1,9 +1,9 @@
 package com.src.main.sm.executor;
 
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.springframework.statemachine.ExtendedState;
 import org.springframework.stereotype.Component;
@@ -55,12 +55,9 @@ public class RestGenerationExecutor implements StepExecutor {
 				return StepResult.ok(Map.of("status", "Success", "restGeneratedCount", 0));
 			}
 
-			List<ModelSpecDTO> restEnabledModels = new ArrayList<>();
-			for (ModelSpecDTO model : models) {
-				if (Boolean.TRUE.equals(model.getAddRestEndpoints())) {
-					restEnabledModels.add(model);
-				}
-			}
+			List<ModelSpecDTO> restEnabledModels = models.stream()
+					.filter(model -> Boolean.TRUE.equals(model.getAddRestEndpoints()))
+					.collect(Collectors.toList());
 			if (restEnabledModels.isEmpty()) {
 				return StepResult.ok(Map.of("status", "Success", "restGeneratedCount", 0));
 			}
@@ -72,16 +69,27 @@ public class RestGenerationExecutor implements StepExecutor {
 			String utilPackage = RestGenerationSupport.resolveUtilPackage(basePackage, packageStructure);
 			sharedSupportGenerator.generate(root, utilPackage);
 
-			int generatedCount = 0;
-			for (ModelSpecDTO model : restEnabledModels) {
-				RestGenerationUnit unit = RestGenerationSupport.buildUnit(model, basePackage, packageStructure);
-				repositoryGenerator.generate(root, unit);
-				serviceGenerator.generate(root, unit);
-				controllerGenerator.generate(root, unit);
-				generatedCount += 1;
+			final int[] generatedCount = { 0 };
+			try {
+				restEnabledModels.forEach(model -> {
+					try {
+						RestGenerationUnit unit = RestGenerationSupport.buildUnit(model, basePackage, packageStructure);
+						repositoryGenerator.generate(root, unit);
+						serviceGenerator.generate(root, unit);
+						controllerGenerator.generate(root, unit);
+						generatedCount[0] += 1;
+					} catch (Exception ex) {
+						throw new RuntimeException(ex);
+					}
+				});
+			} catch (RuntimeException ex) {
+				if (ex.getCause() instanceof Exception cause) {
+					throw cause;
+				}
+				throw ex;
 			}
 
-			return StepResult.ok(Map.of("status", "Success", "restGeneratedCount", generatedCount));
+			return StepResult.ok(Map.of("status", "Success", "restGeneratedCount", generatedCount[0]));
 		} catch (Exception ex) {
 			return StepResult.error("REST_GENERATION", ex.getMessage());
 		}

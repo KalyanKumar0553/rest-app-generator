@@ -7,9 +7,11 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -76,18 +78,15 @@ public class ScaffoldExecutor implements StepExecutor {
 		final Path root = resolveRoot(data);
 		
 		final Map<String, Object> yaml = (Map<String, Object>) data.getVariables().get("yaml");
-		final boolean openapi = resolveOpenApiEnabled(data, yaml) && hasRestEndpointEntities(yaml);
-		final boolean includeJpa = hasEntities(yaml);
-		final String databaseCode = resolveDatabaseCode(yaml);
-		
-		final List<String> depReqRaw = (List<String>) data.getVariables()
-				.getOrDefault(ProjectMetaDataConstants.DEPENDENCIES, List.of("web", "validation", "actuator", "test"));
-		final List<String> depReq = includeJpa ? ensureJpaDependencies(depReqRaw) : removeJpaDependencies(depReqRaw);
+			final boolean openapi = resolveOpenApiEnabled(data, yaml) && hasRestEndpointEntities(yaml);
+			final String databaseCode = resolveDatabaseCode(yaml);
+			final List<String> depReq = resolveDependenciesFromYaml(yaml);
 
 
 		createMinimalLayout(root, packageName, buildTool);
-		List<MavenDependencyDTO> deps = dependencyResolver.resolveForMaven(depReq, bootVersion, openapi);
-		enrichDependenciesWithDatabase(deps, databaseCode);
+			List<MavenDependencyDTO> resolvedDeps = dependencyResolver.resolveForMaven(depReq, bootVersion, openapi);
+			List<MavenDependencyDTO> deps = new ArrayList<>(resolvedDeps == null ? List.of() : resolvedDeps);
+			enrichDependenciesWithDatabase(deps, databaseCode);
 
 		InitializrProjectModel model = new InitializrProjectModel(groupId, artifactId, version, name, description,
 				packaging, generator, jdkVersion, bootVersion, openapi, angular);
@@ -169,6 +168,18 @@ public class ScaffoldExecutor implements StepExecutor {
 		return false;
 	}
 
+	@SuppressWarnings("unchecked")
+	private static boolean resolveActuatorEnabled(Map<String, Object> yaml) {
+		if (yaml == null) {
+			return false;
+		}
+		Object raw = yaml.get("enableActuator");
+		if (raw == null && yaml.get("app") instanceof Map<?, ?> appRaw) {
+			raw = ((Map<String, Object>) appRaw).get("enableActuator");
+		}
+		return parseBoolean(raw, false);
+	}
+
 	private static boolean parseBoolean(Object value, boolean defaultValue) {
 		if (value == null) {
 			return defaultValue;
@@ -204,34 +215,25 @@ public class ScaffoldExecutor implements StepExecutor {
 		if (!(modelsRaw instanceof List<?> models)) {
 			return false;
 		}
-		for (Object item : models) {
-			if (!(item instanceof Map<?, ?> modelRaw)) {
-				continue;
-			}
-			Object addRestEndpoints = ((Map<String, Object>) modelRaw).get("addRestEndpoints");
-			if (parseBoolean(addRestEndpoints, false)) {
-				return true;
-			}
-		}
-		return false;
+		return models.stream()
+				.filter(Map.class::isInstance)
+				.map(Map.class::cast)
+				.map(modelRaw -> ((Map<String, Object>) modelRaw).get("addRestEndpoints"))
+				.anyMatch(addRestEndpoints -> parseBoolean(addRestEndpoints, false));
 	}
 
 	private static List<String> removeJpaDependencies(List<String> dependencies) {
 		if (dependencies == null || dependencies.isEmpty()) {
 			return List.of();
 		}
-		List<String> filtered = new ArrayList<>();
-		for (String dependency : dependencies) {
-			if (dependency == null) {
-				continue;
-			}
-			String token = dependency.trim().toLowerCase();
-			if ("jpa".equals(token) || "data-jpa".equals(token) || "spring-boot-starter-data-jpa".equals(token)) {
-				continue;
-			}
-			filtered.add(dependency);
-		}
-		return filtered;
+		return dependencies.stream()
+				.filter(Objects::nonNull)
+				.filter(dependency -> {
+					String token = dependency.trim().toLowerCase();
+					return !"jpa".equals(token) && !"data-jpa".equals(token)
+							&& !"spring-boot-starter-data-jpa".equals(token);
+				})
+				.collect(java.util.stream.Collectors.toList());
 	}
 
 	private static List<String> ensureJpaDependencies(List<String> dependencies) {
@@ -246,6 +248,115 @@ public class ScaffoldExecutor implements StepExecutor {
 			merged.add("data-jpa");
 		}
 		return merged;
+	}
+
+	@SuppressWarnings("unchecked")
+	private static List<String> extractDependenciesFromYaml(Map<String, Object> yaml) {
+		if (yaml == null) {
+			return List.of();
+		}
+		Object depsRaw = yaml.get("dependencies");
+		if (!(depsRaw instanceof List<?> rawList)) {
+			return List.of();
+		}
+		return rawList.stream()
+				.filter(Objects::nonNull)
+				.map(String::valueOf)
+				.map(String::trim)
+				.filter(value -> !value.isEmpty())
+				.collect(java.util.stream.Collectors.toList());
+	}
+
+	private static List<String> resolveDependenciesFromYaml(Map<String, Object> yaml) {
+		Set<String> dependencies = new LinkedHashSet<>(extractDependenciesFromYaml(yaml));
+
+		if (hasRestEndpointEntities(yaml)) {
+			dependencies.add("web");
+		}
+		if (hasValidationConstraints(yaml)) {
+			dependencies.add("validation");
+		}
+		if (resolveActuatorEnabled(yaml)) {
+			dependencies.add("actuator");
+		}
+
+		List<String> merged = hasEntities(yaml)
+				? ensureJpaDependencies(new ArrayList<>(dependencies))
+				: removeJpaDependencies(new ArrayList<>(dependencies));
+
+		return merged.stream()
+				.filter(Objects::nonNull)
+				.map(String::trim)
+				.filter(item -> !item.isEmpty())
+				.collect(java.util.stream.Collectors.toList());
+	}
+
+	@SuppressWarnings("unchecked")
+	private static boolean hasValidationMessages(Map<String, Object> yaml) {
+		if (yaml == null) {
+			return false;
+		}
+		Object messagesRaw = yaml.get("messages");
+		if (!(messagesRaw instanceof Map<?, ?> messagesMap) || messagesMap.isEmpty()) {
+			return false;
+		}
+		return messagesMap.keySet().stream()
+				.filter(Objects::nonNull)
+				.map(String::valueOf)
+				.anyMatch(key -> key.startsWith("validation."));
+	}
+
+	@SuppressWarnings("unchecked")
+	private static boolean hasValidationConstraints(Map<String, Object> yaml) {
+		if (yaml == null) {
+			return false;
+		}
+		if (hasValidationMessages(yaml)) {
+			return true;
+		}
+
+		Object modelsRaw = yaml.get("models");
+		boolean modelHasConstraints = modelsRaw instanceof List<?> models && models.stream()
+				.filter(Map.class::isInstance)
+				.map(Map.class::cast)
+				.flatMap(modelRaw -> {
+					Object fieldsRaw = ((Map<String, Object>) modelRaw).get("fields");
+					if (!(fieldsRaw instanceof List<?> fields)) {
+						return java.util.stream.Stream.empty();
+					}
+					return fields.stream();
+				})
+				.filter(Map.class::isInstance)
+				.map(Map.class::cast)
+				.map(fieldRaw -> ((Map<String, Object>) fieldRaw).get("constraints"))
+				.anyMatch(constraints -> constraints instanceof List<?> list && !list.isEmpty());
+		if (modelHasConstraints) {
+			return true;
+		}
+
+		Object dtosRaw = yaml.get("dtos");
+		if (!(dtosRaw instanceof List<?> dtos)) {
+			return false;
+		}
+		return dtos.stream()
+				.filter(Map.class::isInstance)
+				.map(Map.class::cast)
+				.anyMatch(dtoRaw -> {
+					Map<String, Object> dtoMap = (Map<String, Object>) dtoRaw;
+					Object classConstraints = dtoMap.get("classConstraints");
+					if (classConstraints instanceof List<?> list && !list.isEmpty()) {
+						return true;
+					}
+					Object fieldsRaw = dtoMap.get("fields");
+					if (!(fieldsRaw instanceof List<?> fields)) {
+						return false;
+					}
+					return fields.stream()
+							.filter(Map.class::isInstance)
+							.map(Map.class::cast)
+							.map(fieldRaw -> ((Map<String, Object>) fieldRaw).get("constraints"))
+							.anyMatch(constraints -> constraints instanceof List<?> list && !list.isEmpty());
+				});
 	}
 
 	@SuppressWarnings("unchecked")
@@ -321,12 +432,10 @@ public class ScaffoldExecutor implements StepExecutor {
 		if (s == null || s.isBlank())
 			return "Application";
 		String[] parts = s.replace('-', ' ').replace('_', ' ').trim().split("\\s+");
-		StringBuilder b = new StringBuilder();
-		for (String p : parts) {
-			if (!p.isEmpty())
-				b.append(Character.toUpperCase(p.charAt(0))).append(p.substring(1));
-		}
-		return b.append("").toString();
+		return java.util.Arrays.stream(parts)
+				.filter(p -> !p.isEmpty())
+				.map(p -> Character.toUpperCase(p.charAt(0)) + p.substring(1))
+				.collect(java.util.stream.Collectors.joining());
 	}
 
 	@SuppressWarnings("unchecked")
@@ -395,14 +504,13 @@ public class ScaffoldExecutor implements StepExecutor {
 		StringBuilder sb = new StringBuilder();
 		sb.append("# Application messages").append(System.lineSeparator());
 		if (entries != null) {
-			for (Map<String, String> e : entries) {
-				String k = e.get("key");
-				String v = e.get("value");
-				if (k == null)
-					continue;
-				sb.append(escapePropKey(k)).append('=').append(escapePropValue(v == null ? "" : v))
-						.append(System.lineSeparator());
-			}
+			entries.stream()
+					.filter(Objects::nonNull)
+					.filter(e -> e.get("key") != null)
+					.forEach(e -> sb.append(escapePropKey(e.get("key")))
+							.append('=')
+							.append(escapePropValue(e.get("value") == null ? "" : e.get("value")))
+							.append(System.lineSeparator()));
 		}
 		return sb.toString();
 	}
@@ -441,7 +549,8 @@ public class ScaffoldExecutor implements StepExecutor {
 	/** Minimal .properties escaping for keys. */
 	private static String escapePropKey(String s) {
 		StringBuilder b = new StringBuilder(s.length() + 8);
-		for (char c : s.toCharArray()) {
+		s.chars().forEach(ch -> {
+			char c = (char) ch;
 			switch (c) {
 			case ' ', '\t', '\f', '=', ':', '#', '!' -> {
 				b.append('\\').append(c);
@@ -451,21 +560,22 @@ public class ScaffoldExecutor implements StepExecutor {
 			case '\r' -> b.append("\\r");
 			default -> b.append(c);
 			}
-		}
+		});
 		return b.toString();
 	}
 
 	/** Minimal .properties escaping for values. */
 	private static String escapePropValue(String s) {
 		StringBuilder b = new StringBuilder(s.length() + 8);
-		for (char c : s.toCharArray()) {
+		s.chars().forEach(ch -> {
+			char c = (char) ch;
 			switch (c) {
 			case '\\' -> b.append("\\\\");
 			case '\n' -> b.append("\\n");
 			case '\r' -> b.append("\\r");
 			default -> b.append(c);
 			}
-		}
+		});
 		return b.toString();
 	}
 }

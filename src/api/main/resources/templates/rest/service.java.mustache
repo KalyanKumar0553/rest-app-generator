@@ -1,16 +1,22 @@
 package {{servicePackage}};
 
-import java.util.List;
 import java.util.Map;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+{{#idTypeImport}}
+import {{idTypeImport}};
+{{/idTypeImport}}
 import {{modelPackage}}.{{entityName}};
 import {{repositoryPackage}}.{{repositoryClass}};
-import {{supportPackage}}.{{supportClass}};
+import {{supportPackage}}.{{entitySupportClass}};
+import {{supportPackage}}.{{filterSupportClass}};
+import {{supportPackage}}.{{querySupportClass}};
 
 @Service
 @Transactional(readOnly = true)
@@ -30,7 +36,7 @@ public class {{serviceClass}} {
     @Transactional
     public {{entityName}} update({{idType}} id, {{entityName}} request) {
         {{entityName}} existing = getById(id);
-        {{supportClass}}.mergeNonNullFields(request, existing, "{{idName}}");
+        {{entitySupportClass}}.mergeNonNullFields(request, existing, "{{idName}}");
         return repository.save(existing);
     }
 
@@ -47,19 +53,16 @@ public class {{serviceClass}} {
         repository.deleteAll();
     }
 
-    public List<{{entityName}}> getAll() {
-        return repository.findAll();
-    }
-
     public {{entityName}} getById({{idType}} id) {
         return repository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "{{entityName}} not found for id: " + id));
     }
 
-    public List<{{entityName}}> search(Map<String, String> queryParams) {
-        if (queryParams == null || queryParams.isEmpty()) {
-            return getAll();
+    public Page<{{entityName}}> search(Map<String, String> queryParams, Pageable pageable) {
+        Map<String, String> filters = {{querySupportClass}}.extractFilterParams(queryParams);
+        if (filters.isEmpty()) {
+            return repository.findAll(pageable);
         }
-        return repository.findAll({{supportClass}}.buildSpecification(queryParams, {{entityName}}.class));
+        return repository.findAll({{filterSupportClass}}.buildSpecification(filters, {{entityName}}.class), pageable);
     }
 }

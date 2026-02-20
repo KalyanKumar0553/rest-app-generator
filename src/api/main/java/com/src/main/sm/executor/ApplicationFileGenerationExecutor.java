@@ -51,35 +51,58 @@ public class ApplicationFileGenerationExecutor implements StepExecutor {
 		Object profilesObj = yaml.get("profiles");
 		if (profilesObj instanceof Map) {
 			Map<String, Object> profiles = castMap(profilesObj);
-			for (Map.Entry<String, Object> e : profiles.entrySet()) {
-				String profile = e.getKey();
-				Object node = e.getValue();
-				if (!(node instanceof Map))
-					continue;
+			try {
+				profiles.entrySet().forEach(e -> {
+					String profile = e.getKey();
+					Object node = e.getValue();
+					if (!(node instanceof Map))
+						return;
 
-				Map<String, Object> profileMap = castMap(node);
-				Object profilePropsObj = profileMap.get("properties");
-				if (profilePropsObj instanceof Map) {
-					Map<String, Object> profileProps = castMap(profilePropsObj);
-					if (useYaml) {
-						writeYamlFile(root, "application-" + profile + ".yml", profileProps);
-					} else {
-						writePropertiesFile(root, "application-" + profile + ".properties", profileProps);
+					Map<String, Object> profileMap = castMap(node);
+					Object profilePropsObj = profileMap.get("properties");
+					if (profilePropsObj instanceof Map) {
+						Map<String, Object> profileProps = castMap(profilePropsObj);
+						try {
+							writeProfileConfig(root, profile, profileProps, useYaml);
+						} catch (Exception ex) {
+							throw new RuntimeException(ex);
+						}
 					}
+				});
+			} catch (RuntimeException ex) {
+				if (ex.getCause() instanceof Exception cause) {
+					throw cause;
 				}
+				throw ex;
 			}
 		} else {
-			for (String profile : extractProfileNames(profilesObj)) {
-				Map<String, Object> profileProps = new LinkedHashMap<>();
-				if (useYaml) {
-					writeYamlFile(root, "application-" + profile + ".yml", profileProps);
-				} else {
-					writePropertiesFile(root, "application-" + profile + ".properties", profileProps);
+			try {
+				extractProfileNames(profilesObj).forEach(profile -> {
+					Map<String, Object> profileProps = new LinkedHashMap<>();
+					try {
+						writeProfileConfig(root, profile, profileProps, useYaml);
+					} catch (Exception ex) {
+						throw new RuntimeException(ex);
+					}
+				});
+			} catch (RuntimeException ex) {
+				if (ex.getCause() instanceof Exception cause) {
+					throw cause;
 				}
+				throw ex;
 			}
 		}
 
 		return StepResult.ok(Map.of("status", "Success"));
+	}
+
+	private static void writeProfileConfig(Path root, String profile, Map<String, Object> profileProps, boolean useYaml)
+			throws Exception {
+		if (useYaml) {
+			writeYamlFile(root, "application-" + profile + ".yml", profileProps);
+		} else {
+			writePropertiesFile(root, "application-" + profile + ".properties", profileProps);
+		}
 	}
 
 	@SuppressWarnings("unchecked")
@@ -110,10 +133,9 @@ public class ApplicationFileGenerationExecutor implements StepExecutor {
 		LinkedHashMap<String, String> flat = new LinkedHashMap<>();
 		flatten("", props, flat);
 
-		List<String> lines = new ArrayList<>(flat.size());
-		for (Map.Entry<String, String> kv : flat.entrySet()) {
-			lines.add(kv.getKey() + "=" + escapePropertiesValue(kv.getValue()));
-		}
+		List<String> lines = flat.entrySet().stream()
+				.map(kv -> kv.getKey() + "=" + escapePropertiesValue(kv.getValue()))
+				.collect(java.util.stream.Collectors.toList());
 		Files.write(resources.resolve(fileName), lines, StandardCharsets.UTF_8);
 	}
 
@@ -297,12 +319,10 @@ public class ApplicationFileGenerationExecutor implements StepExecutor {
 		if (!(messagesRaw instanceof Map<?, ?> messagesMap) || messagesMap.isEmpty()) {
 			return false;
 		}
-		for (Object key : messagesMap.keySet()) {
-			if (key != null && String.valueOf(key).startsWith("validation.")) {
-				return true;
-			}
-		}
-		return false;
+		return messagesMap.keySet().stream()
+				.filter(java.util.Objects::nonNull)
+				.map(String::valueOf)
+				.anyMatch(key -> key.startsWith("validation."));
 	}
 
 	@SuppressWarnings("unchecked")
@@ -311,13 +331,10 @@ public class ApplicationFileGenerationExecutor implements StepExecutor {
 			return List.of();
 		}
 
-		Set<String> unique = new LinkedHashSet<>();
-		for (Object item : rawList) {
-			String normalized = normalizeProfileName(item);
-			if (normalized != null) {
-				unique.add(normalized);
-			}
-		}
+		Set<String> unique = rawList.stream()
+				.map(ApplicationFileGenerationExecutor::normalizeProfileName)
+				.filter(java.util.Objects::nonNull)
+				.collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new));
 		return new ArrayList<>(unique);
 	}
 
@@ -367,11 +384,10 @@ public class ApplicationFileGenerationExecutor implements StepExecutor {
 
 		if (node instanceof Map) {
 			Map<String, Object> m = castMap(node);
-			for (Map.Entry<String, Object> e : m.entrySet()) {
-				String key = e.getKey();
+			m.forEach((key, value) -> {
 				String path = prefix.isEmpty() ? key : prefix + "." + key;
-				flatten(path, e.getValue(), out);
-			}
+				flatten(path, value, out);
+			});
 			return;
 		}
 
@@ -400,21 +416,15 @@ public class ApplicationFileGenerationExecutor implements StepExecutor {
 		}
 		if (list.isEmpty())
 			return "";
-		StringBuilder sb = new StringBuilder();
-		for (Object o : list) {
-			if (sb.length() > 0)
-				sb.append(',');
-			sb.append(o == null ? "" : String.valueOf(o));
-		}
-		return sb.toString();
+		return list.stream().map(o -> o == null ? "" : String.valueOf(o)).collect(java.util.stream.Collectors.joining(","));
 	}
 
 	private static String escapePropertiesValue(String v) {
 		if (v == null)
 			return "";
 		StringBuilder sb = new StringBuilder(v.length() + 16);
-		for (int i = 0; i < v.length(); i++) {
-			char c = v.charAt(i);
+		v.chars().forEach(ch -> {
+			char c = (char) ch;
 			switch (c) {
 			case '\\':
 				sb.append("\\\\");
@@ -440,7 +450,7 @@ public class ApplicationFileGenerationExecutor implements StepExecutor {
 			default:
 				sb.append(c);
 			}
-		}
+		});
 		return sb.toString();
 	}
 }

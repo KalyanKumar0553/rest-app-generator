@@ -128,6 +128,16 @@
   color: var(--neutral-800);
 }
 
+.entity-action-btn.danger {
+  color: var(--theme-error-text-color, var(--color-error));
+}
+
+.entity-action-btn.danger:hover {
+  color: var(--theme-error-text-color, var(--color-error));
+  background-color: var(--theme-error-bg, var(--error-50));
+  border-radius: 8px;
+}
+
 .entity-card__relations {
   padding: 0 16px;
   display: flex;

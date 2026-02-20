@@ -3,6 +3,9 @@ package {{repositoryPackage}};
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 
+{{#idTypeImport}}
+import {{idTypeImport}};
+{{/idTypeImport}}
 import {{modelPackage}}.{{entityName}};
 
 public interface {{repositoryClass}} extends JpaRepository<{{entityName}}, {{idType}}>, JpaSpecificationExecutor<{{entityName}}> {

@@ -45,6 +45,8 @@ public class StateMachineConfig extends EnumStateMachineConfigurerAdapter<States
 						runStep(States.SWAGGER_GENERATION, Events.SWAGGER_DONE, Events.SWAGGER_FAIL))
 				.stateEntry(States.REST_GENERATION,
 						runStep(States.REST_GENERATION, Events.REST_DONE, Events.REST_FAIL))
+				.stateEntry(States.ACTUATOR_CONFIGURATION,
+						runStep(States.ACTUATOR_CONFIGURATION, Events.ACTUATOR_DONE, Events.ACTUATOR_FAIL))
 				.stateEntry(States.APPLICATION_FILES,
 						runStep(States.APPLICATION_FILES, Events.APPFILES_DONE, Events.APPFILES_FAIL))
 				.stateEntry(States.DOCKER_GENERATION,
@@ -74,10 +76,15 @@ public class StateMachineConfig extends EnumStateMachineConfigurerAdapter<States
 				.event(Events.SWAGGER_DONE).and().withExternal().source(States.SWAGGER_GENERATION).target(States.ERROR)
 				.event(Events.SWAGGER_FAIL).and()
 
-				// REST GENERATION → APP FILES / ERROR
-				.withExternal().source(States.REST_GENERATION).target(States.APPLICATION_FILES)
-				.event(Events.REST_DONE).and().withExternal().source(States.REST_GENERATION).target(States.ERROR)
-				.event(Events.REST_FAIL).and()
+				// REST GENERATION → ACTUATOR CONFIG / ERROR
+				.withExternal().source(States.REST_GENERATION).target(States.ACTUATOR_CONFIGURATION)
+					.event(Events.REST_DONE).and().withExternal().source(States.REST_GENERATION).target(States.ERROR)
+					.event(Events.REST_FAIL).and()
+
+				// ACTUATOR CONFIG → APP FILES / ERROR
+				.withExternal().source(States.ACTUATOR_CONFIGURATION).target(States.APPLICATION_FILES)
+					.event(Events.ACTUATOR_DONE).and().withExternal().source(States.ACTUATOR_CONFIGURATION)
+					.target(States.ERROR).event(Events.ACTUATOR_FAIL).and()
 
 				// APP FILES → DOCKER / ERROR
 				.withExternal().source(States.APPLICATION_FILES).target(States.DOCKER_GENERATION).event(Events.APPFILES_DONE)
@@ -97,9 +104,10 @@ public class StateMachineConfig extends EnumStateMachineConfigurerAdapter<States
 				.withExternal().source(States.DTO_GENERATION).target(States.ERROR).event(Events.FAIL).and()
 				.withExternal().source(States.ENUM_GENERATION).target(States.ERROR).event(Events.FAIL).and()
 				.withExternal().source(States.MODEL_GENERATION).target(States.ERROR).event(Events.FAIL).and()
-				.withExternal().source(States.SWAGGER_GENERATION).target(States.ERROR).event(Events.FAIL).and()
-				.withExternal().source(States.REST_GENERATION).target(States.ERROR).event(Events.FAIL).and()
-				.withExternal().source(States.APPLICATION_FILES).target(States.ERROR).event(Events.FAIL).and()
+					.withExternal().source(States.SWAGGER_GENERATION).target(States.ERROR).event(Events.FAIL).and()
+					.withExternal().source(States.REST_GENERATION).target(States.ERROR).event(Events.FAIL).and()
+					.withExternal().source(States.ACTUATOR_CONFIGURATION).target(States.ERROR).event(Events.FAIL).and()
+					.withExternal().source(States.APPLICATION_FILES).target(States.ERROR).event(Events.FAIL).and()
 				.withExternal().source(States.DOCKER_GENERATION).target(States.ERROR).event(Events.FAIL).and()
 				.withExternal().source(States.SCAFFOLD).target(States.ERROR).event(Events.FAIL);
 	}

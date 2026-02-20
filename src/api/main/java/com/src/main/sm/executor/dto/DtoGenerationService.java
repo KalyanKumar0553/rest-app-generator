@@ -33,10 +33,7 @@ public class DtoGenerationService {
 
 	@SuppressWarnings("unchecked")
 	public void generate(Path root, Map<String, Object> yaml, String groupId, String artifact) throws Exception {
-		String basePkg = (yaml != null) ? DtoGenerationSupport.str(yaml.get("basePackage")) : null;
-		if (basePkg == null || basePkg.isBlank()) {
-			basePkg = groupId + "." + artifact.replace('-', '_');
-		}
+		String basePkg = resolveBasePackage(yaml, groupId, artifact);
 
 		List<Map<String, Object>> dtos = (List<Map<String, Object>>) yaml.getOrDefault("dtos", List.of());
 		if (dtos.isEmpty()) {
@@ -52,20 +49,41 @@ public class DtoGenerationService {
 		}
 
 		List<Map<String, Object>> dtosForMessages = new ArrayList<>();
-		for (Map<String, Object> dto : dtos) {
-			DtoGenerationUnit unit = buildUnit(dto, enumByName, enumPackage);
-			String code = templateEngine.render(TPL_DTO, Map.of("basePkg", basePkg, "sub", unit.getSubPackage(), "name",
-					unit.getName(), "classAnnotations", String.join("\n", unit.getClassAnnotations()), "fields",
-					unit.getFieldModels()));
-			code = DtoGenerationSupport.injectImportsAfterPackage(code, unit.getImports());
-
-			Path dir = root.resolve("src/main/java/" + basePkg.replace('.', '/') + "/dto/" + unit.getSubPackage());
-			Files.createDirectories(dir);
-			Files.writeString(dir.resolve(unit.getName() + ".java"), code, StandardCharsets.UTF_8);
-			dtosForMessages.add(unit.getMessageModel());
+		try {
+			dtos.stream().map(dto -> buildUnit(dto, enumByName, enumPackage)).forEach(unit -> {
+				try {
+					writeDtoUnit(root, basePkg, unit);
+					dtosForMessages.add(unit.getMessageModel());
+				} catch (Exception ex) {
+					throw new RuntimeException(ex);
+				}
+			});
+		} catch (RuntimeException ex) {
+			if (ex.getCause() instanceof Exception cause) {
+				throw cause;
+			}
+			throw ex;
 		}
 
 		DtoGenerationSupport.mergeDtoMessagesIntoYaml(yaml, dtosForMessages);
+	}
+
+	private String resolveBasePackage(Map<String, Object> yaml, String groupId, String artifact) {
+		String basePkg = (yaml != null) ? DtoGenerationSupport.str(yaml.get("basePackage")) : null;
+		if (basePkg == null || basePkg.isBlank()) {
+			return groupId + "." + artifact.replace('-', '_');
+		}
+		return basePkg;
+	}
+
+	private void writeDtoUnit(Path root, String basePkg, DtoGenerationUnit unit) throws Exception {
+		String code = templateEngine.render(TPL_DTO,
+				Map.of("basePkg", basePkg, "sub", unit.getSubPackage(), "name", unit.getName(), "classAnnotations",
+						String.join("\n", unit.getClassAnnotations()), "fields", unit.getFieldModels()));
+		code = DtoGenerationSupport.injectImportsAfterPackage(code, unit.getImports());
+		Path dir = root.resolve("src/main/java/" + basePkg.replace('.', '/') + "/dto/" + unit.getSubPackage());
+		Files.createDirectories(dir);
+		Files.writeString(dir.resolve(unit.getName() + ".java"), code, StandardCharsets.UTF_8);
 	}
 
 	@SuppressWarnings("unchecked")
@@ -97,7 +115,7 @@ public class DtoGenerationService {
 		List<Map<String, Object>> fieldModels = new ArrayList<>();
 		List<Map<String, Object>> fieldsForMessages = new ArrayList<>();
 
-		for (Map<String, Object> f : fields) {
+		fields.forEach(f -> {
 			String fname = String.valueOf(f.get("name"));
 			String ftype = String.valueOf(f.get("type"));
 
@@ -115,11 +133,11 @@ public class DtoGenerationService {
 			List<Map<String, Object>> constraints = DtoGenerationSupport.normalizeConstraints(f.get("constraints"));
 			List<Map<String, Object>> constraintsForMessages = new ArrayList<>();
 
-			for (Map<String, Object> c : constraints) {
+			constraints.forEach(c -> {
 				String kind = DtoGenerationSupport.str(c.get("kind"));
 				String key = DtoGenerationSupport.str(c.get("key"));
 				if (kind == null)
-					continue;
+					return;
 				String ann = DtoGenerationSupport.toValidationAnnotation(kind, c, key);
 				if (ann != null && !ann.isBlank()) {
 					annotations.add(ann);
@@ -132,7 +150,7 @@ public class DtoGenerationService {
 						constraintsForMessages.add(cm);
 					}
 				}
-			}
+			});
 
 			if (f.containsKey("jsonProperty")) {
 				String jp = DtoGenerationSupport.str(f.get("jsonProperty"));
@@ -156,10 +174,10 @@ public class DtoGenerationService {
 			Map<String, Object> msgField = new LinkedHashMap<>();
 			msgField.put("constraints", constraintsForMessages);
 			fieldsForMessages.add(msgField);
-		}
+		});
 
 		classAnnotations.forEach(a -> DtoGenerationSupport.collectImportFromAnnotation(a, imports));
-		classAnnotations = DtoGenerationSupport.simplifyAnnotations(classAnnotations, imports);
+		List<String> simplifiedClassAnnotations = DtoGenerationSupport.simplifyAnnotations(classAnnotations, imports);
 
 		Map<String, Object> dtoMsg = new LinkedHashMap<>();
 		dtoMsg.put("name", name);
@@ -168,6 +186,6 @@ public class DtoGenerationService {
 			dtoMsg.put("classConstraints", classConstraintsForMessages);
 		}
 
-		return new DtoGenerationUnit(sub, name, fieldModels, classAnnotations, imports, dtoMsg);
+		return new DtoGenerationUnit(sub, name, fieldModels, simplifiedClassAnnotations, imports, dtoMsg);
 	}
 }

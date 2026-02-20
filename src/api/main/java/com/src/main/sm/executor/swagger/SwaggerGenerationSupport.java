@@ -1,10 +1,10 @@
 package com.src.main.sm.executor.swagger;
 
 import java.util.ArrayList;
-import java.util.LinkedHashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
-import java.util.Set;
+import java.util.stream.Collectors;
 
 import com.src.main.common.util.CaseUtils;
 import com.src.main.common.util.StringUtils;
@@ -34,27 +34,23 @@ public final class SwaggerGenerationSupport {
 	}
 
 	public static List<SwaggerGroupSpec> buildGroups(List<ModelSpecDTO> models) {
-		List<SwaggerGroupSpec> groups = new ArrayList<>();
-		Set<String> seen = new LinkedHashSet<>();
 		if (models == null) {
-			return groups;
+			return new ArrayList<>();
 		}
-
-		for (ModelSpecDTO model : models) {
-			if (!Boolean.TRUE.equals(model.getAddRestEndpoints())) {
-				continue;
-			}
-			String entity = CaseUtils.toPascal(StringUtils.firstNonBlank(model.getName(), "Entity"));
-			String endpoint = toKebabCase(entity) + "s";
-			String groupName = endpoint;
-			if (!seen.add(groupName)) {
-				continue;
-			}
-			String beanName = toCamelCase(entity) + "ApiGroup";
-			String pathPattern = "/api/" + endpoint + "/**";
-			groups.add(new SwaggerGroupSpec(beanName, groupName, pathPattern));
-		}
-		return groups;
+		return models.stream()
+				.filter(model -> Boolean.TRUE.equals(model.getAddRestEndpoints()))
+				.map(model -> {
+					String entity = CaseUtils.toPascal(StringUtils.firstNonBlank(model.getName(), "Entity"));
+					String endpoint = toKebabCase(entity) + "s";
+					String beanName = toCamelCase(entity) + "ApiGroup";
+					String pathPattern = "/api/" + endpoint + "/**";
+					return new SwaggerGroupSpec(beanName, endpoint, pathPattern);
+				})
+				.collect(Collectors.toMap(SwaggerGroupSpec::groupName, group -> group, (left, right) -> left,
+						LinkedHashMap::new))
+				.values()
+				.stream()
+				.collect(Collectors.toCollection(ArrayList::new));
 	}
 
 	private static String toKebabCase(String value) {

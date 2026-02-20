@@ -107,7 +107,7 @@ export class FieldConfigComponent implements OnChanges {
   }
 
   getAvailableConstraintOptions(index: number): string[] {
-    const typeOptions = getConstraintOptionsForFieldType(this.field?.type ?? '');
+    const typeOptions = getConstraintOptionsForFieldType(this.field?.type ?? '', this.fieldTypes);
     const selectedInOtherRows = new Set(
       (this.field.constraints ?? [])
         .map((constraint, i) => (i === index ? '' : constraint.name?.trim()))
@@ -173,7 +173,7 @@ export class FieldConfigComponent implements OnChanges {
       return;
     }
 
-    const allowedOptions = new Set(getConstraintOptionsForFieldType(this.field.type));
+    const allowedOptions = new Set(getConstraintOptionsForFieldType(this.field.type, this.fieldTypes));
     this.field.constraints = constraints.filter(constraint => {
       if (!constraint.name?.trim()) {
         return true;

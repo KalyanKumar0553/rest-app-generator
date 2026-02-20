@@ -194,6 +194,12 @@
   margin-bottom: 16px;
 }
 
+.actuator-scrollable-content {
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
 .sticky-footer {
   position: sticky;
   bottom: 40px;
@@ -217,10 +223,31 @@
   display: inline-flex !important;
   align-items: center;
   gap: 8px;
+  color: var(--color-primary) !important;
+  border-color: var(--color-primary) !important;
+  background-color: var(--color-background-white) !important;
+  transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
 }
 
 .back-btn-desktop i {
   font-size: 18px;
+  color: inherit;
+}
+
+.back-btn-desktop:hover {
+  color: var(--color-text-inverse) !important;
+  border-color: var(--color-primary) !important;
+  background-color: var(--color-primary) !important;
+}
+
+.back-btn-desktop:hover i {
+  color: inherit;
+}
+
+.back-btn-desktop:active {
+  color: var(--color-text-inverse) !important;
+  border-color: var(--color-primary-hover) !important;
+  background-color: var(--color-primary-hover) !important;
 }
 
 

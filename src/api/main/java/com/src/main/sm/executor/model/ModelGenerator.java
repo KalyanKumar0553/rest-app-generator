@@ -86,16 +86,27 @@ public class ModelGenerator {
 		Map<String, EnumSpecResolved> enumByName = EnumGenerationSupport.byName(
 				EnumGenerationSupport.resolveEnums(spec.getEnums()));
 		Map<String, String> modelPackageByType = new LinkedHashMap<>();
-		for (ModelSpecDTO m : spec.getModels()) {
+		spec.getModels().forEach(m -> {
 			String className = CaseUtils.toPascal(m.getName());
 			modelPackageByType.put(className, resolveModelPackage(m, domainStructure));
-		}
+		});
 
-		for (ModelSpecDTO m : spec.getModels()) {
-			String modelPkg = resolveModelPackage(m, domainStructure);
-			Path outDir = projectRoot.resolve(PathUtils.javaSrcPathFromPackage(modelPkg));
-			Files.createDirectories(outDir);
-			renderModel(m, modelPkg, outDir, spec, modelPackageByType, enumByName, enumPackage);
+		try {
+			spec.getModels().forEach(m -> {
+				try {
+					String modelPkg = resolveModelPackage(m, domainStructure);
+					Path outDir = projectRoot.resolve(PathUtils.javaSrcPathFromPackage(modelPkg));
+					Files.createDirectories(outDir);
+					renderModel(m, modelPkg, outDir, spec, modelPackageByType, enumByName, enumPackage);
+				} catch (Exception ex) {
+					throw new RuntimeException(ex);
+				}
+			});
+		} catch (RuntimeException ex) {
+			if (ex.getCause() instanceof Exception cause) {
+				throw cause;
+			}
+			throw ex;
 		}
 	}
 
@@ -220,21 +231,16 @@ public class ModelGenerator {
 		// ----- Fields (non-relational)
 		List<FieldBlock> fields = new ArrayList<>();
 		if (m.getFields() != null) {
-			for (FieldSpecDTO f : m.getFields()) {
-				if (isRelationPlaceholder(f)) {
-					continue;
-				}
-				fields.add(buildFieldBlock(m, f, imports, enumByName, enumPackage, modelPkg));
-			}
+			m.getFields().stream()
+					.filter(f -> !isRelationPlaceholder(f))
+					.forEach(f -> fields.add(buildFieldBlock(m, f, imports, enumByName, enumPackage, modelPkg)));
 		}
 		ctx.put("fields", fields);
 
 		// ----- Relations
 		List<RelationBlock> rels = new ArrayList<>();
 		if (m.getRelations() != null) {
-			for (RelationSpecDTO r : m.getRelations()) {
-				rels.add(buildRelationBlock(m, r, imports, modelPkg, modelPackageByType));
-			}
+			m.getRelations().forEach(r -> rels.add(buildRelationBlock(m, r, imports, modelPkg, modelPackageByType)));
 		}
 		ctx.put("relations", rels);
 
@@ -401,8 +407,9 @@ public class ModelGenerator {
 		if (f.getConstraints() != null) {
 			for (ConstraintDTO c : f.getConstraints()) {
 				final String name = c.getName();
-				if (name == null)
+				if (name == null) {
 					continue;
+				}
 
 				switch (name) {
 				case "NotNull" -> {
