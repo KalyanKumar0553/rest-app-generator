@@ -37,6 +37,8 @@ public class StateMachineConfig extends EnumStateMachineConfigurerAdapter<States
 	public void configure(StateMachineStateConfigurer<States, Events> states) throws Exception {
 		states.withStates().initial(States.DTO_GENERATION, fireStartOnEntry())
 				.stateEntry(States.DTO_GENERATION, runStep(States.DTO_GENERATION, Events.DTO_DONE, Events.DTO_FAIL))
+				.stateEntry(States.ENUM_GENERATION,
+						runStep(States.ENUM_GENERATION, Events.ENUM_DONE, Events.ENUM_FAIL))
 				.stateEntry(States.MODEL_GENERATION,
 						runStep(States.MODEL_GENERATION, Events.MODEL_DONE, Events.MODEL_FAIL))
 				.stateEntry(States.SWAGGER_GENERATION,
@@ -54,9 +56,13 @@ public class StateMachineConfig extends EnumStateMachineConfigurerAdapter<States
 	@Override
 	public void configure(StateMachineTransitionConfigurer<States, Events> t) throws Exception {
 		t
-				// DTO → MODEL on success; DTO → ERROR on fail
-				.withExternal().source(States.DTO_GENERATION).target(States.MODEL_GENERATION).event(Events.DTO_DONE)
+				// DTO → ENUM on success; DTO → ERROR on fail
+				.withExternal().source(States.DTO_GENERATION).target(States.ENUM_GENERATION).event(Events.DTO_DONE)
 				.and().withExternal().source(States.DTO_GENERATION).target(States.ERROR).event(Events.DTO_FAIL).and()
+
+				// ENUM → MODEL on success; ENUM → ERROR on fail
+				.withExternal().source(States.ENUM_GENERATION).target(States.MODEL_GENERATION).event(Events.ENUM_DONE)
+				.and().withExternal().source(States.ENUM_GENERATION).target(States.ERROR).event(Events.ENUM_FAIL).and()
 
 				// MODEL → SWAGGER GENERATION on success; MODEL → ERROR on fail
 				.withExternal().source(States.MODEL_GENERATION).target(States.SWAGGER_GENERATION)
@@ -89,6 +95,7 @@ public class StateMachineConfig extends EnumStateMachineConfigurerAdapter<States
 
 				// Global FAIL shortcuts → ERROR
 				.withExternal().source(States.DTO_GENERATION).target(States.ERROR).event(Events.FAIL).and()
+				.withExternal().source(States.ENUM_GENERATION).target(States.ERROR).event(Events.FAIL).and()
 				.withExternal().source(States.MODEL_GENERATION).target(States.ERROR).event(Events.FAIL).and()
 				.withExternal().source(States.SWAGGER_GENERATION).target(States.ERROR).event(Events.FAIL).and()
 				.withExternal().source(States.REST_GENERATION).target(States.ERROR).event(Events.FAIL).and()

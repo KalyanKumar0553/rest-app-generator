@@ -2,7 +2,7 @@
   <div class="entities-sticky-header">
     <app-info-banner storageKey="data-objects-info">
       <span>
-        Configure reusable data objects and properties. Use add and filter options to manage the list.
+        Configure reusable data objects and enums. Use add, filter, and sort options to manage the list.
       </span>
     </app-info-banner>
   </div>
@@ -35,8 +35,8 @@
       <div class="panel-body" *ngIf="dataObjectsExpanded">
         <app-search-sort
           *ngIf="showDataObjectFilters && dataObjects.length > 0"
-          [searchConfig]="searchConfig"
-          [sortOptions]="sortOptions"
+          [searchConfig]="dataObjectSearchConfig"
+          [sortOptions]="dataObjectSortOptions"
           (searchSortChange)="onDataObjectSearchSortChange($event)">
         </app-search-sort>
 
@@ -59,6 +59,81 @@
         </div>
       </div>
     </div>
+
+    <div class="expansion-panel">
+      <div class="panel-header" (click)="toggleEnumsPanel()">
+        <div class="panel-title-section">
+          <button class="expand-btn" [class.expanded]="enumsExpanded">
+            <i class="bi" [ngClass]="enumsExpanded ? 'bi-chevron-down' : 'bi-chevron-right'"></i>
+          </button>
+          <h2 class="panel-title">Enums</h2>
+        </div>
+        <div class="panel-actions" (click)="$event.stopPropagation()">
+          <button
+            type="button"
+            class="filter-btn"
+            [class.active]="showEnumFilters"
+            [disabled]="enums.length === 0"
+            (click)="toggleEnumFilters()"
+            aria-label="Filter enums">
+            <i class="bi bi-funnel"></i>
+          </button>
+          <button type="button" class="add-btn" (click)="addEnum()" aria-label="Add enum">
+            <i class="bi bi-plus-circle"></i>
+          </button>
+        </div>
+      </div>
+
+      <div class="panel-body" *ngIf="enumsExpanded">
+        <app-search-sort
+          *ngIf="showEnumFilters && enums.length > 0"
+          [searchConfig]="enumSearchConfig"
+          [sortOptions]="enumSortOptions"
+          (searchSortChange)="onEnumSearchSortChange($event)">
+        </app-search-sort>
+
+        <div class="enum-cards-scroll" *ngIf="visibleEnums.length > 0">
+          <div class="enum-cards-track">
+            <article class="enum-card" *ngFor="let enumItem of visibleEnums; let i = index">
+              <div class="enum-card-header">
+                <div class="enum-card-title-wrap">
+                  <h3 class="enum-card-title">{{ enumItem.name }}</h3>
+                  <span class="enum-mapped-pill">{{ getMappedEntityCount(enumItem.name) }} mapped</span>
+                </div>
+                <div class="enum-card-actions">
+                  <button type="button" class="icon-btn" aria-label="Edit enum" (click)="editEnum(enumItem, i)">
+                    <i class="bi bi-pencil"></i>
+                  </button>
+                  <button type="button" class="icon-btn danger" aria-label="Delete enum" (click)="deleteEnum(i)">
+                    <i class="bi bi-trash"></i>
+                  </button>
+                </div>
+              </div>
+
+              <div class="enum-constants-row">
+                <span class="enum-constant-chip" *ngFor="let constant of getEnumPreviewConstants(enumItem.constants)">{{ constant }}</span>
+              </div>
+
+              <button
+                type="button"
+                class="view-more-btn"
+                *ngIf="(enumItem.constants?.length || 0) > 5"
+                (click)="viewAllEnumConstants(enumItem)">
+                View more
+              </button>
+            </article>
+          </div>
+        </div>
+
+        <div class="empty-state" *ngIf="enums.length === 0">
+          <p>No enums created yet. Click the + button to add your first enum.</p>
+        </div>
+
+        <div class="empty-state" *ngIf="enums.length > 0 && visibleEnums.length === 0">
+          <p>No enums match your search. Try a different keyword.</p>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -72,12 +147,96 @@
     [isOpen]="showAddDataObjectModal"
     [existingDataObjects]="dataObjects"
     [availableModels]="entities"
+    [enumTypes]="enumTypeNames"
     (save)="onDataObjectSave($event)"
     (cancel)="onDataObjectCancel()">
   </app-add-data-object>
   <div modal-footer>
     <button mat-raised-button type="button" (click)="onDataObjectCancel()">Cancel</button>
     <button mat-raised-button color="primary" type="button" (click)="saveDataObject()">Save</button>
+  </div>
+</app-modal>
+
+<app-modal
+  [isOpen]="showAddEnumModal"
+  [title]="editingEnum ? 'Edit enum' : 'Add enum'"
+  [size]="'large'"
+  (close)="closeEnumModal()">
+  <div class="enum-modal-body">
+    <div class="enum-name-row">
+      <mat-form-field appearance="fill" class="full-width">
+        <mat-label>Enum name</mat-label>
+        <input matInput [(ngModel)]="enumDraftName" (ngModelChange)="enumNameError = ''" placeholder="Eg., OrderName, PaymentStatus" />
+      </mat-form-field>
+      <button
+        *ngIf="shouldShowEnumMappedHelp()"
+        type="button"
+        class="enum-help-btn"
+        [matTooltip]="getEnumMappedHelpText()"
+        aria-label="Enum mapping info"
+        (mousedown)="$event.preventDefault()"
+        (click)="$event.preventDefault()">
+        <mat-icon>info</mat-icon>
+      </button>
+    </div>
+    <div class="input-error" *ngIf="enumNameError">{{ enumNameError }}</div>
+
+    <mat-form-field appearance="fill" class="full-width">
+      <mat-label>Storage</mat-label>
+      <mat-select [(ngModel)]="enumDraftStorage">
+        <mat-option value="STRING">String</mat-option>
+        <mat-option value="ORDINAL">Ordinal</mat-option>
+      </mat-select>
+    </mat-form-field>
+
+    <div class="enum-constants-header">
+      <h3 class="section-title">Constants</h3>
+      <button type="button" class="add-constant-btn" (click)="addEnumConstant()" aria-label="Add enum constant">
+        <mat-icon>add</mat-icon>
+      </button>
+    </div>
+
+    <div class="enum-constants-list">
+      <div class="enum-constant-row" *ngFor="let value of enumDraftConstants; let i = index; trackBy: trackByIndex">
+        <mat-form-field appearance="fill" class="full-width">
+          <mat-label>Name of the Constant</mat-label>
+          <input #enumConstantInput matInput [(ngModel)]="enumDraftConstants[i]" (ngModelChange)="enumConstantsError = ''" (keydown.enter)="onEnumConstantEnter(i, $event)" placeholder="eg: SUCCESS,INPROGRESS,FAILURE" />
+        </mat-form-field>
+        <div class="enum-constant-actions">
+          <button
+            type="button"
+            class="enum-constant-action-btn"
+            (click)="moveEnumConstantUp(i)"
+            [disabled]="i === 0"
+            aria-label="Move up">
+            <i class="bi bi-arrow-up-short" aria-hidden="true"></i>
+          </button>
+          <button
+            type="button"
+            class="enum-constant-action-btn"
+            (click)="moveEnumConstantDown(i)"
+            [disabled]="i === enumDraftConstants.length - 1"
+            aria-label="Move down">
+            <i class="bi bi-arrow-down-short" aria-hidden="true"></i>
+          </button>
+          <button
+            type="button"
+            class="enum-constant-action-btn danger"
+            (click)="removeEnumConstant(i)"
+            [disabled]="enumDraftConstants.length === 1"
+            aria-label="Remove constant">
+            <i class="bi bi-trash" aria-hidden="true"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="input-error" *ngIf="enumConstantsError">{{ enumConstantsError }}</div>
+  </div>
+
+  <div modal-footer>
+    <button mat-raised-button type="button" (click)="closeEnumModal()">Cancel</button>
+    <button mat-raised-button color="primary" type="button" (click)="saveEnum()">Save</button>
   </div>
 </app-modal>
 
@@ -104,6 +263,45 @@
   </app-entity-detail-view>
 </app-modal>
 
+<app-modal
+  [isOpen]="showEnumConstantsModal"
+  [title]="'Enum Constants - ' + viewingEnumName"
+  [size]="'medium'"
+  [showFooter]="false"
+  (close)="closeEnumConstantsModal()">
+  <div class="enum-constants-view-list">
+    <div class="enum-constants-view-item" *ngFor="let constant of viewingEnumConstants; let i = index">
+      <span class="enum-constants-view-text">{{ constant }}</span>
+      <div class="enum-constant-actions">
+        <button
+          type="button"
+          class="enum-constant-action-btn"
+          (click)="moveViewedEnumConstantUp(i)"
+          [disabled]="i === 0"
+          aria-label="Move up">
+          <i class="bi bi-arrow-up-short" aria-hidden="true"></i>
+        </button>
+        <button
+          type="button"
+          class="enum-constant-action-btn"
+          (click)="moveViewedEnumConstantDown(i)"
+          [disabled]="i === viewingEnumConstants.length - 1"
+          aria-label="Move down">
+          <i class="bi bi-arrow-down-short" aria-hidden="true"></i>
+        </button>
+        <button
+          type="button"
+          class="enum-constant-action-btn danger"
+          (click)="deleteViewedEnumConstant(i)"
+          [disabled]="viewingEnumConstants.length <= 1"
+          aria-label="Delete constant">
+          <i class="bi bi-trash" aria-hidden="true"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+</app-modal>
+
 <app-confirmation-modal
   *ngIf="showDeleteConfirmation"
   [title]="deleteModalConfig.title"
@@ -120,4 +318,13 @@
   [buttons]="propertyDeleteModalConfig.buttons"
   (confirm)="confirmDeleteProperty()"
   (cancel)="cancelDeleteProperty()">
+</app-confirmation-modal>
+
+<app-confirmation-modal
+  *ngIf="showEnumDeleteConfirmation"
+  [title]="enumDeleteModalConfig.title"
+  [message]="enumDeleteModalConfig.message"
+  [buttons]="enumDeleteModalConfig.buttons"
+  (confirm)="confirmEnumDelete()"
+  (cancel)="cancelEnumDelete()">
 </app-confirmation-modal>

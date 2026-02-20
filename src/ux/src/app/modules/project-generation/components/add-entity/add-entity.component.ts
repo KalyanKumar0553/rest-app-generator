@@ -53,6 +53,7 @@ export class AddEntityComponent implements OnChanges {
   @Input() editEntity: Entity | null = null;
   @Input() isOpen = false;
   @Input() existingEntities: Entity[] = [];
+  @Input() enumTypes: string[] = [];
   @Output() save = new EventEmitter<any>();
   @Output() cancel = new EventEmitter<void>();
 
@@ -104,7 +105,7 @@ export class AddEntityComponent implements OnChanges {
     { label: 'Max Length (Low)', property: 'maxLength', direction: 'asc' }
   ];
 
-  fieldTypes = [
+  private readonly baseFieldTypes = [
     'String',
     'Long',
     'Integer',
@@ -115,9 +116,15 @@ export class AddEntityComponent implements OnChanges {
     'LocalDateTime',
     'BigDecimal',
     'UUID',
-    'Enum',
     'byte[]'
   ];
+
+  get fieldTypes(): string[] {
+    const enums = Array.isArray(this.enumTypes)
+      ? this.enumTypes.map(item => String(item ?? '').trim()).filter(Boolean)
+      : [];
+    return Array.from(new Set([...this.baseFieldTypes, ...enums]));
+  }
 
   additionalConfigurationOptions: string[] = [
     'Auditable',
@@ -155,8 +162,9 @@ export class AddEntityComponent implements OnChanges {
 
   loadEntityData(entity: Entity): void {
     this.entityName = entity.name;
-    this.mappedSuperclass = entity.mappedSuperclass;
-    this.addRestEndpoints = entity.addRestEndpoints;
+    this.mappedSuperclass = Boolean(entity.mappedSuperclass);
+    this.addRestEndpoints = Boolean(entity.addRestEndpoints);
+    this.normalizeExclusiveEntityToggles();
     this.auditable = Boolean(entity.auditable);
     this.softDelete = Boolean(entity.softDelete);
     this.immutable = Boolean(entity.immutable);
@@ -303,6 +311,13 @@ export class AddEntityComponent implements OnChanges {
     if (this.mappedSuperclass) {
       this.addRestEndpoints = false;
       this.closeFieldConfig();
+    }
+    this.updateVisibleFields();
+  }
+
+  onAddRestEndpointsChange(): void {
+    if (this.addRestEndpoints) {
+      this.mappedSuperclass = false;
     }
     this.updateVisibleFields();
   }
@@ -509,6 +524,12 @@ export class AddEntityComponent implements OnChanges {
         continue;
       }
       existing.primaryKey = false;
+    }
+  }
+
+  private normalizeExclusiveEntityToggles(): void {
+    if (this.mappedSuperclass && this.addRestEndpoints) {
+      this.addRestEndpoints = false;
     }
   }
 }

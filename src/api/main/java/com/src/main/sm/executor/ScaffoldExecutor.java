@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,6 +26,7 @@ import com.src.main.util.GradleVersionResolver;
 import com.src.main.util.GradleWrapperInstaller;
 import com.src.main.util.InitializrGradleGenerator;
 import com.src.main.util.InitializrPomGenerator;
+import com.src.main.util.DatabaseDependencyCatalog;
 import com.src.main.util.ProjectMetaDataConstants;
 
 @Component
@@ -76,6 +78,7 @@ public class ScaffoldExecutor implements StepExecutor {
 		final Map<String, Object> yaml = (Map<String, Object>) data.getVariables().get("yaml");
 		final boolean openapi = resolveOpenApiEnabled(data, yaml) && hasRestEndpointEntities(yaml);
 		final boolean includeJpa = hasEntities(yaml);
+		final String databaseCode = resolveDatabaseCode(yaml);
 		
 		final List<String> depReqRaw = (List<String>) data.getVariables()
 				.getOrDefault(ProjectMetaDataConstants.DEPENDENCIES, List.of("web", "validation", "actuator", "test"));
@@ -84,6 +87,7 @@ public class ScaffoldExecutor implements StepExecutor {
 
 		createMinimalLayout(root, packageName, buildTool);
 		List<MavenDependencyDTO> deps = dependencyResolver.resolveForMaven(depReq, bootVersion, openapi);
+		enrichDependenciesWithDatabase(deps, databaseCode);
 
 		InitializrProjectModel model = new InitializrProjectModel(groupId, artifactId, version, name, description,
 				packaging, generator, jdkVersion, bootVersion, openapi, angular);
@@ -242,6 +246,39 @@ public class ScaffoldExecutor implements StepExecutor {
 			merged.add("data-jpa");
 		}
 		return merged;
+	}
+
+	@SuppressWarnings("unchecked")
+	private static String resolveDatabaseCode(Map<String, Object> yaml) {
+		if (yaml == null) {
+			return null;
+		}
+		Object db = yaml.get("database");
+		if (db != null) {
+			return String.valueOf(db);
+		}
+		Object appRaw = yaml.get("app");
+		if (appRaw instanceof Map<?, ?> appMap) {
+			Object appDb = ((Map<String, Object>) appMap).get("database");
+			if (appDb != null) {
+				return String.valueOf(appDb);
+			}
+		}
+		return null;
+	}
+
+	private static void enrichDependenciesWithDatabase(List<MavenDependencyDTO> deps, String databaseCode) {
+		if (deps == null) {
+			return;
+		}
+		DatabaseDependencyCatalog.resolve(databaseCode).ifPresent(databaseDependency -> {
+			boolean exists = deps.stream().filter(Objects::nonNull).anyMatch(existing ->
+					databaseDependency.groupId().equalsIgnoreCase(existing.groupId())
+							&& databaseDependency.artifactId().equalsIgnoreCase(existing.artifactId()));
+			if (!exists) {
+				deps.add(databaseDependency);
+			}
+		});
 	}
 
 	private static void createMinimalLayout(Path root, String packageName, String buildTool) throws Exception {

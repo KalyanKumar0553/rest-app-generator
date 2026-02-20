@@ -52,6 +52,7 @@ export class AddDataObjectComponent implements OnChanges {
   @Input() isOpen = false;
   @Input() existingDataObjects: DataObject[] = [];
   @Input() availableModels: Array<{ name: string }> = [];
+  @Input() enumTypes: string[] = [];
   @Output() save = new EventEmitter<DataObject>();
   @Output() cancel = new EventEmitter<void>();
 
@@ -100,7 +101,7 @@ export class AddDataObjectComponent implements OnChanges {
     { label: 'Max Length (Low)', property: 'maxLength', direction: 'asc' }
   ];
 
-  fieldTypes = [
+  private readonly baseFieldTypes = [
     'String',
     'Int',
     'Long',
@@ -118,6 +119,13 @@ export class AddDataObjectComponent implements OnChanges {
     'List<Long>',
     'List<Integer>'
   ];
+
+  get fieldTypes(): string[] {
+    const enums = Array.isArray(this.enumTypes)
+      ? this.enumTypes.map(item => String(item ?? '').trim()).filter(Boolean)
+      : [];
+    return Array.from(new Set([...this.baseFieldTypes, ...enums]));
+  }
 
   constructor(
     private validatorService: ValidatorService,

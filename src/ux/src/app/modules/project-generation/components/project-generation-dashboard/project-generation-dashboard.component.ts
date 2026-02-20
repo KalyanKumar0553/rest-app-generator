@@ -120,6 +120,7 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
   entities: any[] = [];
   dataObjects: any[] = [];
   relations: any[] = [];
+  enums: any[] = [];
 
   showBackConfirmation = false;
   showEntitiesDeleteConfirmation = false;
@@ -281,7 +282,8 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
       dependencies: this.dependencies,
       entities: this.entities,
       dataObjects: this.dataObjects,
-      relations: this.relations
+      relations: this.relations,
+      enums: this.enums
     };
   }
 
@@ -294,6 +296,7 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
         this.entities = projectData.entities || [];
         this.dataObjects = projectData.dataObjects || [];
         this.relations = projectData.relations || [];
+        this.enums = Array.isArray(projectData.enums) ? projectData.enums : [];
         this.projectSettings = projectData.settings || this.projectSettings;
         this.databaseSettings = projectData.database || this.databaseSettings;
         this.databaseSettings.database = this.toDatabaseCode(this.databaseSettings.database);
@@ -305,6 +308,7 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
         this.entities = [];
         this.dataObjects = [];
         this.relations = [];
+        this.enums = [];
       }
     } catch (error) {
       this.toastService.error('Failed to load project');
@@ -872,8 +876,16 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
     this.entities = entities;
   }
 
+  onEntitiesFromDataObjectsChange(entities: any[]): void {
+    this.entities = entities;
+  }
+
   onDataObjectsChange(dataObjects: any[]): void {
     this.dataObjects = dataObjects;
+  }
+
+  onEnumsChange(enums: any[]): void {
+    this.enums = enums;
   }
 
   async setupEntities(): Promise<void> {
@@ -941,7 +953,8 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
       dependencies: this.extractDependencies(project),
       basePackage: projectGroup,
       models: this.mapModels(project?.entities, project?.relations),
-      dtos: this.mapDtos(project?.dataObjects)
+      dtos: this.mapDtos(project?.dataObjects),
+      enums: this.mapEnums(project?.enums)
     };
     if (databaseCode !== 'NONE') {
       spec.dbGeneration = this.trimmed(project?.database?.dbGeneration) || 'Hibernate (update)';
@@ -956,6 +969,9 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
     }
     if (!spec.dtos.length) {
       delete spec.dtos;
+    }
+    if (!spec.enums.length) {
+      delete spec.enums;
     }
 
     return spec;
@@ -1237,6 +1253,19 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
 
       return dto;
     });
+  }
+
+  private mapEnums(enums: any): any[] {
+    const items = Array.isArray(enums) ? enums : [];
+    return items
+      .map((enumItem: any) => ({
+        name: this.trimmed(enumItem?.name),
+        storage: this.trimmed(enumItem?.storage) || 'STRING',
+        constants: Array.isArray(enumItem?.constants)
+          ? enumItem.constants.map((item: any) => this.trimmed(item)).filter(Boolean)
+          : []
+      }))
+      .filter((enumItem: any) => enumItem.name && enumItem.constants.length > 0);
   }
 
   private mapDtoField(field: any): any {

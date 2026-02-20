@@ -323,6 +323,7 @@
         <app-entities
           [entities]="entities"
           [relations]="relations"
+          [enums]="enums"
           (entitiesChange)="onEntitiesChange($event)">
         </app-entities>
       </div>
@@ -352,7 +353,10 @@
         <app-data-objects
           [dataObjects]="dataObjects"
           [entities]="entities"
-          (dataObjectsChange)="onDataObjectsChange($event)">
+          [enums]="enums"
+          (dataObjectsChange)="onDataObjectsChange($event)"
+          (entitiesChange)="onEntitiesFromDataObjectsChange($event)"
+          (enumsChange)="onEnumsChange($event)">
         </app-data-objects>
       </div>
 

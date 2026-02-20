@@ -1,7 +1,16 @@
 package com.src.main.sm.executor.model;
 
+import static com.src.main.sm.executor.model.ModelGenerationSupport.buildMaxAnnotation;
+import static com.src.main.sm.executor.model.ModelGenerationSupport.buildMessageKey;
+import static com.src.main.sm.executor.model.ModelGenerationSupport.buildMinAnnotation;
+import static com.src.main.sm.executor.model.ModelGenerationSupport.escapeJava;
+import static com.src.main.sm.executor.model.ModelGenerationSupport.getBoolean;
+import static com.src.main.sm.executor.model.ModelGenerationSupport.getInt;
+import static com.src.main.sm.executor.model.ModelGenerationSupport.getLong;
+import static com.src.main.sm.executor.model.ModelGenerationSupport.getString;
+import static com.src.main.sm.executor.model.ModelGenerationSupport.getStringAny;
+import static com.src.main.sm.executor.model.ModelGenerationSupport.msgAnno;
 import static java.util.stream.Collectors.joining;
-import static com.src.main.sm.executor.model.ModelGenerationSupport.*;
 
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -12,7 +21,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
-import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.Validate;
 import org.apache.logging.log4j.util.Strings;
@@ -21,6 +29,8 @@ import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import com.src.main.common.util.CaseUtils;
+import com.src.main.common.util.StringUtils;
 import com.src.main.dto.AppSpecDTO;
 import com.src.main.dto.ColumnSpecDTO;
 import com.src.main.dto.ConstraintDTO;
@@ -31,9 +41,9 @@ import com.src.main.dto.JoinTableSpecDTO;
 import com.src.main.dto.ModelSpecDTO;
 import com.src.main.dto.RelationSpecDTO;
 import com.src.main.sm.executor.TemplateEngine;
+import com.src.main.sm.executor.enumgen.EnumGenerationSupport;
+import com.src.main.sm.executor.enumgen.EnumSpecResolved;
 import com.src.main.util.PathUtils;
-import com.src.main.common.util.CaseUtils;
-import com.src.main.common.util.StringUtils;
 
 /**
  * Converts YAML models into Java entity classes using Mustache. Focus: JPA +
@@ -72,6 +82,9 @@ public class ModelGenerator {
 		mergeValidationMessagesIntoYaml(yaml, validationMessages);
 
 		boolean domainStructure = "domain".equalsIgnoreCase(StringUtils.firstNonBlank(spec.getPackages(), "technical"));
+		String enumPackage = EnumGenerationSupport.resolveEnumPackage(basePackage, spec.getPackages());
+		Map<String, EnumSpecResolved> enumByName = EnumGenerationSupport.byName(
+				EnumGenerationSupport.resolveEnums(spec.getEnums()));
 		Map<String, String> modelPackageByType = new LinkedHashMap<>();
 		for (ModelSpecDTO m : spec.getModels()) {
 			String className = CaseUtils.toPascal(m.getName());
@@ -82,7 +95,7 @@ public class ModelGenerator {
 			String modelPkg = resolveModelPackage(m, domainStructure);
 			Path outDir = projectRoot.resolve(PathUtils.javaSrcPathFromPackage(modelPkg));
 			Files.createDirectories(outDir);
-			renderModel(m, modelPkg, outDir, spec, modelPackageByType);
+			renderModel(m, modelPkg, outDir, spec, modelPackageByType, enumByName, enumPackage);
 		}
 	}
 
@@ -115,7 +128,8 @@ public class ModelGenerator {
 	}
 
 	private void renderModel(ModelSpecDTO m, String modelPkg, Path outDir, AppSpecDTO root,
-			Map<String, String> modelPackageByType) throws Exception {
+			Map<String, String> modelPackageByType, Map<String, EnumSpecResolved> enumByName, String enumPackage)
+			throws Exception {
 		String className = CaseUtils.toPascal(m.getName());
 		String tableName = StringUtils.firstNonBlank(m.getTableName(), CaseUtils.toSnake(m.getName()));
 		if (Boolean.TRUE.equals(root.getPluralizeTableNames())) {
@@ -210,7 +224,7 @@ public class ModelGenerator {
 				if (isRelationPlaceholder(f)) {
 					continue;
 				}
-				fields.add(buildFieldBlock(m, f, imports));
+				fields.add(buildFieldBlock(m, f, imports, enumByName, enumPackage, modelPkg));
 			}
 		}
 		ctx.put("fields", fields);
@@ -358,14 +372,25 @@ public class ModelGenerator {
 		return CaseUtils.toSnake(m.getName()) + "_seq";
 	}
 
-	private FieldBlock buildFieldBlock(ModelSpecDTO m, FieldSpecDTO f, Set<String> imports) {
+	private FieldBlock buildFieldBlock(ModelSpecDTO m, FieldSpecDTO f, Set<String> imports,
+			Map<String, EnumSpecResolved> enumByName, String enumPackage, String modelPackage) {
 		FieldNameAndType nat = normalizeNameType(f.getName(), f.getType());
 		FieldBlock fb = new FieldBlock();
 		fb.setName(nat.name());
 		String resolvedType = resolveJavaType(nat.type(), imports);
 		fb.setType(resolvedType);
+		EnumSpecResolved enumSpec = resolveEnumSpec(nat.type(), resolvedType, enumByName);
 
 		List<String> ann = new ArrayList<>();
+
+		if (enumSpec != null) {
+			if (enumPackage != null && !enumPackage.equals(modelPackage)) {
+				imports.add(enumPackage + "." + resolvedType);
+			}
+			imports.add("jakarta.persistence.EnumType");
+			imports.add("jakarta.persistence.Enumerated");
+			ann.add("@Enumerated(EnumType." + enumSpec.storage() + ")");
+		}
 
 		// @Column (from explicit column or inferred from constraints)
 		ColumnSpecDTO col = f.getColumn();
@@ -514,6 +539,57 @@ public class ModelGenerator {
 
 		fb.setAnnotations(ann);
 		return fb;
+	}
+
+	private EnumSpecResolved resolveEnumSpec(String rawType, String resolvedType, Map<String, EnumSpecResolved> enumByName) {
+		if (enumByName == null || enumByName.isEmpty()) {
+			return null;
+		}
+
+		EnumSpecResolved directResolved = enumByName.get(resolvedType);
+		if (directResolved != null) {
+			return directResolved;
+		}
+
+		String normalizedResolved = CaseUtils.toPascal(StringUtils.firstNonBlank(resolvedType, "").trim());
+		if (!normalizedResolved.isBlank()) {
+			EnumSpecResolved byResolvedPascal = enumByName.get(normalizedResolved);
+			if (byResolvedPascal != null) {
+				return byResolvedPascal;
+			}
+		}
+
+		String rawLeafType = extractLeafType(rawType);
+		if (!rawLeafType.isBlank()) {
+			EnumSpecResolved byRawLeaf = enumByName.get(rawLeafType);
+			if (byRawLeaf != null) {
+				return byRawLeaf;
+			}
+			String normalizedRawLeaf = CaseUtils.toPascal(rawLeafType);
+			if (!normalizedRawLeaf.isBlank()) {
+				return enumByName.get(normalizedRawLeaf);
+			}
+		}
+
+		return null;
+	}
+
+	private String extractLeafType(String rawType) {
+		String type = StringUtils.firstNonBlank(rawType, "").trim();
+		if (type.isBlank()) {
+			return "";
+		}
+		int genericStart = type.indexOf('<');
+		if (genericStart >= 0 && type.endsWith(">")) {
+			type = type.substring(genericStart + 1, type.length() - 1).trim();
+			if (type.contains(",")) {
+				type = type.substring(type.lastIndexOf(',') + 1).trim();
+			}
+		}
+		if (type.contains(".")) {
+			type = type.substring(type.lastIndexOf('.') + 1);
+		}
+		return type.trim();
 	}
 
 	/* ==== helpers (null-safe, type-safe, with defaults) ==== */

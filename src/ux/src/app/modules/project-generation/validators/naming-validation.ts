@@ -1,6 +1,8 @@
 import { ValidationRule } from '../../../services/validator.service';
 
 const JAVA_IDENTIFIER_PATTERN = /^[A-Za-z_$][A-Za-z0-9_$]*$/;
+const JAVA_TYPE_NAME_PATTERN = /^[A-Z][A-Za-z0-9]*$/;
+const JAVA_ENUM_CONSTANT_PATTERN = /^[A-Z0-9_]+$/;
 const MAVEN_GROUP_ID_PATTERN = /^[a-z0-9]+(?:[._-][a-z0-9]+)*(?:\.[a-z0-9]+(?:[._-][a-z0-9]+)*)*$/;
 const MAVEN_ARTIFACT_ID_PATTERN = /^[a-z0-9]+(?:[._-][a-z0-9]+)*$/;
 
@@ -34,6 +36,19 @@ export const findReservedJavaOrDatabaseKeyword = (value: string): string | null 
     return normalized;
   }
   return null;
+};
+
+export const isValidJavaTypeName = (value: string): boolean => {
+  const trimmed = String(value ?? '').trim();
+  return JAVA_TYPE_NAME_PATTERN.test(trimmed) && isValidJavaIdentifier(trimmed);
+};
+
+export const isValidJavaEnumConstantName = (value: string): boolean => {
+  const trimmed = String(value ?? '').trim();
+  if (!JAVA_ENUM_CONSTANT_PATTERN.test(trimmed)) {
+    return false;
+  }
+  return isValidJavaIdentifier(trimmed);
 };
 
 export const isValidMavenGroupId = (value: string): boolean => {

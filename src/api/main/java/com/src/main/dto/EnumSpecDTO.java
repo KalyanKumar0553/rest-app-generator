@@ -12,13 +12,8 @@ import lombok.NoArgsConstructor;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class AppSpecDTO {
-	private String basePackage;
-	private String packages;
-	private Boolean enableOpenapi;
-	private Boolean useDockerCompose;
-	private Boolean pluralizeTableNames;
-	private List<String> profiles;
-	private List<ModelSpecDTO> models;
-	private List<EnumSpecDTO> enums;
+public class EnumSpecDTO {
+	private String name;
+	private String storage;
+	private List<String> constants;
 }

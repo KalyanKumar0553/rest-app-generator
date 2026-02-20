@@ -387,6 +387,24 @@ public final class DtoGenerationSupport {
 		return false;
 	}
 
+	public static String extractLeafType(String type) {
+		if (type == null) {
+			return "";
+		}
+		String value = type.trim();
+		var m = LIST_PATTERN.matcher(value);
+		if (m.matches()) {
+			return extractLeafType(m.group(1));
+		}
+		if (value.endsWith("[]")) {
+			return extractLeafType(value.substring(0, value.length() - 2));
+		}
+		if (value.contains(".")) {
+			return value.substring(value.lastIndexOf('.') + 1);
+		}
+		return value;
+	}
+
 	public static String escapeJava(String s) {
 		return s.replace("\\", "\\\\").replace("\"", "\\\"");
 	}

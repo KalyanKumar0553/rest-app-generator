@@ -40,6 +40,7 @@ interface Entity {
 export class EntitiesComponent implements OnInit {
   @Input() entities: Entity[] = [];
   @Input() relations: Relation[] = [];
+  @Input() enums: Array<{ name: string }> = [];
   @Output() entitiesChange = new EventEmitter<Entity[]>();
   @ViewChild(AddEntityComponent) addEntityComponent!: AddEntityComponent;
   @ViewChild(AddRelationComponent) addRelationComponent!: AddRelationComponent;
@@ -123,6 +124,10 @@ export class EntitiesComponent implements OnInit {
     private toastService: ToastService,
     private router: Router
   ) {}
+
+  get enumTypeNames(): string[] {
+    return (this.enums ?? []).map(item => String(item?.name ?? '').trim()).filter(Boolean);
+  }
 
   openInProgress(event: Event): void {
     event.preventDefault();

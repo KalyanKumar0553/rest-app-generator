@@ -12,7 +12,11 @@ import java.util.Set;
 
 import org.springframework.stereotype.Service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.src.main.dto.AppSpecDTO;
 import com.src.main.sm.executor.TemplateEngine;
+import com.src.main.sm.executor.enumgen.EnumGenerationSupport;
+import com.src.main.sm.executor.enumgen.EnumSpecResolved;
 
 @Service
 public class DtoGenerationService {
@@ -38,6 +42,10 @@ public class DtoGenerationService {
 		if (dtos.isEmpty()) {
 			return;
 		}
+		AppSpecDTO spec = new ObjectMapper().convertValue(yaml, AppSpecDTO.class);
+		List<EnumSpecResolved> enums = EnumGenerationSupport.resolveEnums(spec.getEnums());
+		Map<String, EnumSpecResolved> enumByName = EnumGenerationSupport.byName(enums);
+		String enumPackage = EnumGenerationSupport.resolveEnumPackage(basePkg, spec.getPackages());
 
 		if (dtos.stream().anyMatch(d -> DtoGenerationSupport.hasNonEmpty(d.get("classConstraints")))) {
 			validationHelperGenerator.ensureCrossFieldValidationHelpers(root, basePkg);
@@ -45,7 +53,7 @@ public class DtoGenerationService {
 
 		List<Map<String, Object>> dtosForMessages = new ArrayList<>();
 		for (Map<String, Object> dto : dtos) {
-			DtoGenerationUnit unit = buildUnit(dto);
+			DtoGenerationUnit unit = buildUnit(dto, enumByName, enumPackage);
 			String code = templateEngine.render(TPL_DTO, Map.of("basePkg", basePkg, "sub", unit.getSubPackage(), "name",
 					unit.getName(), "classAnnotations", String.join("\n", unit.getClassAnnotations()), "fields",
 					unit.getFieldModels()));
@@ -61,7 +69,8 @@ public class DtoGenerationService {
 	}
 
 	@SuppressWarnings("unchecked")
-	private DtoGenerationUnit buildUnit(Map<String, Object> dto) {
+	private DtoGenerationUnit buildUnit(Map<String, Object> dto, Map<String, EnumSpecResolved> enumByName,
+			String enumPackage) {
 		String sub = "request".equals(String.valueOf(dto.get("type"))) ? "request" : "response";
 		String name = String.valueOf(dto.get("name"));
 		List<Map<String, Object>> fields = (List<Map<String, Object>>) dto.getOrDefault("fields", List.of());
@@ -94,8 +103,13 @@ public class DtoGenerationService {
 
 			Map<String, Object> fm = new LinkedHashMap<>();
 			fm.put("name", fname);
-			fm.put("javaType", DtoGenerationSupport.mapType(ftype));
+			String javaType = DtoGenerationSupport.mapType(ftype);
+			fm.put("javaType", javaType);
 			fm.put("method", DtoGenerationSupport.toMethodName(fname));
+			String leafType = DtoGenerationSupport.extractLeafType(ftype);
+			if (enumByName.containsKey(leafType)) {
+				imports.add(enumPackage + "." + leafType);
+			}
 
 			List<String> annotations = new ArrayList<>();
 			List<Map<String, Object>> constraints = DtoGenerationSupport.normalizeConstraints(f.get("constraints"));

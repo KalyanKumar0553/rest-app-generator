@@ -1,6 +1,7 @@
 package com.src.main.sm.executor;
 
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -54,18 +55,25 @@ public class RestGenerationExecutor implements StepExecutor {
 				return StepResult.ok(Map.of("status", "Success", "restGeneratedCount", 0));
 			}
 
+			List<ModelSpecDTO> restEnabledModels = new ArrayList<>();
+			for (ModelSpecDTO model : models) {
+				if (Boolean.TRUE.equals(model.getAddRestEndpoints())) {
+					restEnabledModels.add(model);
+				}
+			}
+			if (restEnabledModels.isEmpty()) {
+				return StepResult.ok(Map.of("status", "Success", "restGeneratedCount", 0));
+			}
+
 			String basePackage = StringUtils.firstNonBlank(str(yaml.get("basePackage")),
-					(String) data.getVariables().get(ProjectMetaDataConstants.GROUP_ID), ProjectMetaDataConstants.DEFAULT_GROUP);
-			String packageStructure = StringUtils.firstNonBlank(str(yaml.get("packages")), spec.getPackages(),
-					"technical");
+					(String) data.getVariables().get(ProjectMetaDataConstants.GROUP_ID),
+					ProjectMetaDataConstants.DEFAULT_GROUP);
+			String packageStructure = StringUtils.firstNonBlank(str(yaml.get("packages")), spec.getPackages(), "technical");
 			String utilPackage = RestGenerationSupport.resolveUtilPackage(basePackage, packageStructure);
 			sharedSupportGenerator.generate(root, utilPackage);
 
 			int generatedCount = 0;
-			for (ModelSpecDTO model : models) {
-				if (!Boolean.TRUE.equals(model.getAddRestEndpoints())) {
-					continue;
-				}
+			for (ModelSpecDTO model : restEnabledModels) {
 				RestGenerationUnit unit = RestGenerationSupport.buildUnit(model, basePackage, packageStructure);
 				repositoryGenerator.generate(root, unit);
 				serviceGenerator.generate(root, unit);

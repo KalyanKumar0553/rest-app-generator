@@ -12,7 +12,7 @@
     </mat-form-field>
 
     <div class="form-group checkbox-row">
-      <div class="checkbox-group">
+      <div class="checkbox-group" *ngIf="!addRestEndpoints || mappedSuperclass">
         <mat-checkbox
           [(ngModel)]="mappedSuperclass"
           (change)="onMappedSuperclassChange()"
@@ -23,10 +23,10 @@
           <i class="bi bi-question-circle"></i>
         </button>
       </div>
-      <div class="checkbox-group">
+      <div class="checkbox-group" *ngIf="!mappedSuperclass || addRestEndpoints">
         <mat-checkbox
           [(ngModel)]="addRestEndpoints"
-          [disabled]="mappedSuperclass"
+          (change)="onAddRestEndpointsChange()"
           color="primary">
           Add REST endpoints
         </mat-checkbox>
