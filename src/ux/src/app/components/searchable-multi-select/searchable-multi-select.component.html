@@ -6,6 +6,24 @@
     [disabled]="disabled"
     (openedChange)="onOpenedChange($event)"
     multiple>
+    <mat-select-trigger>
+      <div class="selected-tags" *ngIf="selectedTagValues.length > 0; else noSelection">
+        <span class="selected-tag" *ngFor="let value of selectedTagValues">
+          <span class="selected-tag-text">{{ value }}</span>
+          <button
+            type="button"
+            class="selected-tag-remove"
+            aria-label="Remove selected value"
+            (click)="removeSelectedValue(value, $event)">
+            <i class="bi bi-x"></i>
+          </button>
+        </span>
+      </div>
+      <ng-template #noSelection>
+        <span class="selected-placeholder">Select options</span>
+      </ng-template>
+    </mat-select-trigger>
+
     <mat-option disabled class="search-option">
       <input
         class="search-input"

@@ -37,7 +37,17 @@
         <div class="form-field-group" *ngIf="showSourceFieldName()">
           <mat-form-field appearance="fill" class="form-field">
             <mat-label>From name</mat-label>
-            <input matInput [(ngModel)]="sourceFieldName" (ngModelChange)="onSourceFieldNameChange()" [disabled]="!sourceEntity" />
+            <mat-select
+              [(ngModel)]="sourceFieldName"
+              (selectionChange)="onSourceFieldNameChange()"
+              [disabled]="!sourceEntity">
+              <mat-option *ngFor="let fieldName of getSourceFieldOptions()" [value]="fieldName">
+                {{ fieldName }}
+              </mat-option>
+              <mat-option disabled *ngIf="sourceEntity && getSourceFieldOptions().length === 0">
+                No fields available
+              </mat-option>
+            </mat-select>
           </mat-form-field>
           <div class="input-error" *ngIf="sourceFieldNameError">{{ sourceFieldNameError }}</div>
         </div>
@@ -62,7 +72,17 @@
         <div class="form-field-group" *ngIf="showTargetFieldName()">
           <mat-form-field appearance="fill" class="form-field">
             <mat-label>Target name</mat-label>
-            <input matInput [(ngModel)]="targetFieldName" (ngModelChange)="onTargetFieldNameChange()" [disabled]="!targetEntity" />
+            <mat-select
+              [(ngModel)]="targetFieldName"
+              (selectionChange)="onTargetFieldNameChange()"
+              [disabled]="!targetEntity">
+              <mat-option *ngFor="let fieldName of getTargetFieldOptions()" [value]="fieldName">
+                {{ fieldName }}
+              </mat-option>
+              <mat-option disabled *ngIf="targetEntity && getTargetFieldOptions().length === 0">
+                No fields available
+              </mat-option>
+            </mat-select>
           </mat-form-field>
           <div class="input-error" *ngIf="targetFieldNameError">{{ targetFieldNameError }}</div>
         </div>

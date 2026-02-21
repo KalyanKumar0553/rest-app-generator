@@ -16,6 +16,7 @@ import { ValidatorService } from '../../../../services/validator.service';
 import { buildEntityNameRules, buildFieldListRules, buildFieldRules } from '../../validators/entity-validation';
 import { FieldFilterService } from '../../../../services/field-filter.service';
 import { SearchableMultiSelectComponent } from '../../../../components/searchable-multi-select/searchable-multi-select.component';
+import { HelpPopoverComponent } from '../../../../components/help-popover/help-popover.component';
 
 interface Entity {
   name: string;
@@ -42,6 +43,7 @@ interface Entity {
     MatIconModule,
     SearchSortComponent,
     SearchableMultiSelectComponent,
+    HelpPopoverComponent,
     ConfirmationModalComponent,
     FieldConfigComponent,
     ModalComponent

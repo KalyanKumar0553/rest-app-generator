@@ -17,6 +17,7 @@ import { buildEntityNameRules, buildFieldListRules, buildFieldRules } from '../.
 import { FieldFilterService } from '../../../../services/field-filter.service';
 import { SearchableMultiSelectComponent } from '../../../../components/searchable-multi-select/searchable-multi-select.component';
 import { ToastService } from '../../../../services/toast.service';
+import { HelpPopoverComponent } from '../../../../components/help-popover/help-popover.component';
 
 interface DataObject {
   name: string;
@@ -40,6 +41,7 @@ interface DataObject {
     MatIconModule,
     SearchSortComponent,
     SearchableMultiSelectComponent,
+    HelpPopoverComponent,
     ConfirmationModalComponent,
     EditPropertyComponent,
     ModalComponent

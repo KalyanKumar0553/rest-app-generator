@@ -246,6 +246,14 @@ export class AddRelationComponent implements OnChanges {
     this.targetFieldNameError = '';
   }
 
+  getSourceFieldOptions(): string[] {
+    return this.getFieldOptionsForEntity(this.sourceEntity, this.sourceFieldName);
+  }
+
+  getTargetFieldOptions(): string[] {
+    return this.getFieldOptionsForEntity(this.targetEntity, this.targetFieldName);
+  }
+
   onRelationTypeChange(): void {
     this.relationTypeError = '';
     this.mappedByError = '';
@@ -583,6 +591,22 @@ export class AddRelationComponent implements OnChanges {
       return ['ALL'];
     }
     return unique;
+  }
+
+  private getFieldOptionsForEntity(entityName: string, selectedValue?: string): string[] {
+    const normalizedEntityName = String(entityName ?? '').trim();
+    if (!normalizedEntityName) {
+      return [];
+    }
+
+    const entity = this.entities.find(item => String(item?.name ?? '').trim() === normalizedEntityName);
+    const entityFieldNames = (entity?.fields ?? [])
+      .map(field => String(field?.name ?? '').trim())
+      .filter(Boolean);
+
+    const current = String(selectedValue ?? '').trim();
+    const merged = current ? [current, ...entityFieldNames] : entityFieldNames;
+    return Array.from(new Set(merged));
   }
 
 }

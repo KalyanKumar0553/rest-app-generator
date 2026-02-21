@@ -24,6 +24,12 @@ export class SearchableMultiSelectComponent {
 
   searchTerm = '';
 
+  get selectedTagValues(): string[] {
+    return (this.selectedValues ?? [])
+      .map((value) => String(value ?? '').trim())
+      .filter(Boolean);
+  }
+
   get filteredOptions(): string[] {
     const term = this.searchTerm.trim().toLowerCase();
     const selectedSet = new Set((this.selectedValues ?? []).filter(Boolean));
@@ -45,5 +51,13 @@ export class SearchableMultiSelectComponent {
     if (!opened) {
       this.searchTerm = '';
     }
+  }
+
+  removeSelectedValue(value: string, event: Event): void {
+    event.stopPropagation();
+    event.preventDefault();
+    const next = (this.selectedValues ?? [])
+      .filter((item) => String(item ?? '').trim() !== String(value ?? '').trim());
+    this.onSelectionChange(next);
   }
 }

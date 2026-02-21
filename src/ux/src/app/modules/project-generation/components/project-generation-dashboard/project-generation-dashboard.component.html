@@ -335,8 +335,9 @@
 
       <div class="scrollable-content actuator-scrollable-content">
         <app-actuator-config
-          [selectedEndpoints]="selectedActuatorEndpoints"
-          (selectedEndpointsChange)="onActuatorEndpointsChange($event)">
+          [configurationOptions]="(actuatorConfigurationOptions$ | async) ?? actuatorConfigurationOptions"
+          [endpointsByConfiguration]="(actuatorProfileEndpoints$ | async) ?? actuatorProfileEndpoints"
+          (endpointsByConfigurationChange)="onActuatorConfigurationsChange($event)">
         </app-actuator-config>
       </div>
 

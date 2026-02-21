@@ -32,6 +32,7 @@ import { ValidatorService } from '../../../../services/validator.service';
 import { buildMavenNamingRules } from '../../validators/naming-validation';
 import { APP_SETTINGS } from '../../../../settings/app-settings';
 import { LocalStorageService } from '../../../../services/local-storage.service';
+import { ProjectGenerationStateService } from '../../services/project-generation-state.service';
 import {
   ActuatorConfigComponent,
   ACTUATOR_ENDPOINT_OPTIONS,
@@ -196,7 +197,13 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
     deployment: 'None'
   };
   showProfileModal = false;
-  selectedActuatorEndpoints: string[] = [...DEFAULT_ACTUATOR_ENDPOINTS];
+  selectedActuatorConfiguration = 'default';
+  actuatorConfigurationOptions: string[] = ['default'];
+  actuatorProfileEndpoints: Record<string, string[]> = {
+    default: [...DEFAULT_ACTUATOR_ENDPOINTS]
+  };
+  readonly actuatorConfigurationOptions$ = this.projectGenerationState.actuatorConfigurationOptions$;
+  readonly actuatorProfileEndpoints$ = this.projectGenerationState.actuatorEndpointsByConfiguration$;
 
   dependencies = '';
   dependencyInput = '';
@@ -230,7 +237,8 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
     private http: HttpClient,
     private validatorService: ValidatorService,
     private localStorageService: LocalStorageService,
-    private cdr: ChangeDetectorRef
+    private cdr: ChangeDetectorRef,
+    private projectGenerationState: ProjectGenerationStateService
   ) {}
 
   get visibleNavItems(): NavItem[] {
@@ -270,6 +278,7 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
 
     this.trackChanges();
     this.loadDependencies();
+    this.syncActuatorStateStore();
   }
 
   ngOnDestroy(): void {
@@ -294,7 +303,8 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
       database: this.databaseSettings,
       preferences: this.developerPreferences,
       actuator: {
-        endpoints: [...this.selectedActuatorEndpoints]
+        selectedConfiguration: this.selectedActuatorConfiguration,
+        configurations: this.sanitizeActuatorConfigurations(this.actuatorProfileEndpoints)
       },
       dependencies: this.dependencies,
       entities: this.entities,
@@ -323,7 +333,15 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
           ...(projectData.preferences || {}),
           enableActuator: Boolean(projectData?.preferences?.enableActuator)
         };
-        this.selectedActuatorEndpoints = this.sanitizeActuatorEndpoints(projectData?.actuator?.endpoints);
+        const configurationOptions = this.getActuatorConfigurationOptions(projectData?.preferences?.profiles);
+        this.actuatorConfigurationOptions = configurationOptions;
+        this.actuatorProfileEndpoints = this.sanitizeActuatorConfigurations(
+          projectData?.actuator?.configurations ?? projectData?.actuator?.endpoints,
+          configurationOptions
+        );
+        const selectedConfig = this.normalizeActuatorConfigurationName(projectData?.actuator?.selectedConfiguration) ?? 'default';
+        this.selectedActuatorConfiguration = configurationOptions.includes(selectedConfig) ? selectedConfig : 'default';
+        this.syncActuatorStateStore();
         this.dependencies = projectData.dependencies || '';
         this.toastService.success('Project loaded successfully');
       } else {
@@ -331,7 +349,8 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
         this.dataObjects = [];
         this.relations = [];
         this.enums = [];
-        this.selectedActuatorEndpoints = this.sanitizeActuatorEndpoints(this.selectedActuatorEndpoints);
+        this.syncActuatorConfigurationsWithProfiles();
+        this.syncActuatorStateStore();
       }
     } catch (error) {
       this.toastService.error('Failed to load project');
@@ -1014,10 +1033,24 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
       spec.pluralizeTableNames = Boolean(project?.database?.pluralizeTableNames);
     }
     if (Boolean(project?.preferences?.enableActuator)) {
+      const actuatorConfigurations = this.sanitizeActuatorConfigurations(
+        project?.actuator?.configurations ?? project?.actuator?.endpoints,
+        this.getActuatorConfigurationOptions(project?.preferences?.profiles)
+      );
       spec.actuator = {
         endpoints: {
-          include: this.sanitizeActuatorEndpoints(project?.actuator?.endpoints)
-        }
+          include: this.sanitizeActuatorEndpoints(actuatorConfigurations['default'])
+        },
+        profiles: Object.entries(actuatorConfigurations)
+          .filter(([profile]) => profile !== 'default')
+          .reduce((acc, [profile, endpoints]) => {
+            acc[profile] = {
+              endpoints: {
+                include: this.sanitizeActuatorEndpoints(endpoints)
+              }
+            };
+            return acc;
+          }, {} as Record<string, unknown>)
       };
     }
 
@@ -1101,13 +1134,37 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
       this.activeSection = 'general';
       return;
     }
-    if (this.developerPreferences.enableActuator && !this.selectedActuatorEndpoints.length) {
-      this.selectedActuatorEndpoints = this.sanitizeActuatorEndpoints(DEFAULT_ACTUATOR_ENDPOINTS);
+    if (this.developerPreferences.enableActuator) {
+      this.syncActuatorConfigurationsWithProfiles();
+      this.syncActuatorStateStore();
+    }
+  }
+
+  onActuatorConfigurationChange(configuration: string): void {
+    const normalized = this.normalizeActuatorConfigurationName(configuration) ?? 'default';
+    if (!this.actuatorConfigurationOptions.includes(normalized)) {
+      this.selectedActuatorConfiguration = 'default';
+      return;
+    }
+    this.selectedActuatorConfiguration = normalized;
+    if (!this.actuatorProfileEndpoints[normalized]?.length) {
+      this.actuatorProfileEndpoints[normalized] = [...DEFAULT_ACTUATOR_ENDPOINTS];
     }
   }
 
   onActuatorEndpointsChange(endpoints: string[]): void {
-    this.selectedActuatorEndpoints = this.sanitizeActuatorEndpoints(endpoints);
+    const key = this.selectedActuatorConfiguration || 'default';
+    this.actuatorProfileEndpoints = {
+      ...this.actuatorProfileEndpoints,
+      [key]: this.sanitizeActuatorEndpoints(endpoints)
+    };
+  }
+
+  onActuatorConfigurationsChange(configurations: Record<string, string[]>): void {
+    this.projectGenerationState.setActuatorConfigurations(configurations);
+    const snapshot = this.projectGenerationState.getActuatorStateSnapshot();
+    this.actuatorConfigurationOptions = snapshot.configurationOptions;
+    this.actuatorProfileEndpoints = snapshot.endpointsByConfiguration;
   }
 
   closeProfileModal(): void {
@@ -1116,11 +1173,15 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
 
   onProfilesSave(profiles: string[]): void {
     this.developerPreferences.profiles = [...profiles];
+    this.syncActuatorConfigurationsWithProfiles();
+    this.syncActuatorStateStore();
     this.closeProfileModal();
   }
 
   removeProfile(profile: string): void {
     this.developerPreferences.profiles = this.developerPreferences.profiles.filter(item => item !== profile);
+    this.syncActuatorConfigurationsWithProfiles();
+    this.syncActuatorStateStore();
   }
 
   private sanitizeActuatorEndpoints(rawEndpoints: unknown): string[] {
@@ -1135,6 +1196,79 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
 
     const unique = Array.from(new Set(cleaned));
     return unique.length ? unique : [...DEFAULT_ACTUATOR_ENDPOINTS];
+  }
+
+  get selectedActuatorEndpoints(): string[] {
+    const selected = this.actuatorProfileEndpoints[this.selectedActuatorConfiguration];
+    return this.sanitizeActuatorEndpoints(selected);
+  }
+
+  private getActuatorConfigurationOptions(profileSource: unknown = this.developerPreferences.profiles): string[] {
+    const normalizedProfiles = this.mapProfiles(profileSource).filter(profile => profile !== 'default');
+    return ['default', ...normalizedProfiles];
+  }
+
+  private normalizeActuatorConfigurationName(value: unknown): string | null {
+    const normalized = this.normalizeProfileName(value);
+    if (!normalized) {
+      return null;
+    }
+    return normalized === 'default' ? 'default' : normalized;
+  }
+
+  private sanitizeActuatorConfigurations(
+    rawConfigurations: unknown,
+    availableConfigurations: string[] = this.getActuatorConfigurationOptions()
+  ): Record<string, string[]> {
+    const allowedConfigurations = new Set(availableConfigurations);
+    const sanitized: Record<string, string[]> = {
+      default: [...DEFAULT_ACTUATOR_ENDPOINTS]
+    };
+
+    if (Array.isArray(rawConfigurations)) {
+      sanitized['default'] = this.sanitizeActuatorEndpoints(rawConfigurations);
+      return sanitized;
+    }
+
+    if (!(rawConfigurations instanceof Object)) {
+      return sanitized;
+    }
+
+    Object.entries(rawConfigurations as Record<string, unknown>).forEach(([rawKey, value]) => {
+      const key = this.normalizeActuatorConfigurationName(rawKey);
+      if (!key || !allowedConfigurations.has(key)) {
+        return;
+      }
+
+      const include = value instanceof Object && !Array.isArray(value)
+        ? (value as any)?.endpoints?.include ?? (value as any)?.include
+        : value;
+
+      sanitized[key] = this.sanitizeActuatorEndpoints(include);
+    });
+
+    if (!sanitized['default']?.length) {
+      sanitized['default'] = [...DEFAULT_ACTUATOR_ENDPOINTS];
+    }
+
+    return sanitized;
+  }
+
+  private syncActuatorConfigurationsWithProfiles(): void {
+    const options = this.getActuatorConfigurationOptions();
+    this.actuatorConfigurationOptions = options;
+    this.actuatorProfileEndpoints = this.sanitizeActuatorConfigurations(this.actuatorProfileEndpoints, options);
+    if (!options.includes(this.selectedActuatorConfiguration)) {
+      this.selectedActuatorConfiguration = 'default';
+    }
+  }
+
+  private syncActuatorStateStore(): void {
+    this.projectGenerationState.setProfiles(this.developerPreferences?.profiles ?? []);
+    this.projectGenerationState.setActuatorConfigurations(this.actuatorProfileEndpoints);
+    const snapshot = this.projectGenerationState.getActuatorStateSnapshot();
+    this.actuatorConfigurationOptions = snapshot.configurationOptions;
+    this.actuatorProfileEndpoints = snapshot.endpointsByConfiguration;
   }
 
   onHelpIconInteraction(event: Event): void {

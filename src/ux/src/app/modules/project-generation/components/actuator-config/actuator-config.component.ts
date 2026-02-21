@@ -1,13 +1,7 @@
 import { CommonModule } from '@angular/common';
-import { Component, EventEmitter, Input, Output } from '@angular/core';
-import { MatCheckboxModule } from '@angular/material/checkbox';
+import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges } from '@angular/core';
 import { MatExpansionModule } from '@angular/material/expansion';
-import {
-  SearchConfig,
-  SearchSortComponent,
-  SearchSortEvent,
-  SortOption
-} from '../../../../components/search-sort/search-sort.component';
+import { SearchableMultiSelectComponent } from '../../../../components/searchable-multi-select/searchable-multi-select.component';
 
 export interface ActuatorEndpointOption {
   value: string;
@@ -37,100 +31,133 @@ export const DEFAULT_ACTUATOR_ENDPOINTS = ['health', 'metrics', 'info'];
 @Component({
   selector: 'app-actuator-config',
   standalone: true,
-  imports: [CommonModule, MatExpansionModule, MatCheckboxModule, SearchSortComponent],
+  imports: [CommonModule, MatExpansionModule, SearchableMultiSelectComponent],
   templateUrl: './actuator-config.component.html',
   styleUrls: ['./actuator-config.component.css']
 })
-export class ActuatorConfigComponent {
-  @Input() selectedEndpoints: string[] = [];
-  @Output() selectedEndpointsChange = new EventEmitter<string[]>();
+export class ActuatorConfigComponent implements OnChanges {
+  @Input() endpointsByConfiguration: Record<string, string[]> = {};
+  @Input() configurationOptions: string[] = ['default'];
+  @Output() endpointsByConfigurationChange = new EventEmitter<Record<string, string[]>>();
 
   readonly endpointOptions: ActuatorEndpointOption[] = ACTUATOR_ENDPOINT_OPTIONS;
-  readonly searchConfig: SearchConfig = {
-    placeholder: 'Search actuator endpoints...',
-    properties: ['label']
-  };
-  readonly sortOptions: SortOption[] = [
-    { label: 'Name (A-Z)', property: 'label', direction: 'asc' },
-    { label: 'Name (Z-A)', property: 'label', direction: 'desc' },
-    { label: 'Selected first', property: 'selected', direction: 'asc' },
-    { label: 'Unselected first', property: 'selected', direction: 'desc' }
-  ];
+  readonly endpointOptionValues = this.endpointOptions.map((option) => option.value);
+  resolvedEndpointsByConfiguration: Record<string, string[]> = {};
+  availableEndpointOptionsByConfiguration: Record<string, string[]> = {};
 
-  showFilters = false;
-  searchTerm = '';
-  sortOption: SortOption | null = null;
-
-  get endpointRows(): ActuatorEndpointOption[][] {
-    const visibleOptions = this.filteredEndpointOptions();
-    const rows: ActuatorEndpointOption[][] = [];
-    for (let index = 0; index < visibleOptions.length; index += 2) {
-      rows.push(visibleOptions.slice(index, index + 2));
-    }
-    return rows;
-  }
-
-  get selectedCount(): number {
-    return this.selectedEndpoints.length;
-  }
-
-  get allSelected(): boolean {
-    return this.selectedEndpoints.length === this.endpointOptions.length;
-  }
-
-  toggleAll(checked: boolean): void {
-    const next = checked ? this.endpointOptions.map((option) => option.value) : [];
-    this.selectedEndpointsChange.emit(next);
-  }
-
-  toggleEndpoint(endpoint: string, checked: boolean): void {
-    const normalized = String(endpoint || '').trim().toLowerCase();
-    if (!normalized) {
-      return;
-    }
-    const next = checked
-      ? Array.from(new Set([...this.selectedEndpoints, normalized]))
-      : this.selectedEndpoints.filter((item) => item !== normalized);
-    this.selectedEndpointsChange.emit(next);
-  }
-
-  isSelected(endpoint: string): boolean {
-    return this.selectedEndpoints.includes(String(endpoint || '').trim().toLowerCase());
-  }
-
-  toggleFilters(): void {
-    this.showFilters = !this.showFilters;
-    if (!this.showFilters) {
-      this.searchTerm = '';
-      this.sortOption = null;
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['endpointsByConfiguration'] || changes['configurationOptions']) {
+      this.syncResolvedEndpoints();
     }
   }
 
-  onSearchSortChange(event: SearchSortEvent): void {
-    this.searchTerm = String(event?.searchTerm ?? '').trim().toLowerCase();
-    this.sortOption = event?.sortOption ?? null;
+  trackByConfiguration(_: number, config: string): string {
+    return config;
   }
 
-  private filteredEndpointOptions(): ActuatorEndpointOption[] {
-    let items = [...this.endpointOptions];
-
-    if (this.searchTerm) {
-      items = items.filter((item) => item.label.toLowerCase().includes(this.searchTerm));
+  getProfileTitle(config: string): string {
+    const normalized = String(config ?? '').trim().toLowerCase();
+    if (normalized === 'default') {
+      return 'default';
     }
+    return config;
+  }
 
-    if (!this.sortOption) {
-      return items;
-    }
+  onEndpointsChange(configuration: string, endpoints: string[]): void {
+    const key = String(configuration ?? '').trim().toLowerCase() || 'default';
+    const allowedOptions = this.availableEndpointOptionsByConfiguration[key] ?? this.endpointOptionValues;
+    const cleaned = Array.from(
+      new Set(
+        (Array.isArray(endpoints) ? endpoints : [])
+          .map((item) => String(item ?? '').trim().toLowerCase())
+          .filter(Boolean)
+          .filter((item) => allowedOptions.includes(item))
+      )
+    );
+    const nextConfigMap: Record<string, string[]> = {
+      ...this.resolvedEndpointsByConfiguration,
+      [key]: cleaned
+    };
 
-    const direction = this.sortOption.direction === 'asc' ? 1 : -1;
-    const property = this.sortOption.property;
-    return items.sort((left, right) => {
-      if (property === 'selected') {
-        const leftValue = this.isSelected(left.value) ? 1 : 0;
-        const rightValue = this.isSelected(right.value) ? 1 : 0;
-        return (rightValue - leftValue) * direction;
+    const defaultSelected = new Set(nextConfigMap['default'] ?? []);
+    Object.keys(nextConfigMap).forEach((profile) => {
+      if (profile === 'default') {
+        return;
       }
-      return left.label.localeCompare(right.label) * direction;
+      nextConfigMap[profile] = (nextConfigMap[profile] ?? []).filter((item) => !defaultSelected.has(item));
+    });
+
+    this.resolvedEndpointsByConfiguration = nextConfigMap;
+    this.updateAvailableOptions();
+    this.endpointsByConfigurationChange.emit(nextConfigMap);
+  }
+
+  private syncResolvedEndpoints(): void {
+    const normalizedOptions = (this.configurationOptions ?? [])
+      .map((item) => String(item ?? '').trim().toLowerCase())
+      .filter(Boolean);
+
+    const uniqueOptions = Array.from(new Set(normalizedOptions));
+    if (!uniqueOptions.includes('default')) {
+      uniqueOptions.unshift('default');
+    }
+
+    const source = this.endpointsByConfiguration ?? {};
+    const next: Record<string, string[]> = {};
+    const sourceNormalized: Record<string, string[]> = {};
+    uniqueOptions.forEach((config) => {
+      const selected = source[config];
+      sourceNormalized[config] = Array.isArray(selected)
+        ? selected
+            .map((item) => String(item ?? '').trim().toLowerCase())
+            .filter((item) => item && this.endpointOptionValues.includes(item))
+        : [];
+    });
+
+    next['default'] = sourceNormalized['default'].length
+      ? sourceNormalized['default']
+      : [...DEFAULT_ACTUATOR_ENDPOINTS];
+
+    const defaultSelected = new Set(next['default']);
+    uniqueOptions
+      .filter((config) => config !== 'default')
+      .forEach((config) => {
+        next[config] = (sourceNormalized[config] ?? []).filter((item) => !defaultSelected.has(item));
+      });
+
+    this.resolvedEndpointsByConfiguration = next;
+    this.updateAvailableOptions();
+
+    if (!this.areMapsEqual(sourceNormalized, next, uniqueOptions)) {
+      this.endpointsByConfigurationChange.emit(next);
+    }
+  }
+
+  private updateAvailableOptions(): void {
+    const defaultSelected = new Set(this.resolvedEndpointsByConfiguration['default'] ?? []);
+    const optionsByProfile: Record<string, string[]> = {};
+    Object.keys(this.resolvedEndpointsByConfiguration).forEach((config) => {
+      if (config === 'default') {
+        optionsByProfile[config] = [...this.endpointOptionValues];
+        return;
+      }
+      optionsByProfile[config] = this.endpointOptionValues.filter((item) => !defaultSelected.has(item));
+    });
+    this.availableEndpointOptionsByConfiguration = optionsByProfile;
+  }
+
+  private areMapsEqual(
+    left: Record<string, string[]>,
+    right: Record<string, string[]>,
+    keys: string[]
+  ): boolean {
+    return keys.every((key) => {
+      const a = left[key] ?? [];
+      const b = right[key] ?? [];
+      if (a.length !== b.length) {
+        return false;
+      }
+      return a.every((item, index) => item === b[index]);
     });
   }
 }

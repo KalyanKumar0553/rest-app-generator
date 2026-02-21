@@ -1,52 +1,23 @@
 <mat-accordion class="expansion-panels">
-  <mat-expansion-panel [expanded]="true">
+  <mat-expansion-panel *ngFor="let config of configurationOptions; trackBy: trackByConfiguration" [expanded]="config === 'default'">
     <mat-expansion-panel-header>
       <mat-panel-title>
-        Actuator Configuration
+        {{ getProfileTitle(config) }}
       </mat-panel-title>
     </mat-expansion-panel-header>
 
     <div class="panel-content">
-      <div class="actuator-top-row">
-        <mat-checkbox
-          [checked]="allSelected"
-          (change)="toggleAll($event.checked)">
-          Select All Endpoints
-        </mat-checkbox>
-        <div class="actuator-top-actions">
-          <span class="actuator-count-chip">{{ selectedCount }} selected</span>
-          <button
-            type="button"
-            class="filter-btn"
-            [class.active]="showFilters"
-            (click)="toggleFilters()"
-            aria-label="Filter actuator endpoints">
-            <i class="bi bi-funnel"></i>
-          </button>
+      <div class="configuration-row">
+        <div class="configuration-select">
+          <app-searchable-multi-select
+            [label]="'Configurable Endpoints'"
+            [searchPlaceholder]="'Search endpoints...'"
+            [options]="availableEndpointOptionsByConfiguration[config] ?? endpointOptionValues"
+            [selectedValues]="resolvedEndpointsByConfiguration[config]"
+            [emptyMessage]="'No endpoints found'"
+            (selectedValuesChange)="onEndpointsChange(config, $event)">
+          </app-searchable-multi-select>
         </div>
-      </div>
-
-      <app-search-sort
-        *ngIf="showFilters"
-        [searchConfig]="searchConfig"
-        [sortOptions]="sortOptions"
-        (searchSortChange)="onSearchSortChange($event)">
-      </app-search-sort>
-
-      <div class="actuator-endpoint-grid">
-        <div class="actuator-endpoint-row" *ngFor="let row of endpointRows">
-          <div class="actuator-endpoint-item" *ngFor="let endpoint of row">
-            <mat-checkbox
-              [checked]="isSelected(endpoint.value)"
-              (change)="toggleEndpoint(endpoint.value, $event.checked)">
-              {{ endpoint.label }}
-            </mat-checkbox>
-          </div>
-        </div>
-      </div>
-
-      <div class="actuator-empty-state" *ngIf="endpointRows.length === 0">
-        No actuator endpoints match your search.
       </div>
     </div>
   </mat-expansion-panel>

@@ -76,20 +76,20 @@ public class StateMachineConfig extends EnumStateMachineConfigurerAdapter<States
 				.event(Events.SWAGGER_DONE).and().withExternal().source(States.SWAGGER_GENERATION).target(States.ERROR)
 				.event(Events.SWAGGER_FAIL).and()
 
-				// REST GENERATION → ACTUATOR CONFIG / ERROR
-				.withExternal().source(States.REST_GENERATION).target(States.ACTUATOR_CONFIGURATION)
+				// REST GENERATION → APP FILES / ERROR
+				.withExternal().source(States.REST_GENERATION).target(States.APPLICATION_FILES)
 					.event(Events.REST_DONE).and().withExternal().source(States.REST_GENERATION).target(States.ERROR)
 					.event(Events.REST_FAIL).and()
 
-				// ACTUATOR CONFIG → APP FILES / ERROR
-				.withExternal().source(States.ACTUATOR_CONFIGURATION).target(States.APPLICATION_FILES)
-					.event(Events.ACTUATOR_DONE).and().withExternal().source(States.ACTUATOR_CONFIGURATION)
-					.target(States.ERROR).event(Events.ACTUATOR_FAIL).and()
-
-				// APP FILES → DOCKER / ERROR
-				.withExternal().source(States.APPLICATION_FILES).target(States.DOCKER_GENERATION).event(Events.APPFILES_DONE)
+				// APP FILES → ACTUATOR CONFIG / ERROR
+				.withExternal().source(States.APPLICATION_FILES).target(States.ACTUATOR_CONFIGURATION).event(Events.APPFILES_DONE)
 				.and().withExternal().source(States.APPLICATION_FILES).target(States.ERROR).event(Events.APPFILES_FAIL)
 				.and()
+
+				// ACTUATOR CONFIG → DOCKER / ERROR
+				.withExternal().source(States.ACTUATOR_CONFIGURATION).target(States.DOCKER_GENERATION)
+					.event(Events.ACTUATOR_DONE).and().withExternal().source(States.ACTUATOR_CONFIGURATION)
+					.target(States.ERROR).event(Events.ACTUATOR_FAIL).and()
 
 				// DOCKER → SCAFFOLD / ERROR
 				.withExternal().source(States.DOCKER_GENERATION).target(States.SCAFFOLD).event(Events.DOCKER_DONE)

@@ -290,6 +290,19 @@
   display: flex;
   align-items: center;
   gap: 8px;
+  flex-wrap: nowrap;
+}
+
+.field-help-wrap {
+  display: none;
+}
+
+.field-help-popover-content {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 180px;
+  overflow: hidden;
 }
 
 .field-action-btn {
@@ -432,12 +445,30 @@
   }
 
   .field-accordion-header {
-    flex-direction: column;
+    flex-direction: row;
     align-items: flex-start;
+    justify-content: space-between;
+    gap: 10px;
+  }
+
+  .field-accordion {
+    overflow: visible;
   }
 
   .field-actions {
-    width: 100%;
+    width: auto;
     justify-content: flex-end;
+    align-items: center;
+    flex-shrink: 0;
+  }
+
+  .field-name-row .field-type-pill,
+  .field-name-row .badge-constraints {
+    display: none;
+  }
+
+  .field-help-wrap {
+    display: inline-flex;
+    z-index: 6;
   }
 }

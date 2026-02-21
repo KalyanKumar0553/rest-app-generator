@@ -1,5 +1,6 @@
 package com.src.main.sm.executor;
 
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 
@@ -34,11 +35,15 @@ public class ActuatorConfigurationExecutor implements StepExecutor {
 			}
 
 			List<String> includedEndpoints = ActuatorConfigurationSupport.resolveIncludedEndpoints(yaml);
-			actuatorConfigurationService.applyConfiguration(yaml, includedEndpoints);
+			Map<String, List<String>> profileIncludedEndpoints = ActuatorConfigurationSupport.resolveProfileIncludedEndpoints(yaml);
+			String rootRaw = String.valueOf(data.getVariables().get(ProjectMetaDataConstants.ROOT_DIR));
+			Path rootDir = rootRaw == null || rootRaw.isBlank() ? null : Path.of(rootRaw);
+			actuatorConfigurationService.applyConfiguration(yaml, includedEndpoints, profileIncludedEndpoints, rootDir);
 			return StepResult.ok(Map.of(
 					"status", "Success",
 					"actuatorConfigured", true,
-					"actuatorEndpointCount", includedEndpoints.size()));
+					"actuatorEndpointCount", includedEndpoints.size(),
+					"actuatorProfileCount", profileIncludedEndpoints.size()));
 		} catch (Exception ex) {
 			return StepResult.error("ACTUATOR_CONFIGURATION", ex.getMessage());
 		}

@@ -195,7 +195,6 @@
 }
 
 .actuator-scrollable-content {
-  overflow: hidden;
   display: flex;
   flex-direction: column;
 }

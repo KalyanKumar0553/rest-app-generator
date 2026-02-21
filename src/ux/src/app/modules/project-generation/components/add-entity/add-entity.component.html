@@ -88,6 +88,17 @@
                       </div>
                     </div>
                     <div class="field-actions">
+                      <app-help-popover class="field-help-wrap" [ariaLabel]="'Show field details'" placement="top">
+                        <div class="field-help-popover-content">
+                          <span class="field-type-pill" [title]="item.field.type">{{ item.field.type }}</span>
+                          <span
+                            class="field-badge badge-constraints"
+                            *ngIf="getConstraintCount(item.field) > 0"
+                            [title]="getConstraintLabel(item.field)">
+                            {{ getConstraintLabel(item.field) }}
+                          </span>
+                        </div>
+                      </app-help-popover>
                       <button
                         class="field-action-btn"
                         type="button"

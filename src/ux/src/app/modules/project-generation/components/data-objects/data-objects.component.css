@@ -181,7 +181,9 @@
 .enum-card-title-wrap {
   display: flex;
   align-items: center;
+  flex-wrap: nowrap;
   gap: 8px;
+  flex: 1;
   min-width: 0;
 }
 
@@ -190,12 +192,16 @@
   font-size: 16px;
   font-weight: 700;
   color: var(--color-text-primary);
+  flex: 1;
+  min-width: 0;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
 .enum-mapped-pill {
+  display: inline-flex;
+  align-items: center;
   font-size: 11px;
   font-weight: 600;
   color: var(--color-text-secondary);
@@ -203,6 +209,11 @@
   border: 1px solid var(--color-border);
   border-radius: 999px;
   padding: 2px 8px;
+  max-width: 110px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex-shrink: 1;
 }
 
 .enum-card-actions {
