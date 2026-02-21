@@ -1,0 +1,11 @@
+package {{repositoryPackage}};
+
+import org.springframework.data.jpa.repository.JpaRepository;
+
+{{#idTypeImport}}
+import {{idTypeImport}};
+{{/idTypeImport}}
+import {{modelPackage}}.{{entityName}};
+
+public interface {{repositoryClass}} extends JpaRepository<{{entityName}}, {{idType}}> {
+}

@@ -1354,6 +1354,7 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
         name: this.trimmed(entity?.name) || 'Entity',
         tableName: this.toSnakeCase(this.trimmed(entity?.name) || 'entity'),
         addRestEndpoints: Boolean(entity?.addRestEndpoints),
+        addCrudOperations: Boolean(entity?.addCrudOperations),
         options: {
           entity: !Boolean(entity?.mappedSuperclass),
           immutable: Boolean(entity?.immutable),
@@ -1364,6 +1365,11 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
         id: this.mapId(idField),
         fields: nonIdFields.map((field: any) => this.mapModelField(field))
       };
+
+      const restConfig = this.mapRestConfig(entity?.restConfig);
+      if (restConfig) {
+        model.rest = restConfig;
+      }
 
       if (modelRelations.length) {
         model.relations = modelRelations;
@@ -1382,6 +1388,60 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
       .filter((profile): profile is string => Boolean(profile))
       .filter(profile => this.isValidProfileName(profile));
     return Array.from(new Set(normalized));
+  }
+
+  private mapRestConfig(restConfig: any): any | null {
+    if (!restConfig || typeof restConfig !== 'object') {
+      return null;
+    }
+    const mapped: any = {
+      resourceName: this.trimmed(restConfig.resourceName),
+      basePath: this.trimmed(restConfig.basePath),
+      methods: {
+        list: Boolean(restConfig?.methods?.list),
+        get: Boolean(restConfig?.methods?.get),
+        create: Boolean(restConfig?.methods?.create),
+        update: Boolean(restConfig?.methods?.update),
+        delete: Boolean(restConfig?.methods?.delete)
+      },
+      apiVersioning: {
+        enabled: Boolean(restConfig?.apiVersioning?.enabled),
+        strategy: restConfig?.apiVersioning?.strategy === 'path' ? 'path' : 'header',
+        headerName: this.trimmed(restConfig?.apiVersioning?.headerName),
+        defaultVersion: this.trimmed(restConfig?.apiVersioning?.defaultVersion)
+      },
+      pathVariableType: ['UUID', 'LONG', 'STRING'].includes(String(restConfig?.pathVariableType))
+        ? restConfig.pathVariableType
+        : 'UUID',
+      deletion: {
+        mode: restConfig?.deletion?.mode === 'HARD' ? 'HARD' : 'SOFT',
+        restoreEndpoint: Boolean(restConfig?.deletion?.restoreEndpoint),
+        includeDeletedParam: Boolean(restConfig?.deletion?.includeDeletedParam)
+      },
+      hateoas: {
+        enabled: Boolean(restConfig?.hateoas?.enabled),
+        selfLink: Boolean(restConfig?.hateoas?.selfLink),
+        updateLink: Boolean(restConfig?.hateoas?.updateLink),
+        deleteLink: Boolean(restConfig?.hateoas?.deleteLink)
+      },
+      pagination: {
+        enabled: Boolean(restConfig?.pagination?.enabled ?? restConfig?.pagination),
+        mode: restConfig?.pagination?.mode === 'CURSOR' ? 'CURSOR' : 'OFFSET',
+        sortField: this.trimmed(restConfig?.pagination?.sortField),
+        sortDirection: restConfig?.pagination?.sortDirection === 'ASC' ? 'ASC' : 'DESC'
+      },
+      searchFiltering: {
+        keywordSearch: Boolean(restConfig?.searchFiltering?.keywordSearch),
+        jpaSpecification: Boolean(restConfig?.searchFiltering?.jpaSpecification),
+        searchableFields: Array.isArray(restConfig?.searchFiltering?.searchableFields)
+          ? restConfig.searchFiltering.searchableFields
+            .map((item: any) => this.trimmed(item))
+            .filter(Boolean)
+          : []
+      }
+    };
+
+    return mapped;
   }
 
   private normalizeProfileName(value: unknown): string | null {

@@ -1,0 +1,374 @@
+import { CommonModule } from '@angular/common';
+import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges } from '@angular/core';
+import { MatIconModule } from '@angular/material/icon';
+import { animate, style, transition, trigger } from '@angular/animations';
+import { BasicSettingsComponent } from './basic-settings/basic-settings.component';
+import { PaginationFilteringComponent } from './pagination-filtering/pagination-filtering.component';
+import { EndpointConfigComponent } from './endpoint-config/endpoint-config.component';
+import { RequestResponseConfigComponent } from './request-response-config/request-response-config.component';
+
+export type ApiVersioningStrategy = 'header' | 'path';
+export type PathVariableType = 'UUID' | 'LONG' | 'STRING';
+export type DeletionMode = 'SOFT' | 'HARD';
+export type PaginationMode = 'OFFSET' | 'CURSOR';
+export type SortDirection = 'ASC' | 'DESC';
+export type BulkUpdateMode = 'PUT' | 'PATCH';
+export type OptimisticLockHandling = 'FAIL_ON_CONFLICT' | 'SKIP_CONFLICTS';
+export type ValidationStrategy = 'VALIDATE_ALL_FIRST' | 'SKIP_DUPLICATES';
+export type BatchFailureStrategy = 'STOP_ON_FIRST_ERROR' | 'CONTINUE_AND_REPORT_FAILURES';
+export type RequestDtoMode = 'GENERATE_DTO' | 'NONE';
+export type PatchRequestMode = 'JSON_MERGE_PATCH' | 'JSON_PATCH';
+export type ResponseType = 'RESPONSE_ENTITY' | 'DTO_DIRECT' | 'CUSTOM_WRAPPER';
+export type ResponseWrapper = 'STANDARD_ENVELOPE' | 'NONE' | 'UPSERT';
+
+export interface RestEndpointConfig {
+  resourceName: string;
+  basePath: string;
+  methods: {
+    list: boolean;
+    get: boolean;
+    create: boolean;
+    update: boolean;
+    patch: boolean;
+    delete: boolean;
+    bulkInsert: boolean;
+    bulkUpdate: boolean;
+    bulkDelete: boolean;
+  };
+  apiVersioning: {
+    enabled: boolean;
+    strategy: ApiVersioningStrategy;
+    headerName: string;
+    defaultVersion: string;
+  };
+  pathVariableType: PathVariableType;
+  deletion: {
+    mode: DeletionMode;
+    restoreEndpoint: boolean;
+    includeDeletedParam: boolean;
+  };
+  hateoas: {
+    enabled: boolean;
+    selfLink: boolean;
+    updateLink: boolean;
+    deleteLink: boolean;
+  };
+  pagination: {
+    enabled: boolean;
+    mode: PaginationMode;
+    sortField: string;
+    sortDirection: SortDirection;
+  };
+  searchFiltering: {
+    keywordSearch: boolean;
+    jpaSpecification: boolean;
+    searchableFields: string[];
+  };
+  batchOperations: {
+    insert: {
+      batchSize: number;
+      enableAsyncMode: boolean;
+    };
+    update: {
+      batchSize: number;
+      updateMode: BulkUpdateMode;
+      optimisticLockHandling: OptimisticLockHandling;
+      validationStrategy: ValidationStrategy;
+      enableAsyncMode: boolean;
+      asyncProcessing: boolean;
+    };
+    bulkDelete: {
+      deletionStrategy: DeletionMode;
+      batchSize: number;
+      failureStrategy: BatchFailureStrategy;
+      enableAsyncMode: boolean;
+      allowIncludeDeletedParam: boolean;
+    };
+  };
+  requestResponse: {
+    request: {
+      create: { mode: RequestDtoMode; dtoName: string; };
+      update: { mode: RequestDtoMode; dtoName: string; };
+      patch: { mode: PatchRequestMode; };
+      bulkInsertType: string;
+      bulkUpdateType: string;
+      bulkDeleteType: string;
+    };
+    response: {
+      responseType: ResponseType;
+      responseWrapper: ResponseWrapper;
+      enableFieldProjection: boolean;
+      includeHateoasLinks: boolean;
+    };
+  };
+}
+
+const DEFAULT_REST_ENDPOINT_CONFIG: RestEndpointConfig = {
+  resourceName: 'Employee',
+  basePath: '/api/employees',
+  methods: {
+    list: true,
+    get: true,
+    create: true,
+    update: true,
+    patch: true,
+    delete: true,
+    bulkInsert: true,
+    bulkUpdate: true,
+    bulkDelete: true
+  },
+  apiVersioning: {
+    enabled: true,
+    strategy: 'header',
+    headerName: 'X-API-VERSION',
+    defaultVersion: '1'
+  },
+  pathVariableType: 'UUID',
+  deletion: {
+    mode: 'SOFT',
+    restoreEndpoint: true,
+    includeDeletedParam: true
+  },
+  hateoas: {
+    enabled: true,
+    selfLink: true,
+    updateLink: true,
+    deleteLink: true
+  },
+  pagination: {
+    enabled: true,
+    mode: 'OFFSET',
+    sortField: 'createdAt',
+    sortDirection: 'DESC'
+  },
+  searchFiltering: {
+    keywordSearch: true,
+    jpaSpecification: true,
+    searchableFields: []
+  },
+  batchOperations: {
+    insert: {
+      batchSize: 500,
+      enableAsyncMode: false
+    },
+    update: {
+      batchSize: 500,
+      updateMode: 'PUT',
+      optimisticLockHandling: 'FAIL_ON_CONFLICT',
+      validationStrategy: 'VALIDATE_ALL_FIRST',
+      enableAsyncMode: false,
+      asyncProcessing: true
+    },
+    bulkDelete: {
+      deletionStrategy: 'SOFT',
+      batchSize: 1000,
+      failureStrategy: 'STOP_ON_FIRST_ERROR',
+      enableAsyncMode: false,
+      allowIncludeDeletedParam: true
+    }
+  },
+  requestResponse: {
+    request: {
+      create: {
+        mode: 'GENERATE_DTO',
+        dtoName: 'Request'
+      },
+      update: {
+        mode: 'GENERATE_DTO',
+        dtoName: 'UpdateRequest'
+      },
+      patch: {
+        mode: 'JSON_MERGE_PATCH'
+      },
+      bulkInsertType: '',
+      bulkUpdateType: '',
+      bulkDeleteType: 'List<UUID>'
+    },
+    response: {
+      responseType: 'RESPONSE_ENTITY',
+      responseWrapper: 'STANDARD_ENVELOPE',
+      enableFieldProjection: true,
+      includeHateoasLinks: true
+    }
+  }
+};
+
+@Component({
+  selector: 'app-rest-config',
+  standalone: true,
+  imports: [
+    CommonModule,
+    MatIconModule,
+    BasicSettingsComponent,
+    PaginationFilteringComponent,
+    EndpointConfigComponent,
+    RequestResponseConfigComponent
+  ],
+  templateUrl: './rest-config.component.html',
+  styleUrls: ['./rest-config.component.css'],
+  animations: [
+    trigger('tabContent', [
+      transition('* <=> *', [
+        style({ opacity: 0, transform: 'translateY(4px)' }),
+        animate('180ms ease-out', style({ opacity: 1, transform: 'translateY(0)' }))
+      ])
+    ])
+  ]
+})
+export class RestConfigComponent implements OnChanges {
+  @Input() config: RestEndpointConfig | null = null;
+  @Input() entityFields: Array<{ name?: string } | string> = [];
+  @Input() availableModels: Array<{ name?: string }> = [];
+  @Input() dtoObjects: Array<{ name?: string; dtoType?: 'request' | 'response'; fields?: unknown[] }> = [];
+  @Input() enumTypes: string[] = [];
+  @Input() softDeleteEnabled = false;
+  @Output() save = new EventEmitter<RestEndpointConfig>();
+  @Output() cancel = new EventEmitter<void>();
+
+  draft: RestEndpointConfig = this.cloneConfig(DEFAULT_REST_ENDPOINT_CONFIG);
+  activeTab: 'basic' | 'endpoints' | 'request' | 'pagination' | 'error' | 'docs' = 'basic';
+
+  get searchableFieldOptions(): string[] {
+    const mapped = (Array.isArray(this.entityFields) ? this.entityFields : [])
+      .map((item) => typeof item === 'string' ? item : String(item?.name ?? '').trim())
+      .map((item) => String(item ?? '').trim())
+      .filter(Boolean);
+    return Array.from(new Set(mapped));
+  }
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['config']) {
+      this.draft = this.sanitizeConfig(this.config ?? DEFAULT_REST_ENDPOINT_CONFIG);
+    }
+  }
+
+  setActiveTab(tab: 'basic' | 'endpoints' | 'request' | 'pagination' | 'error' | 'docs'): void {
+    this.activeTab = tab;
+  }
+
+  saveConfig(): void {
+    this.save.emit(this.sanitizeConfig(this.draft));
+  }
+
+  cancelConfig(): void {
+    this.cancel.emit();
+  }
+
+  private sanitizeConfig(config: RestEndpointConfig): RestEndpointConfig {
+    return {
+      resourceName: String(config?.resourceName ?? '').trim() || DEFAULT_REST_ENDPOINT_CONFIG.resourceName,
+      basePath: String(config?.basePath ?? '').trim() || DEFAULT_REST_ENDPOINT_CONFIG.basePath,
+      methods: {
+        list: Boolean(config?.methods?.list ?? DEFAULT_REST_ENDPOINT_CONFIG.methods.list),
+        get: Boolean(config?.methods?.get ?? DEFAULT_REST_ENDPOINT_CONFIG.methods.get),
+        create: Boolean(config?.methods?.create ?? DEFAULT_REST_ENDPOINT_CONFIG.methods.create),
+        update: Boolean(config?.methods?.update ?? DEFAULT_REST_ENDPOINT_CONFIG.methods.update),
+        patch: Boolean(config?.methods?.patch ?? DEFAULT_REST_ENDPOINT_CONFIG.methods.patch),
+        delete: Boolean(config?.methods?.delete ?? DEFAULT_REST_ENDPOINT_CONFIG.methods.delete),
+        bulkInsert: Boolean(config?.methods?.bulkInsert ?? DEFAULT_REST_ENDPOINT_CONFIG.methods.bulkInsert),
+        bulkUpdate: Boolean(config?.methods?.bulkUpdate ?? DEFAULT_REST_ENDPOINT_CONFIG.methods.bulkUpdate),
+        bulkDelete: Boolean(config?.methods?.bulkDelete ?? DEFAULT_REST_ENDPOINT_CONFIG.methods.bulkDelete)
+      },
+      apiVersioning: {
+        enabled: Boolean(config?.apiVersioning?.enabled),
+        strategy: config?.apiVersioning?.strategy === 'path' ? 'path' : 'header',
+        headerName: String(config?.apiVersioning?.headerName ?? DEFAULT_REST_ENDPOINT_CONFIG.apiVersioning.headerName).trim(),
+        defaultVersion: String(config?.apiVersioning?.defaultVersion ?? DEFAULT_REST_ENDPOINT_CONFIG.apiVersioning.defaultVersion).trim()
+      },
+      pathVariableType: this.normalizePathVariableType(config?.pathVariableType),
+      deletion: {
+        mode: config?.deletion?.mode === 'HARD' ? 'HARD' : 'SOFT',
+        restoreEndpoint: Boolean(config?.deletion?.restoreEndpoint),
+        includeDeletedParam: Boolean(config?.deletion?.includeDeletedParam)
+      },
+      hateoas: {
+        enabled: Boolean(config?.hateoas?.enabled),
+        selfLink: Boolean(config?.hateoas?.selfLink),
+        updateLink: Boolean(config?.hateoas?.updateLink),
+        deleteLink: Boolean(config?.hateoas?.deleteLink)
+      },
+      pagination: {
+        enabled: Boolean(config?.pagination?.enabled),
+        mode: config?.pagination?.mode === 'CURSOR' ? 'CURSOR' : 'OFFSET',
+        sortField: String(config?.pagination?.sortField ?? DEFAULT_REST_ENDPOINT_CONFIG.pagination.sortField).trim(),
+        sortDirection: config?.pagination?.sortDirection === 'ASC' ? 'ASC' : 'DESC'
+      },
+      searchFiltering: {
+        keywordSearch: Boolean(config?.searchFiltering?.keywordSearch),
+        jpaSpecification: Boolean(config?.searchFiltering?.jpaSpecification),
+        searchableFields: Array.isArray(config?.searchFiltering?.searchableFields)
+          ? config.searchFiltering.searchableFields.map(item => String(item ?? '').trim()).filter(Boolean)
+          : []
+      },
+      batchOperations: {
+        insert: {
+          batchSize: Math.max(1, Number(config?.batchOperations?.insert?.batchSize ?? DEFAULT_REST_ENDPOINT_CONFIG.batchOperations.insert.batchSize)),
+          enableAsyncMode: Boolean(config?.batchOperations?.insert?.enableAsyncMode)
+        },
+        update: {
+          batchSize: Math.max(1, Number(config?.batchOperations?.update?.batchSize ?? DEFAULT_REST_ENDPOINT_CONFIG.batchOperations.update.batchSize)),
+          updateMode: config?.batchOperations?.update?.updateMode === 'PATCH' ? 'PATCH' : 'PUT',
+          optimisticLockHandling: config?.batchOperations?.update?.optimisticLockHandling === 'SKIP_CONFLICTS' ? 'SKIP_CONFLICTS' : 'FAIL_ON_CONFLICT',
+          validationStrategy: config?.batchOperations?.update?.validationStrategy === 'SKIP_DUPLICATES' ? 'SKIP_DUPLICATES' : 'VALIDATE_ALL_FIRST',
+          enableAsyncMode: Boolean(config?.batchOperations?.update?.enableAsyncMode),
+          asyncProcessing: Boolean(config?.batchOperations?.update?.asyncProcessing)
+        },
+        bulkDelete: {
+          deletionStrategy: config?.batchOperations?.bulkDelete?.deletionStrategy === 'HARD' ? 'HARD' : 'SOFT',
+          batchSize: Math.max(1, Number(config?.batchOperations?.bulkDelete?.batchSize ?? DEFAULT_REST_ENDPOINT_CONFIG.batchOperations.bulkDelete.batchSize)),
+          failureStrategy: config?.batchOperations?.bulkDelete?.failureStrategy === 'CONTINUE_AND_REPORT_FAILURES'
+            ? 'CONTINUE_AND_REPORT_FAILURES'
+            : 'STOP_ON_FIRST_ERROR',
+          enableAsyncMode: Boolean(config?.batchOperations?.bulkDelete?.enableAsyncMode),
+          allowIncludeDeletedParam: Boolean(config?.batchOperations?.bulkDelete?.allowIncludeDeletedParam)
+        }
+      },
+      requestResponse: {
+        request: {
+          create: {
+            mode: config?.requestResponse?.request?.create?.mode === 'NONE' ? 'NONE' : 'GENERATE_DTO',
+            dtoName: String(config?.requestResponse?.request?.create?.dtoName ?? DEFAULT_REST_ENDPOINT_CONFIG.requestResponse.request.create.dtoName).trim()
+          },
+          update: {
+            mode: config?.requestResponse?.request?.update?.mode === 'NONE' ? 'NONE' : 'GENERATE_DTO',
+            dtoName: String(config?.requestResponse?.request?.update?.dtoName ?? DEFAULT_REST_ENDPOINT_CONFIG.requestResponse.request.update.dtoName).trim()
+          },
+          patch: {
+            mode: config?.requestResponse?.request?.patch?.mode === 'JSON_PATCH' ? 'JSON_PATCH' : 'JSON_MERGE_PATCH'
+          },
+          bulkInsertType: String(config?.requestResponse?.request?.bulkInsertType ?? DEFAULT_REST_ENDPOINT_CONFIG.requestResponse.request.bulkInsertType).trim(),
+          bulkUpdateType: String(config?.requestResponse?.request?.bulkUpdateType ?? DEFAULT_REST_ENDPOINT_CONFIG.requestResponse.request.bulkUpdateType).trim(),
+          bulkDeleteType: String(config?.requestResponse?.request?.bulkDeleteType ?? DEFAULT_REST_ENDPOINT_CONFIG.requestResponse.request.bulkDeleteType).trim()
+        },
+        response: {
+          responseType: config?.requestResponse?.response?.responseType === 'DTO_DIRECT'
+            ? 'DTO_DIRECT'
+            : config?.requestResponse?.response?.responseType === 'CUSTOM_WRAPPER'
+              ? 'CUSTOM_WRAPPER'
+              : 'RESPONSE_ENTITY',
+          responseWrapper: config?.requestResponse?.response?.responseWrapper === 'NONE'
+            ? 'NONE'
+            : config?.requestResponse?.response?.responseWrapper === 'UPSERT'
+              ? 'UPSERT'
+              : 'STANDARD_ENVELOPE',
+          enableFieldProjection: Boolean(config?.requestResponse?.response?.enableFieldProjection),
+          includeHateoasLinks: Boolean(config?.requestResponse?.response?.includeHateoasLinks)
+        }
+      }
+    };
+  }
+
+  private normalizePathVariableType(raw: unknown): PathVariableType {
+    if (raw === 'LONG') {
+      return 'LONG';
+    }
+    if (raw === 'STRING') {
+      return 'STRING';
+    }
+    return 'UUID';
+  }
+
+  private cloneConfig(config: RestEndpointConfig): RestEndpointConfig {
+    return this.sanitizeConfig(config);
+  }
+}

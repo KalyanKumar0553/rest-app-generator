@@ -220,3 +220,18 @@ body {
 .mat-mdc-form-field-focus-overlay {
   background-color: color-mix(in srgb, var(--color-text-secondary) 10%, transparent) !important;
 }
+
+@media (max-width: 768px) {
+  html,
+  body,
+  * {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  *::-webkit-scrollbar {
+    width: 0;
+    height: 0;
+    display: none;
+  }
+}

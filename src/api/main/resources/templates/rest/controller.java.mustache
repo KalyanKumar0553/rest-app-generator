@@ -1,6 +1,8 @@
 package {{controllerPackage}};
 
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -38,6 +40,11 @@ public class {{controllerClass}} {
     @PostMapping
     public ResponseEntity<{{entityName}}> create(@Valid @RequestBody {{entityName}} request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(service.create(request));
+    }
+
+    @PostMapping("/bulk")
+    public ResponseEntity<List<{{entityName}}>> saveAll(@Valid @RequestBody List<{{entityName}}> requests) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(service.saveAll(requests));
     }
 
     @PutMapping("/{id}")

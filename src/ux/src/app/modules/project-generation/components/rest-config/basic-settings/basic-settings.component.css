@@ -1,0 +1,99 @@
+.form-grid {
+  display: grid;
+  align-items: center;
+  gap: 12px 14px;
+}
+
+.two-column {
+  grid-template-columns: 160px minmax(0, 520px);
+}
+
+.field-label {
+  color: var(--theme-modal-body-text);
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.form-field {
+  width: 100%;
+}
+
+.short-field {
+  max-width: 320px;
+}
+
+.tiny-field {
+  max-width: 120px;
+}
+
+.indented-grid {
+  margin-top: 10px;
+}
+
+.line-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px;
+}
+
+.inline-radio-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.form-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.hateoas-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px 16px;
+}
+
+.section-accordion {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.section-accordion ::ng-deep .mat-expansion-panel {
+  border: 1px solid var(--theme-neutral-border);
+  border-radius: 10px;
+  background-color: var(--theme-input-bg);
+  box-shadow: none;
+}
+
+.section-accordion ::ng-deep .mat-expansion-panel-header-title {
+  color: var(--theme-modal-body-text);
+  font-weight: 600;
+}
+
+.section-accordion ::ng-deep .mat-expansion-panel-body {
+  padding-top: 4px;
+}
+
+@media (max-width: 768px) {
+  .two-column {
+    grid-template-columns: 1fr;
+  }
+
+  .field-label {
+    font-size: 15px;
+  }
+
+  .hateoas-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .deletion-radio-group {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    gap: 12px;
+    scrollbar-width: thin;
+  }
+}

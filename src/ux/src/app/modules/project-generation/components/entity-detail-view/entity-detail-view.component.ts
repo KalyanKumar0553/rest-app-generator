@@ -14,6 +14,7 @@ interface Entity {
   name: string;
   mappedSuperclass?: boolean;
   addRestEndpoints?: boolean;
+  addCrudOperations?: boolean;
   fields: Field[];
 }
 

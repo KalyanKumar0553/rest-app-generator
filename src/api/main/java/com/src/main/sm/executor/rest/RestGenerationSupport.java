@@ -118,7 +118,7 @@ public final class RestGenerationSupport {
 		String joined = allowed.stream()
 				.map(field -> "\"" + field + "\"")
 				.collect(java.util.stream.Collectors.joining(", "));
-		return "java.util.Set.of(" + joined + ")";
+		return "Set.of(" + joined + ")";
 	}
 
 	private record JavaTypeRef(String simpleName, String importName) {

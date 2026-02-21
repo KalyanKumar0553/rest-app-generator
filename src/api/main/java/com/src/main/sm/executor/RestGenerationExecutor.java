@@ -57,6 +57,7 @@ public class RestGenerationExecutor implements StepExecutor {
 
 			List<ModelSpecDTO> restEnabledModels = models.stream()
 					.filter(model -> Boolean.TRUE.equals(model.getAddRestEndpoints()))
+					.filter(model -> !Boolean.TRUE.equals(model.getAddCrudOperations()))
 					.collect(Collectors.toList());
 			if (restEnabledModels.isEmpty()) {
 				return StepResult.ok(Map.of("status", "Success", "restGeneratedCount", 0));

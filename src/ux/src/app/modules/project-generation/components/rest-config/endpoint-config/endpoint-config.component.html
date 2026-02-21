@@ -1,0 +1,118 @@
+<mat-accordion class="section-accordion endpoint-selection-block" multi="true">
+  <mat-expansion-panel [expanded]="true">
+    <mat-expansion-panel-header>
+      <mat-panel-title>Endpoint Selection</mat-panel-title>
+    </mat-expansion-panel-header>
+    <div class="endpoint-grid">
+      <mat-checkbox [(ngModel)]="draft.methods.create" color="primary">Create</mat-checkbox>
+      <mat-checkbox [(ngModel)]="draft.methods.get" color="primary">Get By Id</mat-checkbox>
+      <mat-checkbox [(ngModel)]="draft.methods.list" color="primary">List</mat-checkbox>
+      <mat-checkbox [(ngModel)]="draft.methods.update" color="primary">Update (PUT)</mat-checkbox>
+      <mat-checkbox [(ngModel)]="draft.methods.patch" color="primary">Patch</mat-checkbox>
+      <mat-checkbox [(ngModel)]="draft.methods.delete" color="primary">Delete</mat-checkbox>
+    </div>
+
+    <div class="section-title-row inner-title">
+      <h5>Batch Operations</h5>
+      <div class="section-line"></div>
+    </div>
+    <div class="batch-toggle-row">
+      <mat-checkbox [(ngModel)]="draft.methods.bulkInsert" color="primary">Bulk Insert</mat-checkbox>
+      <mat-checkbox [(ngModel)]="draft.methods.bulkUpdate" color="primary">Bulk Update</mat-checkbox>
+      <mat-checkbox [(ngModel)]="draft.methods.bulkDelete" color="primary">Bulk Delete</mat-checkbox>
+    </div>
+  </mat-expansion-panel>
+</mat-accordion>
+
+<mat-accordion class="section-accordion" multi="true">
+  <mat-expansion-panel *ngIf="draft.methods.bulkInsert" [expanded]="true">
+      <mat-expansion-panel-header>
+        <mat-panel-title>Bulk Insert Configuration</mat-panel-title>
+      </mat-expansion-panel-header>
+
+      <div class="config-grid config-grid-two">
+        <div class="form-row inline-option">
+          <mat-checkbox [(ngModel)]="draft.batchOperations.insert.enableAsyncMode" color="primary">Async Processing</mat-checkbox>
+        </div>
+        <div class="form-row compact-field">
+          <label>Batch Size:</label>
+          <mat-form-field appearance="outline">
+            <input matInput type="number" min="1" [(ngModel)]="draft.batchOperations.insert.batchSize">
+          </mat-form-field>
+        </div>
+      </div>
+  </mat-expansion-panel>
+
+  <mat-expansion-panel *ngIf="draft.methods.bulkUpdate" [expanded]="true">
+      <mat-expansion-panel-header>
+        <mat-panel-title>Bulk Update Configuration</mat-panel-title>
+      </mat-expansion-panel-header>
+
+      <div class="config-grid config-grid-two">
+        <div class="form-row inline-option">
+          <mat-checkbox [(ngModel)]="draft.batchOperations.update.asyncProcessing" color="primary">Async Processing</mat-checkbox>
+        </div>
+        <div class="form-row compact-field">
+          <label>Batch Size:</label>
+          <mat-form-field appearance="outline">
+            <input matInput type="number" min="1" [(ngModel)]="draft.batchOperations.update.batchSize">
+          </mat-form-field>
+        </div>
+      </div>
+
+      <div class="section-title-row inner-title">
+        <h5>Update Mode</h5>
+        <div class="section-line"></div>
+      </div>
+      <mat-radio-group class="radio-inline one-line-options" [(ngModel)]="draft.batchOperations.update.updateMode">
+        <mat-radio-button value="PUT">Full Replace (PUT style)</mat-radio-button>
+        <mat-radio-button value="PATCH">Partial Update (PATCH style)</mat-radio-button>
+      </mat-radio-group>
+
+      <div class="section-title-row inner-title">
+        <h5>Optimistic Locking</h5>
+        <div class="section-line"></div>
+      </div>
+      <mat-radio-group class="radio-inline one-line-options" [(ngModel)]="draft.batchOperations.update.optimisticLockHandling">
+        <mat-radio-button value="FAIL_ON_CONFLICT">Fail on Version Conflict</mat-radio-button>
+        <mat-radio-button value="SKIP_CONFLICTS">Skip Conflicts</mat-radio-button>
+      </mat-radio-group>
+
+      <div class="section-title-row inner-title">
+        <h5>Validation Strategy</h5>
+        <div class="section-line"></div>
+      </div>
+      <mat-radio-group class="radio-inline one-line-options" [(ngModel)]="draft.batchOperations.update.validationStrategy">
+        <mat-radio-button value="VALIDATE_ALL_FIRST">Validate All First</mat-radio-button>
+        <mat-radio-button value="SKIP_DUPLICATES">Skip Duplicates</mat-radio-button>
+      </mat-radio-group>
+
+  </mat-expansion-panel>
+
+  <mat-expansion-panel *ngIf="draft.methods.bulkDelete" [expanded]="true">
+      <mat-expansion-panel-header>
+        <mat-panel-title>Bulk Delete Configuration</mat-panel-title>
+      </mat-expansion-panel-header>
+
+      <div class="config-grid config-grid-two">
+        <div class="form-row inline-option">
+          <mat-checkbox [(ngModel)]="draft.batchOperations.bulkDelete.enableAsyncMode" color="primary">Async Processing</mat-checkbox>
+        </div>
+        <div class="form-row compact-field">
+          <label>Batch Size:</label>
+          <mat-form-field appearance="outline">
+            <input matInput type="number" min="1" [(ngModel)]="draft.batchOperations.bulkDelete.batchSize">
+          </mat-form-field>
+        </div>
+      </div>
+
+      <div class="section-title-row inner-title">
+        <h5>Failure Strategy</h5>
+        <div class="section-line"></div>
+      </div>
+      <mat-radio-group class="radio-inline one-line-options" [(ngModel)]="draft.batchOperations.bulkDelete.failureStrategy">
+        <mat-radio-button value="STOP_ON_FIRST_ERROR">Stop on First Error</mat-radio-button>
+        <mat-radio-button value="CONTINUE_AND_REPORT_FAILURES">Continue and Report Failures</mat-radio-button>
+      </mat-radio-group>
+  </mat-expansion-panel>
+</mat-accordion>

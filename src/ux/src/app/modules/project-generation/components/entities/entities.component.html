@@ -147,6 +147,7 @@
     [isOpen]="showAddEntityModal"
     [existingEntities]="entities"
     [enumTypes]="enumTypeNames"
+    [dataObjects]="dataObjects"
     (save)="onEntitySave($event)"
     (cancel)="onEntityCancel()">
   </app-add-entity>
@@ -168,9 +169,10 @@
       <span class="entity-detail-tag">Entity</span>
       <div
         class="entity-detail-tags"
-        *ngIf="viewingEntity?.mappedSuperclass || viewingEntity?.addRestEndpoints || viewingEntity?.auditable || viewingEntity?.softDelete || viewingEntity?.immutable || viewingEntity?.naturalIdCache">
+        *ngIf="viewingEntity?.mappedSuperclass || viewingEntity?.addRestEndpoints || viewingEntity?.addCrudOperations || viewingEntity?.auditable || viewingEntity?.softDelete || viewingEntity?.immutable || viewingEntity?.naturalIdCache">
         <span class="entity-detail-meta-tag" *ngIf="viewingEntity?.mappedSuperclass">Mapped Superclass</span>
         <span class="entity-detail-meta-tag" *ngIf="viewingEntity?.addRestEndpoints">REST Endpoints Enabled</span>
+        <span class="entity-detail-meta-tag" *ngIf="viewingEntity?.addCrudOperations">CRUD Operations Enabled</span>
         <span class="entity-detail-meta-tag" *ngIf="viewingEntity?.auditable">Auditable</span>
         <span class="entity-detail-meta-tag" *ngIf="viewingEntity?.softDelete">Soft Delete</span>
         <span class="entity-detail-meta-tag" *ngIf="viewingEntity?.immutable">Immutable</span>

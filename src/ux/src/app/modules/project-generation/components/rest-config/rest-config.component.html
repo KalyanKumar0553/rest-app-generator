@@ -1,0 +1,64 @@
+<div class="rest-config-shell">
+  <div class="tab-row" role="tablist" aria-label="REST configuration tabs">
+    <button type="button" role="tab" class="tab-btn" [class.active]="activeTab === 'basic'" [attr.aria-selected]="activeTab === 'basic'" (click)="setActiveTab('basic')">
+      <mat-icon>settings</mat-icon>
+      <span>Basic Settings</span>
+    </button>
+    <button type="button" role="tab" class="tab-btn" [class.active]="activeTab === 'endpoints'" [attr.aria-selected]="activeTab === 'endpoints'" (click)="setActiveTab('endpoints')">
+      <mat-icon>list_alt</mat-icon>
+      <span>Endpoints</span>
+    </button>
+    <button type="button" role="tab" class="tab-btn" [class.active]="activeTab === 'request'" [attr.aria-selected]="activeTab === 'request'" (click)="setActiveTab('request')">
+      <mat-icon>description</mat-icon>
+      <span>Request &amp; Response</span>
+    </button>
+    <button type="button" role="tab" class="tab-btn" [class.active]="activeTab === 'pagination'" [attr.aria-selected]="activeTab === 'pagination'" (click)="setActiveTab('pagination')">
+      <mat-icon>filter_alt</mat-icon>
+      <span>Pagination &amp; Filtering</span>
+    </button>
+    <button type="button" role="tab" class="tab-btn" [class.active]="activeTab === 'error'" [attr.aria-selected]="activeTab === 'error'" (click)="setActiveTab('error')">
+      <mat-icon>sms_failed</mat-icon>
+      <span>Error Handling</span>
+    </button>
+    <button type="button" role="tab" class="tab-btn" [class.active]="activeTab === 'docs'" [attr.aria-selected]="activeTab === 'docs'" (click)="setActiveTab('docs')">
+      <mat-icon>menu_book</mat-icon>
+      <span>Documentation</span>
+    </button>
+  </div>
+
+  <div class="tab-content" [@tabContent]="activeTab">
+    <ng-container *ngIf="activeTab === 'basic'">
+      <app-rest-config-basic-settings
+        [draft]="draft"
+        [softDeleteEnabled]="softDeleteEnabled">
+      </app-rest-config-basic-settings>
+    </ng-container>
+
+    <ng-container *ngIf="activeTab === 'pagination'">
+      <app-rest-config-pagination-filtering
+        [draft]="draft"
+        [searchFieldOptions]="searchableFieldOptions">
+      </app-rest-config-pagination-filtering>
+    </ng-container>
+
+    <ng-container *ngIf="activeTab === 'endpoints'">
+      <app-rest-config-endpoint-config [draft]="draft"></app-rest-config-endpoint-config>
+    </ng-container>
+
+    <ng-container *ngIf="activeTab === 'request'">
+      <app-rest-config-request-response-config
+        [draft]="draft"
+        [availableModels]="availableModels"
+        [dtoObjects]="dtoObjects"
+        [enumTypes]="enumTypes">
+      </app-rest-config-request-response-config>
+    </ng-container>
+
+    <ng-container *ngIf="activeTab !== 'basic' && activeTab !== 'pagination' && activeTab !== 'endpoints' && activeTab !== 'request'">
+      <section class="placeholder-block">
+        <mat-icon>construction</mat-icon>
+        <p>{{ activeTab | titlecase }} configuration is coming soon.</p>
+      </section>
+    </ng-container>
+  </div>
+</div>

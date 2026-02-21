@@ -7,6 +7,7 @@ import org.springframework.stereotype.Component;
 
 import com.src.main.sm.executor.ActuatorConfigurationExecutor;
 import com.src.main.sm.executor.ApplicationFileGenerationExecutor;
+import com.src.main.sm.executor.CrudGenerationExecutor;
 import com.src.main.sm.executor.DockerGenerationExecutor;
 import com.src.main.sm.executor.DtoGenerationExecutor;
 import com.src.main.sm.executor.EnumGenerationExecutor;
@@ -27,6 +28,7 @@ public class StepExecutorFactory {
 			 SwaggerGenerationExecutor swaggerGenerationExecutor,
 			 DockerGenerationExecutor dockerGenerationExecutor,
 			 RestGenerationExecutor restGenerationExecutor,
+			 CrudGenerationExecutor crudGenerationExecutor,
 			 ActuatorConfigurationExecutor actuatorConfigurationExecutor
 			 ) {
      registry.put(States.DTO_GENERATION, dtoGenerationExecutor);
@@ -37,6 +39,7 @@ public class StepExecutorFactory {
      registry.put(States.MODEL_GENERATION, modelExecutor);
 	     registry.put(States.SWAGGER_GENERATION, swaggerGenerationExecutor);
 	     registry.put(States.REST_GENERATION, restGenerationExecutor);
+	     registry.put(States.CRUD_GENERATION, crudGenerationExecutor);
 	     registry.put(States.ACTUATOR_CONFIGURATION, actuatorConfigurationExecutor);
 	 }
 

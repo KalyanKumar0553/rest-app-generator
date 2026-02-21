@@ -1,0 +1,100 @@
+<ng-template #baseSettingsBody>
+  <div class="form-grid two-column">
+    <div class="field-label">Base Endpoint:</div>
+    <mat-form-field appearance="fill" class="form-field">
+      <input matInput [(ngModel)]="draft.basePath" placeholder="/api/employees">
+    </mat-form-field>
+  </div>
+
+  <div class="line-row">
+    <mat-checkbox
+      [(ngModel)]="draft.apiVersioning.enabled"
+      (ngModelChange)="onApiVersioningToggle($event)"
+      color="primary">
+      Include API Versioning:
+    </mat-checkbox>
+    <mat-radio-group
+      *ngIf="draft.apiVersioning.enabled"
+      class="inline-radio-group"
+      [(ngModel)]="draft.apiVersioning.strategy">
+      <mat-radio-button value="header">Header</mat-radio-button>
+      <mat-radio-button value="path">Path</mat-radio-button>
+    </mat-radio-group>
+  </div>
+
+  <div class="form-grid two-column indented-grid" *ngIf="draft.apiVersioning.enabled && draft.apiVersioning.strategy === 'header'">
+    <div class="field-label">API Header:</div>
+    <mat-form-field appearance="fill" class="form-field short-field">
+      <input matInput [(ngModel)]="draft.apiVersioning.headerName" placeholder="X-API-VERSION">
+    </mat-form-field>
+
+    <div class="field-label">Default Version:</div>
+    <mat-form-field appearance="fill" class="form-field tiny-field">
+      <input matInput [(ngModel)]="draft.apiVersioning.defaultVersion" placeholder="1">
+    </mat-form-field>
+  </div>
+</ng-template>
+
+<ng-template #pathVariableBody>
+  <div class="form-grid two-column">
+    <div class="field-label">Select ID Type</div>
+    <mat-form-field appearance="fill" class="form-field short-field">
+      <mat-select [(ngModel)]="draft.pathVariableType">
+        <mat-option value="UUID">UUID</mat-option>
+        <mat-option value="LONG">Long (Auto Increment)</mat-option>
+        <mat-option value="STRING">String (Custom)</mat-option>
+      </mat-select>
+    </mat-form-field>
+  </div>
+</ng-template>
+
+<ng-template #deletionBody>
+  <mat-radio-group class="inline-radio-group deletion-radio-group" [(ngModel)]="draft.deletion.mode">
+    <mat-radio-button value="SOFT">Soft Delete</mat-radio-button>
+    <mat-radio-button value="HARD">Hard Delete</mat-radio-button>
+  </mat-radio-group>
+
+  <div class="form-stack" *ngIf="draft.deletion.mode === 'SOFT'">
+    <mat-checkbox [(ngModel)]="draft.deletion.restoreEndpoint" color="primary">Generate Restore Endpoint</mat-checkbox>
+    <mat-checkbox [(ngModel)]="draft.deletion.includeDeletedParam" color="primary">Support "includeDeleted=true" parameter</mat-checkbox>
+  </div>
+</ng-template>
+
+<ng-template #hateoasBody>
+  <div class="form-stack hateoas-grid">
+    <mat-checkbox [(ngModel)]="draft.hateoas.enabled" color="primary">Include HATEOAS Links</mat-checkbox>
+    <mat-checkbox [(ngModel)]="draft.hateoas.selfLink" color="primary">Self Link</mat-checkbox>
+    <mat-checkbox [(ngModel)]="draft.hateoas.updateLink" color="primary">Update Link</mat-checkbox>
+    <mat-checkbox [(ngModel)]="draft.hateoas.deleteLink" color="primary">Delete Link</mat-checkbox>
+  </div>
+</ng-template>
+
+<mat-accordion class="section-accordion" multi>
+  <mat-expansion-panel [expanded]="true">
+    <mat-expansion-panel-header>
+      <mat-panel-title>Base Settings</mat-panel-title>
+    </mat-expansion-panel-header>
+    <ng-container *ngTemplateOutlet="baseSettingsBody"></ng-container>
+  </mat-expansion-panel>
+
+  <mat-expansion-panel>
+    <mat-expansion-panel-header>
+      <mat-panel-title>Variable Type</mat-panel-title>
+    </mat-expansion-panel-header>
+    <ng-container *ngTemplateOutlet="pathVariableBody"></ng-container>
+  </mat-expansion-panel>
+
+  <mat-expansion-panel *ngIf="softDeleteEnabled">
+    <mat-expansion-panel-header>
+      <mat-panel-title>Deletion Strategy</mat-panel-title>
+    </mat-expansion-panel-header>
+    <ng-container *ngTemplateOutlet="deletionBody"></ng-container>
+  </mat-expansion-panel>
+
+  <mat-expansion-panel>
+    <mat-expansion-panel-header>
+      <mat-panel-title>HATEOAS Links</mat-panel-title>
+    </mat-expansion-panel-header>
+    <ng-container *ngTemplateOutlet="hateoasBody"></ng-container>
+  </mat-expansion-panel>
+</mat-accordion>

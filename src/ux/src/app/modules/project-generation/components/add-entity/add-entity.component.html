@@ -12,7 +12,7 @@
     </mat-form-field>
 
     <div class="form-group checkbox-row">
-      <div class="checkbox-group" *ngIf="!addRestEndpoints || mappedSuperclass">
+      <div class="checkbox-group" *ngIf="isEntityOptionVisible('mappedSuperclass')">
         <mat-checkbox
           [(ngModel)]="mappedSuperclass"
           (change)="onMappedSuperclassChange()"
@@ -23,12 +23,30 @@
           <i class="bi bi-question-circle"></i>
         </button>
       </div>
-      <div class="checkbox-group" *ngIf="!mappedSuperclass || addRestEndpoints">
+      <div class="checkbox-group rest-endpoints-row" *ngIf="isEntityOptionVisible('addRestEndpoints')">
         <mat-checkbox
           [(ngModel)]="addRestEndpoints"
           (change)="onAddRestEndpointsChange()"
           color="primary">
           Add REST endpoints
+        </mat-checkbox>
+        <button
+          *ngIf="addRestEndpoints"
+          type="button"
+          class="configure-btn"
+          (click)="openConfigureRestModal()">
+          Configure
+        </button>
+        <button class="help-btn" type="button" aria-label="Help">
+          <i class="bi bi-question-circle"></i>
+        </button>
+      </div>
+      <div class="checkbox-group" *ngIf="isEntityOptionVisible('addCrudOperations')">
+        <mat-checkbox
+          [(ngModel)]="addCrudOperations"
+          (change)="onAddCrudOperationsChange()"
+          color="primary">
+          Add CRUD operations
         </mat-checkbox>
         <button class="help-btn" type="button" aria-label="Help">
           <i class="bi bi-question-circle"></i>
@@ -153,6 +171,28 @@
   </app-field-config>
 </app-modal>
 
+<app-modal
+  [isOpen]="isConfigureRestOpen"
+  [title]="'Configure API'"
+  [size]="'xlarge'"
+  (close)="onConfigureRestCancel()">
+  <app-rest-config
+    #configureRestComponent
+    [config]="restConfig"
+    [entityFields]="fields"
+    [availableModels]="existingEntities"
+    [dtoObjects]="dataObjects"
+    [enumTypes]="enumTypes"
+    [softDeleteEnabled]="softDelete"
+    (save)="onConfigureRestSave($event)"
+    (cancel)="onConfigureRestCancel()">
+  </app-rest-config>
+  <div modal-footer>
+    <button mat-raised-button type="button" (click)="onConfigureRestCancel()">Cancel</button>
+    <button mat-raised-button color="primary" type="button" (click)="saveConfigureRest()">Save</button>
+  </div>
+</app-modal>
+
 <app-confirmation-modal
   *ngIf="showFieldDeleteModal"
   [title]="fieldDeleteModalConfig.title"
@@ -160,4 +200,13 @@
   [buttons]="fieldDeleteModalConfig.buttons"
   (confirm)="confirmDeleteField()"
   (cancel)="cancelDeleteField()">
+</app-confirmation-modal>
+
+<app-confirmation-modal
+  *ngIf="showDisableRestConfirmation"
+  [title]="disableRestModalConfig.title"
+  [message]="disableRestModalConfig.message"
+  [buttons]="disableRestModalConfig.buttons"
+  (confirm)="confirmDisableRestEndpoints()"
+  (cancel)="cancelDisableRestEndpoints()">
 </app-confirmation-modal>

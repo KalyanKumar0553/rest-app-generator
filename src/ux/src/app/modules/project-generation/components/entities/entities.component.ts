@@ -17,11 +17,14 @@ import { DdlEntity, DdlImportService } from '../../../../services/ddl-import.ser
 import { ToastService } from '../../../../services/toast.service';
 import { InfoBannerComponent } from '../../../../components/info-banner/info-banner.component';
 import { Router } from '@angular/router';
+import { RestEndpointConfig } from '../rest-config/rest-config.component';
 
 interface Entity {
   name: string;
   mappedSuperclass?: boolean;
   addRestEndpoints?: boolean;
+  addCrudOperations?: boolean;
+  restConfig?: RestEndpointConfig;
   auditable?: boolean;
   softDelete?: boolean;
   immutable?: boolean;
@@ -41,6 +44,7 @@ export class EntitiesComponent implements OnInit {
   @Input() entities: Entity[] = [];
   @Input() relations: Relation[] = [];
   @Input() enums: Array<{ name: string }> = [];
+  @Input() dataObjects: Array<{ name?: string; dtoType?: 'request' | 'response'; fields?: Field[] }> = [];
   @Output() entitiesChange = new EventEmitter<Entity[]>();
   @ViewChild(AddEntityComponent) addEntityComponent!: AddEntityComponent;
   @ViewChild(AddRelationComponent) addRelationComponent!: AddRelationComponent;
@@ -556,6 +560,7 @@ export class EntitiesComponent implements OnInit {
     return {
       ...existing,
       addRestEndpoints: incoming.addRestEndpoints,
+      addCrudOperations: incoming.addCrudOperations ?? existing.addCrudOperations ?? false,
       auditable: existing.auditable ?? false,
       softDelete: existing.softDelete ?? false,
       immutable: existing.immutable ?? false,

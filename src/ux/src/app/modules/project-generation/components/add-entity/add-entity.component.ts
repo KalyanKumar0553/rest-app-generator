@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, Output, OnChanges, SimpleChanges } from '@angular/core';
+import { Component, EventEmitter, Input, Output, OnChanges, SimpleChanges, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -17,11 +17,14 @@ import { buildEntityNameRules, buildFieldListRules, buildFieldRules } from '../.
 import { FieldFilterService } from '../../../../services/field-filter.service';
 import { SearchableMultiSelectComponent } from '../../../../components/searchable-multi-select/searchable-multi-select.component';
 import { HelpPopoverComponent } from '../../../../components/help-popover/help-popover.component';
+import { RestConfigComponent, RestEndpointConfig } from '../rest-config/rest-config.component';
 
 interface Entity {
   name: string;
   mappedSuperclass: boolean;
   addRestEndpoints: boolean;
+  addCrudOperations?: boolean;
+  restConfig?: RestEndpointConfig;
   auditable?: boolean;
   softDelete?: boolean;
   immutable?: boolean;
@@ -44,6 +47,7 @@ interface Entity {
     SearchSortComponent,
     SearchableMultiSelectComponent,
     HelpPopoverComponent,
+    RestConfigComponent,
     ConfirmationModalComponent,
     FieldConfigComponent,
     ModalComponent
@@ -56,16 +60,19 @@ export class AddEntityComponent implements OnChanges {
   @Input() isOpen = false;
   @Input() existingEntities: Entity[] = [];
   @Input() enumTypes: string[] = [];
+  @Input() dataObjects: Array<{ name?: string; dtoType?: 'request' | 'response'; fields?: Field[] }> = [];
   @Output() save = new EventEmitter<any>();
   @Output() cancel = new EventEmitter<void>();
 
   entityName = '';
   mappedSuperclass = false;
   addRestEndpoints = false;
+  addCrudOperations = false;
   auditable = false;
   softDelete = false;
   immutable = false;
   naturalIdCache = false;
+  restConfig: RestEndpointConfig = this.getDefaultRestConfig();
   selectedAdditionalConfigurations: string[] = [];
   nameError = '';
 
@@ -81,6 +88,9 @@ export class AddEntityComponent implements OnChanges {
   fieldDraft: Field | null = null;
   showFieldDeleteModal = false;
   fieldDeleteIndex: number | null = null;
+  isConfigureRestOpen = false;
+  showDisableRestConfirmation = false;
+  @ViewChild('configureRestComponent') configureRestComponent?: RestConfigComponent;
 
   fieldDeleteModalConfig = {
     title: 'Delete field',
@@ -88,6 +98,15 @@ export class AddEntityComponent implements OnChanges {
     buttons: [
       { text: 'Cancel', type: 'cancel' as const, action: 'cancel' as const },
       { text: 'Delete', type: 'danger' as const, action: 'confirm' as const }
+    ] as ModalButton[]
+  };
+
+  disableRestModalConfig = {
+    title: 'Confirmation',
+    message: ['All configured API changes will be lost. Do you want to proceed?'],
+    buttons: [
+      { text: 'Continue', type: 'danger' as const, action: 'confirm' as const },
+      { text: 'Cancel', type: 'cancel' as const, action: 'cancel' as const }
     ] as ModalButton[]
   };
 
@@ -166,6 +185,8 @@ export class AddEntityComponent implements OnChanges {
     this.entityName = entity.name;
     this.mappedSuperclass = Boolean(entity.mappedSuperclass);
     this.addRestEndpoints = Boolean(entity.addRestEndpoints);
+    this.addCrudOperations = Boolean(entity.addCrudOperations);
+    this.restConfig = this.parseRestConfig(entity.restConfig);
     this.normalizeExclusiveEntityToggles();
     this.auditable = Boolean(entity.auditable);
     this.softDelete = Boolean(entity.softDelete);
@@ -181,6 +202,8 @@ export class AddEntityComponent implements OnChanges {
     this.entityName = '';
     this.mappedSuperclass = false;
     this.addRestEndpoints = false;
+    this.addCrudOperations = false;
+    this.restConfig = this.getDefaultRestConfig();
     this.auditable = false;
     this.softDelete = false;
     this.immutable = false;
@@ -291,6 +314,8 @@ export class AddEntityComponent implements OnChanges {
       name: this.entityName,
       mappedSuperclass: this.mappedSuperclass,
       addRestEndpoints: this.addRestEndpoints,
+      addCrudOperations: this.addCrudOperations,
+      restConfig: this.addRestEndpoints ? this.parseRestConfig(this.restConfig) : undefined,
       auditable: this.auditable,
       softDelete: this.softDelete,
       immutable: this.immutable,
@@ -312,6 +337,8 @@ export class AddEntityComponent implements OnChanges {
   onMappedSuperclassChange(): void {
     if (this.mappedSuperclass) {
       this.addRestEndpoints = false;
+      this.addCrudOperations = false;
+      this.isConfigureRestOpen = false;
       this.closeFieldConfig();
     }
     this.updateVisibleFields();
@@ -320,8 +347,64 @@ export class AddEntityComponent implements OnChanges {
   onAddRestEndpointsChange(): void {
     if (this.addRestEndpoints) {
       this.mappedSuperclass = false;
+      this.addCrudOperations = false;
+    } else {
+      this.addRestEndpoints = true;
+      this.showDisableRestConfirmation = true;
+      return;
     }
     this.updateVisibleFields();
+  }
+
+  confirmDisableRestEndpoints(): void {
+    this.addRestEndpoints = false;
+    this.restConfig = this.getDefaultRestConfig();
+    this.isConfigureRestOpen = false;
+    this.showDisableRestConfirmation = false;
+    this.updateVisibleFields();
+  }
+
+  cancelDisableRestEndpoints(): void {
+    this.addRestEndpoints = true;
+    this.showDisableRestConfirmation = false;
+    this.updateVisibleFields();
+  }
+
+  onAddCrudOperationsChange(): void {
+    if (this.addCrudOperations) {
+      this.mappedSuperclass = false;
+      this.addRestEndpoints = false;
+      this.isConfigureRestOpen = false;
+    }
+    this.updateVisibleFields();
+  }
+
+  openConfigureRestModal(): void {
+    if (!this.addRestEndpoints) {
+      return;
+    }
+    this.isConfigureRestOpen = true;
+  }
+
+  saveConfigureRest(): void {
+    this.configureRestComponent?.saveConfig();
+  }
+
+  onConfigureRestSave(config: RestEndpointConfig): void {
+    this.restConfig = this.parseRestConfig(config);
+    this.isConfigureRestOpen = false;
+  }
+
+  onConfigureRestCancel(): void {
+    this.isConfigureRestOpen = false;
+  }
+
+  isEntityOptionVisible(option: 'mappedSuperclass' | 'addRestEndpoints' | 'addCrudOperations'): boolean {
+    const selected = this.mappedSuperclass || this.addRestEndpoints || this.addCrudOperations;
+    if (!selected) {
+      return true;
+    }
+    return Boolean((this as Record<string, unknown>)[option]);
   }
 
   onAdditionalConfigurationsChange(values: string[]): void {
@@ -530,8 +613,224 @@ export class AddEntityComponent implements OnChanges {
   }
 
   private normalizeExclusiveEntityToggles(): void {
-    if (this.mappedSuperclass && this.addRestEndpoints) {
+    if (this.mappedSuperclass) {
       this.addRestEndpoints = false;
+      this.addCrudOperations = false;
+      return;
     }
+    if (this.addRestEndpoints) {
+      this.addCrudOperations = false;
+    }
+  }
+
+  private getDefaultRestConfig(): RestEndpointConfig {
+    return {
+      resourceName: 'Employee',
+      basePath: '/api/employees',
+      methods: {
+        list: true,
+        get: true,
+        create: true,
+        update: true,
+        patch: true,
+        delete: true,
+        bulkInsert: true,
+        bulkUpdate: true,
+        bulkDelete: true
+      },
+      apiVersioning: {
+        enabled: true,
+        strategy: 'header',
+        headerName: 'X-API-VERSION',
+        defaultVersion: '1'
+      },
+      pathVariableType: 'UUID',
+      deletion: {
+        mode: 'SOFT',
+        restoreEndpoint: true,
+        includeDeletedParam: true
+      },
+      hateoas: {
+        enabled: true,
+        selfLink: true,
+        updateLink: true,
+        deleteLink: true
+      },
+      pagination: {
+        enabled: true,
+        mode: 'OFFSET',
+        sortField: 'createdAt',
+        sortDirection: 'DESC'
+      },
+      searchFiltering: {
+        keywordSearch: true,
+        jpaSpecification: true,
+        searchableFields: []
+      },
+      batchOperations: {
+        insert: {
+          batchSize: 500,
+          enableAsyncMode: false
+        },
+        update: {
+          batchSize: 500,
+          updateMode: 'PUT',
+          optimisticLockHandling: 'FAIL_ON_CONFLICT',
+          validationStrategy: 'VALIDATE_ALL_FIRST',
+          enableAsyncMode: false,
+          asyncProcessing: true
+        },
+        bulkDelete: {
+          deletionStrategy: 'SOFT',
+          batchSize: 1000,
+          failureStrategy: 'STOP_ON_FIRST_ERROR',
+          enableAsyncMode: false,
+          allowIncludeDeletedParam: true
+        }
+      },
+      requestResponse: {
+        request: {
+          create: {
+            mode: 'GENERATE_DTO',
+            dtoName: 'Request'
+          },
+          update: {
+            mode: 'GENERATE_DTO',
+            dtoName: 'UpdateRequest'
+          },
+          patch: {
+            mode: 'JSON_MERGE_PATCH'
+          },
+          bulkInsertType: '',
+          bulkUpdateType: '',
+          bulkDeleteType: 'List<UUID>'
+        },
+        response: {
+          responseType: 'RESPONSE_ENTITY',
+          responseWrapper: 'STANDARD_ENVELOPE',
+          enableFieldProjection: true,
+          includeHateoasLinks: true
+        }
+      }
+    };
+  }
+
+  private parseRestConfig(rawConfig: RestEndpointConfig | null | undefined): RestEndpointConfig {
+    const fallback = this.getDefaultRestConfig();
+    if (!rawConfig || typeof rawConfig !== 'object') {
+      return fallback;
+    }
+
+    const legacyPaginationEnabled = typeof (rawConfig as any).pagination === 'boolean'
+      ? Boolean((rawConfig as any).pagination)
+      : fallback.pagination.enabled;
+
+    return {
+      resourceName: String((rawConfig as any).resourceName ?? fallback.resourceName).trim() || fallback.resourceName,
+      basePath: String(rawConfig.basePath ?? fallback.basePath).trim() || fallback.basePath,
+      methods: {
+        list: Boolean((rawConfig as any).methods?.list ?? fallback.methods.list),
+        get: Boolean((rawConfig as any).methods?.get ?? fallback.methods.get),
+        create: Boolean((rawConfig as any).methods?.create ?? fallback.methods.create),
+        update: Boolean((rawConfig as any).methods?.update ?? fallback.methods.update),
+        patch: Boolean((rawConfig as any).methods?.patch ?? fallback.methods.patch),
+        delete: Boolean((rawConfig as any).methods?.delete ?? fallback.methods.delete),
+        bulkInsert: Boolean((rawConfig as any).methods?.bulkInsert ?? fallback.methods.bulkInsert),
+        bulkUpdate: Boolean((rawConfig as any).methods?.bulkUpdate ?? fallback.methods.bulkUpdate),
+        bulkDelete: Boolean((rawConfig as any).methods?.bulkDelete ?? fallback.methods.bulkDelete)
+      },
+      apiVersioning: {
+        enabled: Boolean((rawConfig as any).apiVersioning?.enabled ?? fallback.apiVersioning.enabled),
+        strategy: (rawConfig as any).apiVersioning?.strategy === 'path' ? 'path' : 'header',
+        headerName: String((rawConfig as any).apiVersioning?.headerName ?? fallback.apiVersioning.headerName).trim(),
+        defaultVersion: String((rawConfig as any).apiVersioning?.defaultVersion ?? fallback.apiVersioning.defaultVersion).trim()
+      },
+      pathVariableType: (rawConfig as any).pathVariableType === 'LONG'
+        ? 'LONG'
+        : (rawConfig as any).pathVariableType === 'STRING'
+          ? 'STRING'
+          : 'UUID',
+      deletion: {
+        mode: (rawConfig as any).deletion?.mode === 'HARD' ? 'HARD' : 'SOFT',
+        restoreEndpoint: Boolean((rawConfig as any).deletion?.restoreEndpoint ?? fallback.deletion.restoreEndpoint),
+        includeDeletedParam: Boolean((rawConfig as any).deletion?.includeDeletedParam ?? fallback.deletion.includeDeletedParam)
+      },
+      hateoas: {
+        enabled: Boolean((rawConfig as any).hateoas?.enabled ?? fallback.hateoas.enabled),
+        selfLink: Boolean((rawConfig as any).hateoas?.selfLink ?? fallback.hateoas.selfLink),
+        updateLink: Boolean((rawConfig as any).hateoas?.updateLink ?? fallback.hateoas.updateLink),
+        deleteLink: Boolean((rawConfig as any).hateoas?.deleteLink ?? fallback.hateoas.deleteLink)
+      },
+      pagination: {
+        enabled: Boolean((rawConfig as any).pagination?.enabled ?? legacyPaginationEnabled),
+        mode: (rawConfig as any).pagination?.mode === 'CURSOR' ? 'CURSOR' : 'OFFSET',
+        sortField: String((rawConfig as any).pagination?.sortField ?? fallback.pagination.sortField).trim(),
+        sortDirection: (rawConfig as any).pagination?.sortDirection === 'ASC' ? 'ASC' : 'DESC'
+      },
+      searchFiltering: {
+        keywordSearch: Boolean((rawConfig as any).searchFiltering?.keywordSearch ?? fallback.searchFiltering.keywordSearch),
+        jpaSpecification: Boolean((rawConfig as any).searchFiltering?.jpaSpecification ?? fallback.searchFiltering.jpaSpecification),
+        searchableFields: Array.isArray((rawConfig as any).searchFiltering?.searchableFields)
+          ? (rawConfig as any).searchFiltering.searchableFields
+            .map((value: unknown) => String(value ?? '').trim())
+            .filter(Boolean)
+          : [...fallback.searchFiltering.searchableFields]
+      },
+      batchOperations: {
+        insert: {
+          batchSize: Number((rawConfig as any).batchOperations?.insert?.batchSize ?? fallback.batchOperations.insert.batchSize),
+          enableAsyncMode: Boolean((rawConfig as any).batchOperations?.insert?.enableAsyncMode ?? fallback.batchOperations.insert.enableAsyncMode)
+        },
+        update: {
+          batchSize: Number((rawConfig as any).batchOperations?.update?.batchSize ?? fallback.batchOperations.update.batchSize),
+          updateMode: (rawConfig as any).batchOperations?.update?.updateMode === 'PATCH' ? 'PATCH' : 'PUT',
+          optimisticLockHandling: (rawConfig as any).batchOperations?.update?.optimisticLockHandling === 'SKIP_CONFLICTS' ? 'SKIP_CONFLICTS' : 'FAIL_ON_CONFLICT',
+          validationStrategy: (rawConfig as any).batchOperations?.update?.validationStrategy === 'SKIP_DUPLICATES' ? 'SKIP_DUPLICATES' : 'VALIDATE_ALL_FIRST',
+          enableAsyncMode: Boolean((rawConfig as any).batchOperations?.update?.enableAsyncMode ?? fallback.batchOperations.update.enableAsyncMode),
+          asyncProcessing: Boolean((rawConfig as any).batchOperations?.update?.asyncProcessing ?? fallback.batchOperations.update.asyncProcessing)
+        },
+        bulkDelete: {
+          deletionStrategy: (rawConfig as any).batchOperations?.bulkDelete?.deletionStrategy === 'HARD' ? 'HARD' : 'SOFT',
+          batchSize: Number((rawConfig as any).batchOperations?.bulkDelete?.batchSize ?? fallback.batchOperations.bulkDelete.batchSize),
+          failureStrategy: (rawConfig as any).batchOperations?.bulkDelete?.failureStrategy === 'CONTINUE_AND_REPORT_FAILURES'
+            ? 'CONTINUE_AND_REPORT_FAILURES'
+            : 'STOP_ON_FIRST_ERROR',
+          enableAsyncMode: Boolean((rawConfig as any).batchOperations?.bulkDelete?.enableAsyncMode ?? fallback.batchOperations.bulkDelete.enableAsyncMode),
+          allowIncludeDeletedParam: Boolean((rawConfig as any).batchOperations?.bulkDelete?.allowIncludeDeletedParam ?? fallback.batchOperations.bulkDelete.allowIncludeDeletedParam)
+        }
+      },
+      requestResponse: {
+        request: {
+          create: {
+            mode: (rawConfig as any).requestResponse?.request?.create?.mode === 'NONE' ? 'NONE' : 'GENERATE_DTO',
+            dtoName: String((rawConfig as any).requestResponse?.request?.create?.dtoName ?? fallback.requestResponse.request.create.dtoName).trim()
+          },
+          update: {
+            mode: (rawConfig as any).requestResponse?.request?.update?.mode === 'NONE' ? 'NONE' : 'GENERATE_DTO',
+            dtoName: String((rawConfig as any).requestResponse?.request?.update?.dtoName ?? fallback.requestResponse.request.update.dtoName).trim()
+          },
+          patch: {
+            mode: (rawConfig as any).requestResponse?.request?.patch?.mode === 'JSON_PATCH' ? 'JSON_PATCH' : 'JSON_MERGE_PATCH'
+          },
+          bulkInsertType: String((rawConfig as any).requestResponse?.request?.bulkInsertType ?? fallback.requestResponse.request.bulkInsertType).trim(),
+          bulkUpdateType: String((rawConfig as any).requestResponse?.request?.bulkUpdateType ?? fallback.requestResponse.request.bulkUpdateType).trim(),
+          bulkDeleteType: String((rawConfig as any).requestResponse?.request?.bulkDeleteType ?? fallback.requestResponse.request.bulkDeleteType).trim()
+        },
+        response: {
+          responseType: (rawConfig as any).requestResponse?.response?.responseType === 'DTO_DIRECT'
+            ? 'DTO_DIRECT'
+            : (rawConfig as any).requestResponse?.response?.responseType === 'CUSTOM_WRAPPER'
+              ? 'CUSTOM_WRAPPER'
+              : 'RESPONSE_ENTITY',
+          responseWrapper: (rawConfig as any).requestResponse?.response?.responseWrapper === 'NONE'
+            ? 'NONE'
+            : (rawConfig as any).requestResponse?.response?.responseWrapper === 'UPSERT'
+              ? 'UPSERT'
+              : 'STANDARD_ENVELOPE',
+          enableFieldProjection: Boolean((rawConfig as any).requestResponse?.response?.enableFieldProjection ?? fallback.requestResponse.response.enableFieldProjection),
+          includeHateoasLinks: Boolean((rawConfig as any).requestResponse?.response?.includeHateoasLinks ?? fallback.requestResponse.response.includeHateoasLinks)
+        }
+      }
+    };
   }
 }

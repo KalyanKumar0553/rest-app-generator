@@ -1,0 +1,62 @@
+<ng-template #paginationBody>
+  <div class="form-stack">
+    <mat-checkbox [(ngModel)]="draft.pagination.enabled" color="primary">Enable Pagination</mat-checkbox>
+    <div class="line-row">
+      <mat-radio-group class="inline-radio-group compact" [(ngModel)]="draft.pagination.mode">
+        <mat-radio-button value="OFFSET">Offset Pagination</mat-radio-button>
+        <mat-radio-button value="CURSOR">Cursor Pagination</mat-radio-button>
+      </mat-radio-group>
+      <mat-form-field appearance="fill" class="select-field">
+        <mat-select [(ngModel)]="draft.pagination.sortField">
+          <mat-option *ngFor="let field of sortFieldOptions" [value]="field">{{ field }}</mat-option>
+        </mat-select>
+      </mat-form-field>
+    </div>
+    <div class="line-row">
+      <span class="field-label inline">Direction</span>
+      <mat-form-field appearance="fill" class="select-field">
+        <mat-select [(ngModel)]="draft.pagination.sortDirection">
+          <mat-option value="ASC">Ascending</mat-option>
+          <mat-option value="DESC">Descending</mat-option>
+        </mat-select>
+      </mat-form-field>
+    </div>
+  </div>
+</ng-template>
+
+<ng-template #searchBody>
+  <div class="form-stack">
+    <mat-checkbox [(ngModel)]="draft.searchFiltering.keywordSearch" color="primary">Enable keyword search (q=)</mat-checkbox>
+    <mat-checkbox [(ngModel)]="draft.searchFiltering.jpaSpecification" color="primary">JPA Specification filtering</mat-checkbox>
+  </div>
+
+  <div class="searchable-fields-wrap">
+    <span class="searchable-label">Searchable Fields:</span>
+    <div class="searchable-select">
+      <app-searchable-multi-select
+        [label]="'Options'"
+        [searchPlaceholder]="'Please Enter Text to Search'"
+        [options]="searchFieldOptions"
+        [selectedValues]="draft.searchFiltering.searchableFields"
+        (selectedValuesChange)="onSearchableFieldsChange($event)"
+        [emptyMessage]="'No fields found'">
+      </app-searchable-multi-select>
+    </div>
+  </div>
+</ng-template>
+
+<mat-accordion class="section-accordion" multi>
+  <mat-expansion-panel [expanded]="true">
+    <mat-expansion-panel-header>
+      <mat-panel-title>Pagination &amp; Sorting</mat-panel-title>
+    </mat-expansion-panel-header>
+    <ng-container *ngTemplateOutlet="paginationBody"></ng-container>
+  </mat-expansion-panel>
+
+  <mat-expansion-panel>
+    <mat-expansion-panel-header>
+      <mat-panel-title>Search &amp; Filtering</mat-panel-title>
+    </mat-expansion-panel-header>
+    <ng-container *ngTemplateOutlet="searchBody"></ng-container>
+  </mat-expansion-panel>
+</mat-accordion>

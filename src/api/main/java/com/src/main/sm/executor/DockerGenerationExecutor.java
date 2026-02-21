@@ -44,9 +44,10 @@ public class DockerGenerationExecutor implements StepExecutor {
 
 			String artifactId = resolveArtifactId(data, yaml);
 			String buildTool = resolveBuildTool(data, yaml);
+			String database = resolveDatabase(yaml);
 			String serviceName = DockerGenerationSupport.toServiceName(artifactId);
 
-			dockerGenerationService.generate(root, artifactId, serviceName, buildTool);
+			dockerGenerationService.generate(root, artifactId, serviceName, buildTool, database);
 			return StepResult.ok(Map.of("status", "Success", "dockerGenerated", true));
 		} catch (Exception ex) {
 			return StepResult.error("DOCKER_GENERATION", ex.getMessage());
@@ -85,6 +86,11 @@ public class DockerGenerationExecutor implements StepExecutor {
 		}
 		return StringUtils.firstNonBlank(str(data.getVariables().get(ProjectMetaDataConstants.BUILD_TOOL)),
 				ProjectMetaDataConstants.DEFAULT_BUILD_TOOL);
+	}
+
+	private static String resolveDatabase(Map<String, Object> yaml) {
+		Object database = yaml.get("database");
+		return database == null ? null : String.valueOf(database);
 	}
 
 	private static Object firstNonNull(Object... values) {

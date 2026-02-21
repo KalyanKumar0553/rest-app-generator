@@ -39,6 +39,7 @@ public final class SwaggerGenerationSupport {
 		}
 		return models.stream()
 				.filter(model -> Boolean.TRUE.equals(model.getAddRestEndpoints()))
+				.filter(model -> !Boolean.TRUE.equals(model.getAddCrudOperations()))
 				.map(model -> {
 					String entity = CaseUtils.toPascal(StringUtils.firstNonBlank(model.getName(), "Entity"));
 					String endpoint = toKebabCase(entity) + "s";

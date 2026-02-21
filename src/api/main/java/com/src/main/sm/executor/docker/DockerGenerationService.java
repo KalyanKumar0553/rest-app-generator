@@ -23,12 +23,13 @@ public class DockerGenerationService {
 		this.templateEngine = templateEngine;
 	}
 
-	public void generate(Path root, String artifactId, String serviceName, String buildTool) throws Exception {
+	public void generate(Path root, String artifactId, String serviceName, String buildTool, String database) throws Exception {
 		Files.createDirectories(root);
 		Map<String, Object> model = new LinkedHashMap<>();
 		model.put("artifactId", artifactId);
 		model.put("serviceName", serviceName);
 		model.put("jarGlob", DockerGenerationSupport.resolveJarGlob(buildTool));
+		model.put("dbServiceBlock", DockerGenerationSupport.resolveDbServiceBlock(database));
 
 		String dockerfile = templateEngine.render(DOCKERFILE_TEMPLATE, model);
 		String compose = templateEngine.render(COMPOSE_TEMPLATE, model);

@@ -1,5 +1,6 @@
 package {{servicePackage}};
 
+import java.util.List;
 import java.util.Map;
 
 import org.springframework.data.domain.Page;
@@ -31,6 +32,11 @@ public class {{serviceClass}} {
     @Transactional
     public {{entityName}} create({{entityName}} request) {
         return repository.save(request);
+    }
+
+    @Transactional
+    public List<{{entityName}}> saveAll(List<{{entityName}}> requests) {
+        return repository.saveAll(requests);
     }
 
     @Transactional

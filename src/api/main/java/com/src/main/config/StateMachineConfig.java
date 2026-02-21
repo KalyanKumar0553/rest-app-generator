@@ -45,6 +45,8 @@ public class StateMachineConfig extends EnumStateMachineConfigurerAdapter<States
 						runStep(States.SWAGGER_GENERATION, Events.SWAGGER_DONE, Events.SWAGGER_FAIL))
 				.stateEntry(States.REST_GENERATION,
 						runStep(States.REST_GENERATION, Events.REST_DONE, Events.REST_FAIL))
+				.stateEntry(States.CRUD_GENERATION,
+						runStep(States.CRUD_GENERATION, Events.CRUD_DONE, Events.CRUD_FAIL))
 				.stateEntry(States.ACTUATOR_CONFIGURATION,
 						runStep(States.ACTUATOR_CONFIGURATION, Events.ACTUATOR_DONE, Events.ACTUATOR_FAIL))
 				.stateEntry(States.APPLICATION_FILES,
@@ -76,10 +78,15 @@ public class StateMachineConfig extends EnumStateMachineConfigurerAdapter<States
 				.event(Events.SWAGGER_DONE).and().withExternal().source(States.SWAGGER_GENERATION).target(States.ERROR)
 				.event(Events.SWAGGER_FAIL).and()
 
-				// REST GENERATION → APP FILES / ERROR
-				.withExternal().source(States.REST_GENERATION).target(States.APPLICATION_FILES)
+				// REST GENERATION → CRUD GENERATION / ERROR
+				.withExternal().source(States.REST_GENERATION).target(States.CRUD_GENERATION)
 					.event(Events.REST_DONE).and().withExternal().source(States.REST_GENERATION).target(States.ERROR)
 					.event(Events.REST_FAIL).and()
+
+				// CRUD GENERATION → APP FILES / ERROR
+				.withExternal().source(States.CRUD_GENERATION).target(States.APPLICATION_FILES)
+				.event(Events.CRUD_DONE).and().withExternal().source(States.CRUD_GENERATION).target(States.ERROR)
+				.event(Events.CRUD_FAIL).and()
 
 				// APP FILES → ACTUATOR CONFIG / ERROR
 				.withExternal().source(States.APPLICATION_FILES).target(States.ACTUATOR_CONFIGURATION).event(Events.APPFILES_DONE)
@@ -106,6 +113,7 @@ public class StateMachineConfig extends EnumStateMachineConfigurerAdapter<States
 				.withExternal().source(States.MODEL_GENERATION).target(States.ERROR).event(Events.FAIL).and()
 					.withExternal().source(States.SWAGGER_GENERATION).target(States.ERROR).event(Events.FAIL).and()
 					.withExternal().source(States.REST_GENERATION).target(States.ERROR).event(Events.FAIL).and()
+					.withExternal().source(States.CRUD_GENERATION).target(States.ERROR).event(Events.FAIL).and()
 					.withExternal().source(States.ACTUATOR_CONFIGURATION).target(States.ERROR).event(Events.FAIL).and()
 					.withExternal().source(States.APPLICATION_FILES).target(States.ERROR).event(Events.FAIL).and()
 				.withExternal().source(States.DOCKER_GENERATION).target(States.ERROR).event(Events.FAIL).and()
