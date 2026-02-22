@@ -25,6 +25,24 @@
   (cancel)="cancelEntitiesDelete()"
 ></app-confirmation-modal>
 
+<app-confirmation-modal
+  *ngIf="showRestSpecDeleteConfirmation"
+  [title]="restSpecDeleteConfirmationConfig.title"
+  [message]="restSpecDeleteConfirmationConfig.message"
+  [buttons]="restSpecDeleteConfirmationConfig.buttons"
+  (confirm)="confirmDeleteControllerRestSpec()"
+  (cancel)="cancelDeleteControllerRestSpec()"
+></app-confirmation-modal>
+
+<app-confirmation-modal
+  *ngIf="showControllersConfigDiscardConfirmation"
+  [title]="controllersConfigDiscardConfirmationConfig.title"
+  [message]="controllersConfigDiscardConfirmationConfig.message"
+  [buttons]="controllersConfigDiscardConfirmationConfig.buttons"
+  (confirm)="confirmCancelControllersConfiguration()"
+  (cancel)="cancelCancelControllersConfiguration()"
+></app-confirmation-modal>
+
 <div class="mobile-header">
   <div class="container">
     <div class="header-content">
@@ -62,6 +80,9 @@
     <div class="content-body" *ngIf="activeSection === 'general'" id="general">
       <div class="sticky-header">
         <div class="top-actions">
+          <button class="back-btn-desktop" (click)="openYamlPreviewModal()" aria-label="Preview YAML spec" mat-stroked-button>
+            <i class="bi bi-eye"></i>
+          </button>
           <button class="back-btn-desktop" (click)="handleHome()" aria-label="Go to home" mat-stroked-button>
             <i class="bi bi-house-door"></i>
             Home
@@ -236,7 +257,7 @@
 
             <div class="form-row">
               <mat-checkbox [(ngModel)]="developerPreferences.configureApi" (ngModelChange)="onEnableConfigureApiChange($event)">
-                Configure API
+                Enable API Configuration Screen
                 <mat-icon class="inline-icon" matTooltip="Enable API controller configuration"
                   (mousedown)="onHelpIconInteraction($event)" (click)="onHelpIconInteraction($event)">info</mat-icon>
               </mat-checkbox>
@@ -328,6 +349,9 @@
     <div class="content-body" *ngIf="activeSection === 'actuator' && developerPreferences.enableActuator" id="actuator">
       <div class="sticky-header">
         <div class="top-actions">
+          <button class="back-btn-desktop" (click)="openYamlPreviewModal()" aria-label="Preview YAML spec" mat-stroked-button>
+            <i class="bi bi-eye"></i>
+          </button>
           <button class="back-btn-desktop" (click)="handleHome()" aria-label="Go to home" mat-stroked-button>
             <i class="bi bi-house-door"></i>
             Home
@@ -363,6 +387,9 @@
     <div class="content-body" *ngIf="activeSection === 'entities'" id="entities">
       <div class="sticky-header">
         <div class="top-actions">
+          <button class="back-btn-desktop" (click)="openYamlPreviewModal()" aria-label="Preview YAML spec" mat-stroked-button>
+            <i class="bi bi-eye"></i>
+          </button>
           <button class="back-btn-desktop" (click)="handleHome()" aria-label="Go to home" mat-stroked-button>
             <i class="bi bi-house-door"></i>
             Home
@@ -394,6 +421,9 @@
     <div class="content-body" *ngIf="activeSection === 'data-objects'" id="data-objects">
       <div class="sticky-header">
         <div class="top-actions">
+          <button class="back-btn-desktop" (click)="openYamlPreviewModal()" aria-label="Preview YAML spec" mat-stroked-button>
+            <i class="bi bi-eye"></i>
+          </button>
           <button class="back-btn-desktop" (click)="handleHome()" aria-label="Go to home" mat-stroked-button>
             <i class="bi bi-house-door"></i>
             Home
@@ -424,6 +454,9 @@
     <div class="content-body" *ngIf="activeSection === 'controllers' && developerPreferences.configureApi" id="controllers">
       <div class="sticky-header">
         <div class="top-actions">
+          <button class="back-btn-desktop" (click)="openYamlPreviewModal()" aria-label="Preview YAML spec" mat-stroked-button>
+            <i class="bi bi-eye"></i>
+          </button>
           <button class="back-btn-desktop" (click)="handleHome()" aria-label="Go to home" mat-stroked-button>
             <i class="bi bi-house-door"></i>
             Home
@@ -438,23 +471,55 @@
       </div>
 
       <div class="scrollable-content">
-        <app-rest-config
-          [config]="controllersConfig"
-          [entityFields]="controllersEntityFields"
-          [availableModels]="entities"
-          [dtoObjects]="controllersDtoObjects"
-          [enumTypes]="controllersEnumTypes"
-          [softDeleteEnabled]="false"
-          (save)="onControllersConfigSave($event)"
-          (cancel)="onControllersConfigCancel()">
-        </app-rest-config>
+        <ng-container *ngIf="showControllersConfigEditor; else controllersRestSpecTable">
+          <app-rest-config
+            #controllersRestConfigComponent
+            [config]="isControllersSpecEditMode ? controllersEditingSpecConfig : (isControllersSpecCreateMode ? null : controllersConfig)"
+            [entityFields]="controllersEntityFields"
+            [availableModels]="entities"
+            [existingRestConfigNames]="isControllersSpecEditMode ? controllersEditModeExistingNames : configuredEntityRestSpecNames"
+            [dtoObjects]="controllersDtoObjects"
+            [enumTypes]="controllersEnumTypes"
+            [softDeleteEnabled]="false"
+            (save)="onControllersEditorSave($event)"
+            (cancel)="onControllersEditorCancel()">
+          </app-rest-config>
+        </ng-container>
+
+        <ng-template #controllersRestSpecTable>
+          <app-controllers-spec-table
+            [rows]="controllerRestSpecRows"
+            (create)="startNewControllerRestSpec()"
+            (edit)="editControllerRestSpec($event)"
+            (delete)="requestDeleteControllerRestSpec($event)">
+          </app-controllers-spec-table>
+        </ng-template>
       </div>
 
       <div class="sticky-footer">
         <div class="action-section">
-          <button mat-raised-button type="button" (click)="saveProjectAndInvokeApi()" [disabled]="isLoading || isGeneratingFromDtoSave">
-            Save Project
+          <button
+            *ngIf="showControllersConfigEditor; else saveProjectCta"
+            mat-raised-button
+            type="button"
+            (click)="saveControllersConfiguration()"
+            [disabled]="isLoading || isGeneratingFromDtoSave">
+            Save Configuration
           </button>
+          <button
+            *ngIf="showControllersConfigEditor"
+            mat-raised-button
+            class="controllers-cancel-btn"
+            type="button"
+            (click)="requestCancelControllersConfiguration()"
+            [disabled]="isLoading || isGeneratingFromDtoSave">
+            Cancel
+          </button>
+          <ng-template #saveProjectCta>
+            <button mat-raised-button type="button" (click)="saveProjectAndInvokeApi()" [disabled]="isLoading || isGeneratingFromDtoSave">
+              Save Project
+            </button>
+          </ng-template>
         </div>
       </div>
     </div>
@@ -462,6 +527,9 @@
     <div class="content-body" *ngIf="activeSection === 'explore'" id="explore">
       <div class="sticky-header">
         <div class="top-actions">
+          <button class="back-btn-desktop" (click)="openYamlPreviewModal()" aria-label="Preview YAML spec" mat-stroked-button>
+            <i class="bi bi-eye"></i>
+          </button>
           <button class="back-btn-desktop" (click)="handleHome()" aria-label="Go to home" mat-stroked-button>
             <i class="bi bi-house-door"></i>
             Home
@@ -511,4 +579,13 @@
     (save)="onProfilesSave($event)"
     (cancel)="closeProfileModal()">
   </app-add-profile>
+</app-modal>
+
+<app-modal
+  [isOpen]="showYamlPreviewModal"
+  [title]="'YAML Preview'"
+  [size]="'large'"
+  [showFooter]="false"
+  (close)="closeYamlPreviewModal()">
+  <app-project-spec [spec]="yamlPreviewContent"></app-project-spec>
 </app-modal>

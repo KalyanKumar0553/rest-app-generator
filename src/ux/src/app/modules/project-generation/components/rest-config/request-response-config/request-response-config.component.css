@@ -40,7 +40,7 @@
 
 .request-response-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: 1fr;
   gap: 16px;
 }
 
@@ -231,10 +231,6 @@
 }
 
 @media (max-width: 992px) {
-  .request-response-grid {
-    grid-template-columns: 1fr;
-  }
-
   .wrapper-grid {
     grid-template-columns: 1fr;
   }

@@ -1,0 +1,127 @@
+.controllers-table-section {
+  border: 1px solid var(--theme-neutral-border);
+  border-radius: 10px;
+  background-color: var(--theme-input-bg);
+}
+
+.controllers-table-header {
+  min-height: 54px;
+  padding: 0 14px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border-bottom: 1px solid var(--theme-neutral-border);
+}
+
+.controllers-create-btn {
+  margin-left: auto;
+  border: 1px solid var(--color-primary);
+  border-radius: 8px;
+  background-color: var(--color-primary);
+  color: var(--theme-primary-btn-text);
+  font-weight: 600;
+  font-size: 13px;
+  padding: 6px 12px;
+  cursor: pointer;
+}
+
+.controllers-create-btn:hover {
+  background-color: var(--color-primary-hover);
+  border-color: var(--color-primary-hover);
+  color: var(--theme-primary-btn-text);
+}
+
+.controllers-table-header h3 {
+  margin: 0;
+  color: var(--theme-modal-body-text);
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.controllers-table-wrap {
+  overflow-x: auto;
+  background-color: var(--theme-modal-container-bg);
+  max-width: 100%;
+}
+
+.controllers-table {
+  width: 100%;
+  max-width: 100%;
+  border-collapse: collapse;
+  table-layout: auto;
+}
+
+.controllers-table th,
+.controllers-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--theme-neutral-border);
+  border-right: 1px solid var(--theme-neutral-border);
+  color: var(--theme-modal-body-text);
+  vertical-align: middle;
+  width: auto;
+  text-align: center;
+}
+
+.controllers-table th {
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+  background-color: var(--theme-input-bg);
+}
+
+.controllers-table th:last-child,
+.controllers-table td:last-child {
+  border-right: none;
+}
+
+.controllers-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.controllers-name-cell {
+  font-weight: 600;
+}
+
+.controllers-empty-row {
+  text-align: center;
+  color: var(--theme-neutral-text);
+  font-weight: 500;
+  padding: 20px 12px;
+}
+
+.controllers-actions-col {
+  width: 1%;
+  white-space: nowrap;
+}
+
+.controllers-actions-cell {
+  white-space: nowrap;
+}
+
+.controllers-actions-inner {
+  width: 100%;
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  gap: 6px;
+}
+
+.controllers-action-btn {
+  border: none;
+  background-color: var(--color-background-muted);
+  color: var(--theme-modal-body-text);
+  border-radius: 10px;
+  padding: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.controllers-action-btn:hover {
+  background-color: var(--color-border);
+}
+
+.controllers-action-btn.danger {
+  color: var(--color-error);
+}

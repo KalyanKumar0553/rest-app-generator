@@ -1,4 +1,4 @@
-import { ChangeDetectorRef, Component, OnInit, OnDestroy } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit, OnDestroy, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, ActivatedRoute } from '@angular/router';
@@ -20,6 +20,8 @@ import { ModalComponent } from '../../../../components/modal/modal.component';
 import { EntitiesComponent } from '../entities/entities.component';
 import { DataObjectsComponent } from '../data-objects/data-objects.component';
 import { ProjectViewComponent } from '../project-view/project-view.component';
+import { ProjectSpecComponent } from '../project-spec/project-spec.component';
+import { ControllersSpecTableComponent } from '../controllers-spec-table/controllers-spec-table.component';
 import { AddProfileComponent } from '../add-profile/add-profile.component';
 import { SidenavComponent, NavItem } from '../../../../components/shared/sidenav/sidenav.component';
 import { AuthService } from '../../../../services/auth.service';
@@ -79,6 +81,15 @@ interface ProjectRunSummary {
   runNumber?: number;
 }
 
+interface ControllerRestSpecRow {
+  key: string;
+  name: string;
+  totalEndpoints: number;
+  mappedEntities: string[];
+  entityIndexes: number[];
+  hasControllersConfig: boolean;
+}
+
 @Component({
   selector: 'app-project-generation-dashboard',
   standalone: true,
@@ -103,6 +114,8 @@ interface ProjectRunSummary {
     ActuatorConfigComponent,
     AddProfileComponent,
     ProjectViewComponent,
+    ProjectSpecComponent,
+    ControllersSpecTableComponent,
     RestConfigComponent,
     SidenavComponent,
     InfoBannerComponent
@@ -137,6 +150,7 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
 
   showBackConfirmation = false;
   showEntitiesDeleteConfirmation = false;
+  showRestSpecDeleteConfirmation = false;
   showRecentProjectPrompt = false;
   private previousDatabaseSelection = 'POSTGRES';
   private pendingDatabaseSelection: string | null = null;
@@ -166,6 +180,23 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
       { text: 'Cancel', type: 'cancel', action: 'cancel' }
     ]
   };
+  restSpecDeleteConfirmationConfig: { title: string; message: string; buttons: ModalButton[] } = {
+    title: 'Delete REST Configuration',
+    message: 'This will remove REST endpoint configuration and related model mapping.',
+    buttons: [
+      { text: 'Delete', type: 'danger', action: 'confirm' },
+      { text: 'Cancel', type: 'cancel', action: 'cancel' }
+    ]
+  };
+  controllersConfigDiscardConfirmationConfig: { title: string; message: string; buttons: ModalButton[] } = {
+    title: 'Confirmation',
+    message: 'All Change will be discarded from the configuration. Want to proceed ?',
+    buttons: [
+      { text: 'Confirm', type: 'danger', action: 'confirm' },
+      { text: 'Cancel', type: 'cancel', action: 'cancel' }
+    ]
+  };
+  pendingRestSpecDeleteKey: string | null = null;
 
   recentProjectPromptConfig: { title: string; message: string; buttons: ModalButton[] } = {
     title: 'Load Recent project',
@@ -195,14 +226,22 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
     packages: 'technical',
     enableOpenAPI: false,
     enableActuator: false,
-    configureApi: false,
+    configureApi: true,
     useDockerCompose: false,
     profiles: [],
     javaVersion: '21',
     deployment: 'None'
   };
   controllersConfig: RestEndpointConfig = this.getDefaultControllersConfig();
+  controllersConfigEnabled = true;
+  controllersCreatingNewConfig = false;
+  controllersEditingSpecKey: string | null = null;
+  controllersEditingSpecConfig: RestEndpointConfig | null = null;
+  @ViewChild('controllersRestConfigComponent') controllersRestConfigComponent?: RestConfigComponent;
   showProfileModal = false;
+  showYamlPreviewModal = false;
+  yamlPreviewContent = '';
+  showControllersConfigDiscardConfirmation = false;
   selectedActuatorConfiguration = 'default';
   actuatorConfigurationOptions: string[] = ['default'];
   actuatorProfileEndpoints: Record<string, string[]> = {
@@ -314,6 +353,7 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
       database: this.databaseSettings,
       preferences: this.developerPreferences,
       controllers: {
+        enabled: this.controllersConfigEnabled,
         config: this.controllersConfig
       },
       actuator: {
@@ -346,8 +386,13 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
           ...this.developerPreferences,
           ...(projectData.preferences || {}),
           enableActuator: Boolean(projectData?.preferences?.enableActuator),
-          configureApi: Boolean(projectData?.preferences?.configureApi)
+          configureApi: projectData?.preferences?.configureApi === undefined
+            ? this.developerPreferences.configureApi
+            : Boolean(projectData?.preferences?.configureApi)
         };
+        this.controllersConfigEnabled = projectData?.controllers?.enabled === undefined
+          ? true
+          : Boolean(projectData?.controllers?.enabled);
         this.controllersConfig = this.parseControllersConfig(projectData?.controllers?.config);
         const configurationOptions = this.getActuatorConfigurationOptions(projectData?.preferences?.profiles);
         this.actuatorConfigurationOptions = configurationOptions;
@@ -366,6 +411,7 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
         this.relations = [];
         this.enums = [];
         this.controllersConfig = this.getDefaultControllersConfig();
+        this.controllersConfigEnabled = true;
         this.syncActuatorConfigurationsWithProfiles();
         this.syncActuatorStateStore();
       }
@@ -437,6 +483,10 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
   }
 
   navigateToSection(section: string): void {
+    if (section !== 'controllers') {
+      this.cancelControllerRestSpecEdit();
+      this.showControllersConfigDiscardConfirmation = false;
+    }
     if (section === 'entities' && this.toDatabaseCode(this.databaseSettings.database) === 'NONE') {
       this.activeSection = 'general';
       this.closeSidebar();
@@ -871,6 +921,11 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
   }
 
   cancelRecentProjectResume(): void {
+    if (typeof window !== 'undefined' && window.sessionStorage) {
+      window.sessionStorage.clear();
+    }
+    this.localStorageService.removeItem('projects');
+    this.localStorageService.removeItem('project_zip_cache_v1');
     this.showRecentProjectPrompt = false;
     this.recentProjectToResume = null;
   }
@@ -1060,6 +1115,11 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
       generator: this.trimmed(project?.settings?.language) || 'java'
     };
 
+    const includeControllersSpec =
+      Boolean(project?.preferences?.configureApi)
+      && project?.controllers?.enabled !== false
+      && this.hasNamedControllersConfig(project?.controllers?.config);
+    const restSpecSection = this.buildRestSpecSection(project?.entities, project?.controllers?.config, includeControllersSpec);
     const spec: any = {
       app,
       database: databaseCode,
@@ -1071,7 +1131,7 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
       profiles: this.mapProfiles(project?.preferences?.profiles),
       dependencies: this.extractDependencies(project),
       basePackage: projectGroup,
-      models: this.mapModels(project?.entities, project?.relations),
+      models: this.mapModels(project?.entities, project?.relations, restSpecSection.entityToSpecName),
       dtos: this.mapDtos(project?.dataObjects),
       enums: this.mapEnums(project?.enums)
     };
@@ -1101,11 +1161,19 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
       };
     }
 
-    if (Boolean(project?.preferences?.configureApi)) {
+    if (
+      Boolean(project?.preferences?.configureApi)
+      && project?.controllers?.enabled !== false
+      && this.hasNamedControllersConfig(project?.controllers?.config)
+    ) {
       const controllersConfig = this.mapRestConfig(project?.controllers?.config);
       if (controllersConfig) {
         spec.controllers = controllersConfig;
       }
+    }
+
+    if (restSpecSection.specs.length) {
+      spec['rest-spec'] = restSpecSection.specs;
     }
 
     if (!spec.dependencies.length) {
@@ -1203,11 +1271,263 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
 
   onControllersConfigSave(config: RestEndpointConfig): void {
     this.controllersConfig = this.parseControllersConfig(config);
+    this.controllersConfigEnabled = true;
     this.toastService.success('Controller configuration updated');
   }
 
   onControllersConfigCancel(): void {
     // Keep existing in-page configuration unchanged on cancel.
+  }
+
+  get controllerRestSpecRows(): ControllerRestSpecRow[] {
+    const rowsByName = new Map<string, ControllerRestSpecRow>();
+    const entityList = Array.isArray(this.entities) ? this.entities : [];
+
+    entityList.forEach((entity: any, index: number) => {
+      if (!Boolean(entity?.addRestEndpoints) || !entity?.restConfig) {
+        return;
+      }
+      const normalizedConfig = this.parseControllersConfig(entity.restConfig);
+      const name = this.trimmed(normalizedConfig.resourceName);
+      const entityName = this.trimmed(entity?.name);
+      if (!name || !entityName) {
+        return;
+      }
+
+      const existing = rowsByName.get(name);
+      if (!existing) {
+        rowsByName.set(name, {
+          key: name,
+          name,
+          totalEndpoints: this.countEnabledEndpoints(normalizedConfig),
+          mappedEntities: [entityName],
+          entityIndexes: [index],
+          hasControllersConfig: false
+        });
+        return;
+      }
+
+      existing.totalEndpoints = this.countEnabledEndpoints(normalizedConfig);
+      if (!existing.mappedEntities.includes(entityName)) {
+        existing.mappedEntities.push(entityName);
+      }
+      if (!existing.entityIndexes.includes(index)) {
+        existing.entityIndexes.push(index);
+      }
+    });
+
+    const controllerConfigName = this.trimmed(this.controllersConfig?.resourceName);
+    if (this.controllersConfigEnabled && controllerConfigName) {
+      const normalizedControllerConfig = this.parseControllersConfig(this.controllersConfig);
+      const existingControllerRow = rowsByName.get(controllerConfigName);
+      if (!existingControllerRow) {
+        rowsByName.set(controllerConfigName, {
+          key: controllerConfigName,
+          name: controllerConfigName,
+          totalEndpoints: this.countEnabledEndpoints(normalizedControllerConfig),
+          mappedEntities: [],
+          entityIndexes: [],
+          hasControllersConfig: true
+        });
+      } else {
+        existingControllerRow.totalEndpoints = this.countEnabledEndpoints(normalizedControllerConfig);
+        existingControllerRow.hasControllersConfig = true;
+      }
+    }
+
+    // Ensure entity-to-spec mapping works even when entity carries only rest-spec name
+    // and not full inline restConfig.
+    entityList.forEach((entity: any, index: number) => {
+      if (!Boolean(entity?.addRestEndpoints)) {
+        return;
+      }
+      const entityName = this.trimmed(entity?.name);
+      const specName = this.resolveEntityRestSpecName(entity);
+      if (!entityName || !specName) {
+        return;
+      }
+
+      const row = rowsByName.get(specName);
+      if (!row) {
+        rowsByName.set(specName, {
+          key: specName,
+          name: specName,
+          totalEndpoints: 0,
+          mappedEntities: [entityName],
+          entityIndexes: [index],
+          hasControllersConfig: false
+        });
+        return;
+      }
+
+      if (!row.mappedEntities.includes(entityName)) {
+        row.mappedEntities.push(entityName);
+      }
+      if (!row.entityIndexes.includes(index)) {
+        row.entityIndexes.push(index);
+      }
+    });
+
+    return Array.from(rowsByName.values()).sort((a, b) => a.name.localeCompare(b.name));
+  }
+
+  get isControllersSpecEditMode(): boolean {
+    return Boolean(this.controllersEditingSpecKey && this.controllersEditingSpecConfig);
+  }
+
+  get isControllersSpecCreateMode(): boolean {
+    return this.controllersCreatingNewConfig;
+  }
+
+  get showControllersConfigEditor(): boolean {
+    return this.isControllersSpecEditMode || this.isControllersSpecCreateMode;
+  }
+
+  get controllersEditModeExistingNames(): string[] {
+    if (!this.controllersEditingSpecKey) {
+      return this.controllerRestSpecRows.map((row) => row.name);
+    }
+    return this.controllerRestSpecRows
+      .filter((row) => row.key !== this.controllersEditingSpecKey)
+      .map((row) => row.name);
+  }
+
+  editControllerRestSpec(row: ControllerRestSpecRow): void {
+    this.controllersCreatingNewConfig = false;
+    this.controllersEditingSpecKey = row.key;
+    if (row.hasControllersConfig) {
+      this.controllersEditingSpecConfig = this.parseControllersConfig(this.controllersConfig);
+      return;
+    }
+    const firstEntityIndex = row.entityIndexes[0];
+    const entity = firstEntityIndex >= 0 ? this.entities[firstEntityIndex] : null;
+    this.controllersEditingSpecConfig = entity?.restConfig
+      ? this.parseControllersConfig(entity.restConfig)
+      : null;
+    if (!this.controllersEditingSpecConfig) {
+      this.controllersEditingSpecKey = null;
+    }
+  }
+
+  cancelControllerRestSpecEdit(): void {
+    this.controllersCreatingNewConfig = false;
+    this.controllersEditingSpecKey = null;
+    this.controllersEditingSpecConfig = null;
+  }
+
+  startNewControllerRestSpec(): void {
+    this.controllersCreatingNewConfig = true;
+    this.controllersEditingSpecKey = null;
+    this.controllersEditingSpecConfig = null;
+  }
+
+  onControllersEditorSave(config: RestEndpointConfig): void {
+    if (!this.isControllersSpecEditMode || !this.controllersEditingSpecKey) {
+      this.onControllersConfigSave(config);
+      this.controllersCreatingNewConfig = false;
+      return;
+    }
+
+    const targetRow = this.controllerRestSpecRows.find((row) => row.key === this.controllersEditingSpecKey);
+    if (!targetRow) {
+      this.cancelControllerRestSpecEdit();
+      return;
+    }
+
+    const sanitizedConfig = this.parseControllersConfig(config);
+    if (targetRow.hasControllersConfig) {
+      this.controllersConfig = this.parseControllersConfig(sanitizedConfig);
+    }
+    targetRow.entityIndexes.forEach((entityIndex) => {
+      const entity = this.entities[entityIndex];
+      if (!entity) {
+        return;
+      }
+      entity.restConfig = this.parseControllersConfig(sanitizedConfig);
+      entity.addRestEndpoints = true;
+    });
+    this.entities = [...this.entities];
+    this.toastService.success('REST spec updated');
+    this.cancelControllerRestSpecEdit();
+  }
+
+  onControllersEditorCancel(): void {
+    if (this.isControllersSpecCreateMode) {
+      this.cancelControllerRestSpecEdit();
+      return;
+    }
+    if (this.isControllersSpecEditMode) {
+      this.cancelControllerRestSpecEdit();
+      return;
+    }
+    this.onControllersConfigCancel();
+  }
+
+  saveControllersConfiguration(): void {
+    this.controllersRestConfigComponent?.saveConfig();
+  }
+
+  requestCancelControllersConfiguration(): void {
+    this.showControllersConfigDiscardConfirmation = true;
+  }
+
+  confirmCancelControllersConfiguration(): void {
+    this.showControllersConfigDiscardConfirmation = false;
+    this.onControllersEditorCancel();
+  }
+
+  cancelCancelControllersConfiguration(): void {
+    this.showControllersConfigDiscardConfirmation = false;
+  }
+
+  requestDeleteControllerRestSpec(row: ControllerRestSpecRow): void {
+    this.pendingRestSpecDeleteKey = row.key;
+    this.restSpecDeleteConfirmationConfig = {
+      ...this.restSpecDeleteConfirmationConfig,
+      message: `Delete REST configuration "${row.name}" and remove mapped model references?`
+    };
+    this.showRestSpecDeleteConfirmation = true;
+  }
+
+  confirmDeleteControllerRestSpec(): void {
+    const key = this.pendingRestSpecDeleteKey;
+    if (!key) {
+      this.cancelDeleteControllerRestSpec();
+      return;
+    }
+
+    const row = this.controllerRestSpecRows.find((item) => item.key === key);
+    if (!row) {
+      this.cancelDeleteControllerRestSpec();
+      return;
+    }
+
+    row.entityIndexes.forEach((entityIndex) => {
+      const entity = this.entities[entityIndex];
+      if (!entity) {
+        return;
+      }
+      entity.addRestEndpoints = false;
+      entity.restConfig = undefined;
+    });
+    this.entities = [...this.entities];
+
+    if (row.hasControllersConfig && this.trimmed(this.controllersConfig?.resourceName) === key) {
+      this.controllersConfigEnabled = false;
+      this.controllersConfig = this.getDefaultControllersConfig();
+    }
+
+    if (this.controllersEditingSpecKey === key) {
+      this.cancelControllerRestSpecEdit();
+    }
+
+    this.cancelDeleteControllerRestSpec();
+    this.toastService.success('REST configuration deleted');
+  }
+
+  cancelDeleteControllerRestSpec(): void {
+    this.showRestSpecDeleteConfirmation = false;
+    this.pendingRestSpecDeleteKey = null;
   }
 
   onActuatorConfigurationChange(configuration: string): void {
@@ -1239,6 +1559,15 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
 
   closeProfileModal(): void {
     this.showProfileModal = false;
+  }
+
+  openYamlPreviewModal(): void {
+    this.yamlPreviewContent = this.buildCurrentProjectYaml();
+    this.showYamlPreviewModal = true;
+  }
+
+  closeYamlPreviewModal(): void {
+    this.showYamlPreviewModal = false;
   }
 
   onProfilesSave(profiles: string[]): void {
@@ -1408,7 +1737,18 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
     }, 0);
   }
 
-  private mapModels(entities: any, relations: any): any[] {
+  private mapProfiles(profiles: unknown): string[] {
+    if (!Array.isArray(profiles)) {
+      return [];
+    }
+    const normalized = profiles
+      .map(profile => this.normalizeProfileName(profile))
+      .filter((profile): profile is string => Boolean(profile))
+      .filter(profile => this.isValidProfileName(profile));
+    return Array.from(new Set(normalized));
+  }
+
+  private mapModels(entities: any, relations: any, entityToSpecName: Record<string, string> = {}): any[] {
     const entityList = Array.isArray(entities) ? entities : [];
     const relationList = Array.isArray(relations) ? relations : [];
 
@@ -1436,6 +1776,12 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
         fields: nonIdFields.map((field: any) => this.mapModelField(field))
       };
 
+      const entityName = this.trimmed(entity?.name);
+      const mappedSpecName = entityToSpecName[entityName];
+      if (mappedSpecName) {
+        model['rest-spec-name'] = mappedSpecName;
+      }
+
       const restConfig = this.mapRestConfig(entity?.restConfig);
       if (restConfig) {
         model.rest = restConfig;
@@ -1449,31 +1795,88 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
     });
   }
 
-  private mapProfiles(profiles: unknown): string[] {
-    if (!Array.isArray(profiles)) {
-      return [];
+  private buildRestSpecSection(
+    entities: any,
+    controllersConfig: any,
+    includeControllers: boolean
+  ): { specs: any[]; entityToSpecName: Record<string, string> } {
+    const specs: any[] = [];
+    const entityToSpecName: Record<string, string> = {};
+    const specIndexByName = new Map<string, number>();
+    const entityList = Array.isArray(entities) ? entities : [];
+
+    const addOrUpdateSpec = (name: string, config: any): string => {
+      const specName = this.trimmed(name) || 'RestSpec';
+      const existingIndex = specIndexByName.get(specName);
+      if (existingIndex === undefined) {
+        specIndexByName.set(specName, specs.length);
+        specs.push({ name: specName, ...config });
+      } else {
+        specs[existingIndex] = { name: specName, ...config };
+      }
+      return specName;
+    };
+
+    entityList.forEach((entity: any) => {
+      if (!Boolean(entity?.addRestEndpoints)) {
+        return;
+      }
+      const mapped = this.mapRestConfig(entity?.restConfig);
+      if (!mapped) {
+        return;
+      }
+      const entityName = this.trimmed(entity?.name);
+      const specName = addOrUpdateSpec(this.trimmed(mapped.resourceName) || entityName || 'EntityRest', mapped);
+      if (entityName) {
+        entityToSpecName[entityName] = specName;
+      }
+    });
+
+    if (includeControllers) {
+      const mappedControllers = this.mapRestConfig(controllersConfig);
+      if (mappedControllers) {
+        addOrUpdateSpec(this.trimmed(mappedControllers.resourceName) || 'ControllersRest', mappedControllers);
+      }
     }
-    const normalized = profiles
-      .map(profile => this.normalizeProfileName(profile))
-      .filter((profile): profile is string => Boolean(profile))
-      .filter(profile => this.isValidProfileName(profile));
-    return Array.from(new Set(normalized));
+
+    return { specs, entityToSpecName };
+  }
+
+  private hasNamedControllersConfig(config: any): boolean {
+    return Boolean(this.trimmed(config?.resourceName));
   }
 
   private mapRestConfig(restConfig: any): any | null {
     if (!restConfig || typeof restConfig !== 'object') {
       return null;
     }
-    const mapped: any = {
+    const operations: string[] = [
+      'list',
+      'get',
+      'create',
+      'update',
+      'patch',
+      'delete',
+      'bulkInsert',
+      'bulkUpdate',
+      'bulkDelete'
+    ];
+
+    const methods: Record<string, any> = {};
+    operations.forEach((key) => {
+      if (!Boolean(restConfig?.methods?.[key])) {
+        return;
+      }
+      methods[key] = {
+        request: this.buildOperationRequestConfig(key, restConfig),
+        response: this.buildOperationResponseConfig(restConfig),
+        documentation: this.buildOperationDocumentationConfig(restConfig, key)
+      };
+    });
+
+    return {
       resourceName: this.trimmed(restConfig.resourceName),
       basePath: this.trimmed(restConfig.basePath),
-      methods: {
-        list: Boolean(restConfig?.methods?.list),
-        get: Boolean(restConfig?.methods?.get),
-        create: Boolean(restConfig?.methods?.create),
-        update: Boolean(restConfig?.methods?.update),
-        delete: Boolean(restConfig?.methods?.delete)
-      },
       apiVersioning: {
         enabled: Boolean(restConfig?.apiVersioning?.enabled),
         strategy: restConfig?.apiVersioning?.strategy === 'path' ? 'path' : 'header',
@@ -1494,91 +1897,110 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
         updateLink: Boolean(restConfig?.hateoas?.updateLink),
         deleteLink: Boolean(restConfig?.hateoas?.deleteLink)
       },
-      pagination: {
-        enabled: Boolean(restConfig?.pagination?.enabled ?? restConfig?.pagination),
-        mode: restConfig?.pagination?.mode === 'CURSOR' ? 'CURSOR' : 'OFFSET',
-        sortField: this.trimmed(restConfig?.pagination?.sortField),
-        sortDirection: restConfig?.pagination?.sortDirection === 'ASC' ? 'ASC' : 'DESC'
-      },
-      searchFiltering: {
-        keywordSearch: Boolean(restConfig?.searchFiltering?.keywordSearch),
-        jpaSpecification: Boolean(restConfig?.searchFiltering?.jpaSpecification),
-        searchableFields: Array.isArray(restConfig?.searchFiltering?.searchableFields)
-          ? restConfig.searchFiltering.searchableFields
-            .map((item: any) => this.trimmed(item))
-            .filter(Boolean)
-          : []
-      },
-      documentation: {
-        endpoints: {
-          list: {
-            description: this.trimmed(restConfig?.documentation?.endpoints?.list?.description),
-            descriptionTags: Array.isArray(restConfig?.documentation?.endpoints?.list?.descriptionTags)
-              ? restConfig.documentation.endpoints.list.descriptionTags.map((item: any) => this.trimmed(item)).filter(Boolean)
-              : [],
-            deprecated: Boolean(restConfig?.documentation?.endpoints?.list?.deprecated)
-          },
-          get: {
-            description: this.trimmed(restConfig?.documentation?.endpoints?.get?.description),
-            descriptionTags: Array.isArray(restConfig?.documentation?.endpoints?.get?.descriptionTags)
-              ? restConfig.documentation.endpoints.get.descriptionTags.map((item: any) => this.trimmed(item)).filter(Boolean)
-              : [],
-            deprecated: Boolean(restConfig?.documentation?.endpoints?.get?.deprecated)
-          },
-          create: {
-            description: this.trimmed(restConfig?.documentation?.endpoints?.create?.description),
-            descriptionTags: Array.isArray(restConfig?.documentation?.endpoints?.create?.descriptionTags)
-              ? restConfig.documentation.endpoints.create.descriptionTags.map((item: any) => this.trimmed(item)).filter(Boolean)
-              : [],
-            deprecated: Boolean(restConfig?.documentation?.endpoints?.create?.deprecated)
-          },
-          update: {
-            description: this.trimmed(restConfig?.documentation?.endpoints?.update?.description),
-            descriptionTags: Array.isArray(restConfig?.documentation?.endpoints?.update?.descriptionTags)
-              ? restConfig.documentation.endpoints.update.descriptionTags.map((item: any) => this.trimmed(item)).filter(Boolean)
-              : [],
-            deprecated: Boolean(restConfig?.documentation?.endpoints?.update?.deprecated)
-          },
-          patch: {
-            description: this.trimmed(restConfig?.documentation?.endpoints?.patch?.description),
-            descriptionTags: Array.isArray(restConfig?.documentation?.endpoints?.patch?.descriptionTags)
-              ? restConfig.documentation.endpoints.patch.descriptionTags.map((item: any) => this.trimmed(item)).filter(Boolean)
-              : [],
-            deprecated: Boolean(restConfig?.documentation?.endpoints?.patch?.deprecated)
-          },
-          delete: {
-            description: this.trimmed(restConfig?.documentation?.endpoints?.delete?.description),
-            descriptionTags: Array.isArray(restConfig?.documentation?.endpoints?.delete?.descriptionTags)
-              ? restConfig.documentation.endpoints.delete.descriptionTags.map((item: any) => this.trimmed(item)).filter(Boolean)
-              : [],
-            deprecated: Boolean(restConfig?.documentation?.endpoints?.delete?.deprecated)
-          },
-          bulkInsert: {
-            description: this.trimmed(restConfig?.documentation?.endpoints?.bulkInsert?.description),
-            descriptionTags: Array.isArray(restConfig?.documentation?.endpoints?.bulkInsert?.descriptionTags)
-              ? restConfig.documentation.endpoints.bulkInsert.descriptionTags.map((item: any) => this.trimmed(item)).filter(Boolean)
-              : [],
-            deprecated: Boolean(restConfig?.documentation?.endpoints?.bulkInsert?.deprecated)
-          },
-          bulkUpdate: {
-            description: this.trimmed(restConfig?.documentation?.endpoints?.bulkUpdate?.description),
-            descriptionTags: Array.isArray(restConfig?.documentation?.endpoints?.bulkUpdate?.descriptionTags)
-              ? restConfig.documentation.endpoints.bulkUpdate.descriptionTags.map((item: any) => this.trimmed(item)).filter(Boolean)
-              : [],
-            deprecated: Boolean(restConfig?.documentation?.endpoints?.bulkUpdate?.deprecated)
-          },
-          bulkDelete: {
-            description: this.trimmed(restConfig?.documentation?.endpoints?.bulkDelete?.description),
-            descriptionTags: Array.isArray(restConfig?.documentation?.endpoints?.bulkDelete?.descriptionTags)
-              ? restConfig.documentation.endpoints.bulkDelete.descriptionTags.map((item: any) => this.trimmed(item)).filter(Boolean)
-              : [],
-            deprecated: Boolean(restConfig?.documentation?.endpoints?.bulkDelete?.deprecated)
-          }
-        }
-      }
+      methods
     };
+  }
 
-    return mapped;
+  private buildOperationResponseConfig(restConfig: any): any {
+    return {
+      responseType: restConfig?.requestResponse?.response?.responseType === 'DTO_DIRECT'
+        ? 'DTO_DIRECT'
+        : restConfig?.requestResponse?.response?.responseType === 'CUSTOM_WRAPPER'
+          ? 'CUSTOM_WRAPPER'
+          : 'RESPONSE_ENTITY',
+      dtoName: this.trimmed(restConfig?.requestResponse?.response?.dtoName),
+      responseWrapper: restConfig?.requestResponse?.response?.responseWrapper === 'NONE'
+        ? 'NONE'
+        : restConfig?.requestResponse?.response?.responseWrapper === 'UPSERT'
+          ? 'UPSERT'
+          : 'STANDARD_ENVELOPE',
+      enableFieldProjection: Boolean(restConfig?.requestResponse?.response?.enableFieldProjection),
+      includeHateoasLinks: Boolean(restConfig?.requestResponse?.response?.includeHateoasLinks)
+    };
+  }
+
+  private buildOperationDocumentationConfig(restConfig: any, docKey: string): any {
+    return {
+      description: this.trimmed(restConfig?.documentation?.endpoints?.[docKey]?.description),
+      descriptionTags: Array.isArray(restConfig?.documentation?.endpoints?.[docKey]?.descriptionTags)
+        ? restConfig.documentation.endpoints[docKey].descriptionTags.map((item: any) => this.trimmed(item)).filter(Boolean)
+        : [],
+      deprecated: Boolean(restConfig?.documentation?.endpoints?.[docKey]?.deprecated)
+    };
+  }
+
+  private buildOperationRequestConfig(operationKey: string, restConfig: any): any {
+    switch (operationKey) {
+      case 'create':
+        return {
+          mode: restConfig?.requestResponse?.request?.create?.mode === 'NONE' ? 'NONE' : 'GENERATE_DTO',
+          dtoName: this.trimmed(restConfig?.requestResponse?.request?.create?.dtoName)
+        };
+      case 'update':
+        return {
+          mode: restConfig?.requestResponse?.request?.update?.mode === 'NONE' ? 'NONE' : 'GENERATE_DTO',
+          dtoName: this.trimmed(restConfig?.requestResponse?.request?.update?.dtoName)
+        };
+      case 'patch':
+        return {
+          mode: restConfig?.requestResponse?.request?.patch?.mode === 'JSON_PATCH' ? 'JSON_PATCH' : 'JSON_MERGE_PATCH'
+        };
+      case 'list':
+        return {
+          pagination: {
+            enabled: Boolean(restConfig?.pagination?.enabled ?? restConfig?.pagination),
+            mode: restConfig?.pagination?.mode === 'CURSOR' ? 'CURSOR' : 'OFFSET',
+            sortField: this.trimmed(restConfig?.pagination?.sortField),
+            sortDirection: restConfig?.pagination?.sortDirection === 'ASC' ? 'ASC' : 'DESC'
+          },
+          searchFiltering: {
+            keywordSearch: Boolean(restConfig?.searchFiltering?.keywordSearch),
+            jpaSpecification: Boolean(restConfig?.searchFiltering?.jpaSpecification),
+            searchableFields: Array.isArray(restConfig?.searchFiltering?.searchableFields)
+              ? restConfig.searchFiltering.searchableFields.map((item: any) => this.trimmed(item)).filter(Boolean)
+              : []
+          }
+        };
+      case 'bulkInsert':
+        return {
+          type: this.trimmed(restConfig?.requestResponse?.request?.bulkInsertType),
+          batch: {
+            batchSize: Number(restConfig?.batchOperations?.insert?.batchSize) || 1,
+            enableAsyncMode: Boolean(restConfig?.batchOperations?.insert?.enableAsyncMode)
+          }
+        };
+      case 'bulkUpdate':
+        return {
+          type: this.trimmed(restConfig?.requestResponse?.request?.bulkUpdateType),
+          batch: {
+            batchSize: Number(restConfig?.batchOperations?.update?.batchSize) || 1,
+            updateMode: restConfig?.batchOperations?.update?.updateMode === 'PATCH' ? 'PATCH' : 'PUT',
+            optimisticLockHandling: restConfig?.batchOperations?.update?.optimisticLockHandling === 'SKIP_CONFLICTS'
+              ? 'SKIP_CONFLICTS'
+              : 'FAIL_ON_CONFLICT',
+            validationStrategy: restConfig?.batchOperations?.update?.validationStrategy === 'SKIP_DUPLICATES'
+              ? 'SKIP_DUPLICATES'
+              : 'VALIDATE_ALL_FIRST',
+            enableAsyncMode: Boolean(restConfig?.batchOperations?.update?.enableAsyncMode),
+            asyncProcessing: Boolean(restConfig?.batchOperations?.update?.asyncProcessing)
+          }
+        };
+      case 'bulkDelete':
+        return {
+          type: this.trimmed(restConfig?.requestResponse?.request?.bulkDeleteType),
+          batch: {
+            deletionStrategy: restConfig?.batchOperations?.bulkDelete?.deletionStrategy === 'HARD' ? 'HARD' : 'SOFT',
+            batchSize: Number(restConfig?.batchOperations?.bulkDelete?.batchSize) || 1,
+            failureStrategy: restConfig?.batchOperations?.bulkDelete?.failureStrategy === 'CONTINUE_AND_REPORT_FAILURES'
+              ? 'CONTINUE_AND_REPORT_FAILURES'
+              : 'STOP_ON_FIRST_ERROR',
+            enableAsyncMode: Boolean(restConfig?.batchOperations?.bulkDelete?.enableAsyncMode),
+            allowIncludeDeletedParam: Boolean(restConfig?.batchOperations?.bulkDelete?.allowIncludeDeletedParam)
+          }
+        };
+      default:
+        return {};
+    }
   }
 
   get controllersEntityFields(): Array<{ name: string }> {
@@ -1599,10 +2021,17 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
       .filter(Boolean);
   }
 
+  get configuredEntityRestSpecNames(): string[] {
+    return (Array.isArray(this.entities) ? this.entities : [])
+      .filter((entity: any) => Boolean(entity?.addRestEndpoints))
+      .map((entity: any) => String(entity?.restConfig?.resourceName ?? '').trim())
+      .filter(Boolean);
+  }
+
   private getDefaultControllersConfig(): RestEndpointConfig {
     return {
-      resourceName: 'Employee',
-      basePath: '/api/employees',
+      resourceName: '',
+      basePath: '',
       methods: {
         list: true,
         get: true,
@@ -1615,7 +2044,7 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
         bulkDelete: true
       },
       apiVersioning: {
-        enabled: true,
+        enabled: false,
         strategy: 'header',
         headerName: 'X-API-VERSION',
         defaultVersion: '1'
@@ -1666,12 +2095,12 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
       },
       requestResponse: {
         request: {
-          create: { mode: 'GENERATE_DTO', dtoName: 'Request' },
-          update: { mode: 'GENERATE_DTO', dtoName: 'UpdateRequest' },
+          create: { mode: 'GENERATE_DTO', dtoName: '' },
+          update: { mode: 'GENERATE_DTO', dtoName: '' },
           patch: { mode: 'JSON_MERGE_PATCH' },
           bulkInsertType: '',
           bulkUpdateType: '',
-          bulkDeleteType: 'List<UUID>'
+          bulkDeleteType: ''
         },
         response: {
           responseType: 'RESPONSE_ENTITY',
@@ -1695,6 +2124,36 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
         }
       }
     };
+  }
+
+  private countEnabledEndpoints(config: RestEndpointConfig): number {
+    const methods = config?.methods;
+    if (!methods) {
+      return 0;
+    }
+    return [
+      methods.list,
+      methods.get,
+      methods.create,
+      methods.update,
+      methods.patch,
+      methods.delete,
+      methods.bulkInsert,
+      methods.bulkUpdate,
+      methods.bulkDelete
+    ].filter(Boolean).length;
+  }
+
+  private resolveEntityRestSpecName(entity: any): string {
+    const inlineName = this.trimmed(entity?.restConfig?.resourceName);
+    if (inlineName) {
+      return inlineName;
+    }
+    return this.trimmed(
+      entity?.['rest-spec-name']
+      ?? entity?.restSpecName
+      ?? entity?.restSpec
+    );
   }
 
   private parseControllersConfig(rawConfig: RestEndpointConfig | null | undefined): RestEndpointConfig {

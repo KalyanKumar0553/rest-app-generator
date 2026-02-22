@@ -1,0 +1,42 @@
+<section class="controllers-table-section">
+  <header class="controllers-table-header">
+    <h3>REST Configurations</h3>
+    <button class="controllers-create-btn" type="button" (click)="create.emit()">
+      New Configuration
+    </button>
+  </header>
+  <div class="controllers-table-wrap">
+    <table class="controllers-table">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>API Count</th>
+          <th>Perofrm CRUD</th>
+          <th class="controllers-actions-col">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngIf="rows.length === 0">
+          <td class="controllers-empty-row" colspan="4">No Configuration Available</td>
+        </tr>
+        <tr *ngFor="let row of rows">
+          <td class="controllers-name-cell">{{ row.name }}</td>
+          <td>{{ row.totalEndpoints }}</td>
+          <td>
+            <mat-checkbox [checked]="row.mappedEntities.length > 0" [disabled]="true"></mat-checkbox>
+          </td>
+          <td class="controllers-actions-cell">
+            <div class="controllers-actions-inner">
+              <button class="controllers-action-btn" type="button" aria-label="Edit REST config" (click)="edit.emit(row)">
+                <mat-icon>edit</mat-icon>
+              </button>
+              <button class="controllers-action-btn danger" type="button" aria-label="Delete REST config" (click)="delete.emit(row)">
+                <mat-icon>delete</mat-icon>
+              </button>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>

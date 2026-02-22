@@ -249,7 +249,6 @@
   background-color: var(--color-primary-hover) !important;
 }
 
-
 .expansion-panels {
   margin-bottom: 32px;
   padding-bottom: 16px;
@@ -389,6 +388,16 @@
   color: var(--color-text-inverse) !important;
 }
 
+.action-section .controllers-cancel-btn.mat-mdc-raised-button:not(:disabled) {
+  background-color: var(--theme-input-bg) !important;
+  border: 1px solid var(--theme-neutral-border) !important;
+  color: var(--theme-modal-body-text) !important;
+}
+
+.action-section .controllers-cancel-btn.mat-mdc-raised-button:not(:disabled):hover {
+  background-color: var(--theme-modal-container-bg) !important;
+}
+
 .button-spinner {
   display: inline-block;
   margin-right: 8px;
@@ -430,32 +439,6 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.project-spec-modal {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.project-spec-hint {
-  margin: 0;
-  font-size: 13px;
-  color: var(--theme-neutral-text);
-}
-
-.project-spec-editor {
-  width: 100%;
-  min-height: 420px;
-  border: 1px solid var(--color-border-dark);
-  border-radius: 10px;
-  padding: 14px;
-  font-family: 'SFMono-Regular', Menlo, Consolas, 'Liberation Mono', monospace;
-  font-size: 13px;
-  line-height: 1.5;
-  background-color: var(--neutral-50);
-  color: var(--neutral-800);
-  resize: vertical;
 }
 
 ::ng-deep .mat-expansion-indicator::after {

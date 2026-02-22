@@ -122,8 +122,8 @@ export interface RestEndpointConfig {
 }
 
 const DEFAULT_REST_ENDPOINT_CONFIG: RestEndpointConfig = {
-  resourceName: 'Employee',
-  basePath: '/api/employees',
+  resourceName: '',
+  basePath: '',
   methods: {
     list: true,
     get: true,
@@ -136,7 +136,7 @@ const DEFAULT_REST_ENDPOINT_CONFIG: RestEndpointConfig = {
     bulkDelete: true
   },
   apiVersioning: {
-    enabled: true,
+    enabled: false,
     strategy: 'header',
     headerName: 'X-API-VERSION',
     defaultVersion: '1'
@@ -256,10 +256,14 @@ export class RestConfigComponent implements OnChanges, AfterViewInit, OnDestroy 
   @Input() dtoObjects: Array<{ name?: string; dtoType?: 'request' | 'response'; fields?: unknown[] }> = [];
   @Input() enumTypes: string[] = [];
   @Input() softDeleteEnabled = false;
+  @Input() existingRestConfigNames: string[] = [];
   @Output() save = new EventEmitter<RestEndpointConfig>();
   @Output() cancel = new EventEmitter<void>();
 
   draft: RestEndpointConfig = this.cloneConfig(DEFAULT_REST_ENDPOINT_CONFIG);
+  showResourceNameErrors = false;
+  resourceNameRequired = false;
+  resourceNameDuplicate = false;
   activeTab: 'basic' | 'endpoints' | 'request' | 'pagination' | 'error' | 'docs' = 'basic';
   overflowTabs: Array<{ id: 'basic' | 'endpoints' | 'request' | 'pagination' | 'error' | 'docs'; label: string; icon: string }> = [];
   readonly tabs: Array<{ id: 'basic' | 'endpoints' | 'request' | 'pagination' | 'error' | 'docs'; label: string; icon: string }> = [
@@ -288,6 +292,12 @@ export class RestConfigComponent implements OnChanges, AfterViewInit, OnDestroy 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['config']) {
       this.draft = this.sanitizeConfig(this.config ?? DEFAULT_REST_ENDPOINT_CONFIG);
+      this.showResourceNameErrors = false;
+      this.resourceNameRequired = false;
+      this.resourceNameDuplicate = false;
+    }
+    if ((changes['config'] || changes['existingRestConfigNames']) && this.showResourceNameErrors) {
+      this.validateResourceNameUnique();
     }
     this.scheduleOverflowCheck();
   }
@@ -327,6 +337,12 @@ export class RestConfigComponent implements OnChanges, AfterViewInit, OnDestroy 
   }
 
   saveConfig(): void {
+    this.showResourceNameErrors = true;
+    if (!this.validateResourceNameUnique()) {
+      this.activeTab = 'basic';
+      this.scrollToActiveTab();
+      return;
+    }
     this.save.emit(this.sanitizeConfig(this.draft));
   }
 
@@ -374,8 +390,8 @@ export class RestConfigComponent implements OnChanges, AfterViewInit, OnDestroy 
 
   private sanitizeConfig(config: RestEndpointConfig): RestEndpointConfig {
     return {
-      resourceName: String(config?.resourceName ?? '').trim() || DEFAULT_REST_ENDPOINT_CONFIG.resourceName,
-      basePath: String(config?.basePath ?? '').trim() || DEFAULT_REST_ENDPOINT_CONFIG.basePath,
+      resourceName: String(config?.resourceName ?? '').trim(),
+      basePath: String(config?.basePath ?? '').trim(),
       methods: {
         list: Boolean(config?.methods?.list ?? DEFAULT_REST_ENDPOINT_CONFIG.methods.list),
         get: Boolean(config?.methods?.get ?? DEFAULT_REST_ENDPOINT_CONFIG.methods.get),
@@ -556,5 +572,31 @@ export class RestConfigComponent implements OnChanges, AfterViewInit, OnDestroy 
 
   private cloneConfig(config: RestEndpointConfig): RestEndpointConfig {
     return this.sanitizeConfig(config);
+  }
+
+  onResourceNameChanged(): void {
+    if (!this.showResourceNameErrors) {
+      this.resourceNameRequired = false;
+      this.resourceNameDuplicate = false;
+      return;
+    }
+    this.resourceNameRequired = false;
+    this.validateResourceNameUnique();
+  }
+
+  private validateResourceNameUnique(): boolean {
+    const name = String(this.draft?.resourceName ?? '').trim().toLowerCase();
+    if (!name) {
+      this.resourceNameRequired = true;
+      this.resourceNameDuplicate = false;
+      return false;
+    }
+    this.resourceNameRequired = false;
+    const duplicate = (Array.isArray(this.existingRestConfigNames) ? this.existingRestConfigNames : [])
+      .map((item) => String(item ?? '').trim().toLowerCase())
+      .filter(Boolean)
+      .includes(name);
+    this.resourceNameDuplicate = duplicate;
+    return !duplicate;
   }
 }

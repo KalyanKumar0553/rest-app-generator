@@ -147,6 +147,15 @@ export class AddEntityComponent implements OnChanges {
     return Array.from(new Set([...this.baseFieldTypes, ...enums]));
   }
 
+  get existingRestConfigNames(): string[] {
+    const editingEntityName = String(this.editEntity?.name ?? '').trim().toLowerCase();
+    return (Array.isArray(this.existingEntities) ? this.existingEntities : [])
+      .filter((entity) => Boolean(entity?.addRestEndpoints))
+      .filter((entity) => String(entity?.name ?? '').trim().toLowerCase() !== editingEntityName)
+      .map((entity) => String(entity?.restConfig?.resourceName ?? '').trim())
+      .filter(Boolean);
+  }
+
   additionalConfigurationOptions: string[] = [
     'Auditable',
     'Soft Delete',
@@ -625,8 +634,8 @@ export class AddEntityComponent implements OnChanges {
 
   private getDefaultRestConfig(): RestEndpointConfig {
     return {
-      resourceName: 'Employee',
-      basePath: '/api/employees',
+      resourceName: '',
+      basePath: '',
       methods: {
         list: true,
         get: true,
@@ -639,7 +648,7 @@ export class AddEntityComponent implements OnChanges {
         bulkDelete: true
       },
       apiVersioning: {
-        enabled: true,
+        enabled: false,
         strategy: 'header',
         headerName: 'X-API-VERSION',
         defaultVersion: '1'

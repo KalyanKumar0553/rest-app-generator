@@ -1,0 +1,17 @@
+.project-spec-shell {
+  border: 1px solid var(--theme-neutral-border);
+  border-radius: 10px;
+  background-color: var(--theme-input-bg);
+  max-height: 68vh;
+  overflow: auto;
+}
+
+.project-spec-content {
+  margin: 0;
+  padding: 12px;
+  color: var(--theme-modal-body-text);
+  font-size: 13px;
+  line-height: 1.5;
+  white-space: pre;
+}
+

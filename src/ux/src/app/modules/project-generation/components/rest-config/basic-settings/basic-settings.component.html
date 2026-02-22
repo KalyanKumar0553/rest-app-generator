@@ -1,8 +1,24 @@
 <ng-template #baseSettingsBody>
   <div class="form-grid two-column">
+    <div class="field-label">Name:</div>
+    <mat-form-field
+      appearance="fill"
+      class="form-field short-field"
+      [class.field-invalid]="showResourceNameErrors && (resourceNameModel?.errors?.['requiredName'] || resourceNameModel?.errors?.['duplicateName'])">
+      <input
+        matInput
+        name="resourceName"
+        #resourceNameModel="ngModel"
+        [(ngModel)]="draft.resourceName"
+        (ngModelChange)="onResourceNameInput()"
+        placeholder="Enter name">
+      <mat-error *ngIf="showResourceNameErrors && resourceNameModel?.errors?.['requiredName']">Name is required.</mat-error>
+      <mat-error *ngIf="showResourceNameErrors && resourceNameModel?.errors?.['duplicateName']">Name already exists in configured REST specs.</mat-error>
+    </mat-form-field>
+
     <div class="field-label">Base Endpoint:</div>
     <mat-form-field appearance="fill" class="form-field">
-      <input matInput [(ngModel)]="draft.basePath" placeholder="/api/employees">
+      <input matInput [(ngModel)]="draft.basePath" placeholder="Enter base endpoint">
     </mat-form-field>
   </div>
 

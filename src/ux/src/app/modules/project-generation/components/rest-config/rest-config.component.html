@@ -28,7 +28,11 @@
     <ng-container *ngIf="activeTab === 'basic'">
       <app-rest-config-basic-settings
         [draft]="draft"
-        [softDeleteEnabled]="softDeleteEnabled">
+        [softDeleteEnabled]="softDeleteEnabled"
+        [showResourceNameErrors]="showResourceNameErrors"
+        [resourceNameRequired]="resourceNameRequired"
+        [resourceNameDuplicate]="resourceNameDuplicate"
+        (resourceNameChange)="onResourceNameChanged()">
       </app-rest-config-basic-settings>
     </ng-container>
 
