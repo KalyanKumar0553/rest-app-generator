@@ -383,6 +383,12 @@
   flex-shrink: 0;
 }
 
+.action-section .mat-mdc-raised-button:not(:disabled) {
+  background-color: var(--color-primary) !important;
+  border-color: var(--color-primary) !important;
+  color: var(--color-text-inverse) !important;
+}
+
 .button-spinner {
   display: inline-block;
   margin-right: 8px;

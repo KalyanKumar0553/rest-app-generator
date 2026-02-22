@@ -235,6 +235,14 @@
             </div>
 
             <div class="form-row">
+              <mat-checkbox [(ngModel)]="developerPreferences.configureApi" (ngModelChange)="onEnableConfigureApiChange($event)">
+                Configure API
+                <mat-icon class="inline-icon" matTooltip="Enable API controller configuration"
+                  (mousedown)="onHelpIconInteraction($event)" (click)="onHelpIconInteraction($event)">info</mat-icon>
+              </mat-checkbox>
+            </div>
+
+            <div class="form-row">
               <mat-checkbox [(ngModel)]="developerPreferences.useDockerCompose">
                 Use Docker compose for development
                 <mat-icon class="inline-icon" matTooltip="Include Docker Compose configuration"
@@ -402,6 +410,44 @@
           (entitiesChange)="onEntitiesFromDataObjectsChange($event)"
           (enumsChange)="onEnumsChange($event)">
         </app-data-objects>
+      </div>
+
+      <div class="sticky-footer">
+        <div class="action-section">
+          <button mat-raised-button type="button" (click)="handleDataObjectsPrimaryAction()" [disabled]="isLoading || isGeneratingFromDtoSave">
+            {{ getDataObjectsPrimaryActionLabel() }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="content-body" *ngIf="activeSection === 'controllers' && developerPreferences.configureApi" id="controllers">
+      <div class="sticky-header">
+        <div class="top-actions">
+          <button class="back-btn-desktop" (click)="handleHome()" aria-label="Go to home" mat-stroked-button>
+            <i class="bi bi-house-door"></i>
+            Home
+          </button>
+        </div>
+
+        <app-info-banner storageKey="controllers-info">
+          <span>
+            Configure API controller behavior for your project.
+          </span>
+        </app-info-banner>
+      </div>
+
+      <div class="scrollable-content">
+        <app-rest-config
+          [config]="controllersConfig"
+          [entityFields]="controllersEntityFields"
+          [availableModels]="entities"
+          [dtoObjects]="controllersDtoObjects"
+          [enumTypes]="controllersEnumTypes"
+          [softDeleteEnabled]="false"
+          (save)="onControllersConfigSave($event)"
+          (cancel)="onControllersConfigCancel()">
+        </app-rest-config>
       </div>
 
       <div class="sticky-footer">

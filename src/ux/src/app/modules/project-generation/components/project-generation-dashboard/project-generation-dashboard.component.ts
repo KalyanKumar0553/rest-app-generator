@@ -38,6 +38,7 @@ import {
   ACTUATOR_ENDPOINT_OPTIONS,
   DEFAULT_ACTUATOR_ENDPOINTS
 } from '../actuator-config/actuator-config.component';
+import { RestConfigComponent, RestEndpointConfig } from '../rest-config/rest-config.component';
 
 interface ProjectSettings {
   projectGroup: string;
@@ -63,6 +64,7 @@ interface DeveloperPreferences {
   packages: 'technical' | 'domain' | 'mixed';
   enableOpenAPI: boolean;
   enableActuator: boolean;
+  configureApi: boolean;
   useDockerCompose: boolean;
   profiles: string[];
   javaVersion: string;
@@ -101,6 +103,7 @@ interface ProjectRunSummary {
     ActuatorConfigComponent,
     AddProfileComponent,
     ProjectViewComponent,
+    RestConfigComponent,
     SidenavComponent,
     InfoBannerComponent
   ],
@@ -125,6 +128,7 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
     { icon: 'search', label: 'Explore', value: 'explore' },
   ];
   actuatorNavItem: NavItem = { icon: 'device_hub', label: 'Actuator', value: 'actuator' };
+  controllersNavItem: NavItem = { icon: 'tune', label: 'Controllers', value: 'controllers' };
 
   entities: any[] = [];
   dataObjects: any[] = [];
@@ -191,11 +195,13 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
     packages: 'technical',
     enableOpenAPI: false,
     enableActuator: false,
+    configureApi: false,
     useDockerCompose: false,
     profiles: [],
     javaVersion: '21',
     deployment: 'None'
   };
+  controllersConfig: RestEndpointConfig = this.getDefaultControllersConfig();
   showProfileModal = false;
   selectedActuatorConfiguration = 'default';
   actuatorConfigurationOptions: string[] = ['default'];
@@ -245,6 +251,11 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
     const navItems = [...this.baseNavItems];
     if (this.developerPreferences.enableActuator) {
       navItems.splice(1, 0, this.actuatorNavItem);
+    }
+    if (this.developerPreferences.configureApi) {
+      const dataObjectsIndex = navItems.findIndex((item) => item.value === 'data-objects');
+      const insertIndex = dataObjectsIndex >= 0 ? dataObjectsIndex + 1 : navItems.length - 1;
+      navItems.splice(insertIndex, 0, this.controllersNavItem);
     }
 
     const isNoneDatabase = this.toDatabaseCode(this.databaseSettings.database) === 'NONE';
@@ -302,6 +313,9 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
       settings: this.projectSettings,
       database: this.databaseSettings,
       preferences: this.developerPreferences,
+      controllers: {
+        config: this.controllersConfig
+      },
       actuator: {
         selectedConfiguration: this.selectedActuatorConfiguration,
         configurations: this.sanitizeActuatorConfigurations(this.actuatorProfileEndpoints)
@@ -331,8 +345,10 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
         this.developerPreferences = {
           ...this.developerPreferences,
           ...(projectData.preferences || {}),
-          enableActuator: Boolean(projectData?.preferences?.enableActuator)
+          enableActuator: Boolean(projectData?.preferences?.enableActuator),
+          configureApi: Boolean(projectData?.preferences?.configureApi)
         };
+        this.controllersConfig = this.parseControllersConfig(projectData?.controllers?.config);
         const configurationOptions = this.getActuatorConfigurationOptions(projectData?.preferences?.profiles);
         this.actuatorConfigurationOptions = configurationOptions;
         this.actuatorProfileEndpoints = this.sanitizeActuatorConfigurations(
@@ -349,6 +365,7 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
         this.dataObjects = [];
         this.relations = [];
         this.enums = [];
+        this.controllersConfig = this.getDefaultControllersConfig();
         this.syncActuatorConfigurationsWithProfiles();
         this.syncActuatorStateStore();
       }
@@ -426,6 +443,11 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
       return;
     }
     if (section === 'actuator' && !this.developerPreferences.enableActuator) {
+      this.activeSection = 'general';
+      this.closeSidebar();
+      return;
+    }
+    if (section === 'controllers' && !this.developerPreferences.configureApi) {
       this.activeSection = 'general';
       this.closeSidebar();
       return;
@@ -961,6 +983,19 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
     }
   }
 
+  async setupControllers(): Promise<void> {
+    this.isLoading = true;
+    try {
+      this.navigateToSection('controllers');
+      this.toastService.success('Controller setup loaded');
+    } catch (error) {
+      this.toastService.error('Failed to proceed');
+      console.error('Error:', error);
+    } finally {
+      this.isLoading = false;
+    }
+  }
+
   async setupActuator(): Promise<void> {
     this.isLoading = true;
     try {
@@ -991,6 +1026,18 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
       return;
     }
     await this.setupDataObjects();
+  }
+
+  getDataObjectsPrimaryActionLabel(): string {
+    return this.developerPreferences.configureApi ? 'Setup Controller' : 'Save Project';
+  }
+
+  async handleDataObjectsPrimaryAction(): Promise<void> {
+    if (this.developerPreferences.configureApi) {
+      await this.setupControllers();
+      return;
+    }
+    this.saveProjectAndInvokeApi();
   }
 
   private convertObjectToYaml(value: any): string {
@@ -1052,6 +1099,13 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
             return acc;
           }, {} as Record<string, unknown>)
       };
+    }
+
+    if (Boolean(project?.preferences?.configureApi)) {
+      const controllersConfig = this.mapRestConfig(project?.controllers?.config);
+      if (controllersConfig) {
+        spec.controllers = controllersConfig;
+      }
     }
 
     if (!spec.dependencies.length) {
@@ -1138,6 +1192,22 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
       this.syncActuatorConfigurationsWithProfiles();
       this.syncActuatorStateStore();
     }
+  }
+
+  onEnableConfigureApiChange(enabled: boolean): void {
+    this.developerPreferences.configureApi = Boolean(enabled);
+    if (!this.developerPreferences.configureApi && this.activeSection === 'controllers') {
+      this.activeSection = 'general';
+    }
+  }
+
+  onControllersConfigSave(config: RestEndpointConfig): void {
+    this.controllersConfig = this.parseControllersConfig(config);
+    this.toastService.success('Controller configuration updated');
+  }
+
+  onControllersConfigCancel(): void {
+    // Keep existing in-page configuration unchanged on cancel.
   }
 
   onActuatorConfigurationChange(configuration: string): void {
@@ -1509,6 +1579,129 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
     };
 
     return mapped;
+  }
+
+  get controllersEntityFields(): Array<{ name: string }> {
+    const fields = (Array.isArray(this.entities) ? this.entities : [])
+      .flatMap((entity: any) => Array.isArray(entity?.fields) ? entity.fields : [])
+      .map((field: any) => String(field?.name ?? '').trim())
+      .filter(Boolean);
+    return Array.from(new Set(fields)).map((name) => ({ name }));
+  }
+
+  get controllersDtoObjects(): Array<{ name?: string; dtoType?: 'request' | 'response'; fields?: unknown[] }> {
+    return Array.isArray(this.dataObjects) ? this.dataObjects : [];
+  }
+
+  get controllersEnumTypes(): string[] {
+    return (Array.isArray(this.enums) ? this.enums : [])
+      .map((item: any) => String(item?.name ?? '').trim())
+      .filter(Boolean);
+  }
+
+  private getDefaultControllersConfig(): RestEndpointConfig {
+    return {
+      resourceName: 'Employee',
+      basePath: '/api/employees',
+      methods: {
+        list: true,
+        get: true,
+        create: true,
+        update: true,
+        patch: true,
+        delete: true,
+        bulkInsert: true,
+        bulkUpdate: true,
+        bulkDelete: true
+      },
+      apiVersioning: {
+        enabled: true,
+        strategy: 'header',
+        headerName: 'X-API-VERSION',
+        defaultVersion: '1'
+      },
+      pathVariableType: 'UUID',
+      deletion: {
+        mode: 'SOFT',
+        restoreEndpoint: true,
+        includeDeletedParam: true
+      },
+      hateoas: {
+        enabled: true,
+        selfLink: true,
+        updateLink: true,
+        deleteLink: true
+      },
+      pagination: {
+        enabled: true,
+        mode: 'OFFSET',
+        sortField: 'createdAt',
+        sortDirection: 'DESC'
+      },
+      searchFiltering: {
+        keywordSearch: true,
+        jpaSpecification: true,
+        searchableFields: []
+      },
+      batchOperations: {
+        insert: {
+          batchSize: 500,
+          enableAsyncMode: false
+        },
+        update: {
+          batchSize: 500,
+          updateMode: 'PUT',
+          optimisticLockHandling: 'FAIL_ON_CONFLICT',
+          validationStrategy: 'VALIDATE_ALL_FIRST',
+          enableAsyncMode: false,
+          asyncProcessing: true
+        },
+        bulkDelete: {
+          deletionStrategy: 'SOFT',
+          batchSize: 1000,
+          failureStrategy: 'STOP_ON_FIRST_ERROR',
+          enableAsyncMode: false,
+          allowIncludeDeletedParam: true
+        }
+      },
+      requestResponse: {
+        request: {
+          create: { mode: 'GENERATE_DTO', dtoName: 'Request' },
+          update: { mode: 'GENERATE_DTO', dtoName: 'UpdateRequest' },
+          patch: { mode: 'JSON_MERGE_PATCH' },
+          bulkInsertType: '',
+          bulkUpdateType: '',
+          bulkDeleteType: 'List<UUID>'
+        },
+        response: {
+          responseType: 'RESPONSE_ENTITY',
+          dtoName: '',
+          responseWrapper: 'STANDARD_ENVELOPE',
+          enableFieldProjection: true,
+          includeHateoasLinks: true
+        }
+      },
+      documentation: {
+        endpoints: {
+          list: { description: '', descriptionTags: [], deprecated: false },
+          get: { description: '', descriptionTags: [], deprecated: false },
+          create: { description: '', descriptionTags: [], deprecated: false },
+          update: { description: '', descriptionTags: [], deprecated: false },
+          patch: { description: '', descriptionTags: [], deprecated: false },
+          delete: { description: '', descriptionTags: [], deprecated: false },
+          bulkInsert: { description: '', descriptionTags: [], deprecated: false },
+          bulkUpdate: { description: '', descriptionTags: [], deprecated: false },
+          bulkDelete: { description: '', descriptionTags: [], deprecated: false }
+        }
+      }
+    };
+  }
+
+  private parseControllersConfig(rawConfig: RestEndpointConfig | null | undefined): RestEndpointConfig {
+    if (!rawConfig || typeof rawConfig !== 'object') {
+      return this.getDefaultControllersConfig();
+    }
+    return JSON.parse(JSON.stringify(rawConfig)) as RestEndpointConfig;
   }
 
   private normalizeProfileName(value: unknown): string | null {
