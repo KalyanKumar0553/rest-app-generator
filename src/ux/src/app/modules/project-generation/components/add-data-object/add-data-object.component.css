@@ -71,7 +71,7 @@
   margin: 0 0 20px 0;
 }
 
-.dto-mapper-panel {
+.response-wrapper-panel {
   margin: 8px 0 20px;
   padding: 14px 16px;
   border: 1px solid var(--color-border);
@@ -79,8 +79,38 @@
   background: linear-gradient(180deg, rgba(249, 250, 251, 0.95), rgba(243, 244, 246, 0.95));
 }
 
-.mapper-config {
-  margin-top: 12px;
+.response-wrapper-title-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.response-wrapper-title-row h4 {
+  margin: 0;
+  color: var(--theme-modal-body-text);
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.response-wrapper-line {
+  height: 1px;
+  width: 100%;
+  background-color: var(--theme-neutral-border);
+}
+
+.response-wrapper-options {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px 16px;
+}
+
+.response-flags {
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
 .fields-section {
@@ -441,9 +471,18 @@
 
 @media (max-width: 768px) {
   .fields-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 12px;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+  }
+
+  .fields-title {
+    min-width: 0;
+  }
+
+  .add-field-btn {
+    flex-shrink: 0;
   }
 
   .fields-meta {
@@ -477,5 +516,9 @@
   .field-help-wrap {
     display: inline-flex;
     z-index: 6;
+  }
+
+  .response-wrapper-options {
+    grid-template-columns: 1fr;
   }
 }

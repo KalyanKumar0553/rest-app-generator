@@ -707,9 +707,23 @@ export class AddEntityComponent implements OnChanges {
         },
         response: {
           responseType: 'RESPONSE_ENTITY',
+          dtoName: '',
           responseWrapper: 'STANDARD_ENVELOPE',
           enableFieldProjection: true,
           includeHateoasLinks: true
+        }
+      },
+      documentation: {
+        endpoints: {
+          list: { description: '', descriptionTags: [], deprecated: false },
+          get: { description: '', descriptionTags: [], deprecated: false },
+          create: { description: '', descriptionTags: [], deprecated: false },
+          update: { description: '', descriptionTags: [], deprecated: false },
+          patch: { description: '', descriptionTags: [], deprecated: false },
+          delete: { description: '', descriptionTags: [], deprecated: false },
+          bulkInsert: { description: '', descriptionTags: [], deprecated: false },
+          bulkUpdate: { description: '', descriptionTags: [], deprecated: false },
+          bulkDelete: { description: '', descriptionTags: [], deprecated: false }
         }
       }
     };
@@ -822,6 +836,7 @@ export class AddEntityComponent implements OnChanges {
             : (rawConfig as any).requestResponse?.response?.responseType === 'CUSTOM_WRAPPER'
               ? 'CUSTOM_WRAPPER'
               : 'RESPONSE_ENTITY',
+          dtoName: String((rawConfig as any).requestResponse?.response?.dtoName ?? '').trim(),
           responseWrapper: (rawConfig as any).requestResponse?.response?.responseWrapper === 'NONE'
             ? 'NONE'
             : (rawConfig as any).requestResponse?.response?.responseWrapper === 'UPSERT'
@@ -829,6 +844,73 @@ export class AddEntityComponent implements OnChanges {
               : 'STANDARD_ENVELOPE',
           enableFieldProjection: Boolean((rawConfig as any).requestResponse?.response?.enableFieldProjection ?? fallback.requestResponse.response.enableFieldProjection),
           includeHateoasLinks: Boolean((rawConfig as any).requestResponse?.response?.includeHateoasLinks ?? fallback.requestResponse.response.includeHateoasLinks)
+        }
+      },
+      documentation: {
+        endpoints: {
+          list: {
+            description: String((rawConfig as any).documentation?.endpoints?.list?.description ?? '').trim(),
+            descriptionTags: Array.isArray((rawConfig as any).documentation?.endpoints?.list?.descriptionTags)
+              ? (rawConfig as any).documentation.endpoints.list.descriptionTags.map((value: unknown) => String(value ?? '').trim()).filter(Boolean)
+              : [],
+            deprecated: Boolean((rawConfig as any).documentation?.endpoints?.list?.deprecated)
+          },
+          get: {
+            description: String((rawConfig as any).documentation?.endpoints?.get?.description ?? '').trim(),
+            descriptionTags: Array.isArray((rawConfig as any).documentation?.endpoints?.get?.descriptionTags)
+              ? (rawConfig as any).documentation.endpoints.get.descriptionTags.map((value: unknown) => String(value ?? '').trim()).filter(Boolean)
+              : [],
+            deprecated: Boolean((rawConfig as any).documentation?.endpoints?.get?.deprecated)
+          },
+          create: {
+            description: String((rawConfig as any).documentation?.endpoints?.create?.description ?? '').trim(),
+            descriptionTags: Array.isArray((rawConfig as any).documentation?.endpoints?.create?.descriptionTags)
+              ? (rawConfig as any).documentation.endpoints.create.descriptionTags.map((value: unknown) => String(value ?? '').trim()).filter(Boolean)
+              : [],
+            deprecated: Boolean((rawConfig as any).documentation?.endpoints?.create?.deprecated)
+          },
+          update: {
+            description: String((rawConfig as any).documentation?.endpoints?.update?.description ?? '').trim(),
+            descriptionTags: Array.isArray((rawConfig as any).documentation?.endpoints?.update?.descriptionTags)
+              ? (rawConfig as any).documentation.endpoints.update.descriptionTags.map((value: unknown) => String(value ?? '').trim()).filter(Boolean)
+              : [],
+            deprecated: Boolean((rawConfig as any).documentation?.endpoints?.update?.deprecated)
+          },
+          patch: {
+            description: String((rawConfig as any).documentation?.endpoints?.patch?.description ?? '').trim(),
+            descriptionTags: Array.isArray((rawConfig as any).documentation?.endpoints?.patch?.descriptionTags)
+              ? (rawConfig as any).documentation.endpoints.patch.descriptionTags.map((value: unknown) => String(value ?? '').trim()).filter(Boolean)
+              : [],
+            deprecated: Boolean((rawConfig as any).documentation?.endpoints?.patch?.deprecated)
+          },
+          delete: {
+            description: String((rawConfig as any).documentation?.endpoints?.delete?.description ?? '').trim(),
+            descriptionTags: Array.isArray((rawConfig as any).documentation?.endpoints?.delete?.descriptionTags)
+              ? (rawConfig as any).documentation.endpoints.delete.descriptionTags.map((value: unknown) => String(value ?? '').trim()).filter(Boolean)
+              : [],
+            deprecated: Boolean((rawConfig as any).documentation?.endpoints?.delete?.deprecated)
+          },
+          bulkInsert: {
+            description: String((rawConfig as any).documentation?.endpoints?.bulkInsert?.description ?? '').trim(),
+            descriptionTags: Array.isArray((rawConfig as any).documentation?.endpoints?.bulkInsert?.descriptionTags)
+              ? (rawConfig as any).documentation.endpoints.bulkInsert.descriptionTags.map((value: unknown) => String(value ?? '').trim()).filter(Boolean)
+              : [],
+            deprecated: Boolean((rawConfig as any).documentation?.endpoints?.bulkInsert?.deprecated)
+          },
+          bulkUpdate: {
+            description: String((rawConfig as any).documentation?.endpoints?.bulkUpdate?.description ?? '').trim(),
+            descriptionTags: Array.isArray((rawConfig as any).documentation?.endpoints?.bulkUpdate?.descriptionTags)
+              ? (rawConfig as any).documentation.endpoints.bulkUpdate.descriptionTags.map((value: unknown) => String(value ?? '').trim()).filter(Boolean)
+              : [],
+            deprecated: Boolean((rawConfig as any).documentation?.endpoints?.bulkUpdate?.deprecated)
+          },
+          bulkDelete: {
+            description: String((rawConfig as any).documentation?.endpoints?.bulkDelete?.description ?? '').trim(),
+            descriptionTags: Array.isArray((rawConfig as any).documentation?.endpoints?.bulkDelete?.descriptionTags)
+              ? (rawConfig as any).documentation.endpoints.bulkDelete.descriptionTags.map((value: unknown) => String(value ?? '').trim()).filter(Boolean)
+              : [],
+            deprecated: Boolean((rawConfig as any).documentation?.endpoints?.bulkDelete?.deprecated)
+          }
         }
       }
     };

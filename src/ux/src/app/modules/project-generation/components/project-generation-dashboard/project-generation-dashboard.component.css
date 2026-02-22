@@ -569,15 +569,15 @@
 
   .sidebar {
     position: fixed;
-    left: -240px;
+    right: -240px;
     top: 0;
     z-index: 300;
-    transition: left 0.3s ease;
+    transition: right 0.3s ease;
     height: 100vh;
   }
 
   .sidebar.open {
-    left: 0;
+    right: 0;
   }
 
   .main-content {

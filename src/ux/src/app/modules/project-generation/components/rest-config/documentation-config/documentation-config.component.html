@@ -1,0 +1,99 @@
+<section class="section-title-row top-title">
+  <h4>API Documentation</h4>
+  <div class="section-line"></div>
+</section>
+
+<section class="doc-section">
+  <header class="doc-section-header">
+    <h5>Endpoint Documentation</h5>
+  </header>
+
+  <div class="empty-state" *ngIf="selectedEndpoints.length === 0">
+    Select endpoints in the Endpoints tab to configure documentation.
+  </div>
+
+  <div class="table-wrap" *ngIf="selectedEndpoints.length > 0">
+    <table class="endpoint-table">
+      <thead>
+        <tr>
+          <th>Operation</th>
+          <th>Deprecated</th>
+          <th>Description</th>
+          <th>Tags</th>
+          <th class="actions-col">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let endpoint of selectedEndpoints">
+          <td class="operation-cell">{{ endpoint.label }}</td>
+          <td>
+            <mat-checkbox
+              color="primary"
+              [ngModel]="getDeprecatedFlag(endpoint.key)"
+              (ngModelChange)="setDeprecatedFlag(endpoint.key, $event)">
+            </mat-checkbox>
+          </td>
+          <td>
+            <span class="description-text" *ngIf="getDescription(endpoint.key); else emptyDescriptionTpl">
+              {{ getDescription(endpoint.key) }}
+            </span>
+            <ng-template #emptyDescriptionTpl>
+              <span class="muted-text">No description</span>
+            </ng-template>
+          </td>
+          <td>
+            <div class="chips-readonly" *ngIf="getDescriptionTags(endpoint.key).length > 0; else emptyTagTpl">
+              <span class="tag-pill" *ngFor="let tag of getVisibleTags(endpoint.key)">{{ tag }}</span>
+              <app-help-popover *ngIf="hasOverflowTags(endpoint.key)" [ariaLabel]="'Show remaining tags'" placement="top">
+                <div class="help-content-stack">
+                  <div class="help-title">More Tags</div>
+                  <div class="help-tags">
+                    <span class="tag-pill" *ngFor="let tag of getOverflowTags(endpoint.key)">{{ tag }}</span>
+                  </div>
+                </div>
+              </app-help-popover>
+              <span class="more-count" *ngIf="hasOverflowTags(endpoint.key)">{{ getOverflowCount(endpoint.key) }} More</span>
+            </div>
+            <ng-template #emptyTagTpl>
+              <span class="muted-text">No tags added</span>
+            </ng-template>
+          </td>
+          <td class="actions-cell">
+            <div class="actions-inner">
+              <app-help-popover [ariaLabel]="'Request/Response details'" placement="top">
+                <div class="help-content-stack">
+                  <div><strong>Request:</strong> {{ getRequestObjectLabel(endpoint.key) }}</div>
+                  <div><strong>Response:</strong> {{ getResponseObjectLabel() }}</div>
+                </div>
+              </app-help-popover>
+
+              <button
+                type="button"
+                class="field-action-btn"
+                aria-label="Configure endpoint operation"
+                (click)="openEditModal(endpoint.key)">
+                <mat-icon>edit</mat-icon>
+              </button>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<app-modal
+  [isOpen]="showEditModal"
+  [title]="'Configure Endpoint Operation'"
+  [size]="'medium'"
+  (close)="closeEditModal()">
+  <app-edit-documentation-operation
+    [endpointLabel]="activeEndpointLabel"
+    [formData]="modalDraft">
+  </app-edit-documentation-operation>
+
+  <div modal-footer>
+    <button mat-raised-button type="button" (click)="closeEditModal()">Cancel</button>
+    <button mat-raised-button color="primary" type="button" (click)="saveEditModal()">Save</button>
+  </div>
+</app-modal>

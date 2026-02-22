@@ -1,0 +1,229 @@
+.section-title-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.top-title {
+  margin-bottom: 8px;
+}
+
+.section-title-row h4 {
+  margin: 0;
+  color: var(--theme-modal-body-text);
+  font-size: 16px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.section-line {
+  height: 1px;
+  width: 100%;
+  background-color: var(--theme-neutral-border);
+}
+
+.doc-section {
+  border: 1px solid var(--theme-neutral-border);
+  border-radius: 10px;
+  background-color: var(--theme-input-bg);
+  padding: 0;
+}
+
+.doc-section-header {
+  display: flex;
+  align-items: center;
+  min-height: 54px;
+  padding: 0 14px;
+  border-bottom: 1px solid var(--theme-neutral-border);
+}
+
+.doc-section-header h5 {
+  margin: 0;
+  color: var(--theme-modal-body-text);
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.empty-state {
+  border: 1px dashed var(--theme-neutral-border);
+  border-radius: 10px;
+  padding: 14px;
+  color: var(--theme-neutral-text);
+  background-color: var(--theme-modal-container-bg);
+  margin: 12px;
+}
+
+.table-wrap {
+  overflow-x: auto;
+  border-radius: 0 0 10px 10px;
+  background-color: var(--theme-modal-container-bg);
+}
+
+.endpoint-table {
+  width: 100%;
+  min-width: 960px;
+  border-collapse: collapse;
+}
+
+.endpoint-table th,
+.endpoint-table td {
+  border-bottom: 1px solid var(--theme-neutral-border);
+  padding: 10px 12px;
+  vertical-align: middle;
+  color: var(--theme-modal-body-text);
+}
+
+.endpoint-table th {
+  background-color: var(--theme-input-bg);
+  font-size: 14px;
+  font-weight: 600;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.endpoint-table tr:last-child td {
+  border-bottom: none;
+}
+
+.operation-cell {
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.description-text {
+  color: var(--theme-modal-body-text);
+}
+
+.chips-readonly {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.tag-pill {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--theme-neutral-border);
+  border-radius: 999px;
+  padding: 2px 10px;
+  background-color: var(--theme-input-bg);
+  color: var(--theme-modal-body-text);
+  font-size: 13px;
+}
+
+.more-count {
+  color: var(--theme-primary-color, var(--color-primary));
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.muted-text {
+  color: var(--theme-neutral-text);
+}
+
+.actions-col {
+  width: 110px;
+}
+
+.actions-cell {
+  text-align: center;
+  vertical-align: middle;
+}
+
+.actions-inner {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 40px;
+}
+
+.help-content-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.help-title {
+  font-weight: 600;
+  color: var(--theme-modal-body-text);
+}
+
+.help-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  max-width: 260px;
+}
+
+.field-action-btn {
+  border: none;
+  background-color: var(--color-background-muted);
+  color: var(--theme-modal-body-text);
+  border-radius: 10px;
+  padding: 6px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.15s ease, background-color 0.2s ease;
+}
+
+.field-action-btn mat-icon {
+  width: 20px;
+  height: 20px;
+  font-size: 20px;
+}
+
+.field-action-btn:hover {
+  background-color: var(--color-border);
+  transform: translateY(-1px);
+}
+
+.endpoint-edit-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.endpoint-op-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.field-name {
+  font-weight: 600;
+  color: var(--theme-modal-body-text);
+}
+
+.field-value {
+  color: var(--theme-neutral-text);
+}
+
+.full-width-field {
+  width: 100%;
+}
+
+::ng-deep .endpoint-edit-form .mat-mdc-form-field.mat-form-field-appearance-fill .mat-mdc-text-field-wrapper {
+  background-color: var(--theme-input-bg);
+}
+
+::ng-deep .endpoint-edit-form .mat-mdc-form-field.mat-form-field-appearance-fill:hover .mat-mdc-text-field-wrapper {
+  background-color: var(--color-border);
+}
+
+::ng-deep .endpoint-edit-form .mat-mdc-form-field.mat-form-field-appearance-fill.mat-focused .mat-mdc-text-field-wrapper {
+  background-color: var(--color-border);
+}
+
+::ng-deep .endpoint-edit-form .mat-mdc-form-field-subscript-wrapper {
+  display: none;
+}
+
+@media (max-width: 992px) {
+  .endpoint-table {
+    min-width: 860px;
+  }
+}

@@ -1438,6 +1438,73 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
             .map((item: any) => this.trimmed(item))
             .filter(Boolean)
           : []
+      },
+      documentation: {
+        endpoints: {
+          list: {
+            description: this.trimmed(restConfig?.documentation?.endpoints?.list?.description),
+            descriptionTags: Array.isArray(restConfig?.documentation?.endpoints?.list?.descriptionTags)
+              ? restConfig.documentation.endpoints.list.descriptionTags.map((item: any) => this.trimmed(item)).filter(Boolean)
+              : [],
+            deprecated: Boolean(restConfig?.documentation?.endpoints?.list?.deprecated)
+          },
+          get: {
+            description: this.trimmed(restConfig?.documentation?.endpoints?.get?.description),
+            descriptionTags: Array.isArray(restConfig?.documentation?.endpoints?.get?.descriptionTags)
+              ? restConfig.documentation.endpoints.get.descriptionTags.map((item: any) => this.trimmed(item)).filter(Boolean)
+              : [],
+            deprecated: Boolean(restConfig?.documentation?.endpoints?.get?.deprecated)
+          },
+          create: {
+            description: this.trimmed(restConfig?.documentation?.endpoints?.create?.description),
+            descriptionTags: Array.isArray(restConfig?.documentation?.endpoints?.create?.descriptionTags)
+              ? restConfig.documentation.endpoints.create.descriptionTags.map((item: any) => this.trimmed(item)).filter(Boolean)
+              : [],
+            deprecated: Boolean(restConfig?.documentation?.endpoints?.create?.deprecated)
+          },
+          update: {
+            description: this.trimmed(restConfig?.documentation?.endpoints?.update?.description),
+            descriptionTags: Array.isArray(restConfig?.documentation?.endpoints?.update?.descriptionTags)
+              ? restConfig.documentation.endpoints.update.descriptionTags.map((item: any) => this.trimmed(item)).filter(Boolean)
+              : [],
+            deprecated: Boolean(restConfig?.documentation?.endpoints?.update?.deprecated)
+          },
+          patch: {
+            description: this.trimmed(restConfig?.documentation?.endpoints?.patch?.description),
+            descriptionTags: Array.isArray(restConfig?.documentation?.endpoints?.patch?.descriptionTags)
+              ? restConfig.documentation.endpoints.patch.descriptionTags.map((item: any) => this.trimmed(item)).filter(Boolean)
+              : [],
+            deprecated: Boolean(restConfig?.documentation?.endpoints?.patch?.deprecated)
+          },
+          delete: {
+            description: this.trimmed(restConfig?.documentation?.endpoints?.delete?.description),
+            descriptionTags: Array.isArray(restConfig?.documentation?.endpoints?.delete?.descriptionTags)
+              ? restConfig.documentation.endpoints.delete.descriptionTags.map((item: any) => this.trimmed(item)).filter(Boolean)
+              : [],
+            deprecated: Boolean(restConfig?.documentation?.endpoints?.delete?.deprecated)
+          },
+          bulkInsert: {
+            description: this.trimmed(restConfig?.documentation?.endpoints?.bulkInsert?.description),
+            descriptionTags: Array.isArray(restConfig?.documentation?.endpoints?.bulkInsert?.descriptionTags)
+              ? restConfig.documentation.endpoints.bulkInsert.descriptionTags.map((item: any) => this.trimmed(item)).filter(Boolean)
+              : [],
+            deprecated: Boolean(restConfig?.documentation?.endpoints?.bulkInsert?.deprecated)
+          },
+          bulkUpdate: {
+            description: this.trimmed(restConfig?.documentation?.endpoints?.bulkUpdate?.description),
+            descriptionTags: Array.isArray(restConfig?.documentation?.endpoints?.bulkUpdate?.descriptionTags)
+              ? restConfig.documentation.endpoints.bulkUpdate.descriptionTags.map((item: any) => this.trimmed(item)).filter(Boolean)
+              : [],
+            deprecated: Boolean(restConfig?.documentation?.endpoints?.bulkUpdate?.deprecated)
+          },
+          bulkDelete: {
+            description: this.trimmed(restConfig?.documentation?.endpoints?.bulkDelete?.description),
+            descriptionTags: Array.isArray(restConfig?.documentation?.endpoints?.bulkDelete?.descriptionTags)
+              ? restConfig.documentation.endpoints.bulkDelete.descriptionTags.map((item: any) => this.trimmed(item)).filter(Boolean)
+              : [],
+            deprecated: Boolean(restConfig?.documentation?.endpoints?.bulkDelete?.deprecated)
+          }
+        }
       }
     };
 

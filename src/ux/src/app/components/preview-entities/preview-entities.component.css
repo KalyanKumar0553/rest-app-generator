@@ -80,22 +80,31 @@
 .entity-card__title {
   font-weight: 600;
   color: #2f3b41;
-  text-align: center;
   font-size: 18px;
-  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .entity-card__title-group {
   display: flex;
-  flex-direction: column;
-  gap: 6px;
+  align-items: center;
   min-width: 0;
   flex: 1;
 }
 
+.entity-card__title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  flex: 1;
+  flex-wrap: nowrap;
+}
+
 .entity-card__type-badge {
   display: inline-flex;
-  align-self: center;
   padding: 3px 10px;
   border-radius: 999px;
   font-size: 11px;
@@ -104,6 +113,8 @@
   color: #334155;
   background-color: rgba(255, 255, 255, 0.72);
   border: 1px solid rgba(79, 95, 102, 0.28);
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .entity-card__actions {
@@ -257,7 +268,7 @@
   }
 
   .entity-card {
-    width: 100%;
-    max-width: 100%;
+    width: 98%;
+    max-width: 98%;
   }
 }

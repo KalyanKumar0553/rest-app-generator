@@ -1,0 +1,94 @@
+.endpoint-edit-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.operation-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.operation-readonly-field {
+  flex: 1;
+  min-width: 0;
+}
+
+.deprecated-inline {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+.full-width-field {
+  width: 100%;
+}
+
+::ng-deep .endpoint-edit-form .mat-mdc-form-field.mat-form-field-appearance-fill .mat-mdc-text-field-wrapper {
+  background-color: var(--theme-input-bg);
+}
+
+::ng-deep .endpoint-edit-form .mat-mdc-form-field.mat-form-field-appearance-fill:hover .mat-mdc-text-field-wrapper {
+  background-color: var(--color-border);
+}
+
+::ng-deep .endpoint-edit-form .mat-mdc-form-field.mat-form-field-appearance-fill.mat-focused .mat-mdc-text-field-wrapper {
+  background-color: var(--color-border);
+}
+
+::ng-deep .endpoint-edit-form .mat-mdc-form-field-subscript-wrapper {
+  display: none;
+}
+
+.tags-below-grid {
+  width: 100%;
+}
+
+::ng-deep .endpoint-edit-form .tags-below-grid .mdc-evolution-chip-set__chips {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+::ng-deep .endpoint-edit-form .tags-below-grid .mat-mdc-chip-row {
+  border-radius: 999px;
+  background-color: var(--color-background);
+  border: 1px solid var(--color-border-light);
+  color: var(--color-text-primary);
+  min-height: 38px;
+  padding-inline: 8px;
+}
+
+::ng-deep .endpoint-edit-form .tags-below-grid .mat-mdc-chip .mdc-evolution-chip__text-label {
+  color: var(--color-text-primary);
+  font-size: 16px;
+  font-weight: 500;
+}
+
+::ng-deep .endpoint-edit-form .tags-below-grid .mat-mdc-chip-remove {
+  color: var(--theme-neutral-text);
+  opacity: 0.9;
+}
+
+::ng-deep .endpoint-edit-form .tags-below-grid .mat-mdc-chip-remove:hover {
+  color: var(--color-text-primary);
+}
+
+::ng-deep .endpoint-edit-form .tags-below-grid .mat-mdc-chip-remove .mat-icon {
+  width: 16px;
+  height: 16px;
+  font-size: 16px;
+}
+
+@media (max-width: 768px) {
+  .operation-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .operation-readonly-field {
+    width: 100%;
+  }
+}

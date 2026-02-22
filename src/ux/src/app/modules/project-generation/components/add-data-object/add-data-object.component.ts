@@ -7,6 +7,7 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
+import { MatRadioModule } from '@angular/material/radio';
 import { Field } from '../field-item/field-item.component';
 import { SearchSortComponent, SearchConfig, SortOption, SearchSortEvent } from '../../../../components/search-sort/search-sort.component';
 import { ConfirmationModalComponent, ModalButton } from '../../../../components/confirmation-modal/confirmation-modal.component';
@@ -15,15 +16,15 @@ import { ModalComponent } from '../../../../components/modal/modal.component';
 import { ValidatorService } from '../../../../services/validator.service';
 import { buildEntityNameRules, buildFieldListRules, buildFieldRules } from '../../validators/entity-validation';
 import { FieldFilterService } from '../../../../services/field-filter.service';
-import { SearchableMultiSelectComponent } from '../../../../components/searchable-multi-select/searchable-multi-select.component';
 import { ToastService } from '../../../../services/toast.service';
 import { HelpPopoverComponent } from '../../../../components/help-popover/help-popover.component';
 
 interface DataObject {
   name: string;
   dtoType?: 'request' | 'response';
-  mapperEnabled?: boolean;
-  mapperModels?: string[];
+  responseWrapper?: 'STANDARD_ENVELOPE' | 'NONE' | 'UPSERT';
+  enableFieldProjection?: boolean;
+  includeHateoasLinks?: boolean;
   fields: Field[];
 }
 
@@ -37,10 +38,10 @@ interface DataObject {
     MatInputModule,
     MatSelectModule,
     MatCheckboxModule,
+    MatRadioModule,
     MatButtonModule,
     MatIconModule,
     SearchSortComponent,
-    SearchableMultiSelectComponent,
     HelpPopoverComponent,
     ConfirmationModalComponent,
     EditPropertyComponent,
@@ -60,8 +61,9 @@ export class AddDataObjectComponent implements OnChanges {
 
   dataObjectName = '';
   dtoType: 'request' | 'response' = 'request';
-  mapperEnabled = false;
-  mapperModels: string[] = [];
+  responseWrapper: 'STANDARD_ENVELOPE' | 'NONE' | 'UPSERT' = 'STANDARD_ENVELOPE';
+  enableFieldProjection = true;
+  includeHateoasLinks = true;
   nameError = '';
 
   fields: Field[] = [];
@@ -154,17 +156,14 @@ export class AddDataObjectComponent implements OnChanges {
       this.updateVisibleFields();
     }
 
-    if (changes['availableModels'] && !this.hasAvailableModels) {
-      this.mapperEnabled = false;
-      this.mapperModels = [];
-    }
   }
 
   loadDataObject(dataObject: DataObject): void {
     this.dataObjectName = dataObject.name;
     this.dtoType = dataObject.dtoType ?? 'request';
-    this.mapperEnabled = Boolean(dataObject.mapperEnabled);
-    this.mapperModels = Array.isArray(dataObject.mapperModels) ? [...dataObject.mapperModels] : [];
+    this.responseWrapper = dataObject.responseWrapper ?? 'STANDARD_ENVELOPE';
+    this.enableFieldProjection = Boolean(dataObject.enableFieldProjection ?? true);
+    this.includeHateoasLinks = Boolean(dataObject.includeHateoasLinks ?? true);
     this.fields = this.sanitizeProperties(JSON.parse(JSON.stringify(dataObject.fields)));
     this.nameError = '';
     this.updateVisibleFields();
@@ -173,8 +172,9 @@ export class AddDataObjectComponent implements OnChanges {
   resetForm(): void {
     this.dataObjectName = '';
     this.dtoType = 'request';
-    this.mapperEnabled = false;
-    this.mapperModels = [];
+    this.responseWrapper = 'STANDARD_ENVELOPE';
+    this.enableFieldProjection = true;
+    this.includeHateoasLinks = true;
     this.nameError = '';
     this.fields = [];
     this.updateVisibleFields();
@@ -199,6 +199,12 @@ export class AddDataObjectComponent implements OnChanges {
     if (this.nameError) {
       this.nameError = '';
     }
+  }
+
+  onDtoTypeChange(): void {
+    this.responseWrapper = 'STANDARD_ENVELOPE';
+    this.enableFieldProjection = true;
+    this.includeHateoasLinks = true;
   }
 
   removeField(index: number): void {
@@ -247,8 +253,9 @@ export class AddDataObjectComponent implements OnChanges {
     this.save.emit({
       name: this.dataObjectName,
       dtoType: this.dtoType,
-      mapperEnabled: this.mapperEnabled,
-      mapperModels: this.mapperEnabled ? [...this.mapperModels] : [],
+      responseWrapper: this.dtoType === 'response' ? this.responseWrapper : undefined,
+      enableFieldProjection: this.dtoType === 'response' ? this.enableFieldProjection : undefined,
+      includeHateoasLinks: this.dtoType === 'response' ? this.includeHateoasLinks : undefined,
       fields: this.sanitizeProperties(JSON.parse(JSON.stringify(this.fields)))
     });
 
@@ -333,26 +340,6 @@ export class AddDataObjectComponent implements OnChanges {
   getConstraintLabel(field: Field): string {
     const count = this.getConstraintCount(field);
     return `${count} constraint${count === 1 ? '' : 's'}`;
-  }
-
-  onMapperEnabledChange(): void {
-    if (!this.mapperEnabled) {
-      this.mapperModels = [];
-    }
-  }
-
-  get mapperModelOptions(): string[] {
-    return this.availableModels
-      .map(model => model?.name?.trim() ?? '')
-      .filter(Boolean)
-      .sort((a, b) => a.localeCompare(b));
-  }
-
-  get hasAvailableModels(): boolean {
-    return this.availableModels
-      .map(model => model?.name?.trim() ?? '')
-      .filter(Boolean)
-      .length > 0;
   }
 
   private updateVisibleFields(): void {

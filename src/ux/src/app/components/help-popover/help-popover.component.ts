@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, Input } from '@angular/core';
+import { Component, ElementRef, HostListener, Input } from '@angular/core';
 
 @Component({
   selector: 'app-help-popover',
@@ -16,8 +16,15 @@ export class HelpPopoverComponent {
   overlayLeft = 0;
   overlayTop = 0;
 
+  constructor(private readonly hostRef: ElementRef<HTMLElement>) {}
+
   onPointerEnter(event: MouseEvent): void {
     this.isOpen = true;
+    const target = event.currentTarget as HTMLElement | null;
+    if (target) {
+      this.updateOverlayPositionFromElement(target);
+      return;
+    }
     this.updateOverlayPosition(event.clientX, event.clientY);
   }
 
@@ -42,6 +49,17 @@ export class HelpPopoverComponent {
     this.updateOverlayPosition(rect.right, rect.top + rect.height / 2);
   }
 
+  @HostListener('document:click', ['$event'])
+  onDocumentClick(event: MouseEvent): void {
+    const target = event.target as Node | null;
+    if (!target) {
+      return;
+    }
+    if (!this.hostRef.nativeElement.contains(target)) {
+      this.isOpen = false;
+    }
+  }
+
   private updateOverlayPosition(clientX: number, clientY: number): void {
     const panelWidth = 320;
     const panelHeight = 180;
@@ -54,5 +72,10 @@ export class HelpPopoverComponent {
 
     this.overlayLeft = Math.min(maxLeft, Math.max(viewportPadding, clientX + offsetX));
     this.overlayTop = Math.min(maxTop, Math.max(viewportPadding, clientY - offsetY));
+  }
+
+  private updateOverlayPositionFromElement(target: HTMLElement): void {
+    const rect = target.getBoundingClientRect();
+    this.updateOverlayPosition(rect.right, rect.top + rect.height / 2);
   }
 }

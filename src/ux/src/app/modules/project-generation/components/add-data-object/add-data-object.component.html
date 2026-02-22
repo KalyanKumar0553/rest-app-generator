@@ -13,27 +13,25 @@
 
     <mat-form-field appearance="fill" class="full-width">
       <mat-label>DTO category</mat-label>
-      <mat-select [(ngModel)]="dtoType">
+      <mat-select [(ngModel)]="dtoType" (ngModelChange)="onDtoTypeChange()">
         <mat-option value="request">Request</mat-option>
         <mat-option value="response">Response</mat-option>
       </mat-select>
     </mat-form-field>
 
-    <div class="dto-mapper-panel" *ngIf="hasAvailableModels">
-      <mat-checkbox
-        [(ngModel)]="mapperEnabled"
-        (change)="onMapperEnabledChange()">
-        Configure mapper
-      </mat-checkbox>
-
-      <div class="mapper-config" *ngIf="mapperEnabled">
-        <app-searchable-multi-select
-          [label]="'Select models'"
-          [searchPlaceholder]="'Please Enter Text to Search'"
-          [options]="mapperModelOptions"
-          [(selectedValues)]="mapperModels"
-          [emptyMessage]="'No models found'">
-        </app-searchable-multi-select>
+    <div class="response-wrapper-panel" *ngIf="dtoType === 'response'">
+      <div class="response-wrapper-title-row">
+        <h4>Response Wrapper</h4>
+        <div class="response-wrapper-line"></div>
+      </div>
+      <mat-radio-group class="response-wrapper-options" [(ngModel)]="responseWrapper">
+        <mat-radio-button value="STANDARD_ENVELOPE">Standard Envelope</mat-radio-button>
+        <mat-radio-button value="NONE">None</mat-radio-button>
+        <mat-radio-button value="UPSERT">Upsert</mat-radio-button>
+      </mat-radio-group>
+      <div class="response-flags">
+        <mat-checkbox [(ngModel)]="enableFieldProjection" color="primary">Enable Field Projection</mat-checkbox>
+        <mat-checkbox [(ngModel)]="includeHateoasLinks" color="primary">Include HATEOAS Links</mat-checkbox>
       </div>
     </div>
 

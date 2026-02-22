@@ -1,28 +1,26 @@
 <div class="rest-config-shell">
-  <div class="tab-row" role="tablist" aria-label="REST configuration tabs">
-    <button type="button" role="tab" class="tab-btn" [class.active]="activeTab === 'basic'" [attr.aria-selected]="activeTab === 'basic'" (click)="setActiveTab('basic')">
-      <mat-icon>settings</mat-icon>
-      <span>Basic Settings</span>
-    </button>
-    <button type="button" role="tab" class="tab-btn" [class.active]="activeTab === 'endpoints'" [attr.aria-selected]="activeTab === 'endpoints'" (click)="setActiveTab('endpoints')">
-      <mat-icon>list_alt</mat-icon>
-      <span>Endpoints</span>
-    </button>
-    <button type="button" role="tab" class="tab-btn" [class.active]="activeTab === 'request'" [attr.aria-selected]="activeTab === 'request'" (click)="setActiveTab('request')">
-      <mat-icon>description</mat-icon>
-      <span>Request &amp; Response</span>
-    </button>
-    <button type="button" role="tab" class="tab-btn" [class.active]="activeTab === 'pagination'" [attr.aria-selected]="activeTab === 'pagination'" (click)="setActiveTab('pagination')">
-      <mat-icon>filter_alt</mat-icon>
-      <span>Pagination &amp; Filtering</span>
-    </button>
-    <button type="button" role="tab" class="tab-btn" [class.active]="activeTab === 'error'" [attr.aria-selected]="activeTab === 'error'" (click)="setActiveTab('error')">
-      <mat-icon>sms_failed</mat-icon>
-      <span>Error Handling</span>
-    </button>
-    <button type="button" role="tab" class="tab-btn" [class.active]="activeTab === 'docs'" [attr.aria-selected]="activeTab === 'docs'" (click)="setActiveTab('docs')">
-      <mat-icon>menu_book</mat-icon>
-      <span>Documentation</span>
+  <div class="tab-nav-wrap">
+    <div class="tab-row" role="tablist" aria-label="REST configuration tabs" #tabRow>
+      <button
+        *ngFor="let tab of tabs"
+        #tabBtn
+        type="button"
+        role="tab"
+        class="tab-btn"
+        [class.active]="activeTab === tab.id"
+        [attr.aria-selected]="activeTab === tab.id"
+        (click)="setActiveTab(tab.id)">
+        <mat-icon>{{ tab.icon }}</mat-icon>
+        <span>{{ tab.label }}</span>
+      </button>
+    </div>
+    <button
+      *ngIf="overflowTabs.length > 0"
+      type="button"
+      class="tab-overflow-btn"
+      aria-label="Show more tabs"
+      (click)="openOverflowTabs()">
+      <mat-icon>more_horiz</mat-icon>
     </button>
   </div>
 
@@ -54,7 +52,11 @@
       </app-rest-config-request-response-config>
     </ng-container>
 
-    <ng-container *ngIf="activeTab !== 'basic' && activeTab !== 'pagination' && activeTab !== 'endpoints' && activeTab !== 'request'">
+    <ng-container *ngIf="activeTab === 'docs'">
+      <app-rest-config-documentation-config [draft]="draft"></app-rest-config-documentation-config>
+    </ng-container>
+
+    <ng-container *ngIf="activeTab !== 'basic' && activeTab !== 'pagination' && activeTab !== 'endpoints' && activeTab !== 'request' && activeTab !== 'docs'">
       <section class="placeholder-block">
         <mat-icon>construction</mat-icon>
         <p>{{ activeTab | titlecase }} configuration is coming soon.</p>

@@ -1,11 +1,15 @@
 import { CommonModule } from '@angular/common';
-import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges } from '@angular/core';
+import { AfterViewInit, Component, ElementRef, EventEmitter, HostListener, Input, OnChanges, OnDestroy, Output, QueryList, SimpleChanges, ViewChild, ViewChildren } from '@angular/core';
 import { MatIconModule } from '@angular/material/icon';
 import { animate, style, transition, trigger } from '@angular/animations';
+import { MatBottomSheet, MatBottomSheetModule } from '@angular/material/bottom-sheet';
+import { Subscription } from 'rxjs';
 import { BasicSettingsComponent } from './basic-settings/basic-settings.component';
 import { PaginationFilteringComponent } from './pagination-filtering/pagination-filtering.component';
 import { EndpointConfigComponent } from './endpoint-config/endpoint-config.component';
 import { RequestResponseConfigComponent } from './request-response-config/request-response-config.component';
+import { DocumentationConfigComponent } from './documentation-config/documentation-config.component';
+import { RestConfigOverflowSheetComponent } from './rest-config-overflow-sheet/rest-config-overflow-sheet.component';
 
 export type ApiVersioningStrategy = 'header' | 'path';
 export type PathVariableType = 'UUID' | 'LONG' | 'STRING';
@@ -96,9 +100,23 @@ export interface RestEndpointConfig {
     };
     response: {
       responseType: ResponseType;
+      dtoName: string;
       responseWrapper: ResponseWrapper;
       enableFieldProjection: boolean;
       includeHateoasLinks: boolean;
+    };
+  };
+  documentation: {
+    endpoints: {
+      list: { description: string; descriptionTags: string[]; deprecated: boolean; };
+      get: { description: string; descriptionTags: string[]; deprecated: boolean; };
+      create: { description: string; descriptionTags: string[]; deprecated: boolean; };
+      update: { description: string; descriptionTags: string[]; deprecated: boolean; };
+      patch: { description: string; descriptionTags: string[]; deprecated: boolean; };
+      delete: { description: string; descriptionTags: string[]; deprecated: boolean; };
+      bulkInsert: { description: string; descriptionTags: string[]; deprecated: boolean; };
+      bulkUpdate: { description: string; descriptionTags: string[]; deprecated: boolean; };
+      bulkDelete: { description: string; descriptionTags: string[]; deprecated: boolean; };
     };
   };
 }
@@ -186,9 +204,23 @@ const DEFAULT_REST_ENDPOINT_CONFIG: RestEndpointConfig = {
     },
     response: {
       responseType: 'RESPONSE_ENTITY',
+      dtoName: '',
       responseWrapper: 'STANDARD_ENVELOPE',
       enableFieldProjection: true,
       includeHateoasLinks: true
+    }
+  },
+  documentation: {
+    endpoints: {
+      list: { description: '', descriptionTags: [], deprecated: false },
+      get: { description: '', descriptionTags: [], deprecated: false },
+      create: { description: '', descriptionTags: [], deprecated: false },
+      update: { description: '', descriptionTags: [], deprecated: false },
+      patch: { description: '', descriptionTags: [], deprecated: false },
+      delete: { description: '', descriptionTags: [], deprecated: false },
+      bulkInsert: { description: '', descriptionTags: [], deprecated: false },
+      bulkUpdate: { description: '', descriptionTags: [], deprecated: false },
+      bulkDelete: { description: '', descriptionTags: [], deprecated: false }
     }
   }
 };
@@ -199,10 +231,12 @@ const DEFAULT_REST_ENDPOINT_CONFIG: RestEndpointConfig = {
   imports: [
     CommonModule,
     MatIconModule,
+    MatBottomSheetModule,
     BasicSettingsComponent,
     PaginationFilteringComponent,
     EndpointConfigComponent,
-    RequestResponseConfigComponent
+    RequestResponseConfigComponent,
+    DocumentationConfigComponent
   ],
   templateUrl: './rest-config.component.html',
   styleUrls: ['./rest-config.component.css'],
@@ -215,7 +249,7 @@ const DEFAULT_REST_ENDPOINT_CONFIG: RestEndpointConfig = {
     ])
   ]
 })
-export class RestConfigComponent implements OnChanges {
+export class RestConfigComponent implements OnChanges, AfterViewInit, OnDestroy {
   @Input() config: RestEndpointConfig | null = null;
   @Input() entityFields: Array<{ name?: string } | string> = [];
   @Input() availableModels: Array<{ name?: string }> = [];
@@ -227,6 +261,21 @@ export class RestConfigComponent implements OnChanges {
 
   draft: RestEndpointConfig = this.cloneConfig(DEFAULT_REST_ENDPOINT_CONFIG);
   activeTab: 'basic' | 'endpoints' | 'request' | 'pagination' | 'error' | 'docs' = 'basic';
+  overflowTabs: Array<{ id: 'basic' | 'endpoints' | 'request' | 'pagination' | 'error' | 'docs'; label: string; icon: string }> = [];
+  readonly tabs: Array<{ id: 'basic' | 'endpoints' | 'request' | 'pagination' | 'error' | 'docs'; label: string; icon: string }> = [
+    { id: 'basic', label: 'Basic Settings', icon: 'settings' },
+    { id: 'endpoints', label: 'Endpoints', icon: 'list_alt' },
+    { id: 'request', label: 'Request & Response', icon: 'description' },
+    { id: 'pagination', label: 'Pagination & Filtering', icon: 'filter_alt' },
+    // { id: 'error', label: 'Error Handling', icon: 'sms_failed' }, // Temporarily disabled; keep for future enablement.
+    { id: 'docs', label: 'Documentation', icon: 'menu_book' }
+  ];
+
+  @ViewChild('tabRow', { static: false }) tabRow?: ElementRef<HTMLElement>;
+  @ViewChildren('tabBtn') tabButtons!: QueryList<ElementRef<HTMLElement>>;
+  private tabButtonChangesSub?: Subscription;
+
+  constructor(private readonly bottomSheet: MatBottomSheet) {}
 
   get searchableFieldOptions(): string[] {
     const mapped = (Array.isArray(this.entityFields) ? this.entityFields : [])
@@ -240,10 +289,41 @@ export class RestConfigComponent implements OnChanges {
     if (changes['config']) {
       this.draft = this.sanitizeConfig(this.config ?? DEFAULT_REST_ENDPOINT_CONFIG);
     }
+    this.scheduleOverflowCheck();
+  }
+
+  ngAfterViewInit(): void {
+    this.tabButtonChangesSub = this.tabButtons.changes.subscribe(() => this.scheduleOverflowCheck());
+    this.scheduleOverflowCheck();
+  }
+
+  ngOnDestroy(): void {
+    this.tabButtonChangesSub?.unsubscribe();
   }
 
   setActiveTab(tab: 'basic' | 'endpoints' | 'request' | 'pagination' | 'error' | 'docs'): void {
     this.activeTab = tab;
+    this.scrollToActiveTab();
+    this.scheduleOverflowCheck();
+  }
+
+  openOverflowTabs(): void {
+    if (!this.overflowTabs.length) {
+      return;
+    }
+    const ref = this.bottomSheet.open(RestConfigOverflowSheetComponent, {
+      data: { tabs: this.overflowTabs, activeTab: this.activeTab }
+    });
+    ref.afterDismissed().subscribe((selectedTab: 'basic' | 'endpoints' | 'request' | 'pagination' | 'error' | 'docs' | undefined) => {
+      if (selectedTab) {
+        this.setActiveTab(selectedTab);
+      }
+    });
+  }
+
+  @HostListener('window:resize')
+  onWindowResize(): void {
+    this.scheduleOverflowCheck();
   }
 
   saveConfig(): void {
@@ -252,6 +332,44 @@ export class RestConfigComponent implements OnChanges {
 
   cancelConfig(): void {
     this.cancel.emit();
+  }
+
+  private scheduleOverflowCheck(): void {
+    setTimeout(() => this.updateOverflowTabs());
+  }
+
+  private scrollToActiveTab(): void {
+    setTimeout(() => {
+      const tabIndex = this.tabs.findIndex((tab) => tab.id === this.activeTab);
+      const tabEl = this.tabButtons?.toArray()?.[tabIndex]?.nativeElement;
+      if (!tabEl) {
+        return;
+      }
+      tabEl.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+    });
+  }
+
+  private updateOverflowTabs(): void {
+    const rowEl = this.tabRow?.nativeElement;
+    const buttonEls = this.tabButtons?.toArray() ?? [];
+    if (!rowEl || !buttonEls.length) {
+      this.overflowTabs = [];
+      return;
+    }
+
+    const rowRect = rowEl.getBoundingClientRect();
+    const overflowBoundary = rowRect.right - 46;
+    const hiddenTabIds = new Set<string>();
+
+    buttonEls.forEach((btn, index) => {
+      const rect = btn.nativeElement.getBoundingClientRect();
+      const isHidden = rect.right > overflowBoundary || rect.left < rowRect.left;
+      if (isHidden) {
+        hiddenTabIds.add(this.tabs[index].id);
+      }
+    });
+
+    this.overflowTabs = this.tabs.filter((tab) => hiddenTabIds.has(tab.id));
   }
 
   private sanitizeConfig(config: RestEndpointConfig): RestEndpointConfig {
@@ -346,6 +464,7 @@ export class RestConfigComponent implements OnChanges {
             : config?.requestResponse?.response?.responseType === 'CUSTOM_WRAPPER'
               ? 'CUSTOM_WRAPPER'
               : 'RESPONSE_ENTITY',
+          dtoName: String(config?.requestResponse?.response?.dtoName ?? '').trim(),
           responseWrapper: config?.requestResponse?.response?.responseWrapper === 'NONE'
             ? 'NONE'
             : config?.requestResponse?.response?.responseWrapper === 'UPSERT'
@@ -353,6 +472,73 @@ export class RestConfigComponent implements OnChanges {
               : 'STANDARD_ENVELOPE',
           enableFieldProjection: Boolean(config?.requestResponse?.response?.enableFieldProjection),
           includeHateoasLinks: Boolean(config?.requestResponse?.response?.includeHateoasLinks)
+        }
+      },
+      documentation: {
+        endpoints: {
+          list: {
+            description: String(config?.documentation?.endpoints?.list?.description ?? '').trim(),
+            descriptionTags: Array.isArray(config?.documentation?.endpoints?.list?.descriptionTags)
+              ? config.documentation.endpoints.list.descriptionTags.map(item => String(item ?? '').trim()).filter(Boolean)
+              : [],
+            deprecated: Boolean(config?.documentation?.endpoints?.list?.deprecated)
+          },
+          get: {
+            description: String(config?.documentation?.endpoints?.get?.description ?? '').trim(),
+            descriptionTags: Array.isArray(config?.documentation?.endpoints?.get?.descriptionTags)
+              ? config.documentation.endpoints.get.descriptionTags.map(item => String(item ?? '').trim()).filter(Boolean)
+              : [],
+            deprecated: Boolean(config?.documentation?.endpoints?.get?.deprecated)
+          },
+          create: {
+            description: String(config?.documentation?.endpoints?.create?.description ?? '').trim(),
+            descriptionTags: Array.isArray(config?.documentation?.endpoints?.create?.descriptionTags)
+              ? config.documentation.endpoints.create.descriptionTags.map(item => String(item ?? '').trim()).filter(Boolean)
+              : [],
+            deprecated: Boolean(config?.documentation?.endpoints?.create?.deprecated)
+          },
+          update: {
+            description: String(config?.documentation?.endpoints?.update?.description ?? '').trim(),
+            descriptionTags: Array.isArray(config?.documentation?.endpoints?.update?.descriptionTags)
+              ? config.documentation.endpoints.update.descriptionTags.map(item => String(item ?? '').trim()).filter(Boolean)
+              : [],
+            deprecated: Boolean(config?.documentation?.endpoints?.update?.deprecated)
+          },
+          patch: {
+            description: String(config?.documentation?.endpoints?.patch?.description ?? '').trim(),
+            descriptionTags: Array.isArray(config?.documentation?.endpoints?.patch?.descriptionTags)
+              ? config.documentation.endpoints.patch.descriptionTags.map(item => String(item ?? '').trim()).filter(Boolean)
+              : [],
+            deprecated: Boolean(config?.documentation?.endpoints?.patch?.deprecated)
+          },
+          delete: {
+            description: String(config?.documentation?.endpoints?.delete?.description ?? '').trim(),
+            descriptionTags: Array.isArray(config?.documentation?.endpoints?.delete?.descriptionTags)
+              ? config.documentation.endpoints.delete.descriptionTags.map(item => String(item ?? '').trim()).filter(Boolean)
+              : [],
+            deprecated: Boolean(config?.documentation?.endpoints?.delete?.deprecated)
+          },
+          bulkInsert: {
+            description: String(config?.documentation?.endpoints?.bulkInsert?.description ?? '').trim(),
+            descriptionTags: Array.isArray(config?.documentation?.endpoints?.bulkInsert?.descriptionTags)
+              ? config.documentation.endpoints.bulkInsert.descriptionTags.map(item => String(item ?? '').trim()).filter(Boolean)
+              : [],
+            deprecated: Boolean(config?.documentation?.endpoints?.bulkInsert?.deprecated)
+          },
+          bulkUpdate: {
+            description: String(config?.documentation?.endpoints?.bulkUpdate?.description ?? '').trim(),
+            descriptionTags: Array.isArray(config?.documentation?.endpoints?.bulkUpdate?.descriptionTags)
+              ? config.documentation.endpoints.bulkUpdate.descriptionTags.map(item => String(item ?? '').trim()).filter(Boolean)
+              : [],
+            deprecated: Boolean(config?.documentation?.endpoints?.bulkUpdate?.deprecated)
+          },
+          bulkDelete: {
+            description: String(config?.documentation?.endpoints?.bulkDelete?.description ?? '').trim(),
+            descriptionTags: Array.isArray(config?.documentation?.endpoints?.bulkDelete?.descriptionTags)
+              ? config.documentation.endpoints.bulkDelete.descriptionTags.map(item => String(item ?? '').trim()).filter(Boolean)
+              : [],
+            deprecated: Boolean(config?.documentation?.endpoints?.bulkDelete?.deprecated)
+          }
         }
       }
     };

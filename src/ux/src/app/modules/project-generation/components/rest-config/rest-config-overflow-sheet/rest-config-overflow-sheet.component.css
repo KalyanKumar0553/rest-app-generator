@@ -1,0 +1,39 @@
+.sheet-wrap {
+  padding: 10px 12px 16px;
+  background-color: var(--theme-modal-container-bg);
+  color: var(--theme-modal-body-text);
+}
+
+.sheet-title {
+  margin: 0 0 10px;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--theme-neutral-text);
+}
+
+.sheet-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.sheet-tab-btn {
+  border: 1px solid var(--theme-neutral-border);
+  border-radius: 8px;
+  background-color: var(--theme-modal-container-bg);
+  color: var(--theme-modal-body-text);
+  padding: 10px 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.sheet-tab-btn.active {
+  border-color: var(--theme-primary-color, var(--color-primary));
+  color: var(--theme-primary-color, var(--color-primary));
+  background-color: var(--theme-input-bg);
+}
+

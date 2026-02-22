@@ -1,0 +1,40 @@
+<div class="endpoint-edit-form">
+  <div class="operation-row">
+    <mat-form-field appearance="fill" class="operation-readonly-field">
+      <mat-label>Operation</mat-label>
+      <input matInput [value]="endpointLabel" readonly>
+    </mat-form-field>
+
+    <mat-checkbox color="primary" class="deprecated-inline" [(ngModel)]="formData.deprecated">
+      Deprecated
+    </mat-checkbox>
+  </div>
+
+  <mat-form-field appearance="fill" class="full-width-field">
+    <mat-label>Description</mat-label>
+    <input matInput [(ngModel)]="formData.description" placeholder="Enter description">
+  </mat-form-field>
+
+  <mat-form-field appearance="fill" class="full-width-field">
+    <mat-label>Add Tag</mat-label>
+    <input
+      matInput
+      [matChipInputFor]="tagGrid"
+      [matChipInputSeparatorKeyCodes]="separatorKeysCodes"
+      [matChipInputAddOnBlur]="true"
+      (matChipInputTokenEnd)="addTag($event)"
+      placeholder="Type and press Enter">
+  </mat-form-field>
+
+  <mat-chip-grid #tagGrid aria-label="Description tags" class="tags-below-grid">
+    <mat-chip-row
+      *ngFor="let tag of formData.descriptionTags"
+      [removable]="true"
+      (removed)="removeTag(tag)">
+      {{ tag }}
+      <button matChipRemove [attr.aria-label]="'Remove ' + tag">
+        <mat-icon>cancel</mat-icon>
+      </button>
+    </mat-chip-row>
+  </mat-chip-grid>
+</div>

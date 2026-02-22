@@ -86,20 +86,22 @@
         <mat-radio-button value="CUSTOM_WRAPPER">Custom Wrapper Class</mat-radio-button>
       </mat-radio-group>
 
-      <div class="section-title-row inner-title">
-        <h5>Response Wrapper</h5>
-        <div class="section-line"></div>
-      </div>
-
-      <mat-radio-group class="wrapper-grid" [(ngModel)]="draft.requestResponse.response.responseWrapper">
-        <mat-radio-button value="STANDARD_ENVELOPE">Standard Envelope</mat-radio-button>
-        <mat-radio-button value="NONE">None</mat-radio-button>
-        <mat-radio-button value="UPSERT">Upsert</mat-radio-button>
-      </mat-radio-group>
-
-      <div class="flag-stack">
-        <mat-checkbox [(ngModel)]="draft.requestResponse.response.enableFieldProjection" color="primary">Enable Field Projection</mat-checkbox>
-        <mat-checkbox [(ngModel)]="draft.requestResponse.response.includeHateoasLinks" color="primary">Include HATEOAS Links</mat-checkbox>
+      <div class="request-list response-list" *ngIf="draft.requestResponse.response.responseType === 'CUSTOM_WRAPPER'">
+        <div class="request-item">
+          <div class="request-op-label">Response DTO</div>
+          <div class="request-item-body dto-inline">
+            <button type="button" class="dto-add-btn" aria-label="Configure response DTO" (click)="openDtoConfig('response')">
+              <mat-icon>add</mat-icon>
+            </button>
+            <mat-form-field appearance="outline" class="dto-input">
+              <mat-select
+                [(ngModel)]="draft.requestResponse.response.dtoName"
+                (ngModelChange)="onResponseDtoSelectionChange($event)">
+                <mat-option *ngFor="let option of dtoOptions" [value]="option">{{ option }}</mat-option>
+              </mat-select>
+            </mat-form-field>
+          </div>
+        </div>
       </div>
     </mat-expansion-panel>
   </mat-accordion>

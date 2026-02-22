@@ -1,0 +1,15 @@
+<div class="sheet-wrap">
+  <h4 class="sheet-title">More Tabs</h4>
+  <div class="sheet-list">
+    <button
+      *ngFor="let tab of data.tabs"
+      type="button"
+      class="sheet-tab-btn"
+      [class.active]="tab.id === data.activeTab"
+      (click)="selectTab(tab.id)">
+      <mat-icon>{{ tab.icon }}</mat-icon>
+      <span>{{ tab.label }}</span>
+    </button>
+  </div>
+</div>
+

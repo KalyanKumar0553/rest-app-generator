@@ -29,6 +29,9 @@ import {
 interface DataObject {
   name: string;
   dtoType?: 'request' | 'response';
+  responseWrapper?: 'STANDARD_ENVELOPE' | 'NONE' | 'UPSERT';
+  enableFieldProjection?: boolean;
+  includeHateoasLinks?: boolean;
   fields: Field[];
 }
 

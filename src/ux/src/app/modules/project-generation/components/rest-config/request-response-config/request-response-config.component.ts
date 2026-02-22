@@ -1,7 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { Component, Input, ViewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatExpansionModule } from '@angular/material/expansion';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
@@ -22,7 +21,6 @@ import { AddDataObjectComponent } from '../../add-data-object/add-data-object.co
     MatIconModule,
     MatSelectModule,
     MatRadioModule,
-    MatCheckboxModule,
     MatButtonModule,
     ModalComponent,
     AddDataObjectComponent
@@ -33,14 +31,28 @@ import { AddDataObjectComponent } from '../../add-data-object/add-data-object.co
 export class RequestResponseConfigComponent {
   @Input({ required: true }) draft: any;
   @Input() availableModels: Array<{ name?: string }> = [];
-  @Input() dtoObjects: Array<{ name?: string; dtoType?: 'request' | 'response'; fields?: any[] }> = [];
+  @Input() dtoObjects: Array<{
+    name?: string;
+    dtoType?: 'request' | 'response';
+    responseWrapper?: 'STANDARD_ENVELOPE' | 'NONE' | 'UPSERT';
+    enableFieldProjection?: boolean;
+    includeHateoasLinks?: boolean;
+    fields?: any[];
+  }> = [];
   @Input() enumTypes: string[] = [];
 
   @ViewChild('dtoConfigComponent') dtoConfigComponent?: AddDataObjectComponent;
 
   showDtoConfigModal = false;
-  dtoConfigTarget: 'create' | 'update' = 'create';
-  dtoEditDataObject: { name: string; dtoType?: 'request' | 'response'; fields: any[] } | null = null;
+  dtoConfigTarget: 'create' | 'update' | 'response' = 'create';
+  dtoEditDataObject: {
+    name: string;
+    dtoType?: 'request' | 'response';
+    responseWrapper?: 'STANDARD_ENVELOPE' | 'NONE' | 'UPSERT';
+    enableFieldProjection?: boolean;
+    includeHateoasLinks?: boolean;
+    fields: any[];
+  } | null = null;
   private previousDtoName = '';
 
   get dtoOptions(): string[] {
@@ -58,21 +70,29 @@ export class RequestResponseConfigComponent {
     return ['List<UUID>', 'List<Long>'];
   }
 
-  openDtoConfig(target: 'create' | 'update'): void {
+  openDtoConfig(target: 'create' | 'update' | 'response'): void {
     this.dtoConfigTarget = target;
-    const selectedName = String(this.draft?.requestResponse?.request?.[target]?.dtoName ?? '').trim();
+    const selectedName = target === 'response'
+      ? String(this.draft?.requestResponse?.response?.dtoName ?? '').trim()
+      : String(this.draft?.requestResponse?.request?.[target]?.dtoName ?? '').trim();
     this.previousDtoName = selectedName;
     const found = (this.dtoObjects ?? []).find((item) => String(item?.name ?? '').trim() === selectedName);
     if (found) {
       this.dtoEditDataObject = JSON.parse(JSON.stringify({
         name: String(found.name ?? '').trim(),
-        dtoType: found.dtoType ?? (target === 'create' ? 'request' : 'request'),
+        dtoType: found.dtoType ?? (target === 'response' ? 'response' : 'request'),
+        responseWrapper: found.responseWrapper ?? 'STANDARD_ENVELOPE',
+        enableFieldProjection: Boolean(found.enableFieldProjection ?? true),
+        includeHateoasLinks: Boolean(found.includeHateoasLinks ?? true),
         fields: Array.isArray(found.fields) ? found.fields : []
       }));
     } else {
       this.dtoEditDataObject = {
         name: '',
-        dtoType: 'request',
+        dtoType: target === 'response' ? 'response' : 'request',
+        responseWrapper: 'STANDARD_ENVELOPE',
+        enableFieldProjection: true,
+        includeHateoasLinks: true,
         fields: []
       };
     }
@@ -88,7 +108,14 @@ export class RequestResponseConfigComponent {
     this.dtoConfigComponent?.onSave();
   }
 
-  onDtoConfigSave(dto: { name: string; dtoType?: 'request' | 'response'; fields: any[] }): void {
+  onDtoConfigSave(dto: {
+    name: string;
+    dtoType?: 'request' | 'response';
+    responseWrapper?: 'STANDARD_ENVELOPE' | 'NONE' | 'UPSERT';
+    enableFieldProjection?: boolean;
+    includeHateoasLinks?: boolean;
+    fields: any[];
+  }): void {
     const name = String(dto?.name ?? '').trim();
     if (!name) {
       return;
@@ -100,13 +127,37 @@ export class RequestResponseConfigComponent {
     } else {
       list.push({ ...dto, name });
     }
-    this.draft.requestResponse.request[this.dtoConfigTarget].dtoName = name;
-    if (!this.draft.requestResponse.request.bulkInsertType) {
-      this.draft.requestResponse.request.bulkInsertType = `List<${name}>`;
-    }
-    if (!this.draft.requestResponse.request.bulkUpdateType) {
-      this.draft.requestResponse.request.bulkUpdateType = `List<${name}>`;
+    if (this.dtoConfigTarget === 'response') {
+      this.draft.requestResponse.response.dtoName = name;
+      this.applyResponseSettingsFromDto(dto);
+    } else {
+      this.draft.requestResponse.request[this.dtoConfigTarget].dtoName = name;
+      if (!this.draft.requestResponse.request.bulkInsertType) {
+        this.draft.requestResponse.request.bulkInsertType = `List<${name}>`;
+      }
+      if (!this.draft.requestResponse.request.bulkUpdateType) {
+        this.draft.requestResponse.request.bulkUpdateType = `List<${name}>`;
+      }
     }
     this.closeDtoConfig();
+  }
+
+  onResponseDtoSelectionChange(selectedName: string): void {
+    const name = String(selectedName ?? '').trim();
+    this.draft.requestResponse.response.dtoName = name;
+    const selected = (this.dtoObjects ?? []).find((item) => String(item?.name ?? '').trim() === name);
+    if (selected) {
+      this.applyResponseSettingsFromDto(selected);
+    }
+  }
+
+  private applyResponseSettingsFromDto(dto: {
+    responseWrapper?: 'STANDARD_ENVELOPE' | 'NONE' | 'UPSERT';
+    enableFieldProjection?: boolean;
+    includeHateoasLinks?: boolean;
+  }): void {
+    this.draft.requestResponse.response.responseWrapper = dto.responseWrapper ?? 'STANDARD_ENVELOPE';
+    this.draft.requestResponse.response.enableFieldProjection = Boolean(dto.enableFieldProjection ?? true);
+    this.draft.requestResponse.response.includeHateoasLinks = Boolean(dto.includeHateoasLinks ?? true);
   }
 }

@@ -28,7 +28,7 @@
   font-size: 14px;
   font-weight: 600;
   white-space: nowrap;
-  overflow: hidden;
+  overflow: visible;
   text-overflow: ellipsis;
 }
 
@@ -219,6 +219,10 @@
   display: flex;
   flex-direction: column;
   gap: 10px;
+}
+
+.response-list {
+  margin-bottom: 10px;
 }
 
 ::ng-deep .section-accordion .mat-mdc-checkbox .mdc-form-field,
