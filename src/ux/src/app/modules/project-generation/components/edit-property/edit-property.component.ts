@@ -7,6 +7,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { MatIconModule } from '@angular/material/icon';
 import { Field } from '../field-item/field-item.component';
+import { FieldTypeSelectComponent } from '../field-type-select/field-type-select.component';
 import {
   getConstraintValidationError,
   getConstraintDefinition,
@@ -27,7 +28,8 @@ import { ToastService } from '../../../../services/toast.service';
     MatFormFieldModule,
     MatInputModule,
     MatSelectModule,
-    MatIconModule
+    MatIconModule,
+    FieldTypeSelectComponent
   ],
   templateUrl: './edit-property.component.html',
   styleUrls: ['./edit-property.component.css']

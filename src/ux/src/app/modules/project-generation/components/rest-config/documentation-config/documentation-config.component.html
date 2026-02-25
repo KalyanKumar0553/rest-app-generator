@@ -63,7 +63,7 @@
               <app-help-popover [ariaLabel]="'Request/Response details'" placement="top">
                 <div class="help-content-stack">
                   <div><strong>Request:</strong> {{ getRequestObjectLabel(endpoint.key) }}</div>
-                  <div><strong>Response:</strong> {{ getResponseObjectLabel() }}</div>
+                  <div><strong>Response:</strong> {{ getResponseObjectLabel(endpoint.key) }}</div>
                 </div>
               </app-help-popover>
 

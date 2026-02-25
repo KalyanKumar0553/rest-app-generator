@@ -18,6 +18,7 @@ import { buildEntityNameRules, buildFieldListRules, buildFieldRules } from '../.
 import { FieldFilterService } from '../../../../services/field-filter.service';
 import { ToastService } from '../../../../services/toast.service';
 import { HelpPopoverComponent } from '../../../../components/help-popover/help-popover.component';
+import { DTO_FIELD_TYPE_OPTIONS } from '../../constants/backend-field-types';
 
 interface DataObject {
   name: string;
@@ -105,30 +106,17 @@ export class AddDataObjectComponent implements OnChanges {
     { label: 'Max Length (Low)', property: 'maxLength', direction: 'asc' }
   ];
 
-  private readonly baseFieldTypes = [
-    'String',
-    'Int',
-    'Long',
-    'Double',
-    'Decimal',
-    'Boolean',
-    'Date',
-    'Time',
-    'DateTime',
-    'Instant',
-    'UUID',
-    'Json',
-    'Binary',
-    'List<String>',
-    'List<Long>',
-    'List<Integer>'
-  ];
+  private readonly baseFieldTypes = DTO_FIELD_TYPE_OPTIONS;
 
   get fieldTypes(): string[] {
     const enums = Array.isArray(this.enumTypes)
       ? this.enumTypes.map(item => String(item ?? '').trim()).filter(Boolean)
       : [];
-    return Array.from(new Set([...this.baseFieldTypes, ...enums]));
+    const dtoNames = (Array.isArray(this.existingDataObjects) ? this.existingDataObjects : [])
+      .map(item => String(item?.name ?? '').trim())
+      .filter(Boolean);
+    const listDtoNames = dtoNames.map((name) => `List<${name}>`);
+    return Array.from(new Set([...this.baseFieldTypes, ...enums, ...dtoNames, ...listDtoNames]));
   }
 
   constructor(

@@ -476,6 +476,7 @@
             #controllersRestConfigComponent
             [config]="isControllersSpecEditMode ? controllersEditingSpecConfig : (isControllersSpecCreateMode ? null : controllersConfig)"
             [entityFields]="controllersEntityFields"
+            [fieldTypeOptions]="controllersFieldTypeOptions"
             [availableModels]="entities"
             [existingRestConfigNames]="isControllersSpecEditMode ? controllersEditModeExistingNames : configuredEntityRestSpecNames"
             [dtoObjects]="controllersDtoObjects"

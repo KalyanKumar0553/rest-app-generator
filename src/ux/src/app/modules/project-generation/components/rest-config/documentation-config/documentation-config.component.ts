@@ -42,9 +42,8 @@ export class DocumentationConfigComponent implements OnChanges {
 
   readonly endpointDefinitions: Array<{ key: EndpointKey; label: string; }> = [
     { key: 'create', label: 'Create' },
-    { key: 'get', label: 'Get By Id' },
+    { key: 'get', label: 'Get By ID' },
     { key: 'list', label: 'List' },
-    { key: 'update', label: 'Update (PUT)' },
     { key: 'patch', label: 'Patch' },
     { key: 'delete', label: 'Delete' },
     { key: 'bulkInsert', label: 'Bulk Insert' },
@@ -147,21 +146,38 @@ export class DocumentationConfigComponent implements OnChanges {
       return this.draft?.requestResponse?.request?.patch?.mode === 'JSON_PATCH' ? 'JSON Patch' : 'JSON Merge';
     }
     if (endpoint === 'bulkInsert') {
-      return String(this.draft?.requestResponse?.request?.bulkInsertType ?? '').trim() || 'None';
+      const createDto = String(this.draft?.requestResponse?.request?.create?.dtoName ?? '').trim();
+      return createDto ? `List<${createDto}>` : 'None';
     }
     if (endpoint === 'bulkUpdate') {
-      return String(this.draft?.requestResponse?.request?.bulkUpdateType ?? '').trim() || 'None';
+      const updateDto = String(this.draft?.requestResponse?.request?.update?.dtoName ?? '').trim();
+      const createDto = String(this.draft?.requestResponse?.request?.create?.dtoName ?? '').trim();
+      if (updateDto) {
+        return `List<${updateDto}>`;
+      }
+      return createDto ? `List<${createDto}>` : 'None';
+    }
+    if (endpoint === 'delete') {
+      const deleteDto = String(this.draft?.requestResponse?.request?.delete?.dtoName ?? '').trim();
+      const deleteIdType = String(this.draft?.requestResponse?.request?.deleteByIdType ?? '').trim();
+      return deleteDto || deleteIdType || 'None';
+    }
+    if (endpoint === 'get') {
+      const getIdType = String(this.draft?.requestResponse?.request?.getByIdType ?? '').trim();
+      return getIdType || 'None';
     }
     return 'None';
   }
 
-  getResponseObjectLabel(): string {
+  getResponseObjectLabel(endpoint: EndpointKey): string {
     const responseType = this.draft?.requestResponse?.response?.responseType;
     if (responseType === 'DTO_DIRECT') {
       return 'DTO';
     }
     if (responseType === 'CUSTOM_WRAPPER') {
-      return String(this.draft?.requestResponse?.response?.dtoName ?? '').trim() || 'Custom Wrapper';
+      return String(this.draft?.requestResponse?.response?.endpointDtos?.[endpoint] ?? '').trim()
+        || String(this.draft?.requestResponse?.response?.dtoName ?? '').trim()
+        || 'Custom Wrapper';
     }
     return 'ResponseEntity<T>';
   }

@@ -18,6 +18,7 @@ import { FieldFilterService } from '../../../../services/field-filter.service';
 import { SearchableMultiSelectComponent } from '../../../../components/searchable-multi-select/searchable-multi-select.component';
 import { HelpPopoverComponent } from '../../../../components/help-popover/help-popover.component';
 import { RestConfigComponent, RestEndpointConfig } from '../rest-config/rest-config.component';
+import { ENTITY_FIELD_TYPE_OPTIONS } from '../../constants/backend-field-types';
 
 interface Entity {
   name: string;
@@ -126,19 +127,7 @@ export class AddEntityComponent implements OnChanges {
     { label: 'Max Length (Low)', property: 'maxLength', direction: 'asc' }
   ];
 
-  private readonly baseFieldTypes = [
-    'String',
-    'Long',
-    'Integer',
-    'Double',
-    'Float',
-    'Boolean',
-    'LocalDate',
-    'LocalDateTime',
-    'BigDecimal',
-    'UUID',
-    'byte[]'
-  ];
+  private readonly baseFieldTypes = ENTITY_FIELD_TYPE_OPTIONS;
 
   get fieldTypes(): string[] {
     const enums = Array.isArray(this.enumTypes)
@@ -319,12 +308,20 @@ export class AddEntityComponent implements OnChanges {
       return;
     }
 
+    const normalizedRestConfig = this.addRestEndpoints
+      ? this.parseRestConfig({
+          ...this.restConfig,
+          mapToEntity: true,
+          mappedEntityName: String(this.entityName ?? '').trim()
+        } as RestEndpointConfig)
+      : undefined;
+
     const entity = {
       name: this.entityName,
       mappedSuperclass: this.mappedSuperclass,
       addRestEndpoints: this.addRestEndpoints,
       addCrudOperations: this.addCrudOperations,
-      restConfig: this.addRestEndpoints ? this.parseRestConfig(this.restConfig) : undefined,
+      restConfig: normalizedRestConfig,
       auditable: this.auditable,
       softDelete: this.softDelete,
       immutable: this.immutable,
@@ -400,7 +397,11 @@ export class AddEntityComponent implements OnChanges {
   }
 
   onConfigureRestSave(config: RestEndpointConfig): void {
-    this.restConfig = this.parseRestConfig(config);
+    this.restConfig = this.parseRestConfig({
+      ...config,
+      mapToEntity: true,
+      mappedEntityName: String(this.entityName ?? '').trim()
+    } as RestEndpointConfig);
     this.isConfigureRestOpen = false;
   }
 
@@ -636,11 +637,13 @@ export class AddEntityComponent implements OnChanges {
     return {
       resourceName: '',
       basePath: '',
+      mapToEntity: true,
+      mappedEntityName: String(this.entityName ?? '').trim(),
       methods: {
         list: true,
         get: true,
         create: true,
-        update: true,
+        update: false,
         patch: true,
         delete: true,
         bulkInsert: true,
@@ -699,9 +702,17 @@ export class AddEntityComponent implements OnChanges {
       },
       requestResponse: {
         request: {
+          list: {
+            mode: 'GENERATE_DTO',
+            dtoName: ''
+          },
           create: {
             mode: 'GENERATE_DTO',
             dtoName: 'Request'
+          },
+          delete: {
+            mode: 'GENERATE_DTO',
+            dtoName: ''
           },
           update: {
             mode: 'GENERATE_DTO',
@@ -710,6 +721,8 @@ export class AddEntityComponent implements OnChanges {
           patch: {
             mode: 'JSON_MERGE_PATCH'
           },
+          getByIdType: 'UUID',
+          deleteByIdType: 'UUID',
           bulkInsertType: '',
           bulkUpdateType: '',
           bulkDeleteType: 'List<UUID>'
@@ -717,6 +730,17 @@ export class AddEntityComponent implements OnChanges {
         response: {
           responseType: 'RESPONSE_ENTITY',
           dtoName: '',
+          endpointDtos: {
+            list: '',
+            get: '',
+            create: '',
+            update: '',
+            patch: '',
+            delete: '',
+            bulkInsert: '',
+            bulkUpdate: '',
+            bulkDelete: ''
+          },
           responseWrapper: 'STANDARD_ENVELOPE',
           enableFieldProjection: true,
           includeHateoasLinks: true
@@ -751,11 +775,13 @@ export class AddEntityComponent implements OnChanges {
     return {
       resourceName: String((rawConfig as any).resourceName ?? fallback.resourceName).trim() || fallback.resourceName,
       basePath: String(rawConfig.basePath ?? fallback.basePath).trim() || fallback.basePath,
+      mapToEntity: Boolean((rawConfig as any).mapToEntity ?? fallback.mapToEntity),
+      mappedEntityName: String((rawConfig as any).mappedEntityName ?? fallback.mappedEntityName).trim(),
       methods: {
         list: Boolean((rawConfig as any).methods?.list ?? fallback.methods.list),
         get: Boolean((rawConfig as any).methods?.get ?? fallback.methods.get),
         create: Boolean((rawConfig as any).methods?.create ?? fallback.methods.create),
-        update: Boolean((rawConfig as any).methods?.update ?? fallback.methods.update),
+        update: false,
         patch: Boolean((rawConfig as any).methods?.patch ?? fallback.methods.patch),
         delete: Boolean((rawConfig as any).methods?.delete ?? fallback.methods.delete),
         bulkInsert: Boolean((rawConfig as any).methods?.bulkInsert ?? fallback.methods.bulkInsert),
@@ -824,9 +850,17 @@ export class AddEntityComponent implements OnChanges {
       },
       requestResponse: {
         request: {
+          list: {
+            mode: (rawConfig as any).requestResponse?.request?.list?.mode === 'NONE' ? 'NONE' : 'GENERATE_DTO',
+            dtoName: String((rawConfig as any).requestResponse?.request?.list?.dtoName ?? fallback.requestResponse.request.list.dtoName).trim()
+          },
           create: {
             mode: (rawConfig as any).requestResponse?.request?.create?.mode === 'NONE' ? 'NONE' : 'GENERATE_DTO',
             dtoName: String((rawConfig as any).requestResponse?.request?.create?.dtoName ?? fallback.requestResponse.request.create.dtoName).trim()
+          },
+          delete: {
+            mode: (rawConfig as any).requestResponse?.request?.delete?.mode === 'NONE' ? 'NONE' : 'GENERATE_DTO',
+            dtoName: String((rawConfig as any).requestResponse?.request?.delete?.dtoName ?? fallback.requestResponse.request.delete.dtoName).trim()
           },
           update: {
             mode: (rawConfig as any).requestResponse?.request?.update?.mode === 'NONE' ? 'NONE' : 'GENERATE_DTO',
@@ -835,6 +869,8 @@ export class AddEntityComponent implements OnChanges {
           patch: {
             mode: (rawConfig as any).requestResponse?.request?.patch?.mode === 'JSON_PATCH' ? 'JSON_PATCH' : 'JSON_MERGE_PATCH'
           },
+          getByIdType: String((rawConfig as any).requestResponse?.request?.getByIdType ?? fallback.requestResponse.request.getByIdType).trim(),
+          deleteByIdType: String((rawConfig as any).requestResponse?.request?.deleteByIdType ?? fallback.requestResponse.request.deleteByIdType).trim(),
           bulkInsertType: String((rawConfig as any).requestResponse?.request?.bulkInsertType ?? fallback.requestResponse.request.bulkInsertType).trim(),
           bulkUpdateType: String((rawConfig as any).requestResponse?.request?.bulkUpdateType ?? fallback.requestResponse.request.bulkUpdateType).trim(),
           bulkDeleteType: String((rawConfig as any).requestResponse?.request?.bulkDeleteType ?? fallback.requestResponse.request.bulkDeleteType).trim()
@@ -846,6 +882,17 @@ export class AddEntityComponent implements OnChanges {
               ? 'CUSTOM_WRAPPER'
               : 'RESPONSE_ENTITY',
           dtoName: String((rawConfig as any).requestResponse?.response?.dtoName ?? '').trim(),
+          endpointDtos: {
+            list: String((rawConfig as any).requestResponse?.response?.endpointDtos?.list ?? '').trim(),
+            get: String((rawConfig as any).requestResponse?.response?.endpointDtos?.get ?? '').trim(),
+            create: String((rawConfig as any).requestResponse?.response?.endpointDtos?.create ?? '').trim(),
+            update: String((rawConfig as any).requestResponse?.response?.endpointDtos?.update ?? '').trim(),
+            patch: String((rawConfig as any).requestResponse?.response?.endpointDtos?.patch ?? '').trim(),
+            delete: String((rawConfig as any).requestResponse?.response?.endpointDtos?.delete ?? '').trim(),
+            bulkInsert: String((rawConfig as any).requestResponse?.response?.endpointDtos?.bulkInsert ?? '').trim(),
+            bulkUpdate: String((rawConfig as any).requestResponse?.response?.endpointDtos?.bulkUpdate ?? '').trim(),
+            bulkDelete: String((rawConfig as any).requestResponse?.response?.endpointDtos?.bulkDelete ?? '').trim()
+          },
           responseWrapper: (rawConfig as any).requestResponse?.response?.responseWrapper === 'NONE'
             ? 'NONE'
             : (rawConfig as any).requestResponse?.response?.responseWrapper === 'UPSERT'

@@ -29,18 +29,14 @@
       <app-rest-config-basic-settings
         [draft]="draft"
         [softDeleteEnabled]="softDeleteEnabled"
+        [availableModels]="availableModels"
         [showResourceNameErrors]="showResourceNameErrors"
         [resourceNameRequired]="resourceNameRequired"
         [resourceNameDuplicate]="resourceNameDuplicate"
-        (resourceNameChange)="onResourceNameChanged()">
+        [mapToEntityRequired]="mapToEntityRequired"
+        (resourceNameChange)="onResourceNameChanged()"
+        (mappingChange)="onEntityMappingChanged()">
       </app-rest-config-basic-settings>
-    </ng-container>
-
-    <ng-container *ngIf="activeTab === 'pagination'">
-      <app-rest-config-pagination-filtering
-        [draft]="draft"
-        [searchFieldOptions]="searchableFieldOptions">
-      </app-rest-config-pagination-filtering>
     </ng-container>
 
     <ng-container *ngIf="activeTab === 'endpoints'">
@@ -50,6 +46,7 @@
     <ng-container *ngIf="activeTab === 'request'">
       <app-rest-config-request-response-config
         [draft]="draft"
+        [entityFieldTypeOptions]="entityFieldTypeOptions"
         [availableModels]="availableModels"
         [dtoObjects]="dtoObjects"
         [enumTypes]="enumTypes">
@@ -60,7 +57,7 @@
       <app-rest-config-documentation-config [draft]="draft"></app-rest-config-documentation-config>
     </ng-container>
 
-    <ng-container *ngIf="activeTab !== 'basic' && activeTab !== 'pagination' && activeTab !== 'endpoints' && activeTab !== 'request' && activeTab !== 'docs'">
+    <ng-container *ngIf="activeTab !== 'basic' && activeTab !== 'endpoints' && activeTab !== 'request' && activeTab !== 'docs'">
       <section class="placeholder-block">
         <mat-icon>construction</mat-icon>
         <p>{{ activeTab | titlecase }} configuration is coming soon.</p>

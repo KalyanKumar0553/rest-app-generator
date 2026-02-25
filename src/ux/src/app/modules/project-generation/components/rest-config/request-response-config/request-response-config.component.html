@@ -11,7 +11,7 @@
       </mat-expansion-panel-header>
 
       <div class="request-list">
-        <div class="request-item">
+        <div class="request-item" *ngIf="draft?.methods?.create">
           <div class="request-op-label">Create</div>
           <div class="request-item-body dto-inline">
             <button type="button" class="dto-add-btn" aria-label="Configure create DTO" (click)="openDtoConfig('create')">
@@ -19,27 +19,43 @@
             </button>
             <mat-form-field appearance="outline" class="dto-input">
               <mat-select [(ngModel)]="draft.requestResponse.request.create.dtoName">
-                <mat-option *ngFor="let option of dtoOptions" [value]="option">{{ option }}</mat-option>
+                <mat-option *ngFor="let option of requestDtoOptions" [value]="option">{{ option }}</mat-option>
               </mat-select>
             </mat-form-field>
           </div>
         </div>
 
-        <div class="request-item">
-          <div class="request-op-label">Update (PUT)</div>
+        <div class="request-item" *ngIf="draft?.methods?.get">
+          <div class="request-op-label">Get By ID</div>
+          <div class="request-item-body">
+            <div class="input-align-wrap">
+              <app-field-type-select
+                [label]="'ID Type'"
+                [appearance]="'outline'"
+                [className]="'dto-input'"
+                [options]="idTypeOptions"
+                [value]="draft.requestResponse.request.getByIdType"
+                (valueChange)="draft.requestResponse.request.getByIdType = $event">
+              </app-field-type-select>
+            </div>
+          </div>
+        </div>
+
+        <div class="request-item" *ngIf="draft?.methods?.list">
+          <div class="request-op-label">List</div>
           <div class="request-item-body dto-inline">
-            <button type="button" class="dto-add-btn" aria-label="Configure update DTO" (click)="openDtoConfig('update')">
+            <button type="button" class="dto-add-btn" aria-label="Configure list DTO" (click)="openDtoConfig('list')">
               <mat-icon>add</mat-icon>
             </button>
             <mat-form-field appearance="outline" class="dto-input">
-              <mat-select [(ngModel)]="draft.requestResponse.request.update.dtoName">
-                <mat-option *ngFor="let option of dtoOptions" [value]="option">{{ option }}</mat-option>
+              <mat-select [(ngModel)]="draft.requestResponse.request.list.dtoName">
+                <mat-option *ngFor="let option of requestDtoOptions" [value]="option">{{ option }}</mat-option>
               </mat-select>
             </mat-form-field>
           </div>
         </div>
 
-        <div class="request-item">
+        <div class="request-item" *ngIf="draft?.methods?.patch">
           <div class="request-op-label">Patch</div>
           <div class="request-item-body">
             <mat-radio-group class="inline-radio" [(ngModel)]="draft.requestResponse.request.patch.mode">
@@ -49,27 +65,20 @@
           </div>
         </div>
 
-        <div class="request-item">
-          <div class="request-op-label">Bulk Insert</div>
-          <div class="request-item-body">
-            <mat-form-field appearance="outline" class="bulk-select">
-              <mat-select [(ngModel)]="draft.requestResponse.request.bulkInsertType">
-                <mat-option *ngFor="let option of bulkDtoTypeOptions" [value]="option">{{ option }}</mat-option>
+        <div class="request-item" *ngIf="draft?.methods?.delete">
+          <div class="request-op-label">Delete</div>
+          <div class="request-item-body dto-inline">
+            <button type="button" class="dto-add-btn" aria-label="Configure delete DTO" (click)="openDtoConfig('delete')">
+              <mat-icon>add</mat-icon>
+            </button>
+            <mat-form-field appearance="outline" class="dto-input">
+              <mat-select [(ngModel)]="draft.requestResponse.request.delete.dtoName">
+                <mat-option *ngFor="let option of requestDtoOptions" [value]="option">{{ option }}</mat-option>
               </mat-select>
             </mat-form-field>
           </div>
         </div>
 
-        <div class="request-item">
-          <div class="request-op-label">Bulk Update</div>
-          <div class="request-item-body">
-            <mat-form-field appearance="outline" class="bulk-select">
-              <mat-select [(ngModel)]="draft.requestResponse.request.bulkUpdateType">
-                <mat-option *ngFor="let option of bulkDtoTypeOptions" [value]="option">{{ option }}</mat-option>
-              </mat-select>
-            </mat-form-field>
-          </div>
-        </div>
       </div>
     </mat-expansion-panel>
   </mat-accordion>
@@ -87,17 +96,14 @@
       </mat-radio-group>
 
       <div class="request-list response-list" *ngIf="draft.requestResponse.response.responseType === 'CUSTOM_WRAPPER'">
-        <div class="request-item">
-          <div class="request-op-label">Response DTO</div>
-          <div class="request-item-body dto-inline">
-            <button type="button" class="dto-add-btn" aria-label="Configure response DTO" (click)="openDtoConfig('response')">
-              <mat-icon>add</mat-icon>
-            </button>
+        <div class="request-item" *ngFor="let operation of selectedResponseOperations">
+          <div class="request-op-label">{{ getResponseOperationLabel(operation) }}</div>
+          <div class="request-item-body">
             <mat-form-field appearance="outline" class="dto-input">
               <mat-select
-                [(ngModel)]="draft.requestResponse.response.dtoName"
-                (ngModelChange)="onResponseDtoSelectionChange($event)">
-                <mat-option *ngFor="let option of dtoOptions" [value]="option">{{ option }}</mat-option>
+                [ngModel]="getResponseEndpointDtoName(operation)"
+                (ngModelChange)="setResponseEndpointDtoName(operation, $event)">
+                <mat-option *ngFor="let option of getResponseOptions(operation)" [value]="option">{{ option }}</mat-option>
               </mat-select>
             </mat-form-field>
           </div>

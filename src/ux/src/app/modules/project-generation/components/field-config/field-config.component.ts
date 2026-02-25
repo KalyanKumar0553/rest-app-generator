@@ -8,6 +8,7 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatSelectModule } from '@angular/material/select';
 import { MatIconModule } from '@angular/material/icon';
 import { Field } from '../field-item/field-item.component';
+import { FieldTypeSelectComponent } from '../field-type-select/field-type-select.component';
 import {
   getConstraintValidationError,
   getConstraintDefinition,
@@ -29,7 +30,8 @@ import { ToastService } from '../../../../services/toast.service';
     MatInputModule,
     MatCheckboxModule,
     MatSelectModule,
-    MatIconModule
+    MatIconModule,
+    FieldTypeSelectComponent
   ],
   templateUrl: './field-config.component.html',
   styleUrls: ['./field-config.component.css']

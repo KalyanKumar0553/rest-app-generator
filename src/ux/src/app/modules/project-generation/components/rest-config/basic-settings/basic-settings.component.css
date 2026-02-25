@@ -37,6 +37,13 @@
   gap: 16px;
 }
 
+.map-checkbox-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
 .inline-radio-group {
   display: flex;
   flex-wrap: wrap;

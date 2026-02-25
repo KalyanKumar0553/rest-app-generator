@@ -11,15 +11,15 @@
       <mat-error *ngIf="field.nameError">{{ field.nameError }}</mat-error>
     </mat-form-field>
 
-    <mat-form-field appearance="fill" class="field-input">
-      <mat-label>Field type</mat-label>
-      <mat-select
-        [(ngModel)]="field.type"
-        (selectionChange)="onFieldTypeChange()"
-        [disabled]="mode === 'edit'">
-        <mat-option *ngFor="let type of fieldTypes" [value]="type">{{ type }}</mat-option>
-      </mat-select>
-    </mat-form-field>
+    <app-field-type-select
+      [label]="'Field type'"
+      [appearance]="'fill'"
+      [className]="'field-input'"
+      [options]="fieldTypes"
+      [value]="field.type"
+      [disabled]="mode === 'edit'"
+      (valueChange)="field.type = $event; onFieldTypeChange()">
+    </app-field-type-select>
 
     <div class="field-toggle-row">
       <mat-checkbox

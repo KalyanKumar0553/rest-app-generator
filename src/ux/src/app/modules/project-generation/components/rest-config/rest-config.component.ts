@@ -5,11 +5,11 @@ import { animate, style, transition, trigger } from '@angular/animations';
 import { MatBottomSheet, MatBottomSheetModule } from '@angular/material/bottom-sheet';
 import { Subscription } from 'rxjs';
 import { BasicSettingsComponent } from './basic-settings/basic-settings.component';
-import { PaginationFilteringComponent } from './pagination-filtering/pagination-filtering.component';
 import { EndpointConfigComponent } from './endpoint-config/endpoint-config.component';
 import { RequestResponseConfigComponent } from './request-response-config/request-response-config.component';
 import { DocumentationConfigComponent } from './documentation-config/documentation-config.component';
 import { RestConfigOverflowSheetComponent } from './rest-config-overflow-sheet/rest-config-overflow-sheet.component';
+import { ENTITY_FIELD_TYPE_OPTIONS } from '../../constants/backend-field-types';
 
 export type ApiVersioningStrategy = 'header' | 'path';
 export type PathVariableType = 'UUID' | 'LONG' | 'STRING';
@@ -28,6 +28,8 @@ export type ResponseWrapper = 'STANDARD_ENVELOPE' | 'NONE' | 'UPSERT';
 export interface RestEndpointConfig {
   resourceName: string;
   basePath: string;
+  mapToEntity: boolean;
+  mappedEntityName: string;
   methods: {
     list: boolean;
     get: boolean;
@@ -91,9 +93,13 @@ export interface RestEndpointConfig {
   };
   requestResponse: {
     request: {
+      list: { mode: RequestDtoMode; dtoName: string; };
       create: { mode: RequestDtoMode; dtoName: string; };
+      delete: { mode: RequestDtoMode; dtoName: string; };
       update: { mode: RequestDtoMode; dtoName: string; };
       patch: { mode: PatchRequestMode; };
+      getByIdType: string;
+      deleteByIdType: string;
       bulkInsertType: string;
       bulkUpdateType: string;
       bulkDeleteType: string;
@@ -101,6 +107,17 @@ export interface RestEndpointConfig {
     response: {
       responseType: ResponseType;
       dtoName: string;
+      endpointDtos: {
+        list: string;
+        get: string;
+        create: string;
+        update: string;
+        patch: string;
+        delete: string;
+        bulkInsert: string;
+        bulkUpdate: string;
+        bulkDelete: string;
+      };
       responseWrapper: ResponseWrapper;
       enableFieldProjection: boolean;
       includeHateoasLinks: boolean;
@@ -124,11 +141,13 @@ export interface RestEndpointConfig {
 const DEFAULT_REST_ENDPOINT_CONFIG: RestEndpointConfig = {
   resourceName: '',
   basePath: '',
+  mapToEntity: false,
+  mappedEntityName: '',
   methods: {
     list: true,
     get: true,
     create: true,
-    update: true,
+    update: false,
     patch: true,
     delete: true,
     bulkInsert: true,
@@ -187,9 +206,17 @@ const DEFAULT_REST_ENDPOINT_CONFIG: RestEndpointConfig = {
   },
   requestResponse: {
     request: {
+      list: {
+        mode: 'GENERATE_DTO',
+        dtoName: ''
+      },
       create: {
         mode: 'GENERATE_DTO',
         dtoName: 'Request'
+      },
+      delete: {
+        mode: 'GENERATE_DTO',
+        dtoName: ''
       },
       update: {
         mode: 'GENERATE_DTO',
@@ -198,6 +225,8 @@ const DEFAULT_REST_ENDPOINT_CONFIG: RestEndpointConfig = {
       patch: {
         mode: 'JSON_MERGE_PATCH'
       },
+      getByIdType: 'UUID',
+      deleteByIdType: 'UUID',
       bulkInsertType: '',
       bulkUpdateType: '',
       bulkDeleteType: 'List<UUID>'
@@ -205,6 +234,17 @@ const DEFAULT_REST_ENDPOINT_CONFIG: RestEndpointConfig = {
     response: {
       responseType: 'RESPONSE_ENTITY',
       dtoName: '',
+      endpointDtos: {
+        list: '',
+        get: '',
+        create: '',
+        update: '',
+        patch: '',
+        delete: '',
+        bulkInsert: '',
+        bulkUpdate: '',
+        bulkDelete: ''
+      },
       responseWrapper: 'STANDARD_ENVELOPE',
       enableFieldProjection: true,
       includeHateoasLinks: true
@@ -233,7 +273,6 @@ const DEFAULT_REST_ENDPOINT_CONFIG: RestEndpointConfig = {
     MatIconModule,
     MatBottomSheetModule,
     BasicSettingsComponent,
-    PaginationFilteringComponent,
     EndpointConfigComponent,
     RequestResponseConfigComponent,
     DocumentationConfigComponent
@@ -251,7 +290,8 @@ const DEFAULT_REST_ENDPOINT_CONFIG: RestEndpointConfig = {
 })
 export class RestConfigComponent implements OnChanges, AfterViewInit, OnDestroy {
   @Input() config: RestEndpointConfig | null = null;
-  @Input() entityFields: Array<{ name?: string } | string> = [];
+  @Input() entityFields: Array<{ name?: string; type?: string } | string> = [];
+  @Input() fieldTypeOptions: string[] = [];
   @Input() availableModels: Array<{ name?: string }> = [];
   @Input() dtoObjects: Array<{ name?: string; dtoType?: 'request' | 'response'; fields?: unknown[] }> = [];
   @Input() enumTypes: string[] = [];
@@ -264,13 +304,13 @@ export class RestConfigComponent implements OnChanges, AfterViewInit, OnDestroy 
   showResourceNameErrors = false;
   resourceNameRequired = false;
   resourceNameDuplicate = false;
-  activeTab: 'basic' | 'endpoints' | 'request' | 'pagination' | 'error' | 'docs' = 'basic';
-  overflowTabs: Array<{ id: 'basic' | 'endpoints' | 'request' | 'pagination' | 'error' | 'docs'; label: string; icon: string }> = [];
-  readonly tabs: Array<{ id: 'basic' | 'endpoints' | 'request' | 'pagination' | 'error' | 'docs'; label: string; icon: string }> = [
+  mapToEntityRequired = false;
+  activeTab: 'basic' | 'endpoints' | 'request' | 'error' | 'docs' = 'basic';
+  overflowTabs: Array<{ id: 'basic' | 'endpoints' | 'request' | 'error' | 'docs'; label: string; icon: string }> = [];
+  readonly tabs: Array<{ id: 'basic' | 'endpoints' | 'request' | 'error' | 'docs'; label: string; icon: string }> = [
     { id: 'basic', label: 'Basic Settings', icon: 'settings' },
     { id: 'endpoints', label: 'Endpoints', icon: 'list_alt' },
     { id: 'request', label: 'Request & Response', icon: 'description' },
-    { id: 'pagination', label: 'Pagination & Filtering', icon: 'filter_alt' },
     // { id: 'error', label: 'Error Handling', icon: 'sms_failed' }, // Temporarily disabled; keep for future enablement.
     { id: 'docs', label: 'Documentation', icon: 'menu_book' }
   ];
@@ -281,12 +321,18 @@ export class RestConfigComponent implements OnChanges, AfterViewInit, OnDestroy 
 
   constructor(private readonly bottomSheet: MatBottomSheet) {}
 
-  get searchableFieldOptions(): string[] {
-    const mapped = (Array.isArray(this.entityFields) ? this.entityFields : [])
-      .map((item) => typeof item === 'string' ? item : String(item?.name ?? '').trim())
+  get entityFieldTypeOptions(): string[] {
+    const configuredOptions = (Array.isArray(this.fieldTypeOptions) ? this.fieldTypeOptions : [])
       .map((item) => String(item ?? '').trim())
       .filter(Boolean);
-    return Array.from(new Set(mapped));
+    if (configuredOptions.length) {
+      return Array.from(new Set(configuredOptions));
+    }
+    const mapped = (Array.isArray(this.entityFields) ? this.entityFields : [])
+      .map((item) => typeof item === 'string' ? '' : String(item?.type ?? '').trim())
+      .filter(Boolean);
+    const unique = Array.from(new Set(mapped));
+    return unique.length ? unique : ENTITY_FIELD_TYPE_OPTIONS;
   }
 
   ngOnChanges(changes: SimpleChanges): void {
@@ -295,6 +341,7 @@ export class RestConfigComponent implements OnChanges, AfterViewInit, OnDestroy 
       this.showResourceNameErrors = false;
       this.resourceNameRequired = false;
       this.resourceNameDuplicate = false;
+      this.mapToEntityRequired = false;
     }
     if ((changes['config'] || changes['existingRestConfigNames']) && this.showResourceNameErrors) {
       this.validateResourceNameUnique();
@@ -311,7 +358,7 @@ export class RestConfigComponent implements OnChanges, AfterViewInit, OnDestroy 
     this.tabButtonChangesSub?.unsubscribe();
   }
 
-  setActiveTab(tab: 'basic' | 'endpoints' | 'request' | 'pagination' | 'error' | 'docs'): void {
+  setActiveTab(tab: 'basic' | 'endpoints' | 'request' | 'error' | 'docs'): void {
     this.activeTab = tab;
     this.scrollToActiveTab();
     this.scheduleOverflowCheck();
@@ -324,7 +371,7 @@ export class RestConfigComponent implements OnChanges, AfterViewInit, OnDestroy 
     const ref = this.bottomSheet.open(RestConfigOverflowSheetComponent, {
       data: { tabs: this.overflowTabs, activeTab: this.activeTab }
     });
-    ref.afterDismissed().subscribe((selectedTab: 'basic' | 'endpoints' | 'request' | 'pagination' | 'error' | 'docs' | undefined) => {
+    ref.afterDismissed().subscribe((selectedTab: 'basic' | 'endpoints' | 'request' | 'error' | 'docs' | undefined) => {
       if (selectedTab) {
         this.setActiveTab(selectedTab);
       }
@@ -338,7 +385,7 @@ export class RestConfigComponent implements OnChanges, AfterViewInit, OnDestroy 
 
   saveConfig(): void {
     this.showResourceNameErrors = true;
-    if (!this.validateResourceNameUnique()) {
+    if (!this.validateResourceNameUnique() || !this.validateEntityMapping()) {
       this.activeTab = 'basic';
       this.scrollToActiveTab();
       return;
@@ -392,11 +439,13 @@ export class RestConfigComponent implements OnChanges, AfterViewInit, OnDestroy 
     return {
       resourceName: String(config?.resourceName ?? '').trim(),
       basePath: String(config?.basePath ?? '').trim(),
+      mapToEntity: Boolean(config?.mapToEntity),
+      mappedEntityName: String(config?.mappedEntityName ?? '').trim(),
       methods: {
         list: Boolean(config?.methods?.list ?? DEFAULT_REST_ENDPOINT_CONFIG.methods.list),
         get: Boolean(config?.methods?.get ?? DEFAULT_REST_ENDPOINT_CONFIG.methods.get),
         create: Boolean(config?.methods?.create ?? DEFAULT_REST_ENDPOINT_CONFIG.methods.create),
-        update: Boolean(config?.methods?.update ?? DEFAULT_REST_ENDPOINT_CONFIG.methods.update),
+        update: false,
         patch: Boolean(config?.methods?.patch ?? DEFAULT_REST_ENDPOINT_CONFIG.methods.patch),
         delete: Boolean(config?.methods?.delete ?? DEFAULT_REST_ENDPOINT_CONFIG.methods.delete),
         bulkInsert: Boolean(config?.methods?.bulkInsert ?? DEFAULT_REST_ENDPOINT_CONFIG.methods.bulkInsert),
@@ -459,9 +508,17 @@ export class RestConfigComponent implements OnChanges, AfterViewInit, OnDestroy 
       },
       requestResponse: {
         request: {
+          list: {
+            mode: config?.requestResponse?.request?.list?.mode === 'NONE' ? 'NONE' : 'GENERATE_DTO',
+            dtoName: String(config?.requestResponse?.request?.list?.dtoName ?? DEFAULT_REST_ENDPOINT_CONFIG.requestResponse.request.list.dtoName).trim()
+          },
           create: {
             mode: config?.requestResponse?.request?.create?.mode === 'NONE' ? 'NONE' : 'GENERATE_DTO',
             dtoName: String(config?.requestResponse?.request?.create?.dtoName ?? DEFAULT_REST_ENDPOINT_CONFIG.requestResponse.request.create.dtoName).trim()
+          },
+          delete: {
+            mode: config?.requestResponse?.request?.delete?.mode === 'NONE' ? 'NONE' : 'GENERATE_DTO',
+            dtoName: String(config?.requestResponse?.request?.delete?.dtoName ?? DEFAULT_REST_ENDPOINT_CONFIG.requestResponse.request.delete.dtoName).trim()
           },
           update: {
             mode: config?.requestResponse?.request?.update?.mode === 'NONE' ? 'NONE' : 'GENERATE_DTO',
@@ -470,6 +527,8 @@ export class RestConfigComponent implements OnChanges, AfterViewInit, OnDestroy 
           patch: {
             mode: config?.requestResponse?.request?.patch?.mode === 'JSON_PATCH' ? 'JSON_PATCH' : 'JSON_MERGE_PATCH'
           },
+          getByIdType: String(config?.requestResponse?.request?.getByIdType ?? DEFAULT_REST_ENDPOINT_CONFIG.requestResponse.request.getByIdType).trim(),
+          deleteByIdType: String(config?.requestResponse?.request?.deleteByIdType ?? DEFAULT_REST_ENDPOINT_CONFIG.requestResponse.request.deleteByIdType).trim(),
           bulkInsertType: String(config?.requestResponse?.request?.bulkInsertType ?? DEFAULT_REST_ENDPOINT_CONFIG.requestResponse.request.bulkInsertType).trim(),
           bulkUpdateType: String(config?.requestResponse?.request?.bulkUpdateType ?? DEFAULT_REST_ENDPOINT_CONFIG.requestResponse.request.bulkUpdateType).trim(),
           bulkDeleteType: String(config?.requestResponse?.request?.bulkDeleteType ?? DEFAULT_REST_ENDPOINT_CONFIG.requestResponse.request.bulkDeleteType).trim()
@@ -481,6 +540,17 @@ export class RestConfigComponent implements OnChanges, AfterViewInit, OnDestroy 
               ? 'CUSTOM_WRAPPER'
               : 'RESPONSE_ENTITY',
           dtoName: String(config?.requestResponse?.response?.dtoName ?? '').trim(),
+          endpointDtos: {
+            list: String(config?.requestResponse?.response?.endpointDtos?.list ?? '').trim(),
+            get: String(config?.requestResponse?.response?.endpointDtos?.get ?? '').trim(),
+            create: String(config?.requestResponse?.response?.endpointDtos?.create ?? '').trim(),
+            update: String(config?.requestResponse?.response?.endpointDtos?.update ?? '').trim(),
+            patch: String(config?.requestResponse?.response?.endpointDtos?.patch ?? '').trim(),
+            delete: String(config?.requestResponse?.response?.endpointDtos?.delete ?? '').trim(),
+            bulkInsert: String(config?.requestResponse?.response?.endpointDtos?.bulkInsert ?? '').trim(),
+            bulkUpdate: String(config?.requestResponse?.response?.endpointDtos?.bulkUpdate ?? '').trim(),
+            bulkDelete: String(config?.requestResponse?.response?.endpointDtos?.bulkDelete ?? '').trim()
+          },
           responseWrapper: config?.requestResponse?.response?.responseWrapper === 'NONE'
             ? 'NONE'
             : config?.requestResponse?.response?.responseWrapper === 'UPSERT'
@@ -584,6 +654,14 @@ export class RestConfigComponent implements OnChanges, AfterViewInit, OnDestroy 
     this.validateResourceNameUnique();
   }
 
+  onEntityMappingChanged(): void {
+    if (!this.showResourceNameErrors) {
+      this.mapToEntityRequired = false;
+      return;
+    }
+    this.validateEntityMapping();
+  }
+
   private validateResourceNameUnique(): boolean {
     const name = String(this.draft?.resourceName ?? '').trim().toLowerCase();
     if (!name) {
@@ -598,5 +676,12 @@ export class RestConfigComponent implements OnChanges, AfterViewInit, OnDestroy 
       .includes(name);
     this.resourceNameDuplicate = duplicate;
     return !duplicate;
+  }
+
+  private validateEntityMapping(): boolean {
+    const mapToEntity = Boolean(this.draft?.mapToEntity);
+    const mappedEntityName = String(this.draft?.mappedEntityName ?? '').trim();
+    this.mapToEntityRequired = mapToEntity && !mappedEntityName;
+    return !this.mapToEntityRequired;
   }
 }

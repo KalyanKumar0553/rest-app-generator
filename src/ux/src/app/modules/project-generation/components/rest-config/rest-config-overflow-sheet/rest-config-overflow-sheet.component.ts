@@ -3,7 +3,7 @@ import { Component, Inject } from '@angular/core';
 import { MAT_BOTTOM_SHEET_DATA, MatBottomSheetRef } from '@angular/material/bottom-sheet';
 import { MatIconModule } from '@angular/material/icon';
 
-type RestTabId = 'basic' | 'endpoints' | 'request' | 'pagination' | 'error' | 'docs';
+type RestTabId = 'basic' | 'endpoints' | 'request' | 'error' | 'docs';
 
 interface OverflowSheetData {
   tabs: Array<{ id: RestTabId; label: string; icon: string }>;
@@ -27,4 +27,3 @@ export class RestConfigOverflowSheetComponent {
     this.bottomSheetRef.dismiss(tabId);
   }
 }
-

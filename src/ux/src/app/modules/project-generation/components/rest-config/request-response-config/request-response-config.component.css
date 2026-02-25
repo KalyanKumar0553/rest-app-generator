@@ -122,25 +122,26 @@
 .request-item-body {
   padding: 10px 12px;
   border-left: 1px solid var(--theme-neutral-border);
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  min-height: 72px;
 }
 
 .inline-radio {
   display: flex;
   flex-wrap: nowrap;
   align-items: center;
-  gap: 12px;
-  width: 100%;
-  overflow: hidden;
+  justify-content: flex-start;
+  gap: 36px;
+  width: auto;
+  max-width: 100%;
+  overflow: visible;
 }
 
 .inline-radio mat-radio-button {
   min-width: 0;
-  flex: 1 1 0;
-}
-
-.inline-radio ::ng-deep .mdc-form-field {
-  min-width: 0;
-  width: 100%;
+  flex: 0 0 auto;
 }
 
 .inline-radio ::ng-deep .mdc-label {
@@ -153,15 +154,19 @@
 
 .dto-input,
 .bulk-select {
-  width: 100%;
-  max-width: 340px;
+  width: 340px;
+  max-width: 100%;
 }
 
 .dto-inline {
-  display: grid;
-  grid-template-columns: auto minmax(160px, 340px);
+  display: flex;
   align-items: center;
   gap: 12px;
+}
+
+.input-align-wrap {
+  width: 340px;
+  max-width: 100%;
 }
 
 .dto-add-btn {
@@ -251,7 +256,12 @@
 
   .dto-input,
   .bulk-select {
+    width: 100%;
     max-width: 100%;
+  }
+
+  .input-align-wrap {
+    width: 100%;
   }
 
   .section-title-row h4 {

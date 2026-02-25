@@ -27,24 +27,38 @@ import { MatSelectModule } from '@angular/material/select';
 export class BasicSettingsComponent implements OnChanges, AfterViewInit {
   @Input({ required: true }) draft: any;
   @Input() softDeleteEnabled = false;
+  @Input() availableModels: Array<{ name?: string }> = [];
   @Input() showResourceNameErrors = false;
   @Input() resourceNameRequired = false;
   @Input() resourceNameDuplicate = false;
+  @Input() mapToEntityRequired = false;
   @Output() resourceNameChange = new EventEmitter<void>();
+  @Output() mappingChange = new EventEmitter<void>();
   @ViewChild('resourceNameModel') resourceNameModel?: NgModel;
+  @ViewChild('mappedEntityModel') mappedEntityModel?: NgModel;
+
+  get availableEntityNames(): string[] {
+    const names = (Array.isArray(this.availableModels) ? this.availableModels : [])
+      .map((item) => String(item?.name ?? '').trim())
+      .filter(Boolean);
+    return Array.from(new Set(names));
+  }
 
   ngOnChanges(changes: SimpleChanges): void {
     if (
       changes['showResourceNameErrors']
       || changes['resourceNameRequired']
       || changes['resourceNameDuplicate']
+      || changes['mapToEntityRequired']
     ) {
       this.syncResourceNameErrorState();
+      this.syncEntityMappingErrorState();
     }
   }
 
   ngAfterViewInit(): void {
     this.syncResourceNameErrorState();
+    this.syncEntityMappingErrorState();
   }
 
   onResourceNameInput(): void {
@@ -55,6 +69,20 @@ export class BasicSettingsComponent implements OnChanges, AfterViewInit {
     if (enabled) {
       this.draft.apiVersioning.strategy = 'header';
     }
+  }
+
+  onMapToEntityToggle(enabled: boolean): void {
+    this.draft.mapToEntity = Boolean(enabled);
+    if (!enabled) {
+      this.draft.mappedEntityName = '';
+    }
+    this.mappingChange.emit();
+    this.syncEntityMappingErrorState();
+  }
+
+  onMappedEntityChange(): void {
+    this.mappingChange.emit();
+    this.syncEntityMappingErrorState();
   }
 
   private syncResourceNameErrorState(): void {
@@ -77,6 +105,28 @@ export class BasicSettingsComponent implements OnChanges, AfterViewInit {
 
       control.setErrors(Object.keys(nextErrors).length ? nextErrors : null);
       if (this.showResourceNameErrors) {
+        control.markAsTouched();
+        control.markAsDirty();
+      }
+    });
+  }
+
+  private syncEntityMappingErrorState(): void {
+    setTimeout(() => {
+      const control = this.mappedEntityModel?.control;
+      if (!control) {
+        return;
+      }
+
+      const nextErrors = { ...(control.errors || {}) } as Record<string, unknown>;
+      delete nextErrors['requiredMappedEntity'];
+
+      if (this.draft?.mapToEntity && this.mapToEntityRequired) {
+        nextErrors['requiredMappedEntity'] = true;
+      }
+
+      control.setErrors(Object.keys(nextErrors).length ? nextErrors : null);
+      if (this.mapToEntityRequired) {
         control.markAsTouched();
         control.markAsDirty();
       }
