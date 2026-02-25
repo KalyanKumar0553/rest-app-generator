@@ -96,6 +96,16 @@
   margin: 0 0 20px 0;
 }
 
+.class-methods-section .section-title {
+  margin-bottom: 12px;
+}
+
+.class-methods-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 8px 16px;
+}
+
 .fields-section {
   display: flex;
   flex-direction: column;

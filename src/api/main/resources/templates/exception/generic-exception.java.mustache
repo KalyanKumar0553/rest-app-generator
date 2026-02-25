@@ -1,0 +1,46 @@
+package {{packageName}};
+
+import org.springframework.http.HttpStatus;
+{{#useLombok}}
+import lombok.Data;
+import lombok.NoArgsConstructor;
+{{/useLombok}}
+
+{{#useLombok}}
+@Data
+@NoArgsConstructor
+{{/useLombok}}
+public class GenericException extends RuntimeException {
+
+	private HttpStatus status;
+	private String errorMsg;
+
+{{^useLombok}}
+	public GenericException() {
+	}
+{{/useLombok}}
+
+	public GenericException(HttpStatus status, String errorMsg) {
+		super(errorMsg);
+		this.status = status;
+		this.errorMsg = errorMsg;
+	}
+
+{{^useLombok}}
+	public HttpStatus getStatus() {
+		return status;
+	}
+
+	public void setStatus(HttpStatus status) {
+		this.status = status;
+	}
+
+	public String getErrorMsg() {
+		return errorMsg;
+	}
+
+	public void setErrorMsg(String errorMsg) {
+		this.errorMsg = errorMsg;
+	}
+{{/useLombok}}
+}

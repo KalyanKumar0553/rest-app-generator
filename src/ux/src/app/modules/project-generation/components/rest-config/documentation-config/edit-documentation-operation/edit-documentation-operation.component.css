@@ -36,49 +36,64 @@
   background-color: var(--color-border);
 }
 
-::ng-deep .endpoint-edit-form .mat-mdc-form-field-subscript-wrapper {
-  display: none;
+.field-error {
+  color: var(--theme-error-color, var(--color-error));
+  font-size: 12px;
+  line-height: 1.2;
+  margin-top: -8px;
 }
 
 .tags-below-grid {
-  width: 100%;
-}
-
-::ng-deep .endpoint-edit-form .tags-below-grid .mdc-evolution-chip-set__chips {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
   gap: 8px;
+  width: 100%;
 }
 
-::ng-deep .endpoint-edit-form .tags-below-grid .mat-mdc-chip-row {
+.selected-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
   border-radius: 999px;
-  background-color: var(--color-background);
   border: 1px solid var(--color-border-light);
+  background-color: var(--color-background);
   color: var(--color-text-primary);
-  min-height: 38px;
-  padding-inline: 8px;
+  font-size: 14px;
+  line-height: 1.25;
+  max-width: 240px;
 }
 
-::ng-deep .endpoint-edit-form .tags-below-grid .mat-mdc-chip .mdc-evolution-chip__text-label {
-  color: var(--color-text-primary);
-  font-size: 16px;
-  font-weight: 500;
+.selected-tag-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-::ng-deep .endpoint-edit-form .tags-below-grid .mat-mdc-chip-remove {
+.selected-tag-remove {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: none;
+  background-color: var(--theme-neutral-bg);
   color: var(--theme-neutral-text);
-  opacity: 0.9;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  padding: 0;
+  transition: background-color 0.2s ease;
 }
 
-::ng-deep .endpoint-edit-form .tags-below-grid .mat-mdc-chip-remove:hover {
-  color: var(--color-text-primary);
+.selected-tag-remove:hover {
+  background-color: var(--theme-neutral-border);
 }
 
-::ng-deep .endpoint-edit-form .tags-below-grid .mat-mdc-chip-remove .mat-icon {
-  width: 16px;
-  height: 16px;
-  font-size: 16px;
+.selected-tag-remove i {
+  font-size: 12px;
+  line-height: 1;
 }
 
 @media (max-width: 768px) {

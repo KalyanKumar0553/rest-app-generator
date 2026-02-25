@@ -1,10 +1,14 @@
 package {{packageName}};
 
+import java.util.List;
+
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.info.Info;
+import io.swagger.v3.oas.models.Operation;
+import io.swagger.v3.oas.models.PathItem;
 import org.springdoc.core.models.GroupedOpenApi;
 
 @Configuration
@@ -24,9 +28,65 @@ public class OpenApiConfig {
     public GroupedOpenApi {{beanName}}() {
         return GroupedOpenApi.builder()
                 .group("{{groupName}}")
-                .pathsToMatch("{{pathPattern}}")
+                .pathsToMatch({{{pathsToMatchArgs}}})
+{{#hasCustomizer}}
+                .addOpenApiCustomizer(openApi -> {
+{{{customizerBody}}}
+                })
+{{/hasCustomizer}}
                 .build();
     }
 
 {{/groups}}
+
+    private void applyOperationMetadata(OpenAPI openApi, String path, String httpMethod, String description, List<String> tags, boolean deprecated) {
+        Operation operation = resolveOperation(openApi, path, httpMethod);
+        if (operation == null) {
+            return;
+        }
+        if (description != null && !description.isBlank()) {
+            operation.setDescription(description);
+        }
+        if (tags != null && !tags.isEmpty()) {
+            operation.setTags(tags);
+        }
+        operation.setDeprecated(deprecated);
+    }
+
+    private void removeOperation(OpenAPI openApi, String path, String httpMethod) {
+        if (openApi == null || openApi.getPaths() == null) {
+            return;
+        }
+        PathItem pathItem = openApi.getPaths().get(path);
+        if (pathItem == null) {
+            return;
+        }
+        switch (httpMethod) {
+            case "GET" -> pathItem.setGet(null);
+            case "POST" -> pathItem.setPost(null);
+            case "PUT" -> pathItem.setPut(null);
+            case "PATCH" -> pathItem.setPatch(null);
+            case "DELETE" -> pathItem.setDelete(null);
+            default -> {
+            }
+        }
+    }
+
+    private Operation resolveOperation(OpenAPI openApi, String path, String httpMethod) {
+        if (openApi == null || openApi.getPaths() == null) {
+            return null;
+        }
+        PathItem pathItem = openApi.getPaths().get(path);
+        if (pathItem == null) {
+            return null;
+        }
+        return switch (httpMethod) {
+            case "GET" -> pathItem.getGet();
+            case "POST" -> pathItem.getPost();
+            case "PUT" -> pathItem.getPut();
+            case "PATCH" -> pathItem.getPatch();
+            case "DELETE" -> pathItem.getDelete();
+            default -> null;
+        };
+    }
 }

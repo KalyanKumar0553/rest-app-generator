@@ -2,25 +2,38 @@
   width: 100%;
 }
 
+.searchable-multi-select {
+  width: 100%;
+}
+
+::ng-deep .searchable-multi-select .mat-mdc-text-field-wrapper {
+  background-color: var(--theme-input-bg);
+}
+
+::ng-deep .searchable-multi-select.mat-focused .mat-mdc-text-field-wrapper,
+::ng-deep .searchable-multi-select .mat-mdc-text-field-wrapper:hover {
+  background-color: var(--theme-input-bg);
+}
+
 .selected-tags {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   flex-wrap: wrap;
 }
 
 .selected-tag {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 5px 10px;
+  gap: 8px;
+  padding: 6px 14px;
   border-radius: 999px;
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--color-border-light);
   background-color: var(--color-background);
   color: var(--color-text-primary);
-  font-size: 13px;
-  line-height: 1.3;
-  max-width: 180px;
+  font-size: 14px;
+  line-height: 1.25;
+  max-width: 220px;
 }
 
 .selected-tag-text {
@@ -30,12 +43,12 @@
 }
 
 .selected-tag-remove {
-  width: 18px;
-  height: 18px;
+  width: 22px;
+  height: 22px;
   border-radius: 50%;
   border: none;
   background-color: var(--theme-neutral-bg);
-  color: var(--color-text-primary);
+  color: var(--theme-neutral-text);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -45,11 +58,11 @@
 }
 
 .selected-tag-remove:hover {
-  background-color: var(--color-background-secondary);
+  background-color: var(--theme-neutral-border);
 }
 
 .selected-tag-remove i {
-  font-size: 11px;
+  font-size: 12px;
   line-height: 1;
 }
 
@@ -59,21 +72,22 @@
 }
 
 .search-option {
-  min-height: 56px !important;
+  min-height: 52px !important;
   height: auto !important;
   opacity: 1 !important;
   cursor: default !important;
   pointer-events: auto !important;
+  border-bottom: 1px solid var(--theme-neutral-border);
 }
 
 .search-option .search-input {
   width: 100%;
-  padding: 8px 0;
+  padding: 6px 0;
   border: none;
   outline: none;
   background: transparent;
-  color: var(--neutral-900);
-  font-size: 14px;
+  color: var(--theme-modal-body-text);
+  font-size: 16px;
 }
 
 .search-option .search-input::placeholder {
@@ -89,4 +103,41 @@
 
 ::ng-deep .search-option .mdc-list-item__primary-text {
   width: 100%;
+}
+
+::ng-deep .searchable-multi-select-panel {
+  border-radius: 8px;
+  border: 1px solid var(--theme-neutral-border);
+  background-color: var(--theme-input-bg);
+  box-shadow: var(--theme-modal-shadow);
+}
+
+::ng-deep .searchable-multi-select-panel .mat-mdc-option {
+  min-height: 56px;
+}
+
+::ng-deep .searchable-multi-select-panel .mat-mdc-option .mdc-list-item__primary-text {
+  color: var(--theme-modal-body-text);
+  font-size: 18px;
+  line-height: 1.2;
+}
+
+::ng-deep .searchable-multi-select-panel .mat-mdc-option.mdc-list-item--selected:not(.search-option),
+::ng-deep .searchable-multi-select-panel .mat-mdc-option.mat-mdc-option-active:not(.search-option) {
+  background-color: var(--color-background);
+}
+
+::ng-deep .searchable-multi-select-panel .mat-mdc-option:hover:not(.search-option) {
+  background-color: var(--theme-neutral-bg);
+}
+
+::ng-deep .searchable-multi-select-panel .mat-mdc-option .mat-pseudo-checkbox-full.mat-pseudo-checkbox-checked,
+::ng-deep .searchable-multi-select-panel .mat-mdc-option .mat-mdc-option-pseudo-checkbox.mat-pseudo-checkbox-checked {
+  background-color: var(--color-primary);
+  border-color: var(--color-primary);
+}
+
+::ng-deep .searchable-multi-select-panel .mat-mdc-option .mat-pseudo-checkbox,
+::ng-deep .searchable-multi-select-panel .mat-mdc-option .mat-mdc-option-pseudo-checkbox {
+  border-color: var(--theme-neutral-text);
 }

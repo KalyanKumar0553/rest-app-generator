@@ -20,6 +20,7 @@ public class InitializrProjectModel {
     private String jdkVersion;
     private String bootVersion;
     private boolean includeOpenapi;
+    private boolean includeLombok;
     private boolean angularIntegration;
     
 }

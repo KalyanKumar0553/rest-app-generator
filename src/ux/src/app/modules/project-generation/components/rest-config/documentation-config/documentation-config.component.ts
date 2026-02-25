@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, Input, OnChanges } from '@angular/core';
+import { Component, Input, OnChanges, ViewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCheckboxModule } from '@angular/material/checkbox';
@@ -28,21 +28,23 @@ type EndpointKey = 'list' | 'get' | 'create' | 'update' | 'patch' | 'delete' | '
 })
 export class DocumentationConfigComponent implements OnChanges {
   @Input({ required: true }) draft: any;
+  @ViewChild(EditDocumentationOperationComponent) editOperationComponent?: EditDocumentationOperationComponent;
 
   readonly tagPreviewLimit = 2;
 
   showEditModal = false;
   activeEndpointKey: EndpointKey | null = null;
   activeEndpointLabel = '';
-  modalDraft: { description: string; descriptionTags: string[]; deprecated: boolean; } = {
+  modalDraft: { description: string; group: string; descriptionTags: string[]; deprecated: boolean; } = {
     description: '',
+    group: '',
     descriptionTags: [],
     deprecated: false
   };
 
   readonly endpointDefinitions: Array<{ key: EndpointKey; label: string; }> = [
     { key: 'create', label: 'Create' },
-    { key: 'get', label: 'Get By ID' },
+    { key: 'get', label: 'Get By Key' },
     { key: 'list', label: 'List' },
     { key: 'patch', label: 'Patch' },
     { key: 'delete', label: 'Delete' },
@@ -87,10 +89,6 @@ export class DocumentationConfigComponent implements OnChanges {
     return this.getDocumentationEntry(endpoint).deprecated;
   }
 
-  setDeprecatedFlag(endpoint: EndpointKey, value: boolean): void {
-    this.getDocumentationEntry(endpoint).deprecated = Boolean(value);
-  }
-
   openEditModal(endpoint: EndpointKey): void {
     const def = this.endpointDefinitions.find((item) => item.key === endpoint);
     const entry = this.getDocumentationEntry(endpoint);
@@ -99,6 +97,7 @@ export class DocumentationConfigComponent implements OnChanges {
     this.activeEndpointLabel = def?.label ?? 'Endpoint';
     this.modalDraft = {
       description: String(entry.description ?? '').trim(),
+      group: String(entry.group ?? '').trim(),
       descriptionTags: [...entry.descriptionTags],
       deprecated: Boolean(entry.deprecated)
     };
@@ -111,18 +110,24 @@ export class DocumentationConfigComponent implements OnChanges {
     this.activeEndpointLabel = '';
     this.modalDraft = {
       description: '',
+      group: '',
       descriptionTags: [],
       deprecated: false
     };
   }
 
   saveEditModal(): void {
+    if (!this.editOperationComponent?.validate()) {
+      return;
+    }
+
     if (!this.activeEndpointKey) {
       return;
     }
 
     const entry = this.getDocumentationEntry(this.activeEndpointKey);
     entry.description = String(this.modalDraft.description ?? '').trim();
+    entry.group = String(this.modalDraft.group ?? '').trim();
     entry.deprecated = Boolean(this.modalDraft.deprecated);
     entry.descriptionTags = Array.from(
       new Set(
@@ -196,23 +201,35 @@ export class DocumentationConfigComponent implements OnChanges {
 
     this.endpointDefinitions.forEach((endpoint) => {
       const current = this.draft.documentation.endpoints[endpoint.key];
+      const defaults = this.getDefaultEntry(endpoint.key, endpoint.label);
       if (!current || typeof current !== 'object') {
-        this.draft.documentation.endpoints[endpoint.key] = { description: '', descriptionTags: [], deprecated: false };
+        this.draft.documentation.endpoints[endpoint.key] = defaults;
         return;
       }
       const tags = Array.isArray(current.descriptionTags)
         ? current.descriptionTags.map((item: unknown) => String(item ?? '').trim()).filter(Boolean)
         : [];
       this.draft.documentation.endpoints[endpoint.key] = {
-        description: String(current.description ?? '').trim(),
-        descriptionTags: Array.from(new Set(tags)),
+        description: String(current.description ?? '').trim() || defaults.description,
+        group: String(current.group ?? '').trim() || defaults.group,
+        descriptionTags: Array.from(new Set(tags.length ? tags : defaults.descriptionTags)),
         deprecated: Boolean(current.deprecated)
       };
     });
   }
 
-  private getDocumentationEntry(endpoint: EndpointKey): { description: string; descriptionTags: string[]; deprecated: boolean; } {
+  private getDefaultEntry(endpoint: EndpointKey, endpointLabel: string): { description: string; group: string; descriptionTags: string[]; deprecated: boolean } {
+    const resourceName = String(this.draft?.resourceName ?? this.draft?.mappedEntityName ?? '').trim() || 'API';
+    return {
+      description: `${endpointLabel} operation for ${resourceName}`,
+      group: `${resourceName} Group`,
+      descriptionTags: [endpoint],
+      deprecated: false
+    };
+  }
+
+  private getDocumentationEntry(endpoint: EndpointKey): { description: string; group: string; descriptionTags: string[]; deprecated: boolean; } {
     this.ensureDocumentationDefaults();
-    return this.draft.documentation.endpoints[endpoint] as { description: string; descriptionTags: string[]; deprecated: boolean; };
+    return this.draft.documentation.endpoints[endpoint] as { description: string; group: string; descriptionTags: string[]; deprecated: boolean; };
   }
 }

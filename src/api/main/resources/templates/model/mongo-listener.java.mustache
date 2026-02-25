@@ -1,0 +1,25 @@
+package {{packageName}};
+
+import org.springframework.data.mongodb.core.mapping.event.AbstractMongoEventListener;
+import org.springframework.data.mongodb.core.mapping.event.BeforeConvertEvent;
+import org.springframework.stereotype.Component;
+
+import {{sequenceServicePackage}}.PrimarySequenceService;
+
+@Component
+public class {{entityName}}Listener extends AbstractMongoEventListener<{{entityName}}> {
+
+    private final PrimarySequenceService primarySequenceService;
+
+    public {{entityName}}Listener(PrimarySequenceService primarySequenceService) {
+        this.primarySequenceService = primarySequenceService;
+    }
+
+    @Override
+    public void onBeforeConvert(BeforeConvertEvent<{{entityName}}> event) {
+        if (event.getSource().getId() == null) {
+{{#intId}}            event.getSource().setId(primarySequenceService.getNextValue().intValue());
+{{/intId}}{{^intId}}            event.getSource().setId(primarySequenceService.getNextValue());
+{{/intId}}        }
+    }
+}

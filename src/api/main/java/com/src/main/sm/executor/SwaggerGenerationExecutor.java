@@ -53,7 +53,7 @@ public class SwaggerGenerationExecutor implements StepExecutor {
 			}
 
 			String appName = extractAppName(yaml);
-			List<SwaggerGroupSpec> groups = SwaggerGenerationSupport.buildGroups(spec.getModels());
+			List<SwaggerGroupSpec> groups = SwaggerGenerationSupport.buildGroupsFromYaml(yaml, spec.getModels());
 			if (groups.isEmpty()) {
 				deleteOpenApiConfigIfExists(root, swaggerPackage);
 				return StepResult.ok(Map.of("status", "Success", "swaggerGenerated", false, "swaggerGroupCount", 0));

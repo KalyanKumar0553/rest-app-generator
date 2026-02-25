@@ -18,11 +18,20 @@ import { buildEntityNameRules, buildFieldListRules, buildFieldRules } from '../.
 import { FieldFilterService } from '../../../../services/field-filter.service';
 import { ToastService } from '../../../../services/toast.service';
 import { HelpPopoverComponent } from '../../../../components/help-popover/help-popover.component';
+import { SearchableMultiSelectComponent } from '../../../../components/searchable-multi-select/searchable-multi-select.component';
 import { DTO_FIELD_TYPE_OPTIONS } from '../../constants/backend-field-types';
 
 interface DataObject {
   name: string;
   dtoType?: 'request' | 'response';
+  classMethods?: {
+    toString: boolean;
+    hashCode: boolean;
+    equals: boolean;
+    noArgsConstructor: boolean;
+    allArgsConstructor: boolean;
+    builder: boolean;
+  };
   responseWrapper?: 'STANDARD_ENVELOPE' | 'NONE' | 'UPSERT';
   enableFieldProjection?: boolean;
   includeHateoasLinks?: boolean;
@@ -43,6 +52,7 @@ interface DataObject {
     MatButtonModule,
     MatIconModule,
     SearchSortComponent,
+    SearchableMultiSelectComponent,
     HelpPopoverComponent,
     ConfirmationModalComponent,
     EditPropertyComponent,
@@ -62,6 +72,8 @@ export class AddDataObjectComponent implements OnChanges {
 
   dataObjectName = '';
   dtoType: 'request' | 'response' = 'request';
+  classMethods = this.getDefaultClassMethods();
+  selectedClassMethods: string[] = [];
   responseWrapper: 'STANDARD_ENVELOPE' | 'NONE' | 'UPSERT' = 'STANDARD_ENVELOPE';
   enableFieldProjection = true;
   includeHateoasLinks = true;
@@ -107,6 +119,14 @@ export class AddDataObjectComponent implements OnChanges {
   ];
 
   private readonly baseFieldTypes = DTO_FIELD_TYPE_OPTIONS;
+  classMethodOptions: string[] = [
+    'toString',
+    'hashcode',
+    'equals',
+    'NoArgsConstructor',
+    'AllArgsConstructor',
+    'Builder'
+  ];
 
   get fieldTypes(): string[] {
     const enums = Array.isArray(this.enumTypes)
@@ -149,6 +169,8 @@ export class AddDataObjectComponent implements OnChanges {
   loadDataObject(dataObject: DataObject): void {
     this.dataObjectName = dataObject.name;
     this.dtoType = dataObject.dtoType ?? 'request';
+    this.classMethods = this.parseClassMethods(dataObject.classMethods);
+    this.syncClassMethodsSelectionFromFlags();
     this.responseWrapper = dataObject.responseWrapper ?? 'STANDARD_ENVELOPE';
     this.enableFieldProjection = Boolean(dataObject.enableFieldProjection ?? true);
     this.includeHateoasLinks = Boolean(dataObject.includeHateoasLinks ?? true);
@@ -160,6 +182,8 @@ export class AddDataObjectComponent implements OnChanges {
   resetForm(): void {
     this.dataObjectName = '';
     this.dtoType = 'request';
+    this.classMethods = this.getDefaultClassMethods();
+    this.syncClassMethodsSelectionFromFlags();
     this.responseWrapper = 'STANDARD_ENVELOPE';
     this.enableFieldProjection = true;
     this.includeHateoasLinks = true;
@@ -193,6 +217,19 @@ export class AddDataObjectComponent implements OnChanges {
     this.responseWrapper = 'STANDARD_ENVELOPE';
     this.enableFieldProjection = true;
     this.includeHateoasLinks = true;
+  }
+
+  onClassMethodsChange(values: string[]): void {
+    this.selectedClassMethods = Array.isArray(values) ? [...values] : [];
+    const selectedSet = new Set(this.selectedClassMethods);
+    this.classMethods = {
+      toString: selectedSet.has('toString'),
+      hashCode: selectedSet.has('hashcode'),
+      equals: selectedSet.has('equals'),
+      noArgsConstructor: selectedSet.has('NoArgsConstructor'),
+      allArgsConstructor: selectedSet.has('AllArgsConstructor'),
+      builder: selectedSet.has('Builder')
+    };
   }
 
   removeField(index: number): void {
@@ -241,6 +278,7 @@ export class AddDataObjectComponent implements OnChanges {
     this.save.emit({
       name: this.dataObjectName,
       dtoType: this.dtoType,
+      classMethods: { ...this.classMethods },
       responseWrapper: this.dtoType === 'response' ? this.responseWrapper : undefined,
       enableFieldProjection: this.dtoType === 'response' ? this.enableFieldProjection : undefined,
       includeHateoasLinks: this.dtoType === 'response' ? this.includeHateoasLinks : undefined,
@@ -408,5 +446,69 @@ export class AddDataObjectComponent implements OnChanges {
       required: false,
       softDelete: false
     };
+  }
+
+  private getDefaultClassMethods(): {
+    toString: boolean;
+    hashCode: boolean;
+    equals: boolean;
+    noArgsConstructor: boolean;
+    allArgsConstructor: boolean;
+    builder: boolean;
+  } {
+    return {
+      toString: true,
+      hashCode: true,
+      equals: true,
+      noArgsConstructor: true,
+      allArgsConstructor: true,
+      builder: false
+    };
+  }
+
+  private parseClassMethods(raw: unknown): {
+    toString: boolean;
+    hashCode: boolean;
+    equals: boolean;
+    noArgsConstructor: boolean;
+    allArgsConstructor: boolean;
+    builder: boolean;
+  } {
+    const fallback = this.getDefaultClassMethods();
+    if (!raw || typeof raw !== 'object') {
+      return fallback;
+    }
+    const value = raw as Record<string, unknown>;
+    return {
+      toString: Boolean(value['toString'] ?? fallback.toString),
+      hashCode: Boolean(value['hashCode'] ?? fallback.hashCode),
+      equals: Boolean(value['equals'] ?? fallback.equals),
+      noArgsConstructor: Boolean(value['noArgsConstructor'] ?? fallback.noArgsConstructor),
+      allArgsConstructor: Boolean(value['allArgsConstructor'] ?? fallback.allArgsConstructor),
+      builder: Boolean(value['builder'] ?? fallback.builder)
+    };
+  }
+
+  private syncClassMethodsSelectionFromFlags(): void {
+    const selected: string[] = [];
+    if (this.classMethods.toString) {
+      selected.push('toString');
+    }
+    if (this.classMethods.hashCode) {
+      selected.push('hashcode');
+    }
+    if (this.classMethods.equals) {
+      selected.push('equals');
+    }
+    if (this.classMethods.noArgsConstructor) {
+      selected.push('NoArgsConstructor');
+    }
+    if (this.classMethods.allArgsConstructor) {
+      selected.push('AllArgsConstructor');
+    }
+    if (this.classMethods.builder) {
+      selected.push('Builder');
+    }
+    this.selectedClassMethods = selected;
   }
 }

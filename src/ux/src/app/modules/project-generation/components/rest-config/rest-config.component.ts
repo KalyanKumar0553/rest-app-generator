@@ -125,15 +125,15 @@ export interface RestEndpointConfig {
   };
   documentation: {
     endpoints: {
-      list: { description: string; descriptionTags: string[]; deprecated: boolean; };
-      get: { description: string; descriptionTags: string[]; deprecated: boolean; };
-      create: { description: string; descriptionTags: string[]; deprecated: boolean; };
-      update: { description: string; descriptionTags: string[]; deprecated: boolean; };
-      patch: { description: string; descriptionTags: string[]; deprecated: boolean; };
-      delete: { description: string; descriptionTags: string[]; deprecated: boolean; };
-      bulkInsert: { description: string; descriptionTags: string[]; deprecated: boolean; };
-      bulkUpdate: { description: string; descriptionTags: string[]; deprecated: boolean; };
-      bulkDelete: { description: string; descriptionTags: string[]; deprecated: boolean; };
+      list: { description: string; group: string; descriptionTags: string[]; deprecated: boolean; };
+      get: { description: string; group: string; descriptionTags: string[]; deprecated: boolean; };
+      create: { description: string; group: string; descriptionTags: string[]; deprecated: boolean; };
+      update: { description: string; group: string; descriptionTags: string[]; deprecated: boolean; };
+      patch: { description: string; group: string; descriptionTags: string[]; deprecated: boolean; };
+      delete: { description: string; group: string; descriptionTags: string[]; deprecated: boolean; };
+      bulkInsert: { description: string; group: string; descriptionTags: string[]; deprecated: boolean; };
+      bulkUpdate: { description: string; group: string; descriptionTags: string[]; deprecated: boolean; };
+      bulkDelete: { description: string; group: string; descriptionTags: string[]; deprecated: boolean; };
     };
   };
 }
@@ -252,15 +252,15 @@ const DEFAULT_REST_ENDPOINT_CONFIG: RestEndpointConfig = {
   },
   documentation: {
     endpoints: {
-      list: { description: '', descriptionTags: [], deprecated: false },
-      get: { description: '', descriptionTags: [], deprecated: false },
-      create: { description: '', descriptionTags: [], deprecated: false },
-      update: { description: '', descriptionTags: [], deprecated: false },
-      patch: { description: '', descriptionTags: [], deprecated: false },
-      delete: { description: '', descriptionTags: [], deprecated: false },
-      bulkInsert: { description: '', descriptionTags: [], deprecated: false },
-      bulkUpdate: { description: '', descriptionTags: [], deprecated: false },
-      bulkDelete: { description: '', descriptionTags: [], deprecated: false }
+      list: { description: 'List operation for API', group: 'API Group', descriptionTags: ['list'], deprecated: false },
+      get: { description: 'Get By Key operation for API', group: 'API Group', descriptionTags: ['get'], deprecated: false },
+      create: { description: 'Create operation for API', group: 'API Group', descriptionTags: ['create'], deprecated: false },
+      update: { description: 'Update operation for API', group: 'API Group', descriptionTags: ['update'], deprecated: false },
+      patch: { description: 'Patch operation for API', group: 'API Group', descriptionTags: ['patch'], deprecated: false },
+      delete: { description: 'Delete operation for API', group: 'API Group', descriptionTags: ['delete'], deprecated: false },
+      bulkInsert: { description: 'Bulk Insert operation for API', group: 'API Group', descriptionTags: ['bulkInsert'], deprecated: false },
+      bulkUpdate: { description: 'Bulk Update operation for API', group: 'API Group', descriptionTags: ['bulkUpdate'], deprecated: false },
+      bulkDelete: { description: 'Bulk Delete operation for API', group: 'API Group', descriptionTags: ['bulkDelete'], deprecated: false }
     }
   }
 };
@@ -296,6 +296,7 @@ export class RestConfigComponent implements OnChanges, AfterViewInit, OnDestroy 
   @Input() dtoObjects: Array<{ name?: string; dtoType?: 'request' | 'response'; fields?: unknown[] }> = [];
   @Input() enumTypes: string[] = [];
   @Input() softDeleteEnabled = false;
+  @Input() lockEntityMapping = false;
   @Input() existingRestConfigNames: string[] = [];
   @Output() save = new EventEmitter<RestEndpointConfig>();
   @Output() cancel = new EventEmitter<void>();
@@ -304,6 +305,7 @@ export class RestConfigComponent implements OnChanges, AfterViewInit, OnDestroy 
   showResourceNameErrors = false;
   resourceNameRequired = false;
   resourceNameDuplicate = false;
+  basePathRequired = false;
   mapToEntityRequired = false;
   activeTab: 'basic' | 'endpoints' | 'request' | 'error' | 'docs' = 'basic';
   overflowTabs: Array<{ id: 'basic' | 'endpoints' | 'request' | 'error' | 'docs'; label: string; icon: string }> = [];
@@ -341,6 +343,7 @@ export class RestConfigComponent implements OnChanges, AfterViewInit, OnDestroy 
       this.showResourceNameErrors = false;
       this.resourceNameRequired = false;
       this.resourceNameDuplicate = false;
+      this.basePathRequired = false;
       this.mapToEntityRequired = false;
     }
     if ((changes['config'] || changes['existingRestConfigNames']) && this.showResourceNameErrors) {
@@ -385,7 +388,7 @@ export class RestConfigComponent implements OnChanges, AfterViewInit, OnDestroy 
 
   saveConfig(): void {
     this.showResourceNameErrors = true;
-    if (!this.validateResourceNameUnique() || !this.validateEntityMapping()) {
+    if (!this.validateResourceNameUnique() || !this.validateBasePath() || !this.validateEntityMapping()) {
       this.activeTab = 'basic';
       this.scrollToActiveTab();
       return;
@@ -436,6 +439,7 @@ export class RestConfigComponent implements OnChanges, AfterViewInit, OnDestroy 
   }
 
   private sanitizeConfig(config: RestEndpointConfig): RestEndpointConfig {
+    const docResourceName = String(config?.resourceName ?? config?.mappedEntityName ?? '').trim();
     return {
       resourceName: String(config?.resourceName ?? '').trim(),
       basePath: String(config?.basePath ?? '').trim(),
@@ -562,71 +566,58 @@ export class RestConfigComponent implements OnChanges, AfterViewInit, OnDestroy 
       },
       documentation: {
         endpoints: {
-          list: {
-            description: String(config?.documentation?.endpoints?.list?.description ?? '').trim(),
-            descriptionTags: Array.isArray(config?.documentation?.endpoints?.list?.descriptionTags)
-              ? config.documentation.endpoints.list.descriptionTags.map(item => String(item ?? '').trim()).filter(Boolean)
-              : [],
-            deprecated: Boolean(config?.documentation?.endpoints?.list?.deprecated)
-          },
-          get: {
-            description: String(config?.documentation?.endpoints?.get?.description ?? '').trim(),
-            descriptionTags: Array.isArray(config?.documentation?.endpoints?.get?.descriptionTags)
-              ? config.documentation.endpoints.get.descriptionTags.map(item => String(item ?? '').trim()).filter(Boolean)
-              : [],
-            deprecated: Boolean(config?.documentation?.endpoints?.get?.deprecated)
-          },
-          create: {
-            description: String(config?.documentation?.endpoints?.create?.description ?? '').trim(),
-            descriptionTags: Array.isArray(config?.documentation?.endpoints?.create?.descriptionTags)
-              ? config.documentation.endpoints.create.descriptionTags.map(item => String(item ?? '').trim()).filter(Boolean)
-              : [],
-            deprecated: Boolean(config?.documentation?.endpoints?.create?.deprecated)
-          },
-          update: {
-            description: String(config?.documentation?.endpoints?.update?.description ?? '').trim(),
-            descriptionTags: Array.isArray(config?.documentation?.endpoints?.update?.descriptionTags)
-              ? config.documentation.endpoints.update.descriptionTags.map(item => String(item ?? '').trim()).filter(Boolean)
-              : [],
-            deprecated: Boolean(config?.documentation?.endpoints?.update?.deprecated)
-          },
-          patch: {
-            description: String(config?.documentation?.endpoints?.patch?.description ?? '').trim(),
-            descriptionTags: Array.isArray(config?.documentation?.endpoints?.patch?.descriptionTags)
-              ? config.documentation.endpoints.patch.descriptionTags.map(item => String(item ?? '').trim()).filter(Boolean)
-              : [],
-            deprecated: Boolean(config?.documentation?.endpoints?.patch?.deprecated)
-          },
-          delete: {
-            description: String(config?.documentation?.endpoints?.delete?.description ?? '').trim(),
-            descriptionTags: Array.isArray(config?.documentation?.endpoints?.delete?.descriptionTags)
-              ? config.documentation.endpoints.delete.descriptionTags.map(item => String(item ?? '').trim()).filter(Boolean)
-              : [],
-            deprecated: Boolean(config?.documentation?.endpoints?.delete?.deprecated)
-          },
-          bulkInsert: {
-            description: String(config?.documentation?.endpoints?.bulkInsert?.description ?? '').trim(),
-            descriptionTags: Array.isArray(config?.documentation?.endpoints?.bulkInsert?.descriptionTags)
-              ? config.documentation.endpoints.bulkInsert.descriptionTags.map(item => String(item ?? '').trim()).filter(Boolean)
-              : [],
-            deprecated: Boolean(config?.documentation?.endpoints?.bulkInsert?.deprecated)
-          },
-          bulkUpdate: {
-            description: String(config?.documentation?.endpoints?.bulkUpdate?.description ?? '').trim(),
-            descriptionTags: Array.isArray(config?.documentation?.endpoints?.bulkUpdate?.descriptionTags)
-              ? config.documentation.endpoints.bulkUpdate.descriptionTags.map(item => String(item ?? '').trim()).filter(Boolean)
-              : [],
-            deprecated: Boolean(config?.documentation?.endpoints?.bulkUpdate?.deprecated)
-          },
-          bulkDelete: {
-            description: String(config?.documentation?.endpoints?.bulkDelete?.description ?? '').trim(),
-            descriptionTags: Array.isArray(config?.documentation?.endpoints?.bulkDelete?.descriptionTags)
-              ? config.documentation.endpoints.bulkDelete.descriptionTags.map(item => String(item ?? '').trim()).filter(Boolean)
-              : [],
-            deprecated: Boolean(config?.documentation?.endpoints?.bulkDelete?.deprecated)
-          }
+          list: this.normalizeDocumentationEntry('list', config?.documentation?.endpoints?.list, docResourceName),
+          get: this.normalizeDocumentationEntry('get', config?.documentation?.endpoints?.get, docResourceName),
+          create: this.normalizeDocumentationEntry('create', config?.documentation?.endpoints?.create, docResourceName),
+          update: this.normalizeDocumentationEntry('update', config?.documentation?.endpoints?.update, docResourceName),
+          patch: this.normalizeDocumentationEntry('patch', config?.documentation?.endpoints?.patch, docResourceName),
+          delete: this.normalizeDocumentationEntry('delete', config?.documentation?.endpoints?.delete, docResourceName),
+          bulkInsert: this.normalizeDocumentationEntry('bulkInsert', config?.documentation?.endpoints?.bulkInsert, docResourceName),
+          bulkUpdate: this.normalizeDocumentationEntry('bulkUpdate', config?.documentation?.endpoints?.bulkUpdate, docResourceName),
+          bulkDelete: this.normalizeDocumentationEntry('bulkDelete', config?.documentation?.endpoints?.bulkDelete, docResourceName)
         }
       }
+    };
+  }
+
+  private normalizeDocumentationEntry(
+    endpointKey: keyof RestEndpointConfig['documentation']['endpoints'],
+    rawEntry: any,
+    resourceName: string
+  ): { description: string; group: string; descriptionTags: string[]; deprecated: boolean } {
+    const fallback = this.getDefaultDocumentationEntry(endpointKey, resourceName);
+    const tags = Array.isArray(rawEntry?.descriptionTags)
+      ? rawEntry.descriptionTags.map((item: unknown) => String(item ?? '').trim()).filter(Boolean)
+      : [];
+    return {
+      description: String(rawEntry?.description ?? '').trim() || fallback.description,
+      group: String(rawEntry?.group ?? '').trim() || fallback.group,
+      descriptionTags: Array.from(new Set(tags.length ? tags : fallback.descriptionTags)),
+      deprecated: Boolean(rawEntry?.deprecated)
+    };
+  }
+
+  private getDefaultDocumentationEntry(
+    endpointKey: keyof RestEndpointConfig['documentation']['endpoints'],
+    resourceName: string
+  ): { description: string; group: string; descriptionTags: string[]; deprecated: boolean } {
+    const endpointLabel: Record<string, string> = {
+      list: 'List',
+      get: 'Get By Key',
+      create: 'Create',
+      update: 'Update',
+      patch: 'Patch',
+      delete: 'Delete',
+      bulkInsert: 'Bulk Insert',
+      bulkUpdate: 'Bulk Update',
+      bulkDelete: 'Bulk Delete'
+    };
+    const target = String(resourceName ?? '').trim() || 'API';
+    return {
+      description: `${endpointLabel[String(endpointKey)] || String(endpointKey)} operation for ${target}`,
+      group: `${target} Group`,
+      descriptionTags: [String(endpointKey)],
+      deprecated: false
     };
   }
 
@@ -648,10 +639,19 @@ export class RestConfigComponent implements OnChanges, AfterViewInit, OnDestroy 
     if (!this.showResourceNameErrors) {
       this.resourceNameRequired = false;
       this.resourceNameDuplicate = false;
+      this.basePathRequired = false;
       return;
     }
     this.resourceNameRequired = false;
     this.validateResourceNameUnique();
+  }
+
+  onBasePathChanged(): void {
+    if (!this.showResourceNameErrors) {
+      this.basePathRequired = false;
+      return;
+    }
+    this.validateBasePath();
   }
 
   onEntityMappingChanged(): void {
@@ -683,5 +683,11 @@ export class RestConfigComponent implements OnChanges, AfterViewInit, OnDestroy 
     const mappedEntityName = String(this.draft?.mappedEntityName ?? '').trim();
     this.mapToEntityRequired = mapToEntity && !mappedEntityName;
     return !this.mapToEntityRequired;
+  }
+
+  private validateBasePath(): boolean {
+    const basePath = String(this.draft?.basePath ?? '').trim();
+    this.basePathRequired = !basePath;
+    return !this.basePathRequired;
   }
 }

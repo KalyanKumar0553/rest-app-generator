@@ -33,8 +33,11 @@
         [showResourceNameErrors]="showResourceNameErrors"
         [resourceNameRequired]="resourceNameRequired"
         [resourceNameDuplicate]="resourceNameDuplicate"
+        [basePathRequired]="basePathRequired"
         [mapToEntityRequired]="mapToEntityRequired"
+        [lockEntityMapping]="lockEntityMapping"
         (resourceNameChange)="onResourceNameChanged()"
+        (basePathChange)="onBasePathChanged()"
         (mappingChange)="onEntityMappingChanged()">
       </app-rest-config-basic-settings>
     </ng-container>

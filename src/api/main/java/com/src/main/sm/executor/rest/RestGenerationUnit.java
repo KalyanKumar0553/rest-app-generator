@@ -10,6 +10,7 @@ public class RestGenerationUnit {
 	private final String idType;
 	private final String idTypeImport;
 	private final String endpointPath;
+	private final String requestBasePath;
 	private final String modelPackage;
 	private final String repositoryPackage;
 	private final String servicePackage;
@@ -22,15 +23,19 @@ public class RestGenerationUnit {
 	private final String serviceClass;
 	private final String controllerClass;
 	private final String allowedSortFieldsLiteral;
+	private final boolean noSql;
+	private final Map<String, Object> runtimeConfig;
 
-	public RestGenerationUnit(String entityName, String idName, String idType, String idTypeImport, String endpointPath, String modelPackage,
+	public RestGenerationUnit(String entityName, String idName, String idType, String idTypeImport, String endpointPath, String requestBasePath,
+			String modelPackage,
 			String repositoryPackage, String servicePackage, String controllerPackage, String supportPackage,
-			String allowedSortFieldsLiteral) {
+			String allowedSortFieldsLiteral, boolean noSql, Map<String, Object> runtimeConfig) {
 		this.entityName = entityName;
 		this.idName = idName;
 		this.idType = idType;
 		this.idTypeImport = idTypeImport;
 		this.endpointPath = endpointPath;
+		this.requestBasePath = requestBasePath;
 		this.modelPackage = modelPackage;
 		this.repositoryPackage = repositoryPackage;
 		this.servicePackage = servicePackage;
@@ -43,6 +48,8 @@ public class RestGenerationUnit {
 		this.entitySupportClass = "RestEntityUtils";
 		this.filterSupportClass = "RestFilterUtils";
 		this.querySupportClass = "RestQueryUtils";
+		this.noSql = noSql;
+		this.runtimeConfig = runtimeConfig == null ? new LinkedHashMap<>() : new LinkedHashMap<>(runtimeConfig);
 	}
 
 	public String getEntityName() {
@@ -63,6 +70,10 @@ public class RestGenerationUnit {
 
 	public String getEndpointPath() {
 		return endpointPath;
+	}
+
+	public String getRequestBasePath() {
+		return requestBasePath;
 	}
 
 	public String getModelPackage() {
@@ -113,6 +124,14 @@ public class RestGenerationUnit {
 		return allowedSortFieldsLiteral;
 	}
 
+	public boolean isNoSql() {
+		return noSql;
+	}
+
+	public Map<String, Object> getRuntimeConfig() {
+		return new LinkedHashMap<>(runtimeConfig);
+	}
+
 	public Map<String, Object> toTemplateModel() {
 		Map<String, Object> model = new LinkedHashMap<>();
 		model.put("entityName", entityName);
@@ -120,6 +139,7 @@ public class RestGenerationUnit {
 		model.put("idType", idType);
 		model.put("idTypeImport", idTypeImport);
 		model.put("endpointPath", endpointPath);
+		model.put("requestBasePath", requestBasePath);
 		model.put("modelPackage", modelPackage);
 		model.put("repositoryPackage", repositoryPackage);
 		model.put("servicePackage", servicePackage);
@@ -132,6 +152,8 @@ public class RestGenerationUnit {
 		model.put("serviceClass", serviceClass);
 		model.put("controllerClass", controllerClass);
 		model.put("allowedSortFieldsLiteral", allowedSortFieldsLiteral);
+		model.put("noSql", noSql);
+		model.putAll(runtimeConfig);
 		return model;
 	}
 }

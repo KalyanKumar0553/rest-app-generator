@@ -14,6 +14,8 @@ import org.springframework.stereotype.Service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.src.main.dto.AppSpecDTO;
+import com.src.main.sm.executor.common.BoilerplateStyle;
+import com.src.main.sm.executor.common.BoilerplateStyleResolver;
 import com.src.main.sm.executor.TemplateEngine;
 import com.src.main.sm.executor.enumgen.EnumGenerationSupport;
 import com.src.main.sm.executor.enumgen.EnumSpecResolved;
@@ -22,6 +24,15 @@ import com.src.main.sm.executor.enumgen.EnumSpecResolved;
 public class DtoGenerationService {
 
 	private static final String TPL_DTO = "templates/dto/class.java.mustache";
+
+	private record ClassMethodsSelection(
+			boolean generateToString,
+			boolean generateEquals,
+			boolean generateHashCode,
+			boolean noArgsConstructor,
+			boolean allArgsConstructor,
+			boolean builder) {
+	}
 
 	private final TemplateEngine templateEngine;
 	private final DtoValidationHelperGenerator validationHelperGenerator;
@@ -34,6 +45,7 @@ public class DtoGenerationService {
 	@SuppressWarnings("unchecked")
 	public void generate(Path root, Map<String, Object> yaml, String groupId, String artifact) throws Exception {
 		String basePkg = resolveBasePackage(yaml, groupId, artifact);
+		BoilerplateStyle style = BoilerplateStyleResolver.resolveFromYaml(yaml, true);
 
 		List<Map<String, Object>> dtos = (List<Map<String, Object>>) yaml.getOrDefault("dtos", List.of());
 		if (dtos.isEmpty()) {
@@ -50,7 +62,7 @@ public class DtoGenerationService {
 
 		List<Map<String, Object>> dtosForMessages = new ArrayList<>();
 		try {
-			dtos.stream().map(dto -> buildUnit(dto, enumByName, enumPackage)).forEach(unit -> {
+			dtos.stream().map(dto -> buildUnit(dto, enumByName, enumPackage, style)).forEach(unit -> {
 				try {
 					writeDtoUnit(root, basePkg, unit);
 					dtosForMessages.add(unit.getMessageModel());
@@ -77,9 +89,22 @@ public class DtoGenerationService {
 	}
 
 	private void writeDtoUnit(Path root, String basePkg, DtoGenerationUnit unit) throws Exception {
-		String code = templateEngine.render(TPL_DTO,
-				Map.of("basePkg", basePkg, "sub", unit.getSubPackage(), "name", unit.getName(), "classAnnotations",
-						String.join("\n", unit.getClassAnnotations()), "fields", unit.getFieldModels()));
+		Map<String, Object> templateModel = new LinkedHashMap<>();
+		templateModel.put("basePkg", basePkg);
+		templateModel.put("sub", unit.getSubPackage());
+		templateModel.put("name", unit.getName());
+		templateModel.put("dtoName", unit.getName());
+		templateModel.put("classAnnotations", unit.getClassAnnotations());
+		templateModel.put("fields", unit.getFieldModels());
+		templateModel.put("useLombok", unit.isUseLombok());
+		templateModel.put("hasFields", !unit.getFieldModels().isEmpty());
+		templateModel.put("generateNoArgsConstructor", !unit.isUseLombok() && unit.isGenerateNoArgsConstructor());
+		templateModel.put("generateAllArgsConstructor", !unit.isUseLombok() && unit.isGenerateAllArgsConstructor());
+		templateModel.put("generateBuilder", !unit.isUseLombok() && unit.isGenerateBuilder());
+		templateModel.put("generateToString", !unit.isUseLombok() && unit.isGenerateToString());
+		templateModel.put("generateEquals", !unit.isUseLombok() && unit.isGenerateEquals());
+		templateModel.put("generateHashCode", !unit.isUseLombok() && unit.isGenerateHashCode());
+		String code = templateEngine.render(TPL_DTO, templateModel);
 		code = DtoGenerationSupport.injectImportsAfterPackage(code, unit.getImports());
 		Path dir = root.resolve("src/main/java/" + basePkg.replace('.', '/') + "/dto/" + unit.getSubPackage());
 		Files.createDirectories(dir);
@@ -88,7 +113,7 @@ public class DtoGenerationService {
 
 	@SuppressWarnings("unchecked")
 	private DtoGenerationUnit buildUnit(Map<String, Object> dto, Map<String, EnumSpecResolved> enumByName,
-			String enumPackage) {
+			String enumPackage, BoilerplateStyle style) {
 		String sub = "request".equals(String.valueOf(dto.get("type"))) ? "request" : "response";
 		String name = String.valueOf(dto.get("name"));
 		List<Map<String, Object>> fields = (List<Map<String, Object>>) dto.getOrDefault("fields", List.of());
@@ -97,6 +122,22 @@ public class DtoGenerationService {
 		List<String> classAnnotations = new ArrayList<>();
 		List<Map<String, Object>> classConstraintsForMessages = new ArrayList<>();
 		Set<String> imports = new LinkedHashSet<>();
+		ClassMethodsSelection classMethods = resolveClassMethods(dto);
+		DtoBoilerplateContext boilerplateContext = new DtoBoilerplateContext(
+				name,
+				classAnnotations,
+				imports,
+				true,
+				classMethods.generateToString(),
+				classMethods.generateEquals(),
+				classMethods.generateHashCode(),
+				classMethods.noArgsConstructor(),
+				classMethods.allArgsConstructor(),
+				classMethods.builder());
+		DtoBoilerplateStrategyFactory.forStyle(style).apply(boilerplateContext);
+
+		classAnnotations.add("@JsonInclude(JsonInclude.Include.NON_NULL)");
+		DtoGenerationSupport.collectImportFromAnnotation("@com.fasterxml.jackson.annotation.JsonInclude", imports);
 
 		for (Map<String, Object> c : classSpecs) {
 			String ann = DtoGenerationSupport.toClassLevelAnnotation(c);
@@ -176,6 +217,13 @@ public class DtoGenerationService {
 			fieldsForMessages.add(msgField);
 		});
 
+		for (int i = 0; i < fieldModels.size(); i++) {
+			fieldModels.get(i).put("isLast", i == fieldModels.size() - 1);
+		}
+		if (!boilerplateContext.isUseLombok() && (classMethods.generateEquals() || classMethods.generateHashCode())) {
+			imports.add("java.util.Objects");
+		}
+
 		classAnnotations.forEach(a -> DtoGenerationSupport.collectImportFromAnnotation(a, imports));
 		List<String> simplifiedClassAnnotations = DtoGenerationSupport.simplifyAnnotations(classAnnotations, imports);
 
@@ -186,6 +234,63 @@ public class DtoGenerationService {
 			dtoMsg.put("classConstraints", classConstraintsForMessages);
 		}
 
-		return new DtoGenerationUnit(sub, name, fieldModels, simplifiedClassAnnotations, imports, dtoMsg);
+		return new DtoGenerationUnit(
+				sub,
+				name,
+				fieldModels,
+				simplifiedClassAnnotations,
+				imports,
+				dtoMsg,
+				boilerplateContext.isUseLombok(),
+				classMethods.generateToString(),
+				classMethods.generateEquals(),
+				classMethods.generateHashCode(),
+				classMethods.noArgsConstructor(),
+				classMethods.allArgsConstructor(),
+				classMethods.builder());
+	}
+
+	@SuppressWarnings("unchecked")
+	private ClassMethodsSelection resolveClassMethods(Map<String, Object> dto) {
+		boolean defaultToString = true;
+		boolean defaultEquals = true;
+		boolean defaultHashCode = true;
+		boolean defaultNoArgsConstructor = true;
+		boolean defaultAllArgsConstructor = true;
+		boolean defaultBuilder = false;
+
+		Object raw = dto.get("classMethods");
+		if (!(raw instanceof Map<?, ?> mapRaw)) {
+			return new ClassMethodsSelection(
+					defaultToString,
+					defaultEquals,
+					defaultHashCode,
+					defaultNoArgsConstructor,
+					defaultAllArgsConstructor,
+					defaultBuilder);
+		}
+		Map<String, Object> map = (Map<String, Object>) mapRaw;
+		return new ClassMethodsSelection(
+				parseBoolean(map.get("toString"), defaultToString),
+				parseBoolean(map.get("equals"), defaultEquals),
+				parseBoolean(map.get("hashCode"), defaultHashCode),
+				parseBoolean(map.get("noArgsConstructor"), defaultNoArgsConstructor),
+				parseBoolean(map.get("allArgsConstructor"), defaultAllArgsConstructor),
+				parseBoolean(map.get("builder"), defaultBuilder));
+	}
+
+	private boolean parseBoolean(Object value, boolean defaultValue) {
+		if (value == null) {
+			return defaultValue;
+		}
+		if (value instanceof Boolean bool) {
+			return bool;
+		}
+		String normalized = String.valueOf(value).trim().toLowerCase();
+		if (normalized.isEmpty()) {
+			return defaultValue;
+		}
+		return "true".equals(normalized) || "1".equals(normalized) || "yes".equals(normalized)
+				|| "y".equals(normalized);
 	}
 }

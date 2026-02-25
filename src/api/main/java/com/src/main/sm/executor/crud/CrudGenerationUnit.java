@@ -12,9 +12,10 @@ public class CrudGenerationUnit {
 	private final String modelPackage;
 	private final String repositoryPackage;
 	private final String repositoryClass;
+	private final boolean noSql;
 
 	public CrudGenerationUnit(String entityName, String idName, String idType, String idTypeImport, String modelPackage,
-			String repositoryPackage) {
+			String repositoryPackage, boolean noSql) {
 		this.entityName = entityName;
 		this.idName = idName;
 		this.idType = idType;
@@ -22,6 +23,7 @@ public class CrudGenerationUnit {
 		this.modelPackage = modelPackage;
 		this.repositoryPackage = repositoryPackage;
 		this.repositoryClass = entityName + "Repository";
+		this.noSql = noSql;
 	}
 
 	public String getRepositoryPackage() {
@@ -41,6 +43,7 @@ public class CrudGenerationUnit {
 		model.put("modelPackage", modelPackage);
 		model.put("repositoryPackage", repositoryPackage);
 		model.put("repositoryClass", repositoryClass);
+		model.put("noSql", noSql);
 		return model;
 	}
 }

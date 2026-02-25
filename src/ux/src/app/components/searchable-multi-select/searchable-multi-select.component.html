@@ -1,6 +1,7 @@
 <mat-form-field appearance="fill" class="searchable-multi-select full-width">
   <mat-label>{{ label }}</mat-label>
   <mat-select
+    panelClass="searchable-multi-select-panel"
     [ngModel]="selectedValues"
     (ngModelChange)="onSelectionChange($event)"
     [disabled]="disabled"
@@ -34,7 +35,7 @@
         (keydown)="onSearchKeydown($event)">
     </mat-option>
 
-    <mat-option *ngFor="let option of filteredOptions" [value]="option">
+    <mat-option *ngFor="let option of filteredOptions" [value]="option" class="value-option">
       {{ option }}
     </mat-option>
 

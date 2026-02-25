@@ -3,6 +3,7 @@ package com.src.main.sm.executor.rest;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.logging.log4j.util.Strings;
 
@@ -16,12 +17,19 @@ public final class RestGenerationSupport {
 	private RestGenerationSupport() {
 	}
 
-	public static RestGenerationUnit buildUnit(ModelSpecDTO model, String basePackage, String packageStructure) {
+	public static RestGenerationUnit buildUnit(
+			ModelSpecDTO model,
+			String basePackage,
+			String packageStructure,
+			boolean noSql,
+			String requestBasePath,
+			Map<String, Object> runtimeConfig) {
 		String entityName = CaseUtils.toPascal(StringUtils.firstNonBlank(model.getName(), "Entity"));
 		String idName = StringUtils.firstNonBlank(model.getId() != null ? model.getId().getField() : null, "id");
 		JavaTypeRef idType = mapJavaType(model.getId() != null ? model.getId().getType() : null);
 
 		String endpointPath = toKebabCase(entityName) + "s";
+		String resolvedRequestBasePath = StringUtils.firstNonBlank(requestBasePath, "/api/" + endpointPath);
 		boolean domainStructure = "domain".equalsIgnoreCase(StringUtils.firstNonBlank(packageStructure, "technical"));
 		String normalizedEntity = normalizePackageSegment(entityName);
 
@@ -47,8 +55,8 @@ public final class RestGenerationSupport {
 		}
 
 		String allowedSortFieldsLiteral = resolveAllowedSortFieldsLiteral(model, idName);
-		return new RestGenerationUnit(entityName, idName, idType.simpleName(), idType.importName(), endpointPath, modelPackage, repositoryPackage,
-				servicePackage, controllerPackage, utilPackage, allowedSortFieldsLiteral);
+		return new RestGenerationUnit(entityName, idName, idType.simpleName(), idType.importName(), endpointPath, resolvedRequestBasePath,
+				modelPackage, repositoryPackage, servicePackage, controllerPackage, utilPackage, allowedSortFieldsLiteral, noSql, runtimeConfig);
 	}
 
 	public static String resolveUtilPackage(String basePackage, String packageStructure) {

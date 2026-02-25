@@ -42,7 +42,8 @@ public class InitializrGradleGenerator {
 
 		GradleBuild build = createBaseBuild(groupId, artifact, bootVer, appVer, packaging, jdk);
 		addModelDependencies(build, deps);
-		addStandardDependencies(build, packaging, model.isIncludeOpenapi(), hasJpaDependency(deps));
+		addStandardDependencies(build, packaging, model.isIncludeOpenapi(), hasJpaDependency(deps),
+				model.isIncludeLombok());
 
 		String buildContent = renderBuild(build, kotlin, jdk);
 		String settingsContent = renderSettings(artifact, build, kotlin);
@@ -98,19 +99,16 @@ public class InitializrGradleGenerator {
 						Dependency.withCoordinates(parts[0], parts[1]).scope(toScope(parts[2]))));
 	}
 
-	private void addStandardDependencies(GradleBuild build, String packaging, boolean includeOpenApi, boolean includeJpa) {
-		// Lombok
-		build.dependencies().add("lombok",
-				Dependency.withCoordinates("org.projectlombok", "lombok").scope(DependencyScope.COMPILE_ONLY));
-		build.dependencies().add("lombok-ap",
-				Dependency.withCoordinates("org.projectlombok", "lombok").scope(DependencyScope.ANNOTATION_PROCESSOR));
+	private void addStandardDependencies(GradleBuild build, String packaging, boolean includeOpenApi, boolean includeJpa,
+			boolean includeLombok) {
+		if (includeLombok) {
+			build.dependencies().add("lombok",
+					Dependency.withCoordinates("org.projectlombok", "lombok").scope(DependencyScope.COMPILE_ONLY));
+			build.dependencies().add("lombok-ap",
+					Dependency.withCoordinates("org.projectlombok", "lombok").scope(DependencyScope.ANNOTATION_PROCESSOR));
+		}
 
 		if (includeJpa) {
-			// Spring Data JPA
-			build.dependencies().add("spring-data-jpa",
-					Dependency.withCoordinates("org.springframework.boot", "spring-boot-starter-data-jpa")
-							.scope(DependencyScope.COMPILE));
-
 			// Jakarta Persistence API
 			build.dependencies().add("jakarta-persistence-api",
 					Dependency.withCoordinates("jakarta.persistence", "jakarta.persistence-api")

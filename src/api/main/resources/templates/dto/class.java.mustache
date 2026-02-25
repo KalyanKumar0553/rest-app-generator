@@ -6,18 +6,10 @@ import java.time.*;
 import com.fasterxml.jackson.annotation.*;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.*;
-import lombok.*;
-
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
-@ToString
-@EqualsAndHashCode
-@JsonInclude(JsonInclude.Include.NON_NULL)
 {{#classAnnotations}}
-{{{classAnnotations}}}
+{{{.}}}
 {{/classAnnotations}}
-public class {{name}} {
+public class {{dtoName}} {
 
 {{#fields}}
   {{#annotations}}
@@ -29,4 +21,98 @@ public class {{name}} {
   private {{{javaType}}} {{name}};
 
 {{/fields}}
+{{^useLombok}}
+  {{#generateNoArgsConstructor}}
+  public {{dtoName}}() {
+  }
+  {{/generateNoArgsConstructor}}
+
+  {{#generateAllArgsConstructor}}
+  {{#hasFields}}
+  public {{dtoName}}({{#fields}}{{{javaType}}} {{name}}{{^isLast}}, {{/isLast}}{{/fields}}) {
+{{#fields}}    this.{{name}} = {{name}};
+{{/fields}}  }
+  {{/hasFields}}
+  {{/generateAllArgsConstructor}}
+
+{{#fields}}
+  public {{{javaType}}} get{{method}}() {
+    return this.{{name}};
+  }
+
+  public void set{{method}}({{{javaType}}} {{name}}) {
+    this.{{name}} = {{name}};
+  }
+
+{{/fields}}
+  {{#generateBuilder}}
+  public static {{dtoName}}Builder builder() {
+    return new {{dtoName}}Builder();
+  }
+
+  public static class {{dtoName}}Builder {
+{{#fields}}
+    private {{{javaType}}} {{name}};
+{{/fields}}
+
+{{#fields}}
+    public {{dtoName}}Builder {{name}}({{{javaType}}} {{name}}) {
+      this.{{name}} = {{name}};
+      return this;
+    }
+{{/fields}}
+
+    public {{dtoName}} build() {
+      {{dtoName}} instance = new {{dtoName}}();
+{{#fields}}
+      instance.set{{method}}(this.{{name}});
+{{/fields}}
+      return instance;
+    }
+  }
+
+  {{/generateBuilder}}
+  {{#generateToString}}
+  @Override
+  public String toString() {
+    return "{{dtoName}}{" +
+{{#hasFields}}
+{{#fields}}
+        "{{name}}=" + this.{{name}}{{^isLast}} + ", " +{{/isLast}}{{#isLast}} +{{/isLast}}
+{{/fields}}
+{{/hasFields}}
+{{^hasFields}}
+        "" +
+{{/hasFields}}
+        '}';
+  }
+
+  {{/generateToString}}
+  {{#generateEquals}}
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    {{dtoName}} that = ({{dtoName}}) o;
+{{#hasFields}}
+    return {{#fields}}Objects.equals(this.{{name}}, that.{{name}}){{^isLast}} && {{/isLast}}{{/fields}};
+{{/hasFields}}
+{{^hasFields}}
+    return true;
+{{/hasFields}}
+  }
+
+  {{/generateEquals}}
+  {{#generateHashCode}}
+  @Override
+  public int hashCode() {
+    return Objects.hash({{#fields}}{{name}}{{^isLast}}, {{/isLast}}{{/fields}});
+  }
+
+  {{/generateHashCode}}
+{{/useLombok}}
 }

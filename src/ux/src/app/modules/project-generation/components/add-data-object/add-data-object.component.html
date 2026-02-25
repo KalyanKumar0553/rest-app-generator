@@ -19,20 +19,16 @@
       </mat-select>
     </mat-form-field>
 
-    <div class="response-wrapper-panel" *ngIf="dtoType === 'response'">
-      <div class="response-wrapper-title-row">
-        <h4>Response Wrapper</h4>
-        <div class="response-wrapper-line"></div>
-      </div>
-      <mat-radio-group class="response-wrapper-options" [(ngModel)]="responseWrapper">
-        <mat-radio-button value="STANDARD_ENVELOPE">Standard Envelope</mat-radio-button>
-        <mat-radio-button value="NONE">None</mat-radio-button>
-        <mat-radio-button value="UPSERT">Upsert</mat-radio-button>
-      </mat-radio-group>
-      <div class="response-flags">
-        <mat-checkbox [(ngModel)]="enableFieldProjection" color="primary">Enable Field Projection</mat-checkbox>
-        <mat-checkbox [(ngModel)]="includeHateoasLinks" color="primary">Include HATEOAS Links</mat-checkbox>
-      </div>
+    <div class="form-group class-methods-section">
+      <h3 class="section-title">Configure Class Methods</h3>
+      <app-searchable-multi-select
+        [label]="'Class Methods'"
+        [searchPlaceholder]="'Search class methods'"
+        [options]="classMethodOptions"
+        [selectedValues]="selectedClassMethods"
+        (selectedValuesChange)="onClassMethodsChange($event)"
+        [emptyMessage]="'No class methods found'">
+      </app-searchable-multi-select>
     </div>
 
     <div class="fields-section">

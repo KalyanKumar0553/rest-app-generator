@@ -49,6 +49,8 @@ public class StateMachineConfig extends EnumStateMachineConfigurerAdapter<States
 						runStep(States.CRUD_GENERATION, Events.CRUD_DONE, Events.CRUD_FAIL))
 				.stateEntry(States.ACTUATOR_CONFIGURATION,
 						runStep(States.ACTUATOR_CONFIGURATION, Events.ACTUATOR_DONE, Events.ACTUATOR_FAIL))
+				.stateEntry(States.EXCEPTION_PACKAGE_GENERATION,
+						runStep(States.EXCEPTION_PACKAGE_GENERATION, Events.EXCEPTION_PACKAGE_DONE, Events.EXCEPTION_PACKAGE_FAIL))
 				.stateEntry(States.APPLICATION_FILES,
 						runStep(States.APPLICATION_FILES, Events.APPFILES_DONE, Events.APPFILES_FAIL))
 				.stateEntry(States.DOCKER_GENERATION,
@@ -93,10 +95,15 @@ public class StateMachineConfig extends EnumStateMachineConfigurerAdapter<States
 				.and().withExternal().source(States.APPLICATION_FILES).target(States.ERROR).event(Events.APPFILES_FAIL)
 				.and()
 
-				// ACTUATOR CONFIG → DOCKER / ERROR
-				.withExternal().source(States.ACTUATOR_CONFIGURATION).target(States.DOCKER_GENERATION)
+				// ACTUATOR CONFIG → EXCEPTION PACKAGE / ERROR
+				.withExternal().source(States.ACTUATOR_CONFIGURATION).target(States.EXCEPTION_PACKAGE_GENERATION)
 					.event(Events.ACTUATOR_DONE).and().withExternal().source(States.ACTUATOR_CONFIGURATION)
 					.target(States.ERROR).event(Events.ACTUATOR_FAIL).and()
+
+				// EXCEPTION PACKAGE → DOCKER / ERROR
+				.withExternal().source(States.EXCEPTION_PACKAGE_GENERATION).target(States.DOCKER_GENERATION)
+				.event(Events.EXCEPTION_PACKAGE_DONE).and().withExternal().source(States.EXCEPTION_PACKAGE_GENERATION)
+				.target(States.ERROR).event(Events.EXCEPTION_PACKAGE_FAIL).and()
 
 				// DOCKER → SCAFFOLD / ERROR
 				.withExternal().source(States.DOCKER_GENERATION).target(States.SCAFFOLD).event(Events.DOCKER_DONE)
@@ -115,6 +122,7 @@ public class StateMachineConfig extends EnumStateMachineConfigurerAdapter<States
 					.withExternal().source(States.REST_GENERATION).target(States.ERROR).event(Events.FAIL).and()
 					.withExternal().source(States.CRUD_GENERATION).target(States.ERROR).event(Events.FAIL).and()
 					.withExternal().source(States.ACTUATOR_CONFIGURATION).target(States.ERROR).event(Events.FAIL).and()
+					.withExternal().source(States.EXCEPTION_PACKAGE_GENERATION).target(States.ERROR).event(Events.FAIL).and()
 					.withExternal().source(States.APPLICATION_FILES).target(States.ERROR).event(Events.FAIL).and()
 				.withExternal().source(States.DOCKER_GENERATION).target(States.ERROR).event(Events.FAIL).and()
 				.withExternal().source(States.SCAFFOLD).target(States.ERROR).event(Events.FAIL);

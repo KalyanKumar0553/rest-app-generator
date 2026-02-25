@@ -10,31 +10,41 @@
     </mat-checkbox>
   </div>
 
-  <mat-form-field appearance="fill" class="full-width-field">
+  <mat-form-field appearance="fill" subscriptSizing="dynamic" class="full-width-field">
+    <mat-label>Group</mat-label>
+    <input matInput [(ngModel)]="formData.group" placeholder="Enter group">
+  </mat-form-field>
+  <div class="field-error" *ngIf="showValidationErrors && groupRequiredError">
+    Group is required.
+  </div>
+
+  <mat-form-field appearance="fill" subscriptSizing="dynamic" class="full-width-field">
     <mat-label>Description</mat-label>
     <input matInput [(ngModel)]="formData.description" placeholder="Enter description">
   </mat-form-field>
+  <div class="field-error" *ngIf="showValidationErrors && descriptionRequiredError">
+    Description is required.
+  </div>
 
-  <mat-form-field appearance="fill" class="full-width-field">
+  <mat-form-field appearance="fill" subscriptSizing="dynamic" class="full-width-field">
     <mat-label>Add Tag</mat-label>
     <input
       matInput
-      [matChipInputFor]="tagGrid"
-      [matChipInputSeparatorKeyCodes]="separatorKeysCodes"
-      [matChipInputAddOnBlur]="true"
-      (matChipInputTokenEnd)="addTag($event)"
+      [(ngModel)]="tagInputValue"
+      (keydown)="onTagInputKeydown($event)"
+      (blur)="addTagFromBlur()"
       placeholder="Type and press Enter">
   </mat-form-field>
+  <div class="field-error" *ngIf="showValidationErrors && tagsRequiredError">
+    At least one tag is required.
+  </div>
 
-  <mat-chip-grid #tagGrid aria-label="Description tags" class="tags-below-grid">
-    <mat-chip-row
-      *ngFor="let tag of formData.descriptionTags"
-      [removable]="true"
-      (removed)="removeTag(tag)">
-      {{ tag }}
-      <button matChipRemove [attr.aria-label]="'Remove ' + tag">
-        <mat-icon>cancel</mat-icon>
+  <div class="tags-below-grid" *ngIf="formData.descriptionTags?.length">
+    <span class="selected-tag" *ngFor="let tag of formData.descriptionTags; trackBy: trackByTag">
+      <span class="selected-tag-text">{{ tag }}</span>
+      <button type="button" class="selected-tag-remove" [attr.aria-label]="'Remove ' + tag" (click)="removeTag(tag)">
+        <i class="bi bi-x"></i>
       </button>
-    </mat-chip-row>
-  </mat-chip-grid>
+    </span>
+  </div>
 </div>

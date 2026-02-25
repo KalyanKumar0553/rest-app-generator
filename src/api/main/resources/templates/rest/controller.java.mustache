@@ -9,8 +9,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -24,60 +24,138 @@ import jakarta.validation.Valid;
 import {{idTypeImport}};
 {{/idTypeImport}}
 import {{modelPackage}}.{{entityName}};
+{{#hasServiceLayer}}
 import {{servicePackage}}.{{serviceClass}};
+{{/hasServiceLayer}}
 import {{supportPackage}}.{{querySupportClass}};
 
 @RestController
-@RequestMapping("/api/{{endpointPath}}")
+@RequestMapping("{{requestBasePath}}")
 public class {{controllerClass}} {
 
+{{#hasServiceLayer}}
     private final {{serviceClass}} service;
 
     public {{controllerClass}}({{serviceClass}} service) {
         this.service = service;
     }
+{{/hasServiceLayer}}
+{{^hasServiceLayer}}
+    public {{controllerClass}}() {
+    }
+{{/hasServiceLayer}}
 
+{{#createEnabled}}
     @PostMapping
-    public ResponseEntity<{{entityName}}> create(@Valid @RequestBody {{entityName}} request) {
+    public ResponseEntity<{{createResponseType}}> create(@Valid @RequestBody {{createRequestType}} request) {
+{{#createUseService}}
         return ResponseEntity.status(HttpStatus.CREATED).body(service.create(request));
+{{/createUseService}}
+{{^createUseService}}
+        return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).build();
+{{/createUseService}}
     }
+{{/createEnabled}}
 
+{{#bulkInsertEnabled}}
     @PostMapping("/bulk")
-    public ResponseEntity<List<{{entityName}}>> saveAll(@Valid @RequestBody List<{{entityName}}> requests) {
+    public ResponseEntity<{{bulkInsertResponseType}}> saveAll(@Valid @RequestBody {{bulkInsertRequestType}} requests) {
+{{#bulkInsertUseService}}
         return ResponseEntity.status(HttpStatus.CREATED).body(service.saveAll(requests));
+{{/bulkInsertUseService}}
+{{^bulkInsertUseService}}
+        return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).build();
+{{/bulkInsertUseService}}
     }
+{{/bulkInsertEnabled}}
 
+{{#bulkUpdateEnabled}}
+    @PutMapping("/bulk")
+    public ResponseEntity<{{bulkUpdateResponseType}}> bulkUpdate(@Valid @RequestBody {{bulkUpdateRequestType}} requests) {
+{{#bulkUpdateUseService}}
+        return ResponseEntity.ok(service.bulkUpdate(requests));
+{{/bulkUpdateUseService}}
+{{^bulkUpdateUseService}}
+        return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).build();
+{{/bulkUpdateUseService}}
+    }
+{{/bulkUpdateEnabled}}
+
+{{#bulkDeleteEnabled}}
+    @DeleteMapping("/bulk")
+    public ResponseEntity<Void> bulkDelete(@RequestBody {{bulkDeleteRequestType}} requests) {
+{{#bulkDeleteUseService}}
+        service.bulkDelete(requests);
+        return ResponseEntity.noContent().build();
+{{/bulkDeleteUseService}}
+{{^bulkDeleteUseService}}
+        return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).build();
+{{/bulkDeleteUseService}}
+    }
+{{/bulkDeleteEnabled}}
+
+{{#updateEnabled}}
     @PutMapping("/{id}")
-    public ResponseEntity<{{entityName}}> update(@PathVariable("id") {{idType}} id,
-            @Valid @RequestBody {{entityName}} request) {
+    public ResponseEntity<{{updateResponseType}}> update(@PathVariable("id") {{idType}} id,
+            @Valid @RequestBody {{updateRequestType}} request) {
+{{#updateUseService}}
         return ResponseEntity.ok(service.update(id, request));
+{{/updateUseService}}
+{{^updateUseService}}
+        return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).build();
+{{/updateUseService}}
     }
+{{/updateEnabled}}
 
+{{#patchEnabled}}
+    @PatchMapping("/{id}")
+    public ResponseEntity<{{patchResponseType}}> patch(@PathVariable("id") {{idType}} id,
+            @Valid @RequestBody {{patchRequestType}} request) {
+{{#patchUseService}}
+        return ResponseEntity.ok(service.patch(id, request));
+{{/patchUseService}}
+{{^patchUseService}}
+        return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).build();
+{{/patchUseService}}
+    }
+{{/patchEnabled}}
+
+{{#deleteEnabled}}
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteById(@PathVariable("id") {{idType}} id) {
+{{#deleteUseService}}
         service.deleteById(id);
         return ResponseEntity.noContent().build();
+{{/deleteUseService}}
+{{^deleteUseService}}
+        return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).build();
+{{/deleteUseService}}
     }
+{{/deleteEnabled}}
 
-    @DeleteMapping
-    public ResponseEntity<Void> deleteAll() {
-        service.deleteAll();
-        return ResponseEntity.noContent().build();
-    }
-
+{{#getEnabled}}
     @GetMapping("/{id}")
-    public ResponseEntity<{{entityName}}> getById(@PathVariable("id") {{idType}} id) {
+    public ResponseEntity<{{getResponseType}}> getById(@PathVariable("id") {{idType}} id) {
+{{#getUseService}}
         return ResponseEntity.ok(service.getById(id));
+{{/getUseService}}
+{{^getUseService}}
+        return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).build();
+{{/getUseService}}
     }
+{{/getEnabled}}
 
+{{#listEnabled}}
     @GetMapping
-    public ResponseEntity<Page<{{entityName}}>> getAllOrByQuery(@RequestParam Map<String, String> queryParams) {
+    public ResponseEntity<{{listResponseType}}> getAllOrByQuery(@RequestParam Map<String, String> queryParams) {
+{{#listUseService}}
         Pageable pageable = {{querySupportClass}}.resolvePageable(queryParams, {{{allowedSortFieldsLiteral}}});
         return ResponseEntity.ok(service.search(queryParams, pageable));
+{{/listUseService}}
+{{^listUseService}}
+        return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).build();
+{{/listUseService}}
     }
+{{/listEnabled}}
 
-    @ExceptionHandler(IllegalArgumentException.class)
-    public ResponseEntity<Map<String, String>> handleIllegalArgument(IllegalArgumentException ex) {
-        return ResponseEntity.badRequest().body(Map.of("error", ex.getMessage()));
-    }
 }

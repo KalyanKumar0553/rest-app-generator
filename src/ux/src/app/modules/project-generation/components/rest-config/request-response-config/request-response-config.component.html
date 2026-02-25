@@ -1,8 +1,3 @@
-<section class="section-title-row top-title">
-  <h4>Configure Request and Response Data</h4>
-  <div class="section-line"></div>
-</section>
-
 <div class="request-response-grid">
   <mat-accordion class="section-accordion request-accordion" multi="true">
     <mat-expansion-panel [expanded]="true">
@@ -14,23 +9,23 @@
         <div class="request-item" *ngIf="draft?.methods?.create">
           <div class="request-op-label">Create</div>
           <div class="request-item-body dto-inline">
+            <mat-form-field appearance="outline" class="dto-input">
+              <mat-select [(ngModel)]="draft.requestResponse.request.create.dtoName">
+                <mat-option *ngFor="let option of createRequestOptions" [value]="option">{{ option }}</mat-option>
+              </mat-select>
+            </mat-form-field>
             <button type="button" class="dto-add-btn" aria-label="Configure create DTO" (click)="openDtoConfig('create')">
               <mat-icon>add</mat-icon>
             </button>
-            <mat-form-field appearance="outline" class="dto-input">
-              <mat-select [(ngModel)]="draft.requestResponse.request.create.dtoName">
-                <mat-option *ngFor="let option of requestDtoOptions" [value]="option">{{ option }}</mat-option>
-              </mat-select>
-            </mat-form-field>
           </div>
         </div>
 
         <div class="request-item" *ngIf="draft?.methods?.get">
-          <div class="request-op-label">Get By ID</div>
+          <div class="request-op-label">Get By Key</div>
           <div class="request-item-body">
             <div class="input-align-wrap">
               <app-field-type-select
-                [label]="'ID Type'"
+                [label]="'Key Type'"
                 [appearance]="'outline'"
                 [className]="'dto-input'"
                 [options]="idTypeOptions"
@@ -44,14 +39,14 @@
         <div class="request-item" *ngIf="draft?.methods?.list">
           <div class="request-op-label">List</div>
           <div class="request-item-body dto-inline">
+            <mat-form-field appearance="outline" class="dto-input">
+              <mat-select [(ngModel)]="draft.requestResponse.request.list.dtoName">
+                <mat-option *ngFor="let option of listRequestOptions" [value]="option">{{ option }}</mat-option>
+              </mat-select>
+            </mat-form-field>
             <button type="button" class="dto-add-btn" aria-label="Configure list DTO" (click)="openDtoConfig('list')">
               <mat-icon>add</mat-icon>
             </button>
-            <mat-form-field appearance="outline" class="dto-input">
-              <mat-select [(ngModel)]="draft.requestResponse.request.list.dtoName">
-                <mat-option *ngFor="let option of requestDtoOptions" [value]="option">{{ option }}</mat-option>
-              </mat-select>
-            </mat-form-field>
           </div>
         </div>
 
@@ -68,14 +63,14 @@
         <div class="request-item" *ngIf="draft?.methods?.delete">
           <div class="request-op-label">Delete</div>
           <div class="request-item-body dto-inline">
-            <button type="button" class="dto-add-btn" aria-label="Configure delete DTO" (click)="openDtoConfig('delete')">
-              <mat-icon>add</mat-icon>
-            </button>
             <mat-form-field appearance="outline" class="dto-input">
               <mat-select [(ngModel)]="draft.requestResponse.request.delete.dtoName">
                 <mat-option *ngFor="let option of requestDtoOptions" [value]="option">{{ option }}</mat-option>
               </mat-select>
             </mat-form-field>
+            <button type="button" class="dto-add-btn" aria-label="Configure delete DTO" (click)="openDtoConfig('delete')">
+              <mat-icon>add</mat-icon>
+            </button>
           </div>
         </div>
 

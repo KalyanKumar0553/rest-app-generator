@@ -216,11 +216,31 @@
 
   .modal-footer {
     padding: 12px 16px;
-    flex-direction: column;
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-end;
+    flex-wrap: nowrap;
+    gap: 8px;
+    overflow: hidden;
   }
 
   .modal-footer ::ng-deep button {
+    flex: 1 1 0;
+    min-width: 0;
+    max-width: 100%;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .modal-footer ::ng-deep button .mdc-button__label,
+  .modal-footer ::ng-deep button span {
+    display: block;
+    min-width: 0;
     width: 100%;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .modal-close-btn {

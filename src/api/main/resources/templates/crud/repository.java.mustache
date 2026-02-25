@@ -1,11 +1,21 @@
 package {{repositoryPackage}};
 
+{{#noSql}}
+import org.springframework.data.mongodb.repository.MongoRepository;
+{{/noSql}}
+{{^noSql}}
 import org.springframework.data.jpa.repository.JpaRepository;
+{{/noSql}}
 
 {{#idTypeImport}}
 import {{idTypeImport}};
 {{/idTypeImport}}
 import {{modelPackage}}.{{entityName}};
 
+{{#noSql}}
+public interface {{repositoryClass}} extends MongoRepository<{{entityName}}, {{idType}}> {
+{{/noSql}}
+{{^noSql}}
 public interface {{repositoryClass}} extends JpaRepository<{{entityName}}, {{idType}}> {
+{{/noSql}}
 }

@@ -40,9 +40,108 @@ public class {{className}}{{#implements}} implements {{.}}{{/implements}} {
     private OffsetDateTime updatedAt;
 
     {{/auditing.enabled}}
+    {{#noSql}}
+    @Version
+    private Integer version;
+
+    {{/noSql}}
     {{#softDelete.enabled}}
     private Boolean deleted = false;
 
     private OffsetDateTime deletedAt;
     {{/softDelete.enabled}}
+{{^useLombok}}
+    {{#generateNoArgsConstructor}}
+    public {{className}}() {
+    }
+    {{/generateNoArgsConstructor}}
+
+    {{#generateAllArgsConstructor}}
+    {{#hasProperties}}
+    public {{className}}({{#properties}}{{{type}}} {{name}}{{^isLast}}, {{/isLast}}{{/properties}}) {
+{{#properties}}        this.{{name}} = {{name}};
+{{/properties}}    }
+    {{/hasProperties}}
+    {{/generateAllArgsConstructor}}
+
+{{#properties}}
+    public {{{type}}} get{{method}}() {
+        return this.{{name}};
+    }
+
+    public void set{{method}}({{{type}}} {{name}}) {
+        this.{{name}} = {{name}};
+    }
+
+{{/properties}}
+    {{#generateBuilder}}
+    public static {{className}}Builder builder() {
+        return new {{className}}Builder();
+    }
+
+    public static class {{className}}Builder {
+{{#properties}}
+        private {{{type}}} {{name}};
+{{/properties}}
+
+{{#properties}}
+        public {{className}}Builder {{name}}({{{type}}} {{name}}) {
+            this.{{name}} = {{name}};
+            return this;
+        }
+{{/properties}}
+
+        public {{className}} build() {
+            {{className}} instance = new {{className}}();
+{{#properties}}
+            instance.set{{method}}(this.{{name}});
+{{/properties}}
+            return instance;
+        }
+    }
+
+    {{/generateBuilder}}
+    {{#generateToString}}
+    @Override
+    public String toString() {
+        return "{{className}}{" +
+{{#hasProperties}}
+{{#properties}}
+                "{{name}}=" + this.{{name}}{{^isLast}} + ", " +{{/isLast}}{{#isLast}} +{{/isLast}}
+{{/properties}}
+{{/hasProperties}}
+{{^hasProperties}}
+                "" +
+{{/hasProperties}}
+                '}';
+    }
+
+    {{/generateToString}}
+    {{#generateEquals}}
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        {{className}} that = ({{className}}) o;
+{{#hasProperties}}
+        return {{#properties}}Objects.equals(this.{{name}}, that.{{name}}){{^isLast}} && {{/isLast}}{{/properties}};
+{{/hasProperties}}
+{{^hasProperties}}
+        return true;
+{{/hasProperties}}
+    }
+
+    {{/generateEquals}}
+    {{#generateHashCode}}
+    @Override
+    public int hashCode() {
+        return Objects.hash({{#properties}}{{name}}{{^isLast}}, {{/isLast}}{{/properties}});
+    }
+
+    {{/generateHashCode}}
+{{/useLombok}}
 }

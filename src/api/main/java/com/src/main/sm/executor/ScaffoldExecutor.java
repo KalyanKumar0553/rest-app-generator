@@ -30,6 +30,8 @@ import com.src.main.util.InitializrGradleGenerator;
 import com.src.main.util.InitializrPomGenerator;
 import com.src.main.util.DatabaseDependencyCatalog;
 import com.src.main.util.ProjectMetaDataConstants;
+import com.src.main.sm.executor.common.BoilerplateStyle;
+import com.src.main.sm.executor.common.BoilerplateStyleResolver;
 
 @Component
 public class ScaffoldExecutor implements StepExecutor {
@@ -79,6 +81,7 @@ public class ScaffoldExecutor implements StepExecutor {
 		
 		final Map<String, Object> yaml = (Map<String, Object>) data.getVariables().get("yaml");
 			final boolean openapi = resolveOpenApiEnabled(data, yaml) && hasRestEndpointEntities(yaml);
+			final boolean includeLombok = resolveLombokEnabled(yaml);
 			final String databaseCode = resolveDatabaseCode(yaml);
 			final List<String> depReq = resolveDependenciesFromYaml(yaml);
 
@@ -89,7 +92,7 @@ public class ScaffoldExecutor implements StepExecutor {
 			enrichDependenciesWithDatabase(deps, databaseCode);
 
 		InitializrProjectModel model = new InitializrProjectModel(groupId, artifactId, version, name, description,
-				packaging, generator, jdkVersion, bootVersion, openapi, angular);
+				packaging, generator, jdkVersion, bootVersion, openapi, includeLombok, angular);
 
 		log.info("Scaffolding project: {} ",model);
 
@@ -194,6 +197,10 @@ public class ScaffoldExecutor implements StepExecutor {
 		return "true".equals(normalized) || "1".equals(normalized) || "yes".equals(normalized) || "y".equals(normalized);
 	}
 
+	private static boolean resolveLombokEnabled(Map<String, Object> yaml) {
+		return BoilerplateStyleResolver.resolveFromYaml(yaml, true) == BoilerplateStyle.LOMBOK;
+	}
+
 	@SuppressWarnings("unchecked")
 	private static boolean hasEntities(Map<String, Object> yaml) {
 		if (yaml == null) {
@@ -269,6 +276,7 @@ public class ScaffoldExecutor implements StepExecutor {
 
 	private static List<String> resolveDependenciesFromYaml(Map<String, Object> yaml) {
 		Set<String> dependencies = new LinkedHashSet<>(extractDependenciesFromYaml(yaml));
+		boolean noSql = isNoSqlDatabase(yaml);
 
 		if (hasRestEndpointEntities(yaml)) {
 			dependencies.add("web");
@@ -280,9 +288,11 @@ public class ScaffoldExecutor implements StepExecutor {
 			dependencies.add("actuator");
 		}
 
-		List<String> merged = hasEntities(yaml)
-				? ensureJpaDependencies(new ArrayList<>(dependencies))
-				: removeJpaDependencies(new ArrayList<>(dependencies));
+		List<String> merged = noSql
+				? removeJpaDependencies(new ArrayList<>(dependencies))
+				: (hasEntities(yaml)
+						? ensureJpaDependencies(new ArrayList<>(dependencies))
+						: removeJpaDependencies(new ArrayList<>(dependencies)));
 
 		return merged.stream()
 				.filter(Objects::nonNull)
@@ -357,6 +367,22 @@ public class ScaffoldExecutor implements StepExecutor {
 							.map(fieldRaw -> ((Map<String, Object>) fieldRaw).get("constraints"))
 							.anyMatch(constraints -> constraints instanceof List<?> list && !list.isEmpty());
 				});
+	}
+
+	@SuppressWarnings("unchecked")
+	private static boolean isNoSqlDatabase(Map<String, Object> yaml) {
+		if (yaml == null) {
+			return false;
+		}
+		Object dbTypeRaw = yaml.get("dbType");
+		if (dbTypeRaw == null && yaml.get("app") instanceof Map<?, ?> appRaw) {
+			dbTypeRaw = ((Map<String, Object>) appRaw).get("dbType");
+		}
+		if (dbTypeRaw != null && "NOSQL".equalsIgnoreCase(String.valueOf(dbTypeRaw).trim())) {
+			return true;
+		}
+		String dbCode = resolveDatabaseCode(yaml);
+		return dbCode != null && "MONGODB".equalsIgnoreCase(dbCode.trim());
 	}
 
 	@SuppressWarnings("unchecked")

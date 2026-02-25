@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatCheckboxModule } from '@angular/material/checkbox';
+import { MatCheckboxChange } from '@angular/material/checkbox';
 import { MatSelectModule } from '@angular/material/select';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
@@ -25,6 +26,14 @@ interface Entity {
   mappedSuperclass: boolean;
   addRestEndpoints: boolean;
   addCrudOperations?: boolean;
+  classMethods?: {
+    toString: boolean;
+    hashCode: boolean;
+    equals: boolean;
+    noArgsConstructor: boolean;
+    allArgsConstructor: boolean;
+    builder: boolean;
+  };
   restConfig?: RestEndpointConfig;
   auditable?: boolean;
   softDelete?: boolean;
@@ -73,6 +82,8 @@ export class AddEntityComponent implements OnChanges {
   softDelete = false;
   immutable = false;
   naturalIdCache = false;
+  classMethods = this.getDefaultClassMethods();
+  selectedClassMethods: string[] = [];
   restConfig: RestEndpointConfig = this.getDefaultRestConfig();
   selectedAdditionalConfigurations: string[] = [];
   nameError = '';
@@ -152,6 +163,15 @@ export class AddEntityComponent implements OnChanges {
     'Natural ID Cache'
   ];
 
+  classMethodOptions: string[] = [
+    'toString',
+    'hashcode',
+    'equals',
+    'NoArgsConstructor',
+    'AllArgsConstructor',
+    'Builder'
+  ];
+
   constructor(
     private validatorService: ValidatorService,
     private fieldFilterService: FieldFilterService
@@ -190,6 +210,8 @@ export class AddEntityComponent implements OnChanges {
     this.softDelete = Boolean(entity.softDelete);
     this.immutable = Boolean(entity.immutable);
     this.naturalIdCache = Boolean(entity.naturalIdCache);
+    this.classMethods = this.parseClassMethods(entity.classMethods);
+    this.syncClassMethodsSelectionFromFlags();
     this.syncAdditionalConfigurationsFromFlags();
     this.fields = JSON.parse(JSON.stringify(entity.fields));
     this.nameError = '';
@@ -206,6 +228,8 @@ export class AddEntityComponent implements OnChanges {
     this.softDelete = false;
     this.immutable = false;
     this.naturalIdCache = false;
+    this.classMethods = this.getDefaultClassMethods();
+    this.syncClassMethodsSelectionFromFlags();
     this.selectedAdditionalConfigurations = [];
     this.nameError = '';
     this.fields = [];
@@ -241,6 +265,12 @@ export class AddEntityComponent implements OnChanges {
   onEntityNameChange(): void {
     if (this.nameError) {
       this.nameError = '';
+    }
+    if (this.addRestEndpoints && !String(this.restConfig?.resourceName ?? '').trim()) {
+      this.ensureDefaultRestConfigName();
+    }
+    if (this.addRestEndpoints && !String(this.restConfig?.basePath ?? '').trim()) {
+      this.ensureDefaultBasePath();
     }
   }
 
@@ -308,6 +338,11 @@ export class AddEntityComponent implements OnChanges {
       return;
     }
 
+    if (this.addRestEndpoints) {
+      this.ensureDefaultRestConfigName();
+      this.ensureDefaultBasePath();
+    }
+
     const normalizedRestConfig = this.addRestEndpoints
       ? this.parseRestConfig({
           ...this.restConfig,
@@ -326,6 +361,7 @@ export class AddEntityComponent implements OnChanges {
       softDelete: this.softDelete,
       immutable: this.immutable,
       naturalIdCache: this.naturalIdCache,
+      classMethods: { ...this.classMethods },
       fields: JSON.parse(JSON.stringify(this.fields))
     };
 
@@ -350,12 +386,19 @@ export class AddEntityComponent implements OnChanges {
     this.updateVisibleFields();
   }
 
-  onAddRestEndpointsChange(): void {
-    if (this.addRestEndpoints) {
+  onAddRestEndpointsChange(enabled: boolean, event?: MatCheckboxChange): void {
+    if (enabled) {
+      this.addRestEndpoints = true;
       this.mappedSuperclass = false;
       this.addCrudOperations = false;
+      this.ensureDefaultRestConfigName();
+      this.ensureDefaultBasePath();
     } else {
+      // Keep checkbox checked until user confirms disable in modal.
       this.addRestEndpoints = true;
+      if (event?.source) {
+        event.source.checked = true;
+      }
       this.showDisableRestConfirmation = true;
       return;
     }
@@ -390,6 +433,7 @@ export class AddEntityComponent implements OnChanges {
       return;
     }
     this.isConfigureRestOpen = true;
+    setTimeout(() => this.configureRestComponent?.setActiveTab('basic'));
   }
 
   saveConfigureRest(): void {
@@ -403,10 +447,12 @@ export class AddEntityComponent implements OnChanges {
       mappedEntityName: String(this.entityName ?? '').trim()
     } as RestEndpointConfig);
     this.isConfigureRestOpen = false;
+    this.configureRestComponent?.setActiveTab('basic');
   }
 
   onConfigureRestCancel(): void {
     this.isConfigureRestOpen = false;
+    this.configureRestComponent?.setActiveTab('basic');
   }
 
   isEntityOptionVisible(option: 'mappedSuperclass' | 'addRestEndpoints' | 'addCrudOperations'): boolean {
@@ -426,6 +472,19 @@ export class AddEntityComponent implements OnChanges {
     this.naturalIdCache = selectedSet.has('Natural ID Cache');
   }
 
+  onClassMethodsChange(values: string[]): void {
+    this.selectedClassMethods = Array.isArray(values) ? [...values] : [];
+    const selectedSet = new Set(this.selectedClassMethods);
+    this.classMethods = {
+      toString: selectedSet.has('toString'),
+      hashCode: selectedSet.has('hashcode'),
+      equals: selectedSet.has('equals'),
+      noArgsConstructor: selectedSet.has('NoArgsConstructor'),
+      allArgsConstructor: selectedSet.has('AllArgsConstructor'),
+      builder: selectedSet.has('Builder')
+    };
+  }
+
   private syncAdditionalConfigurationsFromFlags(): void {
     const selected: string[] = [];
     if (this.auditable) {
@@ -441,6 +500,29 @@ export class AddEntityComponent implements OnChanges {
       selected.push('Natural ID Cache');
     }
     this.selectedAdditionalConfigurations = selected;
+  }
+
+  private syncClassMethodsSelectionFromFlags(): void {
+    const selected: string[] = [];
+    if (this.classMethods.toString) {
+      selected.push('toString');
+    }
+    if (this.classMethods.hashCode) {
+      selected.push('hashcode');
+    }
+    if (this.classMethods.equals) {
+      selected.push('equals');
+    }
+    if (this.classMethods.noArgsConstructor) {
+      selected.push('NoArgsConstructor');
+    }
+    if (this.classMethods.allArgsConstructor) {
+      selected.push('AllArgsConstructor');
+    }
+    if (this.classMethods.builder) {
+      selected.push('Builder');
+    }
+    this.selectedClassMethods = selected;
   }
 
   startEditField(index: number): void {
@@ -630,7 +712,53 @@ export class AddEntityComponent implements OnChanges {
     }
     if (this.addRestEndpoints) {
       this.addCrudOperations = false;
+      this.ensureDefaultRestConfigName();
+      this.ensureDefaultBasePath();
     }
+  }
+
+  private ensureDefaultRestConfigName(): void {
+    const currentName = String(this.restConfig?.resourceName ?? '').trim();
+    if (currentName) {
+      return;
+    }
+    this.restConfig = {
+      ...this.restConfig,
+      resourceName: this.generateUniqueRestConfigName(this.entityName)
+    };
+  }
+
+  private ensureDefaultBasePath(): void {
+    const currentPath = String(this.restConfig?.basePath ?? '').trim();
+    if (currentPath) {
+      return;
+    }
+    const normalizedEntity = String(this.entityName ?? '').trim().toLowerCase();
+    this.restConfig = {
+      ...this.restConfig,
+      basePath: normalizedEntity ? `/${normalizedEntity}` : ''
+    };
+  }
+
+  private generateUniqueRestConfigName(entityName: string): string {
+    const rawBase = String(entityName ?? '').trim().replace(/\s+/g, '');
+    const base = rawBase || 'Default';
+    const primaryCandidate = `${base} API Config`;
+    const usedNames = new Set(
+      this.existingRestConfigNames
+        .map((name) => String(name ?? '').trim().toLowerCase())
+        .filter(Boolean)
+    );
+
+    if (!usedNames.has(primaryCandidate.toLowerCase())) {
+      return primaryCandidate;
+    }
+
+    let suffix = 2;
+    while (usedNames.has(`${primaryCandidate} ${suffix}`.toLowerCase())) {
+      suffix += 1;
+    }
+    return `${primaryCandidate} ${suffix}`;
   }
 
   private getDefaultRestConfig(): RestEndpointConfig {
@@ -748,17 +876,58 @@ export class AddEntityComponent implements OnChanges {
       },
       documentation: {
         endpoints: {
-          list: { description: '', descriptionTags: [], deprecated: false },
-          get: { description: '', descriptionTags: [], deprecated: false },
-          create: { description: '', descriptionTags: [], deprecated: false },
-          update: { description: '', descriptionTags: [], deprecated: false },
-          patch: { description: '', descriptionTags: [], deprecated: false },
-          delete: { description: '', descriptionTags: [], deprecated: false },
-          bulkInsert: { description: '', descriptionTags: [], deprecated: false },
-          bulkUpdate: { description: '', descriptionTags: [], deprecated: false },
-          bulkDelete: { description: '', descriptionTags: [], deprecated: false }
+          list: { description: 'List operation for API', group: 'API Group', descriptionTags: ['list'], deprecated: false },
+          get: { description: 'Get By Key operation for API', group: 'API Group', descriptionTags: ['get'], deprecated: false },
+          create: { description: 'Create operation for API', group: 'API Group', descriptionTags: ['create'], deprecated: false },
+          update: { description: 'Update operation for API', group: 'API Group', descriptionTags: ['update'], deprecated: false },
+          patch: { description: 'Patch operation for API', group: 'API Group', descriptionTags: ['patch'], deprecated: false },
+          delete: { description: 'Delete operation for API', group: 'API Group', descriptionTags: ['delete'], deprecated: false },
+          bulkInsert: { description: 'Bulk Insert operation for API', group: 'API Group', descriptionTags: ['bulkInsert'], deprecated: false },
+          bulkUpdate: { description: 'Bulk Update operation for API', group: 'API Group', descriptionTags: ['bulkUpdate'], deprecated: false },
+          bulkDelete: { description: 'Bulk Delete operation for API', group: 'API Group', descriptionTags: ['bulkDelete'], deprecated: false }
         }
       }
+    };
+  }
+
+  private getDefaultClassMethods(): {
+    toString: boolean;
+    hashCode: boolean;
+    equals: boolean;
+    noArgsConstructor: boolean;
+    allArgsConstructor: boolean;
+    builder: boolean;
+  } {
+    return {
+      toString: true,
+      hashCode: true,
+      equals: true,
+      noArgsConstructor: true,
+      allArgsConstructor: true,
+      builder: false
+    };
+  }
+
+  private parseClassMethods(raw: unknown): {
+    toString: boolean;
+    hashCode: boolean;
+    equals: boolean;
+    noArgsConstructor: boolean;
+    allArgsConstructor: boolean;
+    builder: boolean;
+  } {
+    const fallback = this.getDefaultClassMethods();
+    if (!raw || typeof raw !== 'object') {
+      return fallback;
+    }
+    const value = raw as Record<string, unknown>;
+    return {
+      toString: Boolean(value['toString'] ?? fallback.toString),
+      hashCode: Boolean(value['hashCode'] ?? fallback.hashCode),
+      equals: Boolean(value['equals'] ?? fallback.equals),
+      noArgsConstructor: Boolean(value['noArgsConstructor'] ?? fallback.noArgsConstructor),
+      allArgsConstructor: Boolean(value['allArgsConstructor'] ?? fallback.allArgsConstructor),
+      builder: Boolean(value['builder'] ?? fallback.builder)
     };
   }
 
@@ -906,6 +1075,7 @@ export class AddEntityComponent implements OnChanges {
         endpoints: {
           list: {
             description: String((rawConfig as any).documentation?.endpoints?.list?.description ?? '').trim(),
+            group: String((rawConfig as any).documentation?.endpoints?.list?.group ?? '').trim(),
             descriptionTags: Array.isArray((rawConfig as any).documentation?.endpoints?.list?.descriptionTags)
               ? (rawConfig as any).documentation.endpoints.list.descriptionTags.map((value: unknown) => String(value ?? '').trim()).filter(Boolean)
               : [],
@@ -913,6 +1083,7 @@ export class AddEntityComponent implements OnChanges {
           },
           get: {
             description: String((rawConfig as any).documentation?.endpoints?.get?.description ?? '').trim(),
+            group: String((rawConfig as any).documentation?.endpoints?.get?.group ?? '').trim(),
             descriptionTags: Array.isArray((rawConfig as any).documentation?.endpoints?.get?.descriptionTags)
               ? (rawConfig as any).documentation.endpoints.get.descriptionTags.map((value: unknown) => String(value ?? '').trim()).filter(Boolean)
               : [],
@@ -920,6 +1091,7 @@ export class AddEntityComponent implements OnChanges {
           },
           create: {
             description: String((rawConfig as any).documentation?.endpoints?.create?.description ?? '').trim(),
+            group: String((rawConfig as any).documentation?.endpoints?.create?.group ?? '').trim(),
             descriptionTags: Array.isArray((rawConfig as any).documentation?.endpoints?.create?.descriptionTags)
               ? (rawConfig as any).documentation.endpoints.create.descriptionTags.map((value: unknown) => String(value ?? '').trim()).filter(Boolean)
               : [],
@@ -927,6 +1099,7 @@ export class AddEntityComponent implements OnChanges {
           },
           update: {
             description: String((rawConfig as any).documentation?.endpoints?.update?.description ?? '').trim(),
+            group: String((rawConfig as any).documentation?.endpoints?.update?.group ?? '').trim(),
             descriptionTags: Array.isArray((rawConfig as any).documentation?.endpoints?.update?.descriptionTags)
               ? (rawConfig as any).documentation.endpoints.update.descriptionTags.map((value: unknown) => String(value ?? '').trim()).filter(Boolean)
               : [],
@@ -934,6 +1107,7 @@ export class AddEntityComponent implements OnChanges {
           },
           patch: {
             description: String((rawConfig as any).documentation?.endpoints?.patch?.description ?? '').trim(),
+            group: String((rawConfig as any).documentation?.endpoints?.patch?.group ?? '').trim(),
             descriptionTags: Array.isArray((rawConfig as any).documentation?.endpoints?.patch?.descriptionTags)
               ? (rawConfig as any).documentation.endpoints.patch.descriptionTags.map((value: unknown) => String(value ?? '').trim()).filter(Boolean)
               : [],
@@ -941,6 +1115,7 @@ export class AddEntityComponent implements OnChanges {
           },
           delete: {
             description: String((rawConfig as any).documentation?.endpoints?.delete?.description ?? '').trim(),
+            group: String((rawConfig as any).documentation?.endpoints?.delete?.group ?? '').trim(),
             descriptionTags: Array.isArray((rawConfig as any).documentation?.endpoints?.delete?.descriptionTags)
               ? (rawConfig as any).documentation.endpoints.delete.descriptionTags.map((value: unknown) => String(value ?? '').trim()).filter(Boolean)
               : [],
@@ -948,6 +1123,7 @@ export class AddEntityComponent implements OnChanges {
           },
           bulkInsert: {
             description: String((rawConfig as any).documentation?.endpoints?.bulkInsert?.description ?? '').trim(),
+            group: String((rawConfig as any).documentation?.endpoints?.bulkInsert?.group ?? '').trim(),
             descriptionTags: Array.isArray((rawConfig as any).documentation?.endpoints?.bulkInsert?.descriptionTags)
               ? (rawConfig as any).documentation.endpoints.bulkInsert.descriptionTags.map((value: unknown) => String(value ?? '').trim()).filter(Boolean)
               : [],
@@ -955,6 +1131,7 @@ export class AddEntityComponent implements OnChanges {
           },
           bulkUpdate: {
             description: String((rawConfig as any).documentation?.endpoints?.bulkUpdate?.description ?? '').trim(),
+            group: String((rawConfig as any).documentation?.endpoints?.bulkUpdate?.group ?? '').trim(),
             descriptionTags: Array.isArray((rawConfig as any).documentation?.endpoints?.bulkUpdate?.descriptionTags)
               ? (rawConfig as any).documentation.endpoints.bulkUpdate.descriptionTags.map((value: unknown) => String(value ?? '').trim()).filter(Boolean)
               : [],
@@ -962,6 +1139,7 @@ export class AddEntityComponent implements OnChanges {
           },
           bulkDelete: {
             description: String((rawConfig as any).documentation?.endpoints?.bulkDelete?.description ?? '').trim(),
+            group: String((rawConfig as any).documentation?.endpoints?.bulkDelete?.group ?? '').trim(),
             descriptionTags: Array.isArray((rawConfig as any).documentation?.endpoints?.bulkDelete?.descriptionTags)
               ? (rawConfig as any).documentation.endpoints.bulkDelete.descriptionTags.map((value: unknown) => String(value ?? '').trim()).filter(Boolean)
               : [],

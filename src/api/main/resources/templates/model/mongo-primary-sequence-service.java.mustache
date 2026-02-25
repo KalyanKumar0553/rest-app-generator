@@ -1,0 +1,32 @@
+package {{packageName}};
+
+import org.springframework.data.mongodb.core.FindAndModifyOptions;
+import org.springframework.data.mongodb.core.MongoOperations;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.data.mongodb.core.query.Update;
+import org.springframework.stereotype.Service;
+
+@Service
+public class PrimarySequenceService {
+
+    private static final String DEFAULT_SEQUENCE = "default_sequence";
+
+    private final MongoOperations mongoOperations;
+
+    public PrimarySequenceService(MongoOperations mongoOperations) {
+        this.mongoOperations = mongoOperations;
+    }
+
+    public Long getNextValue() {
+        return getNextValue(DEFAULT_SEQUENCE);
+    }
+
+    public Long getNextValue(String sequenceName) {
+        Query query = Query.query(Criteria.where("_id").is(sequenceName));
+        Update update = new Update().inc("seq", 1);
+        FindAndModifyOptions options = FindAndModifyOptions.options().returnNew(true).upsert(true);
+        DatabaseSequence sequence = mongoOperations.findAndModify(query, update, options, DatabaseSequence.class);
+        return sequence == null || sequence.getSeq() == null ? 1L : sequence.getSeq();
+    }
+}

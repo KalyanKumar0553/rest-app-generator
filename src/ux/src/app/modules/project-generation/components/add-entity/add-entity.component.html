@@ -25,8 +25,8 @@
       </div>
       <div class="checkbox-group rest-endpoints-row" *ngIf="isEntityOptionVisible('addRestEndpoints')">
         <mat-checkbox
-          [(ngModel)]="addRestEndpoints"
-          (change)="onAddRestEndpointsChange()"
+          [checked]="addRestEndpoints"
+          (change)="onAddRestEndpointsChange($event.checked, $event)"
           color="primary">
           Add REST endpoints
         </mat-checkbox>
@@ -62,6 +62,18 @@
         [selectedValues]="selectedAdditionalConfigurations"
         (selectedValuesChange)="onAdditionalConfigurationsChange($event)"
         [emptyMessage]="'No configuration options found'">
+      </app-searchable-multi-select>
+    </div>
+
+    <div class="form-group class-methods-section">
+      <h3 class="section-title">Configure Class Methods</h3>
+      <app-searchable-multi-select
+        [label]="'Class Methods'"
+        [searchPlaceholder]="'Search class methods'"
+        [options]="classMethodOptions"
+        [selectedValues]="selectedClassMethods"
+        (selectedValuesChange)="onClassMethodsChange($event)"
+        [emptyMessage]="'No class methods found'">
       </app-searchable-multi-select>
     </div>
 
@@ -186,6 +198,7 @@
     [dtoObjects]="dataObjects"
     [enumTypes]="enumTypes"
     [softDeleteEnabled]="softDelete"
+    [lockEntityMapping]="!!editEntity"
     (save)="onConfigureRestSave($event)"
     (cancel)="onConfigureRestCancel()">
   </app-rest-config>

@@ -1,3 +1,7 @@
+:host {
+  --rest-config-control-width: 340px;
+}
+
 .section-title-row {
   display: flex;
   align-items: center;
@@ -154,18 +158,31 @@
 
 .dto-input,
 .bulk-select {
-  width: 340px;
+  width: min(100%, var(--rest-config-control-width));
   max-width: 100%;
 }
 
 .dto-inline {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, var(--rest-config-control-width)) auto;
   align-items: center;
   gap: 12px;
 }
 
+.dto-inline .dto-input {
+  width: 100%;
+  margin-bottom: 0;
+}
+
+:host ::ng-deep .dto-inline .mat-mdc-form-field-subscript-wrapper {
+  min-height: 0 !important;
+  height: 0 !important;
+  margin-top: 0 !important;
+  padding: 0 !important;
+}
+
 .input-align-wrap {
-  width: 340px;
+  width: min(100%, var(--rest-config-control-width));
   max-width: 100%;
 }
 
@@ -179,6 +196,7 @@
   justify-content: center;
   width: 34px;
   height: 34px;
+  align-self: center;
   border-radius: 999px;
   background-color: var(--color-background-muted);
   color: var(--theme-primary-color, var(--color-primary));
@@ -250,7 +268,7 @@
   }
 
   .dto-inline {
-    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1fr) auto;
     gap: 8px;
   }
 

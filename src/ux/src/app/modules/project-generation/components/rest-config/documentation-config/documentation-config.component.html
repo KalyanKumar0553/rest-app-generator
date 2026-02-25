@@ -18,6 +18,7 @@
         <tr>
           <th>Operation</th>
           <th>Deprecated</th>
+          <th>Group</th>
           <th>Description</th>
           <th>Tags</th>
           <th class="actions-col">Actions</th>
@@ -30,8 +31,16 @@
             <mat-checkbox
               color="primary"
               [ngModel]="getDeprecatedFlag(endpoint.key)"
-              (ngModelChange)="setDeprecatedFlag(endpoint.key, $event)">
+              [disabled]="true">
             </mat-checkbox>
+          </td>
+          <td>
+            <span class="description-text" *ngIf="draft?.documentation?.endpoints?.[endpoint.key]?.group; else emptyGroupTpl">
+              {{ draft.documentation.endpoints[endpoint.key].group }}
+            </span>
+            <ng-template #emptyGroupTpl>
+              <span class="muted-text">No group</span>
+            </ng-template>
           </td>
           <td>
             <span class="description-text" *ngIf="getDescription(endpoint.key); else emptyDescriptionTpl">
@@ -88,6 +97,7 @@
   [size]="'medium'"
   (close)="closeEditModal()">
   <app-edit-documentation-operation
+    #editOperationComponent
     [endpointLabel]="activeEndpointLabel"
     [formData]="modalDraft">
   </app-edit-documentation-operation>

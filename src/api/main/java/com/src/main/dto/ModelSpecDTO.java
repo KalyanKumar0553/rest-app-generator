@@ -18,6 +18,7 @@ public class ModelSpecDTO {
 	private String tableName;
 	private Boolean addRestEndpoints;
 	private Boolean addCrudOperations;
+	private ClassMethodsSpecDTO classMethods;
 	private OptionsSpecDTO options;
 	private IdSpecDTO id;
 	private List<List<String>> uniqueConstraints;

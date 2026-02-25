@@ -166,6 +166,23 @@
   animation: none;
 }
 
+/* Keep validation behavior consistent across all REST config tabs. */
+:host ::ng-deep .rest-config-shell .mat-mdc-form-field-subscript-wrapper {
+  min-height: 0 !important;
+  height: auto !important;
+  margin-top: 4px;
+  overflow: visible;
+}
+
+:host ::ng-deep .rest-config-shell .mat-mdc-form-field-error {
+  display: block;
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.2;
+}
+
 .placeholder-block {
   border: 1px dashed var(--theme-neutral-border);
   border-radius: 10px;

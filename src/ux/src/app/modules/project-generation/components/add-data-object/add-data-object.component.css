@@ -71,6 +71,16 @@
   margin: 0 0 20px 0;
 }
 
+.class-methods-section .section-title {
+  margin-bottom: 12px;
+}
+
+.class-methods-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 8px 16px;
+}
+
 .response-wrapper-panel {
   margin: 8px 0 20px;
   padding: 14px 16px;

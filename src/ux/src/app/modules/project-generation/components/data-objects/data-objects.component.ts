@@ -29,6 +29,14 @@ import {
 interface DataObject {
   name: string;
   dtoType?: 'request' | 'response';
+  classMethods?: {
+    toString: boolean;
+    hashCode: boolean;
+    equals: boolean;
+    noArgsConstructor: boolean;
+    allArgsConstructor: boolean;
+    builder: boolean;
+  };
   responseWrapper?: 'STANDARD_ENVELOPE' | 'NONE' | 'UPSERT';
   enableFieldProjection?: boolean;
   includeHateoasLinks?: boolean;

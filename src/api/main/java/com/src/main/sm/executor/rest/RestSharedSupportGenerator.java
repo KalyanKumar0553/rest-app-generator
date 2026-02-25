@@ -27,14 +27,16 @@ public class RestSharedSupportGenerator {
 		this.templateEngine = templateEngine;
 	}
 
-	public void generate(Path projectRoot, String supportPackage) throws Exception {
+	public void generate(Path projectRoot, String supportPackage, boolean noSql) throws Exception {
 		Path outDir = projectRoot.resolve(PathUtils.javaSrcPathFromPackage(supportPackage));
 		Files.createDirectories(outDir);
 		String entityUtils = templateEngine.render(ENTITY_UTIL_TEMPLATE, Map.of("supportPackage", supportPackage));
-		String filterUtils = templateEngine.render(FILTER_UTIL_TEMPLATE, Map.of("supportPackage", supportPackage));
 		String queryUtils = templateEngine.render(QUERY_UTIL_TEMPLATE, Map.of("supportPackage", supportPackage));
 		Files.writeString(outDir.resolve(ENTITY_UTIL_CLASS + ".java"), entityUtils, UTF_8);
-		Files.writeString(outDir.resolve(FILTER_UTIL_CLASS + ".java"), filterUtils, UTF_8);
 		Files.writeString(outDir.resolve(QUERY_UTIL_CLASS + ".java"), queryUtils, UTF_8);
+		if (!noSql) {
+			String filterUtils = templateEngine.render(FILTER_UTIL_TEMPLATE, Map.of("supportPackage", supportPackage));
+			Files.writeString(outDir.resolve(FILTER_UTIL_CLASS + ".java"), filterUtils, UTF_8);
+		}
 	}
 }

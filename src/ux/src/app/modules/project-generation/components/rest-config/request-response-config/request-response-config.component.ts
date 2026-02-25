@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, Input, ViewChild } from '@angular/core';
+import { Component, Input, OnChanges, SimpleChanges, ViewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MatExpansionModule } from '@angular/material/expansion';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -31,7 +31,7 @@ import { ENTITY_FIELD_TYPE_OPTIONS } from '../../../constants/backend-field-type
   templateUrl: './request-response-config.component.html',
   styleUrls: ['./request-response-config.component.css']
 })
-export class RequestResponseConfigComponent {
+export class RequestResponseConfigComponent implements OnChanges {
   readonly responseOperationOrder: Array<'create' | 'get' | 'list' | 'delete' | 'bulkInsert' | 'bulkDelete'> =
     ['create', 'get', 'list', 'delete', 'bulkInsert', 'bulkDelete'];
   @Input({ required: true }) draft: any;
@@ -62,6 +62,10 @@ export class RequestResponseConfigComponent {
   } | null = null;
   private previousDtoName = '';
 
+  get mappedEntityName(): string {
+    return String(this.draft?.mappedEntityName ?? '').trim();
+  }
+
   get requestDtoOptions(): string[] {
     const fromConfiguredDtos = (this.dtoObjects ?? [])
       .filter((item) => {
@@ -71,6 +75,15 @@ export class RequestResponseConfigComponent {
       .map((item) => String(item?.name ?? '').trim())
       .filter(Boolean);
     return Array.from(new Set(fromConfiguredDtos));
+  }
+
+  get createRequestOptions(): string[] {
+    const mapped = this.mappedEntityName;
+    return Array.from(new Set([mapped, ...this.requestDtoOptions].filter(Boolean)));
+  }
+
+  get listRequestOptions(): string[] {
+    return this.createRequestOptions.map((item) => `List<${item}>`);
   }
 
   get responseDtoOptions(): string[] {
@@ -114,6 +127,10 @@ export class RequestResponseConfigComponent {
     const options = Array.isArray(this.entityFieldTypeOptions) ? this.entityFieldTypeOptions : [];
     const cleaned = options.map((item) => String(item ?? '').trim()).filter(Boolean);
     return cleaned.length ? Array.from(new Set(cleaned)) : ENTITY_FIELD_TYPE_OPTIONS;
+  }
+
+  ngOnChanges(_changes: SimpleChanges): void {
+    this.ensureRequestDefaults();
   }
 
   openDtoConfig(
@@ -186,7 +203,11 @@ export class RequestResponseConfigComponent {
       }
       this.applyResponseSettingsFromDto(dto);
     } else {
-      this.draft.requestResponse.request[this.dtoConfigTarget].dtoName = name;
+      if (this.dtoConfigTarget === 'list') {
+        this.draft.requestResponse.request.list.dtoName = `List<${name}>`;
+      } else {
+        this.draft.requestResponse.request[this.dtoConfigTarget].dtoName = name;
+      }
       if (this.dtoConfigTarget === 'create' && !this.draft.requestResponse.request.bulkInsertType) {
         this.draft.requestResponse.request.bulkInsertType = `List<${name}>`;
       }
@@ -212,7 +233,7 @@ export class RequestResponseConfigComponent {
 
   getResponseOperationLabel(operation: 'create' | 'get' | 'list' | 'delete' | 'bulkInsert' | 'bulkDelete'): string {
     if (operation === 'get') {
-      return 'Get By ID';
+      return 'Get By Key';
     }
     if (operation === 'delete') {
       return 'Delete';
@@ -287,5 +308,21 @@ export class RequestResponseConfigComponent {
     this.draft.requestResponse.response.responseWrapper = dto.responseWrapper ?? 'STANDARD_ENVELOPE';
     this.draft.requestResponse.response.enableFieldProjection = Boolean(dto.enableFieldProjection ?? true);
     this.draft.requestResponse.response.includeHateoasLinks = Boolean(dto.includeHateoasLinks ?? true);
+  }
+
+  private ensureRequestDefaults(): void {
+    const request = this.draft?.requestResponse?.request;
+    if (!request) {
+      return;
+    }
+
+    const mapped = this.mappedEntityName;
+    if (this.draft?.methods?.create && !String(request?.create?.dtoName ?? '').trim() && mapped) {
+      request.create.dtoName = mapped;
+    }
+
+    if (this.draft?.methods?.list && !String(request?.list?.dtoName ?? '').trim() && mapped) {
+      request.list.dtoName = `List<${mapped}>`;
+    }
   }
 }

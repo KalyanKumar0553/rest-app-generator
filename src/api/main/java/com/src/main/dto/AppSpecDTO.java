@@ -16,6 +16,7 @@ public class AppSpecDTO {
 	private String basePackage;
 	private String packages;
 	private Boolean enableOpenapi;
+	private Boolean enableLombok;
 	private Boolean useDockerCompose;
 	private Boolean pluralizeTableNames;
 	private List<String> profiles;

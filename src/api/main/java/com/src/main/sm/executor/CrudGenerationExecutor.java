@@ -57,9 +57,10 @@ public class CrudGenerationExecutor implements StepExecutor {
 					ProjectMetaDataConstants.DEFAULT_GROUP);
 			String packageStructure = StringUtils.firstNonBlank(str(yaml.get("packages")), spec.getPackages(),
 					"technical");
+			boolean noSql = isNoSqlDatabase(yaml);
 
 			List<CrudGenerationUnit> units = crudEnabledModels.stream()
-					.map(model -> CrudGenerationSupport.buildUnit(model, basePackage, packageStructure))
+					.map(model -> CrudGenerationSupport.buildUnit(model, basePackage, packageStructure, noSql))
 					.toList();
 			crudGenerationService.generate(root, units);
 			return StepResult.ok(Map.of("status", "Success", "crudGeneratedCount", units.size()));
@@ -70,5 +71,24 @@ public class CrudGenerationExecutor implements StepExecutor {
 
 	private static String str(Object value) {
 		return value == null ? null : String.valueOf(value);
+	}
+
+	@SuppressWarnings("unchecked")
+	private static boolean isNoSqlDatabase(Map<String, Object> yaml) {
+		if (yaml == null) {
+			return false;
+		}
+		Object dbTypeRaw = yaml.get("dbType");
+		if (dbTypeRaw == null && yaml.get("app") instanceof Map<?, ?> appRaw) {
+			dbTypeRaw = ((Map<String, Object>) appRaw).get("dbType");
+		}
+		if (dbTypeRaw != null && "NOSQL".equalsIgnoreCase(String.valueOf(dbTypeRaw).trim())) {
+			return true;
+		}
+		Object databaseRaw = yaml.get("database");
+		if (databaseRaw == null && yaml.get("app") instanceof Map<?, ?> appRaw) {
+			databaseRaw = ((Map<String, Object>) appRaw).get("database");
+		}
+		return databaseRaw != null && "MONGODB".equalsIgnoreCase(String.valueOf(databaseRaw).trim());
 	}
 }

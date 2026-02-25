@@ -11,7 +11,7 @@ public final class CrudGenerationSupport {
 	private CrudGenerationSupport() {
 	}
 
-	public static CrudGenerationUnit buildUnit(ModelSpecDTO model, String basePackage, String packageStructure) {
+	public static CrudGenerationUnit buildUnit(ModelSpecDTO model, String basePackage, String packageStructure, boolean noSql) {
 		String entityName = CaseUtils.toPascal(StringUtils.firstNonBlank(model.getName(), "Entity"));
 		String idName = StringUtils.firstNonBlank(model.getId() != null ? model.getId().getField() : null, "id");
 		JavaTypeRef idType = mapJavaType(model.getId() != null ? model.getId().getType() : null);
@@ -25,7 +25,7 @@ public final class CrudGenerationSupport {
 				? basePackage + ".domain." + normalizedEntity + ".repository"
 				: basePackage + ".repository";
 		return new CrudGenerationUnit(entityName, idName, idType.simpleName(), idType.importName(), modelPackage,
-				repositoryPackage);
+				repositoryPackage, noSql);
 	}
 
 	private static String normalizePackageSegment(String value) {

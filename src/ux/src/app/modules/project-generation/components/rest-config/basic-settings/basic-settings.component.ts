@@ -27,20 +27,46 @@ import { MatSelectModule } from '@angular/material/select';
 export class BasicSettingsComponent implements OnChanges, AfterViewInit {
   @Input({ required: true }) draft: any;
   @Input() softDeleteEnabled = false;
-  @Input() availableModels: Array<{ name?: string }> = [];
+  @Input() availableModels: Array<any> = [];
   @Input() showResourceNameErrors = false;
   @Input() resourceNameRequired = false;
   @Input() resourceNameDuplicate = false;
+  @Input() basePathRequired = false;
   @Input() mapToEntityRequired = false;
+  @Input() lockEntityMapping = false;
   @Output() resourceNameChange = new EventEmitter<void>();
+  @Output() basePathChange = new EventEmitter<void>();
   @Output() mappingChange = new EventEmitter<void>();
   @ViewChild('resourceNameModel') resourceNameModel?: NgModel;
   @ViewChild('mappedEntityModel') mappedEntityModel?: NgModel;
 
   get availableEntityNames(): string[] {
+    const currentMappedEntity = String(this.draft?.mappedEntityName ?? '').trim();
+    const currentSpecName = String(this.draft?.resourceName ?? '').trim();
+
     const names = (Array.isArray(this.availableModels) ? this.availableModels : [])
+      .filter((item) => {
+        const entityName = String(item?.name ?? '').trim();
+        if (!entityName) {
+          return false;
+        }
+
+        const mappedSpecName = this.resolveMappedSpecName(item);
+        const isAlreadyMapped = Boolean(item?.addRestEndpoints) || Boolean(mappedSpecName);
+
+        if (!isAlreadyMapped) {
+          return true;
+        }
+
+        if (entityName === currentMappedEntity) {
+          return true;
+        }
+
+        return Boolean(currentSpecName && mappedSpecName === currentSpecName);
+      })
       .map((item) => String(item?.name ?? '').trim())
       .filter(Boolean);
+
     return Array.from(new Set(names));
   }
 
@@ -75,14 +101,30 @@ export class BasicSettingsComponent implements OnChanges, AfterViewInit {
     this.draft.mapToEntity = Boolean(enabled);
     if (!enabled) {
       this.draft.mappedEntityName = '';
+    } else if (!String(this.draft?.basePath ?? '').trim()) {
+      const fallbackEntity = String(this.draft?.mappedEntityName ?? '').trim();
+      if (fallbackEntity) {
+        this.draft.basePath = this.defaultBasePath(fallbackEntity);
+      }
     }
     this.mappingChange.emit();
     this.syncEntityMappingErrorState();
   }
 
   onMappedEntityChange(): void {
+    if (!String(this.draft?.basePath ?? '').trim()) {
+      const mappedName = String(this.draft?.mappedEntityName ?? '').trim();
+      if (mappedName) {
+        this.draft.basePath = this.defaultBasePath(mappedName);
+        this.basePathChange.emit();
+      }
+    }
     this.mappingChange.emit();
     this.syncEntityMappingErrorState();
+  }
+
+  onBasePathInput(): void {
+    this.basePathChange.emit();
   }
 
   private syncResourceNameErrorState(): void {
@@ -131,5 +173,19 @@ export class BasicSettingsComponent implements OnChanges, AfterViewInit {
         control.markAsDirty();
       }
     });
+  }
+
+  private resolveMappedSpecName(entity: any): string {
+    return String(
+      entity?.['rest-spec-name']
+      ?? entity?.restSpecName
+      ?? entity?.restSpec
+      ?? entity?.restConfig?.resourceName
+      ?? ''
+    ).trim();
+  }
+
+  private defaultBasePath(entityName: string): string {
+    return `/${String(entityName ?? '').trim().toLowerCase()}`;
   }
 }

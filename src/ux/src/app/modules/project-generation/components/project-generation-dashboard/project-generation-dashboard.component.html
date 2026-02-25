@@ -165,9 +165,18 @@
 
           <div class="panel-content">
             <mat-form-field appearance="fill" class="full-width">
+              <mat-label>Choose Database Type</mat-label>
+              <mat-select [(ngModel)]="databaseSettings.dbType" (ngModelChange)="onDatabaseTypeChange($event)">
+                <mat-option *ngFor="let option of dbTypeOptions" [value]="option">
+                  {{ option === 'NONE' ? 'None' : option }}
+                </mat-option>
+              </mat-select>
+            </mat-form-field>
+
+            <mat-form-field appearance="fill" class="full-width" *ngIf="databaseSettings.dbType !== 'NONE'">
               <mat-label>Database</mat-label>
               <mat-select [(ngModel)]="databaseSettings.database" (ngModelChange)="onDatabaseSelectionChange($event)">
-                <mat-option *ngFor="let option of databaseOptions" [value]="option.value">
+                <mat-option *ngFor="let option of filteredDatabaseOptions" [value]="option.value">
                   {{ option.label }}
                 </mat-option>
               </mat-select>
@@ -264,8 +273,16 @@
             </div>
 
             <div class="form-row">
+              <mat-checkbox [(ngModel)]="developerPreferences.enableLombok">
+                Enable lombok
+                <mat-icon class="inline-icon" matTooltip="Include Lombok dependency as optional"
+                  (mousedown)="onHelpIconInteraction($event)" (click)="onHelpIconInteraction($event)">info</mat-icon>
+              </mat-checkbox>
+            </div>
+
+            <div class="form-row">
               <mat-checkbox [(ngModel)]="developerPreferences.useDockerCompose">
-                Use Docker compose for development
+                Use Docker compose
                 <mat-icon class="inline-icon" matTooltip="Include Docker Compose configuration"
                   (mousedown)="onHelpIconInteraction($event)" (click)="onHelpIconInteraction($event)">info</mat-icon>
               </mat-checkbox>
@@ -280,14 +297,14 @@
               </mat-radio-group>
             </div>
 
-            <mat-form-field appearance="fill" class="full-width">
+            <!-- <mat-form-field appearance="fill" class="full-width">
               <mat-label>Deployment</mat-label>
               <mat-select [(ngModel)]="developerPreferences.deployment">
                 <mat-option *ngFor="let option of deploymentOptions" [value]="option">
                   {{ option }}
                 </mat-option>
               </mat-select>
-            </mat-form-field>
+            </mat-form-field> -->
           </div>
         </mat-expansion-panel>
 

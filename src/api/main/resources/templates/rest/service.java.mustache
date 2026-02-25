@@ -16,7 +16,9 @@ import {{idTypeImport}};
 import {{modelPackage}}.{{entityName}};
 import {{repositoryPackage}}.{{repositoryClass}};
 import {{supportPackage}}.{{entitySupportClass}};
+{{^noSql}}
 import {{supportPackage}}.{{filterSupportClass}};
+{{/noSql}}
 import {{supportPackage}}.{{querySupportClass}};
 
 @Service
@@ -29,23 +31,44 @@ public class {{serviceClass}} {
         this.repository = repository;
     }
 
+{{#createUseService}}
     @Transactional
-    public {{entityName}} create({{entityName}} request) {
+    public {{createResponseType}} create({{createRequestType}} request) {
         return repository.save(request);
     }
+{{/createUseService}}
 
+{{#bulkInsertUseService}}
     @Transactional
-    public List<{{entityName}}> saveAll(List<{{entityName}}> requests) {
+    public {{bulkInsertResponseType}} saveAll({{bulkInsertRequestType}} requests) {
         return repository.saveAll(requests);
     }
+{{/bulkInsertUseService}}
 
+{{#bulkUpdateUseService}}
     @Transactional
-    public {{entityName}} update({{idType}} id, {{entityName}} request) {
+    public {{bulkUpdateResponseType}} bulkUpdate({{bulkUpdateRequestType}} requests) {
+        return repository.saveAll(requests);
+    }
+{{/bulkUpdateUseService}}
+
+{{#updateUseService}}
+    @Transactional
+    public {{updateResponseType}} update({{idType}} id, {{updateRequestType}} request) {
         {{entityName}} existing = getById(id);
         {{entitySupportClass}}.mergeNonNullFields(request, existing, "{{idName}}");
         return repository.save(existing);
     }
+{{/updateUseService}}
 
+{{#patchUseService}}
+    @Transactional
+    public {{patchResponseType}} patch({{idType}} id, {{patchRequestType}} request) {
+        return update(id, request);
+    }
+{{/patchUseService}}
+
+{{#deleteUseService}}
     @Transactional
     public void deleteById({{idType}} id) {
         if (!repository.existsById(id)) {
@@ -53,22 +76,38 @@ public class {{serviceClass}} {
         }
         repository.deleteById(id);
     }
+{{/deleteUseService}}
 
+{{#bulkDeleteUseService}}
     @Transactional
-    public void deleteAll() {
-        repository.deleteAll();
+    public void bulkDelete({{bulkDeleteRequestType}} ids) {
+        for ({{idType}} id : ids) {
+            if (repository.existsById(id)) {
+                repository.deleteById(id);
+            }
+        }
     }
+{{/bulkDeleteUseService}}
 
-    public {{entityName}} getById({{idType}} id) {
+{{#getUseService}}
+    public {{getResponseType}} getById({{idType}} id) {
         return repository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "{{entityName}} not found for id: " + id));
     }
+{{/getUseService}}
 
-    public Page<{{entityName}}> search(Map<String, String> queryParams, Pageable pageable) {
+{{#listUseService}}
+    public {{listResponseType}} search(Map<String, String> queryParams, Pageable pageable) {
+{{#noSql}}
+        return repository.findAll(pageable);
+{{/noSql}}
+{{^noSql}}
         Map<String, String> filters = {{querySupportClass}}.extractFilterParams(queryParams);
         if (filters.isEmpty()) {
             return repository.findAll(pageable);
         }
         return repository.findAll({{filterSupportClass}}.buildSpecification(filters, {{entityName}}.class), pageable);
+{{/noSql}}
     }
+{{/listUseService}}
 }

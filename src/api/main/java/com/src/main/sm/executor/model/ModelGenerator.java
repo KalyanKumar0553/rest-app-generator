@@ -32,6 +32,7 @@ import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.src.main.common.util.CaseUtils;
 import com.src.main.common.util.StringUtils;
 import com.src.main.dto.AppSpecDTO;
+import com.src.main.dto.ClassMethodsSpecDTO;
 import com.src.main.dto.ColumnSpecDTO;
 import com.src.main.dto.ConstraintDTO;
 import com.src.main.dto.FieldSpecDTO;
@@ -41,6 +42,8 @@ import com.src.main.dto.JoinTableSpecDTO;
 import com.src.main.dto.ModelSpecDTO;
 import com.src.main.dto.RelationSpecDTO;
 import com.src.main.sm.executor.TemplateEngine;
+import com.src.main.sm.executor.common.BoilerplateStyle;
+import com.src.main.sm.executor.common.BoilerplateStyleResolver;
 import com.src.main.sm.executor.enumgen.EnumGenerationSupport;
 import com.src.main.sm.executor.enumgen.EnumSpecResolved;
 import com.src.main.util.PathUtils;
@@ -54,10 +57,22 @@ public class ModelGenerator {
 	private static final Logger log = LoggerFactory.getLogger(ModelGenerator.class);
 
 	private static final String TEMPLATE_MODEL = "templates/model/model.java.mustache";
+	private static final String TEMPLATE_MONGO_SEQUENCE = "templates/model/mongo-primary-sequence-service.java.mustache";
+	private static final String TEMPLATE_MONGO_SEQUENCE_DOCUMENT = "templates/model/mongo-database-sequence.java.mustache";
+	private static final String TEMPLATE_MONGO_LISTENER = "templates/model/mongo-listener.java.mustache";
 
 	private final TemplateEngine tpl;
 	private final ObjectMapper yaml;
 	private final String basePackage;
+
+	private record ClassMethodsSelection(
+			boolean generateToString,
+			boolean generateEquals,
+			boolean generateHashCode,
+			boolean noArgsConstructor,
+			boolean allArgsConstructor,
+			boolean builder) {
+	}
 
 	public ModelGenerator(TemplateEngine tpl, String basePackage) {
 		this.tpl = tpl;
@@ -72,6 +87,8 @@ public class ModelGenerator {
 		// Convert the generic map into AppSpec via Jackson
 		ObjectMapper mapper = new ObjectMapper();
 		AppSpecDTO spec = mapper.convertValue(yaml, AppSpecDTO.class);
+		BoilerplateStyle boilerplateStyle = BoilerplateStyleResolver.resolveFromYaml(yaml, true);
+		boolean noSqlDatabase = isNoSqlDatabase(yaml);
 
 		if (spec.getModels() == null || spec.getModels().isEmpty()) {
 			return;
@@ -97,7 +114,7 @@ public class ModelGenerator {
 					String modelPkg = resolveModelPackage(m, domainStructure);
 					Path outDir = projectRoot.resolve(PathUtils.javaSrcPathFromPackage(modelPkg));
 					Files.createDirectories(outDir);
-					renderModel(m, modelPkg, outDir, spec, modelPackageByType, enumByName, enumPackage);
+					renderModel(m, modelPkg, outDir, spec, modelPackageByType, enumByName, enumPackage, boilerplateStyle, noSqlDatabase);
 				} catch (Exception ex) {
 					throw new RuntimeException(ex);
 				}
@@ -107,6 +124,9 @@ public class ModelGenerator {
 				throw cause;
 			}
 			throw ex;
+		}
+		if (noSqlDatabase) {
+			generateMongoSupportClasses(spec, projectRoot, domainStructure);
 		}
 	}
 
@@ -138,8 +158,24 @@ public class ModelGenerator {
 		return normalized;
 	}
 
+	private Map<String, Object> propertyModel(String type, String name) {
+		Map<String, Object> property = new LinkedHashMap<>();
+		property.put("type", type);
+		property.put("name", name);
+		property.put("method", toMethodName(name));
+		return property;
+	}
+
+	private String toMethodName(String field) {
+		if (field == null || field.isEmpty()) {
+			return field;
+		}
+		return Character.toUpperCase(field.charAt(0)) + field.substring(1);
+	}
+
 	private void renderModel(ModelSpecDTO m, String modelPkg, Path outDir, AppSpecDTO root,
-			Map<String, String> modelPackageByType, Map<String, EnumSpecResolved> enumByName, String enumPackage)
+			Map<String, String> modelPackageByType, Map<String, EnumSpecResolved> enumByName, String enumPackage,
+			BoilerplateStyle boilerplateStyle, boolean noSqlDatabase)
 			throws Exception {
 		String className = CaseUtils.toPascal(m.getName());
 		String tableName = StringUtils.firstNonBlank(m.getTableName(), CaseUtils.toSnake(m.getName()));
@@ -158,74 +194,53 @@ public class ModelGenerator {
 
 		List<String> classAnnotations = new ArrayList<>();
 
-		// ----- @Entity + @Table
-		boolean entityEnabled = (m.getOptions() == null) || Boolean.TRUE.equals(m.getOptions().isEntity());
-		if (entityEnabled) {
-			imports.add("jakarta.persistence.Entity");
-			classAnnotations.add("@Entity");
-		}
-		// @Table with schema/name/uniqueConstraints
-		boolean hasTableAnno = schema != null || (m.getTableName() != null) || hasCompositeUniques(m);
-		if (hasTableAnno) {
-			imports.add("jakarta.persistence.Table");
-			StringBuilder sb = new StringBuilder("@Table(");
-			List<String> parts = new ArrayList<>();
-			parts.add("name = \"" + tableName + "\"");
-			if (schema != null) {
-				parts.add("schema = \"" + schema + "\"");
+		if (noSqlDatabase) {
+			imports.add("org.springframework.data.mongodb.core.mapping.Document");
+			classAnnotations.add("@Document(\"" + tableName + "\")");
+		} else {
+			// ----- @Entity + @Table
+			boolean entityEnabled = (m.getOptions() == null) || Boolean.TRUE.equals(m.getOptions().isEntity());
+			if (entityEnabled) {
+				imports.add("jakarta.persistence.Entity");
+				classAnnotations.add("@Entity");
 			}
-			if (hasCompositeUniques(m)) {
-				imports.add("jakarta.persistence.UniqueConstraint");
-				String uniques = m.getUniqueConstraints().stream()
-						.map(cols -> "\"" + cols.stream().map(CaseUtils::toSnake).collect(joining("\", \"")) + "\"")
-						.collect(joining("}, @UniqueConstraint(columnNames = {", "@UniqueConstraint(columnNames = {",
-								"})"));
-				parts.add("uniqueConstraints = {" + uniques + "}");
+			// @Table with schema/name/uniqueConstraints
+			boolean hasTableAnno = schema != null || (m.getTableName() != null) || hasCompositeUniques(m);
+			if (hasTableAnno) {
+				imports.add("jakarta.persistence.Table");
+				StringBuilder sb = new StringBuilder("@Table(");
+				List<String> parts = new ArrayList<>();
+				parts.add("name = \"" + tableName + "\"");
+				if (schema != null) {
+					parts.add("schema = \"" + schema + "\"");
+				}
+				if (hasCompositeUniques(m)) {
+					imports.add("jakarta.persistence.UniqueConstraint");
+					String uniques = m.getUniqueConstraints().stream()
+							.map(cols -> "\"" + cols.stream().map(CaseUtils::toSnake).collect(joining("\", \"")) + "\"")
+							.collect(joining("}, @UniqueConstraint(columnNames = {", "@UniqueConstraint(columnNames = {",
+									"})"));
+					parts.add("uniqueConstraints = {" + uniques + "}");
+				}
+				sb.append(String.join(", ", parts)).append(")");
+				classAnnotations.add(sb.toString());
 			}
-			sb.append(String.join(", ", parts)).append(")");
-			classAnnotations.add(sb.toString());
 		}
 
 		// Hibernate extras
-		if (m.getOptions() != null && Boolean.TRUE.equals(m.getOptions().isImmutable())) {
+		if (!noSqlDatabase && m.getOptions() != null && Boolean.TRUE.equals(m.getOptions().isImmutable())) {
 			imports.add("org.hibernate.annotations.Immutable");
 			classAnnotations.add("@Immutable");
 		}
-		if (m.getOptions() != null && Boolean.TRUE.equals(m.getOptions().isNaturalIdCache())) {
+		if (!noSqlDatabase && m.getOptions() != null && Boolean.TRUE.equals(m.getOptions().isNaturalIdCache())) {
 			imports.add("org.hibernate.annotations.NaturalIdCache");
 			classAnnotations.add("@NaturalIdCache");
-		}
-
-		// Lombok
-		if (m.getOptions() != null && m.getOptions().getLombok() != null) {
-			imports.add("lombok.Getter");
-			imports.add("lombok.Setter");
-			classAnnotations.add("@Getter");
-			classAnnotations.add("@Setter");
-
-			if (Boolean.TRUE.equals(m.getOptions().getLombok().getBuilder())) {
-				imports.add("lombok.Builder");
-				classAnnotations.add("@Builder");
-			}
-			if (Boolean.TRUE.equals(m.getOptions().getLombok().getToString())) {
-				imports.add("lombok.ToString");
-				classAnnotations.add("@ToString");
-			}
-			if (Boolean.TRUE.equals(m.getOptions().getLombok().getEqualsAndHashCode())) {
-				imports.add("lombok.EqualsAndHashCode");
-				classAnnotations.add("@EqualsAndHashCode");
-			}
-
-			imports.add("lombok.NoArgsConstructor");
-			imports.add("lombok.AllArgsConstructor");
-			classAnnotations.add("@NoArgsConstructor");
-			classAnnotations.add("@AllArgsConstructor");
 		}
 
 		ctx.put("classAnnotations", classAnnotations);
 
 		// ----- ID block
-		IdBlock id = buildIdBlock(m, imports);
+		IdBlock id = buildIdBlock(m, imports, noSqlDatabase);
 		ctx.put("idBlock", id);
 
 		// ----- Fields (non-relational)
@@ -233,14 +248,14 @@ public class ModelGenerator {
 		if (m.getFields() != null) {
 			m.getFields().stream()
 					.filter(f -> !isRelationPlaceholder(f))
-					.forEach(f -> fields.add(buildFieldBlock(m, f, imports, enumByName, enumPackage, modelPkg)));
+					.forEach(f -> fields.add(buildFieldBlock(m, f, imports, enumByName, enumPackage, modelPkg, noSqlDatabase)));
 		}
 		ctx.put("fields", fields);
 
 		// ----- Relations
 		List<RelationBlock> rels = new ArrayList<>();
 		if (m.getRelations() != null) {
-			m.getRelations().forEach(r -> rels.add(buildRelationBlock(m, r, imports, modelPkg, modelPackageByType)));
+			m.getRelations().forEach(r -> rels.add(buildRelationBlock(m, r, imports, modelPkg, modelPackageByType, noSqlDatabase)));
 		}
 		ctx.put("relations", rels);
 
@@ -267,8 +282,61 @@ public class ModelGenerator {
 			imports.add("java.time.OffsetDateTime");
 
 		}
+		if (softDeleteEnabled) {
+			imports.add("java.time.OffsetDateTime");
+		}
+		if (noSqlDatabase) {
+			imports.add("org.springframework.data.annotation.Version");
+		}
 
+		List<Map<String, Object>> properties = new ArrayList<>();
+		if (id != null) {
+			properties.add(propertyModel(id.getType(), id.getName()));
+		}
+		fields.forEach(field -> properties.add(propertyModel(field.getType(), field.getName())));
+		rels.forEach(relation -> properties.add(propertyModel(relation.getDeclarationType(), relation.getName())));
+		if (Boolean.TRUE.equals(auditing.isEnabled())) {
+			properties.add(propertyModel("OffsetDateTime", "createdAt"));
+			properties.add(propertyModel("OffsetDateTime", "updatedAt"));
+		}
+		if (softDeleteEnabled) {
+			properties.add(propertyModel("Boolean", "deleted"));
+			properties.add(propertyModel("OffsetDateTime", "deletedAt"));
+		}
+		if (noSqlDatabase) {
+			properties.add(propertyModel("Integer", "version"));
+		}
+		for (int i = 0; i < properties.size(); i++) {
+			properties.get(i).put("isLast", i == properties.size() - 1);
+		}
+		ClassMethodsSelection classMethods = resolveClassMethods(m);
+
+		ModelBoilerplateContext boilerplateContext = new ModelBoilerplateContext(m, className, imports, classAnnotations,
+				properties,
+				true,
+				classMethods.generateToString(),
+				classMethods.generateEquals(),
+				classMethods.generateHashCode(),
+				classMethods.noArgsConstructor(),
+				classMethods.allArgsConstructor(),
+				classMethods.builder());
+		ModelBoilerplateStrategyFactory.forStyle(boilerplateStyle).apply(boilerplateContext);
+		if (!boilerplateContext.isUseLombok() && (classMethods.generateEquals() || classMethods.generateHashCode())) {
+			imports.add("java.util.Objects");
+		}
+
+		ctx.put("properties", properties);
+		ctx.put("hasProperties", !properties.isEmpty());
+		ctx.put("useLombok", boilerplateContext.isUseLombok());
+		ctx.put("generateNoArgsConstructor", !boilerplateContext.isUseLombok() && classMethods.noArgsConstructor());
+		ctx.put("generateAllArgsConstructor", !boilerplateContext.isUseLombok() && classMethods.allArgsConstructor());
+		ctx.put("generateBuilder", !boilerplateContext.isUseLombok() && classMethods.builder());
+		ctx.put("generateToString", !boilerplateContext.isUseLombok() && classMethods.generateToString());
+		ctx.put("generateEquals", !boilerplateContext.isUseLombok() && classMethods.generateEquals());
+		ctx.put("generateHashCode", !boilerplateContext.isUseLombok() && classMethods.generateHashCode());
+		ctx.put("classAnnotations", classAnnotations);
 		ctx.put("implements", "Serializable");
+		ctx.put("noSql", noSqlDatabase);
 
 		// ----- Imports (already de-dup + sorted via TreeSet)
 		ctx.put("imports", new ArrayList<>(imports));
@@ -280,6 +348,35 @@ public class ModelGenerator {
 		Files.writeString(outFile, content, StandardCharsets.UTF_8);
 
 		log.info("Generated model: {}", outFile);
+	}
+
+	private ClassMethodsSelection resolveClassMethods(ModelSpecDTO model) {
+		ClassMethodsSpecDTO methods = model.getClassMethods();
+		if (methods != null) {
+			return new ClassMethodsSelection(
+					Boolean.TRUE.equals(methods.getToString()),
+					Boolean.TRUE.equals(methods.getEquals()),
+					Boolean.TRUE.equals(methods.getHashCode()),
+					!Boolean.FALSE.equals(methods.getNoArgsConstructor()),
+					!Boolean.FALSE.equals(methods.getAllArgsConstructor()),
+					Boolean.TRUE.equals(methods.getBuilder()));
+		}
+
+		boolean legacyBuilder = false;
+		boolean legacyToString = false;
+		boolean legacyEqualsHash = false;
+		if (model.getOptions() != null && model.getOptions().getLombok() != null) {
+			legacyBuilder = Boolean.TRUE.equals(model.getOptions().getLombok().getBuilder());
+			legacyToString = Boolean.TRUE.equals(model.getOptions().getLombok().getToString());
+			legacyEqualsHash = Boolean.TRUE.equals(model.getOptions().getLombok().getEqualsAndHashCode());
+		}
+		return new ClassMethodsSelection(
+				legacyToString,
+				legacyEqualsHash,
+				legacyEqualsHash,
+				true,
+				true,
+				legacyBuilder);
 	}
 
 	private String pluralizeSnakeTableName(String value) {
@@ -314,7 +411,7 @@ public class ModelGenerator {
 		return m.getUniqueConstraints() != null && !m.getUniqueConstraints().isEmpty();
 	}
 
-	private IdBlock buildIdBlock(ModelSpecDTO m, Set<String> imports) {
+	private IdBlock buildIdBlock(ModelSpecDTO m, Set<String> imports, boolean noSqlDatabase) {
 		Validate.notNull(m.getId(), "entity.id missing for %s", m.getName());
 
 		FieldNameAndType nat = normalizeNameType(m.getId().getField(), m.getId().getType());
@@ -325,11 +422,15 @@ public class ModelGenerator {
 		List<String> ann = new ArrayList<>();
 
 		// Always @Id
-		imports.add("jakarta.persistence.Id");
+		if (noSqlDatabase) {
+			imports.add("org.springframework.data.annotation.Id");
+		} else {
+			imports.add("jakarta.persistence.Id");
+		}
 		ann.add("@Id");
 
 		GenerationSpecDTO g = m.getId().getGeneration();
-		if (g != null && g.getStrategy() != null) {
+		if (!noSqlDatabase && g != null && g.getStrategy() != null) {
 			imports.add("jakarta.persistence.GeneratedValue");
 
 			switch (g.getStrategy()) {
@@ -379,7 +480,7 @@ public class ModelGenerator {
 	}
 
 	private FieldBlock buildFieldBlock(ModelSpecDTO m, FieldSpecDTO f, Set<String> imports,
-			Map<String, EnumSpecResolved> enumByName, String enumPackage, String modelPackage) {
+			Map<String, EnumSpecResolved> enumByName, String enumPackage, String modelPackage, boolean noSqlDatabase) {
 		FieldNameAndType nat = normalizeNameType(f.getName(), f.getType());
 		FieldBlock fb = new FieldBlock();
 		fb.setName(nat.name());
@@ -393,9 +494,11 @@ public class ModelGenerator {
 			if (enumPackage != null && !enumPackage.equals(modelPackage)) {
 				imports.add(enumPackage + "." + resolvedType);
 			}
-			imports.add("jakarta.persistence.EnumType");
-			imports.add("jakarta.persistence.Enumerated");
-			ann.add("@Enumerated(EnumType." + enumSpec.storage() + ")");
+			if (!noSqlDatabase) {
+				imports.add("jakarta.persistence.EnumType");
+				imports.add("jakarta.persistence.Enumerated");
+				ann.add("@Enumerated(EnumType." + enumSpec.storage() + ")");
+			}
 		}
 
 		// @Column (from explicit column or inferred from constraints)
@@ -511,20 +614,20 @@ public class ModelGenerator {
 		}
 
 		// @Convert (explicit only)
-		if (f.getJpa() != null && f.getJpa().getConvert() != null
+		if (!noSqlDatabase && f.getJpa() != null && f.getJpa().getConvert() != null
 				&& Strings.isNotBlank(f.getJpa().getConvert().getConverter())) {
 			imports.add("jakarta.persistence.Convert");
 			ann.add("@Convert(converter = " + f.getJpa().getConvert().getConverter() + ".class)");
 		}
 
 		// @NaturalId
-		if (Boolean.TRUE.equals(f.getNaturalId())) {
+		if (!noSqlDatabase && Boolean.TRUE.equals(f.getNaturalId())) {
 			imports.add("org.hibernate.annotations.NaturalId");
 			ann.add("@NaturalId");
 		}
 
 		// @Column
-		if (col != null && (hasExplicitColumn || col.getNullable() != null || col.getUnique() != null
+		if (!noSqlDatabase && col != null && (hasExplicitColumn || col.getNullable() != null || col.getUnique() != null
 				|| col.getLength() != null || col.getColumnDefinition() != null || col.getName() != null)) {
 
 			imports.add("jakarta.persistence.Column");
@@ -606,7 +709,7 @@ public class ModelGenerator {
 	}
 
 	private RelationBlock buildRelationBlock(ModelSpecDTO m, RelationSpecDTO r, Set<String> imports,
-			String currentModelPackage, Map<String, String> modelPackageByType) {
+			String currentModelPackage, Map<String, String> modelPackageByType, boolean noSqlDatabase) {
 		RelationBlock rb = new RelationBlock();
 		rb.setName(CaseUtils.toCamel(r.getName()));
 
@@ -617,6 +720,21 @@ public class ModelGenerator {
 		}
 		String fieldType;
 		List<String> ann = new ArrayList<>();
+
+		if (noSqlDatabase) {
+			imports.add("org.springframework.data.mongodb.core.mapping.DocumentReference");
+			ann.add("@DocumentReference(lazy = true)");
+			switch (r.getType()) {
+			case OneToMany, ManyToMany -> {
+				fieldType = "List<" + targetType + ">";
+				imports.add("java.util.List");
+			}
+			default -> fieldType = targetType;
+			}
+			rb.setAnnotations(ann);
+			rb.setDeclarationType(fieldType);
+			return rb;
+		}
 
 		switch (r.getType()) {
 		case OneToOne -> {
@@ -771,5 +889,75 @@ public class ModelGenerator {
 
 	private String resolveJavaType(String rawType, Set<String> imports) {
 		return ModelGenerationSupport.resolveJavaType(rawType, imports);
+	}
+
+	private void generateMongoSupportClasses(AppSpecDTO spec, Path projectRoot, boolean domainStructure) throws Exception {
+		String utilPackage = domainStructure ? basePackage + ".domain.util" : basePackage + ".util";
+		Path utilDir = projectRoot.resolve(PathUtils.javaSrcPathFromPackage(utilPackage));
+		Files.createDirectories(utilDir);
+
+		Map<String, Object> utilCtx = Map.of("packageName", utilPackage);
+		String sequenceDocContent = tpl.render(TEMPLATE_MONGO_SEQUENCE_DOCUMENT, utilCtx);
+		Files.writeString(utilDir.resolve("DatabaseSequence.java"), sequenceDocContent, StandardCharsets.UTF_8);
+		String sequenceServiceContent = tpl.render(TEMPLATE_MONGO_SEQUENCE, utilCtx);
+		Files.writeString(utilDir.resolve("PrimarySequenceService.java"), sequenceServiceContent, StandardCharsets.UTF_8);
+
+		if (spec == null || spec.getModels() == null) {
+			return;
+		}
+
+		for (ModelSpecDTO model : spec.getModels()) {
+			if (!supportsMongoSequenceListener(model)) {
+				continue;
+			}
+			String modelPkg = resolveModelPackage(model, domainStructure);
+			Path modelDir = projectRoot.resolve(PathUtils.javaSrcPathFromPackage(modelPkg));
+			Files.createDirectories(modelDir);
+			String entityName = CaseUtils.toPascal(model.getName());
+			Map<String, Object> listenerCtx = new LinkedHashMap<>();
+			listenerCtx.put("packageName", modelPkg);
+			listenerCtx.put("entityName", entityName);
+			listenerCtx.put("sequenceServicePackage", utilPackage);
+			listenerCtx.put("intId", isIntegerId(model));
+
+			String listenerContent = tpl.render(TEMPLATE_MONGO_LISTENER, listenerCtx);
+			Files.writeString(modelDir.resolve(entityName + "Listener.java"), listenerContent, StandardCharsets.UTF_8);
+		}
+	}
+
+	private boolean supportsMongoSequenceListener(ModelSpecDTO model) {
+		if (model == null || model.getId() == null) {
+			return false;
+		}
+		String raw = StringUtils.firstNonBlank(model.getId().getType(), "").trim();
+		return "Long".equalsIgnoreCase(raw) || "long".equalsIgnoreCase(raw)
+				|| "Integer".equalsIgnoreCase(raw) || "int".equalsIgnoreCase(raw);
+	}
+
+	private boolean isIntegerId(ModelSpecDTO model) {
+		if (model == null || model.getId() == null) {
+			return false;
+		}
+		String raw = StringUtils.firstNonBlank(model.getId().getType(), "").trim();
+		return "Integer".equalsIgnoreCase(raw) || "int".equalsIgnoreCase(raw);
+	}
+
+	@SuppressWarnings("unchecked")
+	private boolean isNoSqlDatabase(Map<String, Object> yaml) {
+		if (yaml == null) {
+			return false;
+		}
+		Object dbTypeRaw = yaml.get("dbType");
+		if (dbTypeRaw == null && yaml.get("app") instanceof Map<?, ?> appRaw) {
+			dbTypeRaw = ((Map<String, Object>) appRaw).get("dbType");
+		}
+		if (dbTypeRaw != null && "NOSQL".equalsIgnoreCase(String.valueOf(dbTypeRaw).trim())) {
+			return true;
+		}
+		Object dbRaw = yaml.get("database");
+		if (dbRaw == null && yaml.get("app") instanceof Map<?, ?> appRaw) {
+			dbRaw = ((Map<String, Object>) appRaw).get("database");
+		}
+		return dbRaw != null && "MONGODB".equalsIgnoreCase(String.valueOf(dbRaw).trim());
 	}
 }

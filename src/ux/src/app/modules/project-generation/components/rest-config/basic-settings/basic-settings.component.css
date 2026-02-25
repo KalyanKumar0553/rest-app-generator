@@ -1,3 +1,7 @@
+:host {
+  --rest-config-control-width: 340px;
+}
+
 .form-grid {
   display: grid;
   align-items: center;
@@ -12,18 +16,24 @@
   color: var(--theme-modal-body-text);
   font-size: 16px;
   font-weight: 500;
+  align-self: center;
 }
 
 .form-field {
-  width: 100%;
+  width: min(100%, var(--rest-config-control-width));
+  max-width: 100%;
 }
 
-.short-field {
-  max-width: 320px;
+/* Local override: keep error area visible without reserving fixed blank space. */
+:host ::ng-deep .form-field .mat-mdc-form-field-subscript-wrapper {
+  min-height: 0 !important;
+  height: auto !important;
+  margin-top: 4px;
+  overflow: visible;
 }
 
-.tiny-field {
-  max-width: 120px;
+:host ::ng-deep .form-field .mat-mdc-form-field-error {
+  line-height: 1.25;
 }
 
 .indented-grid {
@@ -37,11 +47,20 @@
   gap: 16px;
 }
 
+.versioning-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px;
+  min-height: 56px;
+}
+
 .map-checkbox-row {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 10px;
+  min-height: 56px;
 }
 
 .inline-radio-group {
@@ -91,6 +110,10 @@
 @media (max-width: 768px) {
   .two-column {
     grid-template-columns: 1fr;
+  }
+
+  .form-field {
+    width: 100%;
   }
 
   .field-label {

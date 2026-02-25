@@ -52,6 +52,7 @@ interface ProjectSettings {
 }
 
 interface DatabaseSettings {
+  dbType: 'SQL' | 'NOSQL' | 'NONE';
   database: string;
   dbGeneration: string;
   pluralizeTableNames: boolean;
@@ -60,6 +61,7 @@ interface DatabaseSettings {
 interface DatabaseOption {
   value: string;
   label: string;
+  type: 'SQL' | 'NOSQL';
 }
 
 interface DeveloperPreferences {
@@ -68,6 +70,7 @@ interface DeveloperPreferences {
   enableOpenAPI: boolean;
   enableActuator: boolean;
   configureApi: boolean;
+  enableLombok: boolean;
   useDockerCompose: boolean;
   profiles: string[];
   javaVersion: string;
@@ -154,6 +157,7 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
   showRestSpecDeleteConfirmation = false;
   showRecentProjectPrompt = false;
   private previousDatabaseSelection = 'POSTGRES';
+  private previousDatabaseType: 'SQL' | 'NOSQL' | 'NONE' = 'SQL';
   private pendingDatabaseSelection: string | null = null;
   private databaseSelectionBeforeConfirmation: string | null = null;
   private hasCheckedRecentProjectPrompt = false;
@@ -217,6 +221,7 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
   };
 
   databaseSettings: DatabaseSettings = {
+    dbType: 'SQL',
     database: 'POSTGRES',
     dbGeneration: 'Hibernate (update)',
     pluralizeTableNames: false
@@ -228,6 +233,7 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
     enableOpenAPI: false,
     enableActuator: false,
     configureApi: true,
+    enableLombok: false,
     useDockerCompose: false,
     profiles: [],
     javaVersion: '21',
@@ -261,18 +267,18 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
 
   frontendOptions = ['None', 'React', 'Vue', 'Angular'];
   databaseOptions: DatabaseOption[] = [
-    { value: 'NONE', label: 'None' },
-    { value: 'MSSQL', label: 'MSSQL Server' },
-    { value: 'MYSQL', label: 'MySQL' },
-    { value: 'MARIADB', label: 'MariaDB' },
-    { value: 'ORACLE', label: 'Oracle' },
-    { value: 'POSTGRES', label: 'PostgreSQL' },
-    { value: 'MONGODB', label: 'MongoDB' },
-    { value: 'DERBY', label: 'Apache Derby' },
-    { value: 'H2', label: 'H2 Database' },
-    { value: 'HSQL', label: 'HyperSQL' }
+    { value: 'MSSQL', label: 'MSSQL Server', type: 'SQL' },
+    { value: 'MYSQL', label: 'MySQL', type: 'SQL' },
+    { value: 'MARIADB', label: 'MariaDB', type: 'SQL' },
+    { value: 'ORACLE', label: 'Oracle', type: 'SQL' },
+    { value: 'POSTGRES', label: 'PostgreSQL', type: 'SQL' },
+    { value: 'DERBY', label: 'Apache Derby', type: 'SQL' },
+    { value: 'H2', label: 'H2 Database', type: 'SQL' },
+    { value: 'HSQL', label: 'HyperSQL', type: 'SQL' },
+    { value: 'MONGODB', label: 'MongoDB', type: 'NOSQL' }
   ];
-  dbGenerationOptions = ['Hibernate (update)', 'Hibernate (create)', 'Liquibase', 'Flyway'];
+  dbTypeOptions: Array<'SQL' | 'NOSQL' | 'NONE'> = ['SQL', 'NOSQL', 'NONE'];
+  dbGenerationOptions = ['Hibernate (update)', 'Hibernate (create)'];
   javaVersionOptions = ['17', '21'];
   deploymentOptions = ['None', 'Docker', 'Kubernetes', 'Cloud'];
   constructor(
@@ -381,15 +387,21 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
         this.enums = Array.isArray(projectData.enums) ? projectData.enums : [];
         this.projectSettings = projectData.settings || this.projectSettings;
         this.databaseSettings = projectData.database || this.databaseSettings;
+        this.databaseSettings.dbType = this.resolveDatabaseType(this.databaseSettings.dbType, this.databaseSettings.database);
         this.databaseSettings.database = this.toDatabaseCode(this.databaseSettings.database);
+        this.ensureDatabaseSelectionForType();
         this.previousDatabaseSelection = this.databaseSettings.database;
+        this.previousDatabaseType = this.databaseSettings.dbType;
         this.developerPreferences = {
           ...this.developerPreferences,
           ...(projectData.preferences || {}),
           enableActuator: Boolean(projectData?.preferences?.enableActuator),
           configureApi: projectData?.preferences?.configureApi === undefined
             ? this.developerPreferences.configureApi
-            : Boolean(projectData?.preferences?.configureApi)
+            : Boolean(projectData?.preferences?.configureApi),
+          enableLombok: projectData?.preferences?.enableLombok === undefined
+            ? Boolean(projectData?.preferences?.optionalLombok)
+            : Boolean(projectData?.preferences?.enableLombok)
         };
         this.controllersConfigEnabled = projectData?.controllers?.enabled === undefined
           ? true
@@ -1124,9 +1136,15 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
     const spec: any = {
       app,
       database: databaseCode,
+      dbType: this.resolveDatabaseType(project?.database?.dbType, databaseCode),
       applFormat: this.trimmed(project?.preferences?.applFormat) || 'yaml',
       enableOpenapi: Boolean(project?.preferences?.enableOpenAPI),
       enableActuator: Boolean(project?.preferences?.enableActuator),
+      enableLombok: Boolean(
+        project?.preferences?.enableLombok === undefined
+          ? project?.preferences?.optionalLombok
+          : project?.preferences?.enableLombok
+      ),
       useDockerCompose: Boolean(project?.preferences?.useDockerCompose),
       packages: this.trimmed(project?.preferences?.packages) || 'technical',
       profiles: this.mapProfiles(project?.preferences?.profiles),
@@ -1270,10 +1288,12 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
     }
   }
 
-  onControllersConfigSave(config: RestEndpointConfig): void {
+  onControllersConfigSave(config: RestEndpointConfig, persistAsGlobal = true): void {
     const sanitizedConfig = this.parseControllersConfig(config);
-    this.controllersConfig = sanitizedConfig;
-    this.controllersConfigEnabled = true;
+    if (persistAsGlobal) {
+      this.controllersConfig = sanitizedConfig;
+      this.controllersConfigEnabled = true;
+    }
     this.applyControllersEntityMapping(sanitizedConfig, this.controllersEditingSpecKey);
     this.toastService.success('Controller configuration updated');
   }
@@ -1296,6 +1316,7 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
       if (!name || !entityName) {
         return;
       }
+      const mappedToEntity = Boolean(normalizedConfig.mapToEntity);
 
       const existing = rowsByName.get(name);
       if (!existing) {
@@ -1303,7 +1324,7 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
           key: name,
           name,
           totalEndpoints: this.countEnabledEndpoints(normalizedConfig),
-          mappedEntities: [entityName],
+          mappedEntities: mappedToEntity ? [entityName] : [],
           entityIndexes: [index],
           hasControllersConfig: false
         });
@@ -1311,7 +1332,7 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
       }
 
       existing.totalEndpoints = this.countEnabledEndpoints(normalizedConfig);
-      if (!existing.mappedEntities.includes(entityName)) {
+      if (mappedToEntity && !existing.mappedEntities.includes(entityName)) {
         existing.mappedEntities.push(entityName);
       }
       if (!existing.entityIndexes.includes(index)) {
@@ -1360,6 +1381,10 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
     // and not full inline restConfig.
     entityList.forEach((entity: any, index: number) => {
       if (!Boolean(entity?.addRestEndpoints)) {
+        return;
+      }
+      // If inline restConfig exists, mapping is already handled above using mapToEntity flag.
+      if (entity?.restConfig) {
         return;
       }
       const entityName = this.trimmed(entity?.name);
@@ -1453,12 +1478,17 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
 
   onControllersEditorSave(config: RestEndpointConfig): void {
     if (!this.isControllersSpecEditMode || !this.controllersEditingSpecKey) {
-      this.onControllersConfigSave(config);
+      this.onControllersConfigSave(config, true);
       this.controllersCreatingNewConfig = false;
       this.cancelControllerRestSpecEdit();
       return;
     }
-    this.onControllersConfigSave(config);
+
+    const editingKey = this.trimmed(this.controllersEditingSpecKey);
+    const globalKey = this.trimmed(this.controllersConfig?.resourceName);
+    const editingGlobalConfig = Boolean(this.controllersConfigEnabled && editingKey && editingKey === globalKey);
+
+    this.onControllersConfigSave(config, editingGlobalConfig);
     this.cancelControllerRestSpecEdit();
   }
 
@@ -1699,6 +1729,19 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
     this.applyDatabaseSelection(selectedCode);
   }
 
+  onDatabaseTypeChange(type: 'SQL' | 'NOSQL' | 'NONE'): void {
+    if (type === 'NONE' && this.hasConfiguredEntities()) {
+      this.databaseSelectionBeforeConfirmation = this.previousDatabaseSelection;
+      this.pendingDatabaseSelection = 'NONE';
+      this.databaseSettings.dbType = this.previousDatabaseType;
+      this.restoreDatabaseSelection(this.previousDatabaseSelection);
+      this.showEntitiesDeleteConfirmation = true;
+      return;
+    }
+    this.databaseSettings.dbType = type;
+    this.ensureDatabaseSelectionForType();
+  }
+
   confirmEntitiesDelete(): void {
     if (this.pendingDatabaseSelection !== 'NONE') {
       this.showEntitiesDeleteConfirmation = false;
@@ -1722,10 +1765,17 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
 
   private applyDatabaseSelection(code: string): void {
     this.databaseSettings.database = code;
+    this.databaseSettings.dbType = this.resolveDatabaseType(this.databaseSettings.dbType, code);
     this.previousDatabaseSelection = code;
+    this.previousDatabaseType = this.databaseSettings.dbType;
     if (code === 'NONE' && this.activeSection === 'entities') {
       this.activeSection = 'general';
     }
+  }
+
+  get filteredDatabaseOptions(): DatabaseOption[] {
+    const currentType = this.databaseSettings.dbType;
+    return this.databaseOptions.filter(option => option.type === currentType);
   }
 
   private hasConfiguredEntities(): boolean {
@@ -1733,19 +1783,56 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
   }
 
   shouldShowDbGeneration(): boolean {
-    return this.toDatabaseCode(this.databaseSettings.database) !== 'NONE';
+    return this.databaseSettings.dbType !== 'NONE' && this.toDatabaseCode(this.databaseSettings.database) !== 'NONE';
   }
 
   shouldShowPluralizeTableNames(): boolean {
-    return this.toDatabaseCode(this.databaseSettings.database) !== 'NONE';
+    return this.databaseSettings.dbType !== 'NONE' && this.toDatabaseCode(this.databaseSettings.database) !== 'NONE';
   }
 
   private restoreDatabaseSelection(value: string): void {
     const selection = this.toDatabaseCode(value);
     setTimeout(() => {
       this.databaseSettings.database = selection;
+      this.databaseSettings.dbType = this.resolveDatabaseType(this.databaseSettings.dbType, selection);
       this.cdr.detectChanges();
     }, 0);
+  }
+
+  private ensureDatabaseSelectionForType(): void {
+    if (this.databaseSettings.dbType === 'NONE') {
+      this.databaseSettings.database = 'NONE';
+      return;
+    }
+    const selectedDatabase = this.toDatabaseCode(this.databaseSettings.database);
+    const allowed = this.filteredDatabaseOptions.some(option => option.value === selectedDatabase);
+    if (allowed) {
+      return;
+    }
+    const firstMatching = this.filteredDatabaseOptions.find(option => option.type === this.databaseSettings.dbType)?.value;
+    this.databaseSettings.database = firstMatching || 'POSTGRES';
+  }
+
+  private resolveDatabaseType(type: unknown, databaseCode: unknown): 'SQL' | 'NOSQL' | 'NONE' {
+    const normalizedType = this.trimmed(type)?.toUpperCase();
+    if (normalizedType === 'NONE') {
+      return 'NONE';
+    }
+    if (normalizedType === 'NOSQL') {
+      return 'NOSQL';
+    }
+    if (normalizedType === 'SQL') {
+      return 'SQL';
+    }
+
+    const normalizedDb = this.toDatabaseCode(databaseCode);
+    if (normalizedDb === 'NONE') {
+      return 'NONE';
+    }
+    if (normalizedDb === 'MONGODB') {
+      return 'NOSQL';
+    }
+    return 'SQL';
   }
 
   private mapProfiles(profiles: unknown): string[] {
@@ -1776,6 +1863,7 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
         tableName: this.toSnakeCase(this.trimmed(entity?.name) || 'entity'),
         addRestEndpoints: Boolean(entity?.addRestEndpoints),
         addCrudOperations: Boolean(entity?.addCrudOperations),
+        classMethods: this.mapClassMethods(entity?.classMethods),
         options: {
           entity: !Boolean(entity?.mappedSuperclass),
           immutable: Boolean(entity?.immutable),
@@ -1877,10 +1965,11 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
       if (!Boolean(restConfig?.methods?.[key])) {
         return;
       }
+      const documentation = this.buildOperationDocumentationConfig(restConfig, key);
       methods[key] = {
         request: this.buildOperationRequestConfig(key, restConfig),
         response: this.buildOperationResponseConfig(restConfig, key),
-        documentation: this.buildOperationDocumentationConfig(restConfig, key)
+        ...(documentation ? { documentation } : {})
       };
     });
 
@@ -1933,14 +2022,29 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
     };
   }
 
-  private buildOperationDocumentationConfig(restConfig: any, docKey: string): any {
-    return {
-      description: this.trimmed(restConfig?.documentation?.endpoints?.[docKey]?.description),
-      descriptionTags: Array.isArray(restConfig?.documentation?.endpoints?.[docKey]?.descriptionTags)
-        ? restConfig.documentation.endpoints[docKey].descriptionTags.map((item: any) => this.trimmed(item)).filter(Boolean)
-        : [],
-      deprecated: Boolean(restConfig?.documentation?.endpoints?.[docKey]?.deprecated)
-    };
+  private buildOperationDocumentationConfig(restConfig: any, docKey: string): any | null {
+    const description = this.trimmed(restConfig?.documentation?.endpoints?.[docKey]?.description);
+    const group = this.trimmed(restConfig?.documentation?.endpoints?.[docKey]?.group);
+    const descriptionTags = Array.isArray(restConfig?.documentation?.endpoints?.[docKey]?.descriptionTags)
+      ? restConfig.documentation.endpoints[docKey].descriptionTags.map((item: any) => this.trimmed(item)).filter(Boolean)
+      : [];
+    const deprecated = Boolean(restConfig?.documentation?.endpoints?.[docKey]?.deprecated);
+
+    const documentation: Record<string, any> = {};
+    if (description) {
+      documentation['description'] = description;
+    }
+    if (group) {
+      documentation['group'] = group;
+    }
+    if (descriptionTags.length) {
+      documentation['descriptionTags'] = descriptionTags;
+    }
+    if (deprecated) {
+      documentation['deprecated'] = true;
+    }
+
+    return Object.keys(documentation).length ? documentation : null;
   }
 
   private buildOperationRequestConfig(operationKey: string, restConfig: any): any {
@@ -2195,15 +2299,15 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
       },
       documentation: {
         endpoints: {
-          list: { description: '', descriptionTags: [], deprecated: false },
-          get: { description: '', descriptionTags: [], deprecated: false },
-          create: { description: '', descriptionTags: [], deprecated: false },
-          update: { description: '', descriptionTags: [], deprecated: false },
-          patch: { description: '', descriptionTags: [], deprecated: false },
-          delete: { description: '', descriptionTags: [], deprecated: false },
-          bulkInsert: { description: '', descriptionTags: [], deprecated: false },
-          bulkUpdate: { description: '', descriptionTags: [], deprecated: false },
-          bulkDelete: { description: '', descriptionTags: [], deprecated: false }
+          list: { description: 'List operation for API', group: 'API Group', descriptionTags: ['list'], deprecated: false },
+          get: { description: 'Get By Key operation for API', group: 'API Group', descriptionTags: ['get'], deprecated: false },
+          create: { description: 'Create operation for API', group: 'API Group', descriptionTags: ['create'], deprecated: false },
+          update: { description: 'Update operation for API', group: 'API Group', descriptionTags: ['update'], deprecated: false },
+          patch: { description: 'Patch operation for API', group: 'API Group', descriptionTags: ['patch'], deprecated: false },
+          delete: { description: 'Delete operation for API', group: 'API Group', descriptionTags: ['delete'], deprecated: false },
+          bulkInsert: { description: 'Bulk Insert operation for API', group: 'API Group', descriptionTags: ['bulkInsert'], deprecated: false },
+          bulkUpdate: { description: 'Bulk Update operation for API', group: 'API Group', descriptionTags: ['bulkUpdate'], deprecated: false },
+          bulkDelete: { description: 'Bulk Delete operation for API', group: 'API Group', descriptionTags: ['bulkDelete'], deprecated: false }
         }
       }
     };
@@ -2293,6 +2397,7 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
     const nextSpecName = this.trimmed(config?.resourceName);
     const previousName = this.trimmed(previousSpecKey);
     const selectedEntityName = config.mapToEntity ? this.trimmed(config?.mappedEntityName) : '';
+    const normalizedConfig = this.parseControllersConfig(config);
 
     this.entities.forEach((entity: any) => {
       const entityName = this.trimmed(entity?.name);
@@ -2306,7 +2411,18 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
         return;
       }
 
-      if (!selectedEntityName || entityName !== selectedEntityName) {
+      if (!selectedEntityName) {
+        entity.addRestEndpoints = true;
+        entity.restConfig = this.parseControllersConfig({
+          ...normalizedConfig,
+          mapToEntity: false,
+          mappedEntityName: ''
+        });
+        delete entity['rest-spec-name'];
+        return;
+      }
+
+      if (entityName !== selectedEntityName) {
         entity.addRestEndpoints = false;
         entity.restConfig = undefined;
         delete entity['rest-spec-name'];
@@ -2405,6 +2521,7 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
       const dto: any = {
         name: this.trimmed(dataObject?.name) || 'DataObject',
         type: this.trimmed(dataObject?.dtoType) || 'request',
+        classMethods: this.mapClassMethods(dataObject?.classMethods),
         fields: (Array.isArray(dataObject?.fields) ? dataObject.fields : []).map((field: any) => this.mapDtoField(field))
       };
 
@@ -2451,6 +2568,17 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
     }
 
     return dtoField;
+  }
+
+  private mapClassMethods(classMethods: any): any {
+    return {
+      toString: Boolean(classMethods?.toString ?? true),
+      hashCode: Boolean(classMethods?.hashCode ?? true),
+      equals: Boolean(classMethods?.equals ?? true),
+      noArgsConstructor: Boolean(classMethods?.noArgsConstructor ?? true),
+      allArgsConstructor: Boolean(classMethods?.allArgsConstructor ?? true),
+      builder: Boolean(classMethods?.builder ?? false)
+    };
   }
 
   private mapRelation(relation: any): any {

@@ -1,79 +1,64 @@
 <ng-template #baseSettingsBody>
   <div class="form-grid two-column">
     <div class="field-label">Name:</div>
-    <mat-form-field
-      appearance="fill"
-      class="form-field short-field"
+    <mat-form-field appearance="fill" subscriptSizing="dynamic" class="form-field"
       [class.field-invalid]="showResourceNameErrors && (resourceNameModel?.errors?.['requiredName'] || resourceNameModel?.errors?.['duplicateName'])">
-      <input
-        matInput
-        name="resourceName"
-        #resourceNameModel="ngModel"
-        [(ngModel)]="draft.resourceName"
-        (ngModelChange)="onResourceNameInput()"
-        placeholder="Enter name">
-      <mat-error *ngIf="showResourceNameErrors && resourceNameModel?.errors?.['requiredName']">Name is required.</mat-error>
-      <mat-error *ngIf="showResourceNameErrors && resourceNameModel?.errors?.['duplicateName']">Name already exists in configured REST specs.</mat-error>
+      <input matInput name="resourceName" #resourceNameModel="ngModel" [(ngModel)]="draft.resourceName"
+        (ngModelChange)="onResourceNameInput()" placeholder="Enter name">
+      <mat-error *ngIf="showResourceNameErrors && resourceNameModel?.errors?.['requiredName']">Name is
+        required.</mat-error>
+      <mat-error *ngIf="showResourceNameErrors && resourceNameModel?.errors?.['duplicateName']">Name already exists in
+        configured REST specs.</mat-error>
     </mat-form-field>
 
     <div class="field-label">Base Endpoint:</div>
-    <mat-form-field appearance="fill" class="form-field">
-      <input matInput [(ngModel)]="draft.basePath" placeholder="Enter base endpoint">
+    <mat-form-field appearance="fill" subscriptSizing="dynamic" class="form-field"
+      [class.field-invalid]="basePathRequired">
+      <input matInput name="basePath" #basePathModel="ngModel" [(ngModel)]="draft.basePath"
+        (ngModelChange)="onBasePathInput()" placeholder="Enter base endpoint" required>
+      <mat-error *ngIf="basePathRequired || (basePathModel?.invalid && (basePathModel?.dirty || basePathModel?.touched))">
+        Base endpoint is required.
+      </mat-error>
     </mat-form-field>
 
     <div class="field-label">Map To Entity:</div>
     <div class="map-checkbox-row">
-      <mat-checkbox
-        [(ngModel)]="draft.mapToEntity"
-        color="primary"
-        (ngModelChange)="onMapToEntityToggle($event)">
-        Map To Entity
-      </mat-checkbox>
+      <mat-checkbox [(ngModel)]="draft.mapToEntity" color="primary" aria-label="Map to entity"
+        [disabled]="lockEntityMapping"
+        (ngModelChange)="onMapToEntityToggle($event)"></mat-checkbox>
     </div>
 
     <div class="field-label" *ngIf="draft.mapToEntity">Entity:</div>
-    <mat-form-field
-      *ngIf="draft.mapToEntity"
-      appearance="fill"
-      class="form-field short-field"
+    <mat-form-field *ngIf="draft.mapToEntity" appearance="fill" subscriptSizing="dynamic" class="form-field"
       [class.field-invalid]="mapToEntityRequired">
-      <mat-select
-        name="mappedEntityName"
-        #mappedEntityModel="ngModel"
-        [(ngModel)]="draft.mappedEntityName"
-        [required]="draft.mapToEntity"
-        (ngModelChange)="onMappedEntityChange()">
+      <mat-select name="mappedEntityName" #mappedEntityModel="ngModel" [(ngModel)]="draft.mappedEntityName"
+        [required]="draft.mapToEntity" [disabled]="lockEntityMapping" (ngModelChange)="onMappedEntityChange()">
         <mat-option [value]="''">None</mat-option>
         <mat-option *ngFor="let entityName of availableEntityNames" [value]="entityName">{{ entityName }}</mat-option>
       </mat-select>
       <mat-error *ngIf="mapToEntityRequired">Entity mapping is required when Map To Entity is enabled.</mat-error>
     </mat-form-field>
+    <div class="field-label">Include Versioning:</div>
+    <div class="versioning-row">
+      <mat-checkbox [(ngModel)]="draft.apiVersioning.enabled" (ngModelChange)="onApiVersioningToggle($event)"
+        color="primary" aria-label="Include API versioning"></mat-checkbox>
+      <mat-radio-group *ngIf="draft.apiVersioning.enabled" class="inline-radio-group versioning-radio-group"
+        [(ngModel)]="draft.apiVersioning.strategy">
+        <mat-radio-button value="header">Header</mat-radio-button>
+        <mat-radio-button value="path">Path</mat-radio-button>
+      </mat-radio-group>
+    </div>
   </div>
 
-  <div class="line-row">
-    <mat-checkbox
-      [(ngModel)]="draft.apiVersioning.enabled"
-      (ngModelChange)="onApiVersioningToggle($event)"
-      color="primary">
-      Include API Versioning:
-    </mat-checkbox>
-    <mat-radio-group
-      *ngIf="draft.apiVersioning.enabled"
-      class="inline-radio-group"
-      [(ngModel)]="draft.apiVersioning.strategy">
-      <mat-radio-button value="header">Header</mat-radio-button>
-      <mat-radio-button value="path">Path</mat-radio-button>
-    </mat-radio-group>
-  </div>
-
-  <div class="form-grid two-column indented-grid" *ngIf="draft.apiVersioning.enabled && draft.apiVersioning.strategy === 'header'">
+  <div class="form-grid two-column indented-grid"
+    *ngIf="draft.apiVersioning.enabled && draft.apiVersioning.strategy === 'header'">
     <div class="field-label">API Header:</div>
-    <mat-form-field appearance="fill" class="form-field short-field">
+    <mat-form-field appearance="fill" subscriptSizing="dynamic" class="form-field">
       <input matInput [(ngModel)]="draft.apiVersioning.headerName" placeholder="X-API-VERSION">
     </mat-form-field>
 
     <div class="field-label">Default Version:</div>
-    <mat-form-field appearance="fill" class="form-field tiny-field">
+    <mat-form-field appearance="fill" subscriptSizing="dynamic" class="form-field">
       <input matInput [(ngModel)]="draft.apiVersioning.defaultVersion" placeholder="1">
     </mat-form-field>
   </div>
@@ -81,8 +66,8 @@
 
 <ng-template #pathVariableBody>
   <div class="form-grid two-column">
-    <div class="field-label">Select ID Type</div>
-    <mat-form-field appearance="fill" class="form-field short-field">
+    <div class="field-label">Select Key Type</div>
+    <mat-form-field appearance="fill" subscriptSizing="dynamic" class="form-field">
       <mat-select [(ngModel)]="draft.pathVariableType">
         <mat-option value="UUID">UUID</mat-option>
         <mat-option value="LONG">Long (Auto Increment)</mat-option>
@@ -100,7 +85,8 @@
 
   <div class="form-stack" *ngIf="draft.deletion.mode === 'SOFT'">
     <mat-checkbox [(ngModel)]="draft.deletion.restoreEndpoint" color="primary">Generate Restore Endpoint</mat-checkbox>
-    <mat-checkbox [(ngModel)]="draft.deletion.includeDeletedParam" color="primary">Support "includeDeleted=true" parameter</mat-checkbox>
+    <mat-checkbox [(ngModel)]="draft.deletion.includeDeletedParam" color="primary">Support "includeDeleted=true"
+      parameter</mat-checkbox>
   </div>
 </ng-template>
 

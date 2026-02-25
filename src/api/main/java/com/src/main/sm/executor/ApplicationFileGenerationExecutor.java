@@ -39,7 +39,7 @@ public class ApplicationFileGenerationExecutor implements StepExecutor {
 
 		Object defaultPropsObj = yaml.get("properties");
 		Map<String, Object> propsObj = defaultPropsObj instanceof Map ? castMap(defaultPropsObj) : new LinkedHashMap<>();
-		boolean includeJpa = hasEntities(yaml);
+		boolean includeJpa = hasEntities(yaml) && !isNoSqlDatabase(yaml);
 		boolean includeMessageSettings = hasValidationMessages(yaml);
 		String database = resolveDatabaseCode(yaml);
 		ensureDefaultApplicationProperties(propsObj, includeJpa, includeMessageSettings, database);
@@ -308,6 +308,22 @@ public class ApplicationFileGenerationExecutor implements StepExecutor {
 			}
 		}
 		return "POSTGRES";
+	}
+
+	@SuppressWarnings("unchecked")
+	private static boolean isNoSqlDatabase(Map<String, Object> yaml) {
+		if (yaml == null) {
+			return false;
+		}
+		Object dbTypeRaw = yaml.get("dbType");
+		if (dbTypeRaw == null && yaml.get("app") instanceof Map<?, ?> appRaw) {
+			dbTypeRaw = ((Map<String, Object>) appRaw).get("dbType");
+		}
+		if (dbTypeRaw != null && "NOSQL".equalsIgnoreCase(String.valueOf(dbTypeRaw).trim())) {
+			return true;
+		}
+		String database = resolveDatabaseCode(yaml);
+		return "MONGODB".equalsIgnoreCase(database);
 	}
 
 	@SuppressWarnings("unchecked")

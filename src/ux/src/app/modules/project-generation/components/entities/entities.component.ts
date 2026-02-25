@@ -24,6 +24,14 @@ interface Entity {
   mappedSuperclass?: boolean;
   addRestEndpoints?: boolean;
   addCrudOperations?: boolean;
+  classMethods?: {
+    toString: boolean;
+    hashCode: boolean;
+    equals: boolean;
+    noArgsConstructor: boolean;
+    allArgsConstructor: boolean;
+    builder: boolean;
+  };
   restConfig?: RestEndpointConfig;
   auditable?: boolean;
   softDelete?: boolean;
@@ -478,10 +486,20 @@ export class EntitiesComponent implements OnInit {
   }
 
   performSchemaImport(): void {
+    const usedRestConfigNames = new Set(
+      (Array.isArray(this.entities) ? this.entities : [])
+        .map((entity) => String(entity?.restConfig?.resourceName ?? '').trim().toLowerCase())
+        .filter(Boolean)
+    );
+
     const mappedEntities = this.importPreviewEntities.map(entity => ({
       name: entity.name,
       mappedSuperclass: false,
       addRestEndpoints: this.importAddRestEndpoints,
+      addCrudOperations: false,
+      restConfig: this.importAddRestEndpoints
+        ? this.createDefaultRestConfigForEntity(entity.name, usedRestConfigNames)
+        : undefined,
       auditable: false,
       softDelete: false,
       immutable: false,
@@ -514,6 +532,7 @@ export class EntitiesComponent implements OnInit {
     this.importSchemaSql = '';
     this.importPreviewEntities = [];
     this.importAddRestEndpoints = false;
+    this.entitiesChange.emit(JSON.parse(JSON.stringify(this.entities)));
     this.updateVisibleEntities();
   }
 
@@ -557,16 +576,154 @@ export class EntitiesComponent implements OnInit {
       }
     }
 
+    const shouldEnableRestEndpoints = Boolean(existing.addRestEndpoints) || Boolean(incoming.addRestEndpoints);
+    const nextRestConfig = shouldEnableRestEndpoints
+      ? (existing.restConfig ?? incoming.restConfig)
+      : undefined;
+
     return {
       ...existing,
-      addRestEndpoints: incoming.addRestEndpoints,
+      addRestEndpoints: shouldEnableRestEndpoints,
       addCrudOperations: incoming.addCrudOperations ?? existing.addCrudOperations ?? false,
+      restConfig: nextRestConfig,
       auditable: existing.auditable ?? false,
       softDelete: existing.softDelete ?? false,
       immutable: existing.immutable ?? false,
       naturalIdCache: existing.naturalIdCache ?? false,
       fields: mergedFields
     };
+  }
+
+  private createDefaultRestConfigForEntity(entityName: string, usedNames: Set<string>): RestEndpointConfig {
+    const normalizedEntityName = String(entityName ?? '').trim();
+    const generatedName = this.generateUniqueRestConfigName(normalizedEntityName, usedNames);
+    const defaultBasePath = normalizedEntityName ? `/${normalizedEntityName.toLowerCase()}` : '';
+
+    return {
+      resourceName: generatedName,
+      basePath: defaultBasePath,
+      mapToEntity: true,
+      mappedEntityName: normalizedEntityName,
+      methods: {
+        list: true,
+        get: true,
+        create: true,
+        update: false,
+        patch: true,
+        delete: true,
+        bulkInsert: true,
+        bulkUpdate: true,
+        bulkDelete: true
+      },
+      apiVersioning: {
+        enabled: false,
+        strategy: 'header',
+        headerName: 'X-API-VERSION',
+        defaultVersion: '1'
+      },
+      pathVariableType: 'UUID',
+      deletion: {
+        mode: 'SOFT',
+        restoreEndpoint: true,
+        includeDeletedParam: true
+      },
+      hateoas: {
+        enabled: true,
+        selfLink: true,
+        updateLink: true,
+        deleteLink: true
+      },
+      pagination: {
+        enabled: true,
+        mode: 'OFFSET',
+        sortField: 'createdAt',
+        sortDirection: 'DESC'
+      },
+      searchFiltering: {
+        keywordSearch: true,
+        jpaSpecification: true,
+        searchableFields: []
+      },
+      batchOperations: {
+        insert: {
+          batchSize: 500,
+          enableAsyncMode: false
+        },
+        update: {
+          batchSize: 500,
+          updateMode: 'PUT',
+          optimisticLockHandling: 'FAIL_ON_CONFLICT',
+          validationStrategy: 'VALIDATE_ALL_FIRST',
+          enableAsyncMode: false,
+          asyncProcessing: true
+        },
+        bulkDelete: {
+          deletionStrategy: 'SOFT',
+          batchSize: 1000,
+          failureStrategy: 'STOP_ON_FIRST_ERROR',
+          enableAsyncMode: false,
+          allowIncludeDeletedParam: true
+        }
+      },
+      requestResponse: {
+        request: {
+          list: { mode: 'GENERATE_DTO', dtoName: '' },
+          create: { mode: 'GENERATE_DTO', dtoName: '' },
+          delete: { mode: 'GENERATE_DTO', dtoName: '' },
+          update: { mode: 'GENERATE_DTO', dtoName: '' },
+          patch: { mode: 'JSON_MERGE_PATCH' },
+          getByIdType: 'UUID',
+          deleteByIdType: 'UUID',
+          bulkInsertType: '',
+          bulkUpdateType: '',
+          bulkDeleteType: ''
+        },
+        response: {
+          responseType: 'RESPONSE_ENTITY',
+          dtoName: '',
+          endpointDtos: {
+            list: '',
+            get: '',
+            create: '',
+            update: '',
+            patch: '',
+            delete: '',
+            bulkInsert: '',
+            bulkUpdate: '',
+            bulkDelete: ''
+          },
+          responseWrapper: 'STANDARD_ENVELOPE',
+          enableFieldProjection: true,
+          includeHateoasLinks: true
+        }
+      },
+      documentation: {
+        endpoints: {
+          list: { description: 'List operation for API', group: 'API Group', descriptionTags: ['list'], deprecated: false },
+          get: { description: 'Get By Key operation for API', group: 'API Group', descriptionTags: ['get'], deprecated: false },
+          create: { description: 'Create operation for API', group: 'API Group', descriptionTags: ['create'], deprecated: false },
+          update: { description: 'Update operation for API', group: 'API Group', descriptionTags: ['update'], deprecated: false },
+          patch: { description: 'Patch operation for API', group: 'API Group', descriptionTags: ['patch'], deprecated: false },
+          delete: { description: 'Delete operation for API', group: 'API Group', descriptionTags: ['delete'], deprecated: false },
+          bulkInsert: { description: 'Bulk Insert operation for API', group: 'API Group', descriptionTags: ['bulkInsert'], deprecated: false },
+          bulkUpdate: { description: 'Bulk Update operation for API', group: 'API Group', descriptionTags: ['bulkUpdate'], deprecated: false },
+          bulkDelete: { description: 'Bulk Delete operation for API', group: 'API Group', descriptionTags: ['bulkDelete'], deprecated: false }
+        }
+      }
+    };
+  }
+
+  private generateUniqueRestConfigName(entityName: string, usedNames: Set<string>): string {
+    const baseName = String(entityName ?? '').trim().replace(/\s+/g, '') || 'Default';
+    const root = `${baseName} API Config`;
+    let candidate = root;
+    let index = 2;
+    while (usedNames.has(candidate.toLowerCase())) {
+      candidate = `${root} ${index}`;
+      index += 1;
+    }
+    usedNames.add(candidate.toLowerCase());
+    return candidate;
   }
 
   onEntitySearchSortChange(event: SearchSortEvent): void {

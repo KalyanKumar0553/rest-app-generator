@@ -43,7 +43,6 @@ public class GlobalExceptionHandler {
   @ExceptionHandler(GenericException.class)
   public ResponseEntity<Map<String,Object>> onError(GenericException ex){
     Map<String,Object> body = new HashMap<>();
-    body.put("error", "INTERNAL_ERROR");
     body.put("errorCode", ex.getStatus().value());
     body.put("errorMsg", ex.getErrorMsg());
     ex.printStackTrace();
@@ -53,7 +52,7 @@ public class GlobalExceptionHandler {
   @ExceptionHandler(Exception.class)
   public ResponseEntity<Map<String,Object>> onError(Exception ex){
     Map<String,Object> body = new HashMap<>();
-    body.put("error", "INTERNAL_ERROR");
+    body.put("errorCode", HttpStatus.INTERNAL_SERVER_ERROR.value());
     body.put("errorMsg", ex.getMessage());
     ex.printStackTrace();
     return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(body);
@@ -62,7 +61,7 @@ public class GlobalExceptionHandler {
   @ExceptionHandler(IllegalArgumentException.class)
   public ResponseEntity<Map<String,Object>> onIllegalArgument(IllegalArgumentException ex){
     Map<String,Object> body = new HashMap<>();
-    body.put("error", "BAD_REQUEST");
+    body.put("errorCode", HttpStatus.BAD_REQUEST.value());
     body.put("message", ex.getMessage());
     return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body);
   }
