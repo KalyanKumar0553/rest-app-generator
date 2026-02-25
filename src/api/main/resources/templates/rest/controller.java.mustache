@@ -1,8 +1,8 @@
 package {{controllerPackage}};
 
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.math.*;
+import java.time.*;
+import java.util.*;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -47,7 +47,7 @@ public class {{controllerClass}} {
 
 {{#createEnabled}}
     @PostMapping
-    public ResponseEntity<{{createResponseType}}> create(@Valid @RequestBody {{createRequestType}} request) {
+    public ResponseEntity<{{{createResponseType}}}> create(@Valid @RequestBody {{{createRequestType}}} request) {
 {{#createUseService}}
         return ResponseEntity.status(HttpStatus.CREATED).body(service.create(request));
 {{/createUseService}}
@@ -59,7 +59,7 @@ public class {{controllerClass}} {
 
 {{#bulkInsertEnabled}}
     @PostMapping("/bulk")
-    public ResponseEntity<{{bulkInsertResponseType}}> saveAll(@Valid @RequestBody {{bulkInsertRequestType}} requests) {
+    public ResponseEntity<{{{bulkInsertResponseType}}}> saveAll(@Valid @RequestBody {{{bulkInsertRequestType}}} requests) {
 {{#bulkInsertUseService}}
         return ResponseEntity.status(HttpStatus.CREATED).body(service.saveAll(requests));
 {{/bulkInsertUseService}}
@@ -71,7 +71,7 @@ public class {{controllerClass}} {
 
 {{#bulkUpdateEnabled}}
     @PutMapping("/bulk")
-    public ResponseEntity<{{bulkUpdateResponseType}}> bulkUpdate(@Valid @RequestBody {{bulkUpdateRequestType}} requests) {
+    public ResponseEntity<{{{bulkUpdateResponseType}}}> bulkUpdate(@Valid @RequestBody {{{bulkUpdateRequestType}}} requests) {
 {{#bulkUpdateUseService}}
         return ResponseEntity.ok(service.bulkUpdate(requests));
 {{/bulkUpdateUseService}}
@@ -83,7 +83,7 @@ public class {{controllerClass}} {
 
 {{#bulkDeleteEnabled}}
     @DeleteMapping("/bulk")
-    public ResponseEntity<Void> bulkDelete(@RequestBody {{bulkDeleteRequestType}} requests) {
+    public ResponseEntity<Void> bulkDelete(@RequestBody {{{bulkDeleteRequestType}}} requests) {
 {{#bulkDeleteUseService}}
         service.bulkDelete(requests);
         return ResponseEntity.noContent().build();
@@ -96,8 +96,8 @@ public class {{controllerClass}} {
 
 {{#updateEnabled}}
     @PutMapping("/{id}")
-    public ResponseEntity<{{updateResponseType}}> update(@PathVariable("id") {{idType}} id,
-            @Valid @RequestBody {{updateRequestType}} request) {
+    public ResponseEntity<{{{updateResponseType}}}> update(@PathVariable("id") {{idType}} id,
+            @Valid @RequestBody {{{updateRequestType}}} request) {
 {{#updateUseService}}
         return ResponseEntity.ok(service.update(id, request));
 {{/updateUseService}}
@@ -109,8 +109,8 @@ public class {{controllerClass}} {
 
 {{#patchEnabled}}
     @PatchMapping("/{id}")
-    public ResponseEntity<{{patchResponseType}}> patch(@PathVariable("id") {{idType}} id,
-            @Valid @RequestBody {{patchRequestType}} request) {
+    public ResponseEntity<{{{patchResponseType}}}> patch(@PathVariable("id") {{idType}} id,
+            @Valid @RequestBody {{{patchRequestType}}} request) {
 {{#patchUseService}}
         return ResponseEntity.ok(service.patch(id, request));
 {{/patchUseService}}
@@ -135,7 +135,7 @@ public class {{controllerClass}} {
 
 {{#getEnabled}}
     @GetMapping("/{id}")
-    public ResponseEntity<{{getResponseType}}> getById(@PathVariable("id") {{idType}} id) {
+    public ResponseEntity<{{{getResponseType}}}> getById(@PathVariable("id") {{idType}} id) {
 {{#getUseService}}
         return ResponseEntity.ok(service.getById(id));
 {{/getUseService}}
@@ -147,7 +147,7 @@ public class {{controllerClass}} {
 
 {{#listEnabled}}
     @GetMapping
-    public ResponseEntity<{{listResponseType}}> getAllOrByQuery(@RequestParam Map<String, String> queryParams) {
+    public ResponseEntity<{{{listResponseType}}}> getAllOrByQuery(@RequestParam Map<String, String> queryParams) {
 {{#listUseService}}
         Pageable pageable = {{querySupportClass}}.resolvePageable(queryParams, {{{allowedSortFieldsLiteral}}});
         return ResponseEntity.ok(service.search(queryParams, pageable));

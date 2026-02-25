@@ -1,7 +1,8 @@
 package {{servicePackage}};
 
-import java.util.List;
-import java.util.Map;
+import java.math.*;
+import java.time.*;
+import java.util.*;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -33,28 +34,28 @@ public class {{serviceClass}} {
 
 {{#createUseService}}
     @Transactional
-    public {{createResponseType}} create({{createRequestType}} request) {
+    public {{{createResponseType}}} create({{{createRequestType}}} request) {
         return repository.save(request);
     }
 {{/createUseService}}
 
 {{#bulkInsertUseService}}
     @Transactional
-    public {{bulkInsertResponseType}} saveAll({{bulkInsertRequestType}} requests) {
+    public {{{bulkInsertResponseType}}} saveAll({{{bulkInsertRequestType}}} requests) {
         return repository.saveAll(requests);
     }
 {{/bulkInsertUseService}}
 
 {{#bulkUpdateUseService}}
     @Transactional
-    public {{bulkUpdateResponseType}} bulkUpdate({{bulkUpdateRequestType}} requests) {
+    public {{{bulkUpdateResponseType}}} bulkUpdate({{{bulkUpdateRequestType}}} requests) {
         return repository.saveAll(requests);
     }
 {{/bulkUpdateUseService}}
 
 {{#updateUseService}}
     @Transactional
-    public {{updateResponseType}} update({{idType}} id, {{updateRequestType}} request) {
+    public {{{updateResponseType}}} update({{idType}} id, {{{updateRequestType}}} request) {
         {{entityName}} existing = getById(id);
         {{entitySupportClass}}.mergeNonNullFields(request, existing, "{{idName}}");
         return repository.save(existing);
@@ -63,8 +64,10 @@ public class {{serviceClass}} {
 
 {{#patchUseService}}
     @Transactional
-    public {{patchResponseType}} patch({{idType}} id, {{patchRequestType}} request) {
-        return update(id, request);
+    public {{{patchResponseType}}} patch({{idType}} id, {{{patchRequestType}}} request) {
+        {{entityName}} existing = getById(id);
+        {{entitySupportClass}}.mergeNonNullFields(request, existing, "{{idName}}");
+        return repository.save(existing);
     }
 {{/patchUseService}}
 
@@ -80,7 +83,7 @@ public class {{serviceClass}} {
 
 {{#bulkDeleteUseService}}
     @Transactional
-    public void bulkDelete({{bulkDeleteRequestType}} ids) {
+    public void bulkDelete({{{bulkDeleteRequestType}}} ids) {
         for ({{idType}} id : ids) {
             if (repository.existsById(id)) {
                 repository.deleteById(id);
@@ -90,14 +93,14 @@ public class {{serviceClass}} {
 {{/bulkDeleteUseService}}
 
 {{#getUseService}}
-    public {{getResponseType}} getById({{idType}} id) {
+    public {{{getResponseType}}} getById({{idType}} id) {
         return repository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "{{entityName}} not found for id: " + id));
     }
 {{/getUseService}}
 
 {{#listUseService}}
-    public {{listResponseType}} search(Map<String, String> queryParams, Pageable pageable) {
+    public {{{listResponseType}}} search(Map<String, String> queryParams, Pageable pageable) {
 {{#noSql}}
         return repository.findAll(pageable);
 {{/noSql}}
