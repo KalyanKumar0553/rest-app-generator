@@ -4,7 +4,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: var(--theme-modal-overlay-bg, rgba(0, 0, 0, 0.6));
+  background-color: var(--theme-modal-overlay-bg);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -23,9 +23,9 @@
 }
 
 .modal-container {
-  background-color: var(--theme-modal-container-bg, #ffffff);
+  background-color: var(--theme-modal-container-bg);
   border-radius: 8px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  box-shadow: var(--theme-modal-shadow);
   width: 100%;
   max-height: 90vh;
   position: relative;
@@ -70,7 +70,7 @@
   background: none;
   border: none;
   cursor: pointer;
-  color: var(--theme-modal-header-text, #ffffff);
+  color: var(--theme-modal-header-text);
   font-size: 24px;
   padding: 6px;
   display: flex;
@@ -82,12 +82,12 @@
 }
 
 .modal-close-btn:hover {
-  color: var(--theme-modal-header-text, #ffffff);
-  background-color: rgba(255, 255, 255, 0.16);
+  color: var(--theme-modal-header-text);
+  background-color: color-mix(in srgb, var(--theme-modal-header-text) 16%, transparent);
 }
 
 .modal-header {
-  background-color: var(--theme-modal-header-bg, #8b9fa6);
+  background-color: var(--theme-modal-header-bg);
   padding: 24px 32px;
   border-radius: 8px 8px 0 0;
   flex-shrink: 0;
@@ -104,7 +104,7 @@
   margin: 0;
   font-size: 24px;
   font-weight: 600;
-  color: var(--theme-modal-header-text, #ffffff);
+  color: var(--theme-modal-header-text);
   padding-right: 12px;
   flex: 1;
 }
@@ -118,11 +118,11 @@
 
 .modal-footer {
   padding: 16px 32px;
-  border-top: 1px solid #e5e7eb;
+  border-top: 1px solid var(--theme-modal-border-color);
   display: flex;
   justify-content: flex-end;
   gap: 12px;
-  background-color: var(--theme-modal-container-bg, #ffffff);
+  background-color: var(--theme-modal-container-bg);
   flex-shrink: 0;
   position: sticky;
   bottom: 0;

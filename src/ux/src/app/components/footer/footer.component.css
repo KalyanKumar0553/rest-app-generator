@@ -10,30 +10,6 @@
   padding: 0 2rem;
 }
 
-.footer-content {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding-bottom: 2rem;
-  border-bottom: 1px solid var(--neutral-700);
-  margin-bottom: 2rem;
-}
-
-.footer-left {
-  display: flex;
-  align-items: center;
-}
-
-.footer-right {
-  display: flex;
-  align-items: center;
-}
-
-/* Theme Toggle Styles */
-.theme-toggle-wrapper {
-  margin-right: 2rem;
-}
-
 .theme-toggle-btn {
   background: transparent;
   border: 2px solid var(--neutral-600);
@@ -59,7 +35,7 @@
   left: -100%;
   width: 100%;
   height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+  background: var(--theme-footer-toggle-glint-bg);
   transition: left 0.5s ease;
 }
 
@@ -67,7 +43,7 @@
   border-color: var(--color-primary);
   color: var(--color-primary);
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(123, 58, 237, 0.3);
+  box-shadow: var(--theme-footer-toggle-hover-shadow);
 }
 
 .theme-toggle-btn:hover::before {
@@ -96,7 +72,7 @@
 .theme-dark .theme-toggle-btn:hover {
   border-color: var(--color-primary);
   color: var(--color-primary);
-  box-shadow: 0 4px 12px rgba(123, 58, 237, 0.4);
+  box-shadow: var(--theme-footer-toggle-hover-shadow);
 }
 
 .footer-links {
@@ -133,7 +109,20 @@
 }
 
 .footer-bottom {
-  text-align: center;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 12px;
+  border-top: 1px solid var(--neutral-700);
+  padding-top: 16px;
+}
+
+.footer-theme-left {
+  justify-self: start;
+}
+
+.footer-theme-right {
+  justify-self: end;
 }
 
 .copyright {
@@ -141,6 +130,8 @@
   font-size: 1rem;
   margin: 0;
   opacity: 0.8;
+  justify-self: center;
+  text-align: center;
 }
 
 .company-link {
@@ -164,37 +155,16 @@
     padding: 0 1rem;
   }
 
-  .footer-content {
-    flex-direction: column;
-    gap: 1.5rem;
+  .footer-theme-left,
+  .footer-theme-right {
+    display: none;
+  }
+
+  .footer-bottom {
+    display: block;
+    border-top: none;
+    padding-top: 0;
     text-align: center;
-    padding-bottom: 1.5rem;
-    margin-bottom: 1.5rem;
-  }
-
-  .footer-left {
-    order: 2;
-  }
-
-  .footer-right {
-    order: 1;
-  }
-
-  .theme-toggle-wrapper {
-    margin-right: 0;
-    margin-top: 1rem;
-  }
-
-  .theme-toggle-btn {
-    padding: 0.625rem;
-    font-size: 0.8rem;
-    width: 44px;
-    height: 44px;
-  }
-
-  .footer-links {
-    flex-direction: column;
-    gap: 1rem;
   }
 
   .copyright {
@@ -207,24 +177,4 @@
     padding: 0.5rem 0 1rem;
   }
 
-  .footer-content {
-    gap: 1rem;
-    padding-bottom: 1rem;
-    margin-bottom: 1rem;
-  }
-
-  .footer-links {
-    gap: 0.75rem;
-  }
-
-  .theme-toggle-btn {
-    padding: 0.5rem;
-    font-size: 0.75rem;
-    width: 40px;
-    height: 40px;
-  }
-
-  .theme-toggle-btn i {
-    font-size: 1rem;
-  }
 }

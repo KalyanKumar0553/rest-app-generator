@@ -1,6 +1,8 @@
-import { Component } from '@angular/core';
+import { Component, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
+import { Subscription } from 'rxjs';
+import { Theme, ThemeService } from '../../services/theme.service';
 
 @Component({
   selector: 'app-footer',
@@ -9,9 +11,11 @@ import { Router } from '@angular/router';
   templateUrl: './footer.component.html',
   styleUrls: ['./footer.component.css']
 })
-export class FooterComponent {
+export class FooterComponent implements OnDestroy {
   
   currentYear = new Date().getFullYear();
+  currentTheme: Theme = 'light';
+  private themeSubscription?: Subscription;
   
   footerData = {
     companyName: 'QuadProSol',
@@ -23,9 +27,13 @@ export class FooterComponent {
   };
 
   constructor(
-    private router: Router
+    private router: Router,
+    private themeService: ThemeService
   ) {
-    // Theme toggle disabled for now
+    this.currentTheme = this.themeService.getCurrentTheme();
+    this.themeSubscription = this.themeService.theme$.subscribe((theme) => {
+      this.currentTheme = theme;
+    });
   }
 
   /**
@@ -41,4 +49,11 @@ export class FooterComponent {
     }
   }
 
+  toggleTheme(): void {
+    this.themeService.toggleTheme();
+  }
+
+  ngOnDestroy(): void {
+    this.themeSubscription?.unsubscribe();
+  }
 }

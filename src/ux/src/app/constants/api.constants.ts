@@ -39,6 +39,9 @@ export const API_ENDPOINTS = {
   ANALYTICS: {
     TRACK_HOME_VISIT: '/api/analytics/visits/home'
   },
+  NEWSLETTER: {
+    SUBSCRIBE: '/api/newsletter/subscriptions'
+  },
   DEPENDENCIES: {
     LIST: '/api/openapi/dependencies'
   }

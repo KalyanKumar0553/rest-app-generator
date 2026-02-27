@@ -1,10 +1,11 @@
 import { CommonModule } from '@angular/common';
-import { Component } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { MatExpansionModule } from '@angular/material/expansion';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatSelectModule } from '@angular/material/select';
+import { Subscription } from 'rxjs';
 
 interface DocSection {
   key: string;
@@ -20,7 +21,7 @@ interface DocSection {
   templateUrl: './documentation.component.html',
   styleUrls: ['./documentation.component.css']
 })
-export class DocumentationComponent {
+export class DocumentationComponent implements OnInit, OnDestroy {
   readonly sections: DocSection[] = [
     {
       key: 'general',
@@ -31,6 +32,17 @@ export class DocumentationComponent {
         'Set database type first (SQL, NoSQL, None), then choose engine-specific options.',
         'Enable OpenAPI, actuator, and API configuration from developer preferences.',
         'Use profiles and deployment options to tailor generated scaffolding.'
+      ]
+    },
+    {
+      key: 'actuator',
+      title: 'Actuator Tab',
+      subtitle: 'Configure runtime management endpoints',
+      points: [
+        'Choose which actuator endpoint groups should be exposed for each profile.',
+        'Tune management visibility for health, metrics, info, and operational endpoints.',
+        'Keep production-safe exposure defaults and relax only where required.',
+        'Use this section to align observability endpoints with deployment needs.'
       ]
     },
     {
@@ -91,8 +103,26 @@ export class DocumentationComponent {
   ];
 
   activeKey = this.sections[0].key;
+  private queryParamsSubscription: Subscription | null = null;
 
-  constructor(private router: Router) {}
+  constructor(
+    private router: Router,
+    private route: ActivatedRoute
+  ) {}
+
+  ngOnInit(): void {
+    this.queryParamsSubscription = this.route.queryParamMap.subscribe((params) => {
+      const section = this.resolveSectionKey(params.get('section'));
+      if (section) {
+        this.activeKey = section;
+      }
+    });
+  }
+
+  ngOnDestroy(): void {
+    this.queryParamsSubscription?.unsubscribe();
+    this.queryParamsSubscription = null;
+  }
 
   get activeSection(): DocSection {
     return this.sections.find((section) => section.key === this.activeKey) ?? this.sections[0];
@@ -104,5 +134,20 @@ export class DocumentationComponent {
 
   startProject(): void {
     this.router.navigate(['/project-generation']);
+  }
+
+  private resolveSectionKey(rawSection: string | null): string | null {
+    if (!rawSection) {
+      return null;
+    }
+
+    const normalized = String(rawSection).trim();
+    const aliases: Record<string, string> = {
+      'data-objects': 'dataObjects',
+      'data_objects': 'dataObjects'
+    };
+    const resolved = aliases[normalized] ?? normalized;
+    const isValid = this.sections.some((section) => section.key === resolved);
+    return isValid ? resolved : null;
   }
 }

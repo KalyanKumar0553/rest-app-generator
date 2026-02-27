@@ -36,5 +36,13 @@
     <!-- <a href="#" class="sidenav-link" (click)="closeMenu()">Pricing</a> -->
     <a href="#" class="sidenav-link start-project" (click)="handleStartProjectClick($event)">Start Project</a>
     <!-- <a href="#" class="sidenav-link" (click)="handleAccountClick($event)">Account</a> -->
+    <!-- <button
+      type="button"
+      class="sidenav-theme-toggle"
+      (click)="toggleTheme()"
+      [attr.aria-label]="currentTheme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'">
+      <i class="bi" [ngClass]="currentTheme === 'dark' ? 'bi-sun' : 'bi-moon-stars'"></i>
+      <span>Theme: {{ currentTheme === 'dark' ? 'Dark' : 'Light' }}</span>
+    </button> -->
   </nav>
 </aside>

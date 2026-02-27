@@ -141,9 +141,9 @@ export class EntitiesComponent implements OnInit {
     return (this.enums ?? []).map(item => String(item?.name ?? '').trim()).filter(Boolean);
   }
 
-  openInProgress(event: Event): void {
+  openDocumentation(event: Event): void {
     event.preventDefault();
-    this.router.navigate(['/in-progress']);
+    this.router.navigate(['/documentation'], { queryParams: { section: 'entities' } });
   }
 
   ngOnInit(): void {

@@ -7,9 +7,12 @@
         type="email"
         placeholder="Your e-mail"
         class="email-input"
+        [disabled]="isSubmitting"
         (keyup.enter)="submit(emailInput)">
-      <button class="submit-button" type="button" (click)="submit(emailInput)">Submit</button>
+      <button class="submit-button" type="button" [disabled]="isSubmitting" (click)="submit(emailInput)">
+        {{ isSubmitting ? 'Submitting...' : 'Submit' }}
+      </button>
     </div>
-    <p class="signup-note">Get an update every one or while. Stop receiving anytime. <a href="#">Privacy</a></p>
+    <p class="signup-note">Get an update every one or while. Stop receiving anytime. <a [routerLink]="['/privacy']">Privacy</a></p>
   </div>
 </section>

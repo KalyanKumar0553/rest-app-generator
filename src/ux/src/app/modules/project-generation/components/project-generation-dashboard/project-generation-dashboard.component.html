@@ -117,7 +117,7 @@
 
         <app-info-banner storageKey="general-info">
           <span>
-            Define global project settings. Learn <a href="#" class="info-link" (click)="openInProgress($event)">in the docs</a>.
+            Define global project settings. Learn <a href="#" class="info-link" (click)="openDocumentation($event, 'general')">in the docs</a>.
           </span>
         </app-info-banner>
       </div>
@@ -405,7 +405,7 @@
 
         <app-info-banner storageKey="actuator-info">
           <span>
-            Configure management endpoints exposed by Spring Boot Actuator for your generated app.
+            Configure management endpoints exposed by Spring Boot Actuator for your generated app. <a href="#" class="info-link" (click)="openDocumentation($event, 'actuator')">Explained here</a>.
           </span>
         </app-info-banner>
       </div>
@@ -551,7 +551,7 @@
 
         <app-info-banner storageKey="controllers-info">
           <span>
-            Configure API controller behavior for your project.
+            Configure API controller behavior for your project. <a href="#" class="info-link" (click)="openDocumentation($event, 'controllers')">Explained here</a>.
           </span>
         </app-info-banner>
       </div>

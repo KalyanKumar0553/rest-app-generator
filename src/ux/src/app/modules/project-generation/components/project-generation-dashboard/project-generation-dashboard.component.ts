@@ -133,6 +133,7 @@ interface ControllerRestSpecRow {
 })
 export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
   private destroy$ = new Subject<void>();
+  private readonly maxYamlSpecPayloadBytes = 2 * 1024 * 1024;
   readonly appSettings = APP_SETTINGS;
 
   isSidebarOpen = false;
@@ -660,6 +661,9 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
     if (this.useCachedZipIfAvailable(yamlSpec, true)) {
       return;
     }
+    if (!this.validateYamlSpecPayloadSize(yamlSpec)) {
+      return;
+    }
     this.clearLocalZipDataBeforeGeneration();
 
     this.isGeneratingFromDtoSave = true;
@@ -697,6 +701,9 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
 
     const yamlSpec = this.buildCurrentProjectYaml();
     if (this.useCachedZipIfAvailable(yamlSpec, true)) {
+      return;
+    }
+    if (!this.validateYamlSpecPayloadSize(yamlSpec)) {
       return;
     }
     this.clearLocalZipDataBeforeGeneration();
@@ -876,6 +883,10 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
     if (this.useCachedZipIfAvailable(yamlSpec, true)) {
       return;
     }
+    if (!this.validateYamlSpecPayloadSize(yamlSpec)) {
+      this.activeSection = previousSection;
+      return;
+    }
 
     this.isExploreSyncing = true;
     const url = `${API_CONFIG.BASE_URL}${API_ENDPOINTS.PROJECT_VIEW.GENERATE_ZIP}`;
@@ -930,6 +941,17 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
       this.localStorageService.clearProjectZipCache(cacheKey);
       return false;
     }
+  }
+
+  private validateYamlSpecPayloadSize(yamlSpec: string): boolean {
+    const payloadBytes = new Blob([yamlSpec ?? ''], { type: 'text/plain' }).size;
+    if (payloadBytes <= this.maxYamlSpecPayloadBytes) {
+      return true;
+    }
+
+    const payloadSizeMb = (payloadBytes / (1024 * 1024)).toFixed(2);
+    this.toastService.error(`Spec YAML size (${payloadSizeMb} MB) exceeds the 2 MB limit. Reduce payload and try again.`);
+    return false;
   }
 
   private cacheZipFromArrayBuffer(yamlSpec: string, zipData: ArrayBuffer, fileName: string): void {
@@ -1010,9 +1032,12 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
     }
   }
 
-  openInProgress(event: Event): void {
+  openDocumentation(
+    event: Event,
+    section: 'general' | 'actuator' | 'entities' | 'dataObjects' | 'controllers' | 'mappers' | 'explore'
+  ): void {
     event.preventDefault();
-    this.router.navigate(['/in-progress']);
+    this.router.navigate(['/documentation'], { queryParams: { section } });
   }
 
   confirmBack(): void {

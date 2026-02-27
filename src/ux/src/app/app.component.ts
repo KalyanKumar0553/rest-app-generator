@@ -9,6 +9,7 @@ import { filter } from 'rxjs/operators';
 import { HttpClientModule } from '@angular/common/http';
 import { AuthService } from './services/auth.service';
 import { InprogressComponent } from './components/inprogress/inprogress.component';
+import { ThemeService } from './services/theme.service';
 
 @Component({
   selector: 'app-root',
@@ -25,7 +26,8 @@ export class AppComponent implements OnInit {
 
   constructor(
     private router: Router,
-    private authService: AuthService
+    private authService: AuthService,
+    private themeService: ThemeService
   ) {
     // Handle navigation loading state and scroll to top
     this.router.events.pipe(
@@ -46,6 +48,7 @@ export class AppComponent implements OnInit {
 
   ngOnInit(): void {
     this.checkTokenExpiration();
+    this.themeService.getCurrentTheme();
   }
 
   private checkTokenExpiration(): void {

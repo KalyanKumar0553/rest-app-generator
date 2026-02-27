@@ -122,6 +122,9 @@
 
   --theme-link-color: var(--color-text-primary);
   --theme-link-hover-color: var(--neutral-700);
+  --theme-browser-color: var(--color-background-white);
+  --theme-footer-toggle-glint-bg: linear-gradient(90deg, transparent, color-mix(in srgb, var(--color-text-inverse) 16%, transparent), transparent);
+  --theme-footer-toggle-hover-shadow: var(--shadow-md);
 
   --theme-error-text-color: var(--color-error);
   --theme-error-bg: var(--error-50);

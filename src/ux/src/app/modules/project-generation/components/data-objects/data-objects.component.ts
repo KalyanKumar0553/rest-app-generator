@@ -26,6 +26,7 @@ import {
   isValidJavaTypeName
 } from '../../validators/naming-validation';
 import { AddMapperComponent, MapperDefinition } from '../add-mapper/add-mapper.component';
+import { Router } from '@angular/router';
 
 interface DataObject {
   name: string;
@@ -214,6 +215,14 @@ export class DataObjectsComponent implements OnInit, OnChanges {
       { text: 'Delete', type: 'danger' as const, action: 'confirm' as const }
     ]
   };
+
+  constructor(private router: Router) {}
+
+  openDocumentation(event: Event): void {
+    event.preventDefault();
+    const section = this.activeTab === 'mappers' ? 'mappers' : 'dataObjects';
+    this.router.navigate(['/documentation'], { queryParams: { section } });
+  }
 
   ngOnInit(): void {
     this.applyDefaultTab(this.defaultTab);

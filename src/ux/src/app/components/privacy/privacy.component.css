@@ -1,28 +1,54 @@
 .privacy-container {
   min-height: 100vh;
-  background-color: #f9fafb;
-  padding: 40px 20px;
+  padding: 24px 20px 48px;
+  background: var(--theme-mobile-header-bg);
 }
 
 .privacy-content {
-  max-width: 900px;
-  margin: 0 auto;
-  background-color: #ffffff;
-  padding: 48px;
-  border-radius: 8px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  max-width: 960px;
+  margin: 38px auto 0;
+  padding: 36px;
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+  background: var(--color-background-white);
+  box-shadow: var(--shadow-lg);
 }
 
 .privacy-title {
-  font-size: 36px;
+  margin: 0 0 28px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--color-border);
+  color: var(--color-text-primary);
+  font-size: 34px;
+  line-height: 1.2;
   font-weight: 600;
-  color: #4b5563;
-  margin: 0 0 40px 0;
   text-align: center;
 }
 
+.privacy-title-icon {
+  width: 52px;
+  height: 52px;
+  margin: 0 auto 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  background: var(--color-background-secondary);
+  color: var(--color-text-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.privacy-title-icon i {
+  font-size: 24px;
+  line-height: 1;
+}
+
 .privacy-section {
-  margin-bottom: 40px;
+  margin-bottom: 18px;
+  padding: 18px 18px 16px;
+  border: 1px solid var(--color-border-light);
+  border-radius: 12px;
+  background: var(--color-background-secondary);
 }
 
 .privacy-section:last-child {
@@ -30,24 +56,39 @@
 }
 
 .privacy-section h2 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 12px;
+  color: var(--color-text-primary);
   font-size: 20px;
+  line-height: 1.35;
   font-weight: 600;
-  color: #1f2937;
-  margin: 0 0 20px 0;
+}
+
+.privacy-section h2::before {
+  content: '';
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--color-primary);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--color-primary) 20%, transparent);
+  flex: 0 0 8px;
 }
 
 .privacy-section h3 {
-  font-size: 17px;
+  margin: 16px 0 8px;
+  color: var(--color-text-primary);
+  font-size: 16px;
+  line-height: 1.35;
   font-weight: 600;
-  color: #374151;
-  margin: 24px 0 12px 0;
 }
 
 .privacy-section p {
+  margin: 0 0 12px;
+  color: var(--color-text-secondary);
   font-size: 15px;
-  line-height: 1.8;
-  color: #4b5563;
-  margin: 0 0 16px 0;
+  line-height: 1.75;
 }
 
 .privacy-section p:last-child {
@@ -55,15 +96,15 @@
 }
 
 .privacy-section ul {
-  margin: 16px 0;
-  padding-left: 24px;
+  margin: 10px 0 12px;
+  padding-left: 20px;
 }
 
 .privacy-section li {
+  margin-bottom: 7px;
+  color: var(--color-text-secondary);
   font-size: 15px;
-  line-height: 1.8;
-  color: #4b5563;
-  margin-bottom: 8px;
+  line-height: 1.7;
 }
 
 .privacy-section li:last-child {
@@ -71,32 +112,48 @@
 }
 
 .privacy-section a {
-  color: #2563eb;
+  color: var(--theme-link-color);
   text-decoration: underline;
-  transition: color 0.2s ease;
 }
 
 .privacy-section a:hover {
-  color: #1d4ed8;
+  color: var(--theme-link-hover-color);
 }
 
 .privacy-section strong {
+  color: var(--color-text-primary);
   font-weight: 600;
-  color: #1f2937;
 }
 
 @media (max-width: 768px) {
   .privacy-container {
-    padding: 24px 16px;
+    padding: 16px 12px 28px;
   }
 
   .privacy-content {
-    padding: 32px 24px;
+    margin-top: 38px;
+    padding: 22px 16px;
+    border-radius: 12px;
   }
 
   .privacy-title {
-    font-size: 28px;
-    margin-bottom: 32px;
+    margin-bottom: 18px;
+    padding-bottom: 12px;
+    font-size: 26px;
+  }
+
+  .privacy-title-icon {
+    width: 44px;
+    height: 44px;
+  }
+
+  .privacy-title-icon i {
+    font-size: 20px;
+  }
+
+  .privacy-section {
+    margin-bottom: 12px;
+    padding: 14px 12px;
   }
 
   .privacy-section h2 {
@@ -104,21 +161,11 @@
   }
 
   .privacy-section h3 {
-    font-size: 16px;
+    font-size: 15px;
   }
 
   .privacy-section p,
   .privacy-section li {
     font-size: 14px;
-  }
-}
-
-@media (max-width: 480px) {
-  .privacy-content {
-    padding: 24px 16px;
-  }
-
-  .privacy-title {
-    font-size: 24px;
   }
 }

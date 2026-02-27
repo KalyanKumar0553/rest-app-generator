@@ -55,60 +55,60 @@ export interface ComponentTheme {
 
 const DEFAULT_THEME: ComponentTheme = {
   // Modal themes
-  modalOverlayBg: 'rgba(0, 0, 0, 0.6)',
-  modalContainerBg: '#ffffff',
-  modalShadow: '0 4px 20px rgba(0, 0, 0, 0.15)',
-  modalHeaderBg: '#8b9fa6',
-  modalHeaderText: '#ffffff',
-  modalBodyText: '#374151',
-  modalBorderColor: '#e5e7eb',
+  modalOverlayBg: 'color-mix(in srgb, var(--color-background) 65%, transparent)',
+  modalContainerBg: 'var(--color-background-white)',
+  modalShadow: 'var(--shadow-xl)',
+  modalHeaderBg: 'var(--color-background-secondary)',
+  modalHeaderText: 'var(--color-text-primary)',
+  modalBodyText: 'var(--color-text-primary)',
+  modalBorderColor: 'var(--color-border)',
 
   // Button themes
-  primaryButtonBg: '#dc6454',
-  primaryButtonHoverBg: '#c55544',
-  primaryButtonText: '#ffffff',
-  primaryButtonShadow: '0 4px 8px rgba(220, 100, 84, 0.3)',
-  secondaryButtonBg: '#8b9fa6',
-  secondaryButtonHoverBg: '#7a8e95',
-  secondaryButtonText: '#ffffff',
-  secondaryButtonShadow: '0 4px 12px rgba(139, 159, 166, 0.3)',
-  confirmButtonBg: '#dc6454',
-  confirmButtonHoverBg: '#b91c1c',
-  cancelButtonBg: '#ffffff',
-  cancelButtonBorder: '#d1d5db',
-  cancelButtonText: '#374151',
+  primaryButtonBg: 'var(--color-primary)',
+  primaryButtonHoverBg: 'var(--color-primary-hover)',
+  primaryButtonText: 'var(--color-text-inverse)',
+  primaryButtonShadow: 'var(--shadow-md)',
+  secondaryButtonBg: 'var(--color-text-secondary)',
+  secondaryButtonHoverBg: 'var(--color-primary)',
+  secondaryButtonText: 'var(--color-text-inverse)',
+  secondaryButtonShadow: 'var(--shadow-md)',
+  confirmButtonBg: 'var(--color-primary)',
+  confirmButtonHoverBg: 'var(--color-primary-hover)',
+  cancelButtonBg: 'var(--color-background-white)',
+  cancelButtonBorder: 'var(--color-border-dark)',
+  cancelButtonText: 'var(--color-text-primary)',
 
   // Input themes
-  inputBorderColor: '#d1d5db',
-  inputFocusBorderColor: '#8b9fa6',
-  inputFocusShadow: 'rgba(139, 159, 166, 0.1)',
-  inputErrorBorderColor: '#ef4444',
-  inputErrorShadow: 'rgba(239, 68, 68, 0.1)',
-  inputPlaceholderColor: '#9ca3af',
-  inputTextColor: '#374151',
-  inputBg: '#ffffff',
+  inputBorderColor: 'var(--color-border-dark)',
+  inputFocusBorderColor: 'var(--color-text-secondary)',
+  inputFocusShadow: 'color-mix(in srgb, var(--color-text-secondary) 12%, transparent)',
+  inputErrorBorderColor: 'var(--color-error)',
+  inputErrorShadow: 'color-mix(in srgb, var(--color-error) 16%, transparent)',
+  inputPlaceholderColor: 'var(--color-text-muted)',
+  inputTextColor: 'var(--color-text-primary)',
+  inputBg: 'var(--color-background-white)',
 
   // Link themes
-  linkColor: '#1f2937',
-  linkHoverColor: '#374151',
+  linkColor: 'var(--color-text-primary)',
+  linkHoverColor: 'var(--color-primary)',
 
   // Error themes
-  errorTextColor: '#ef4444',
-  errorBg: '#fef2f2',
+  errorTextColor: 'var(--color-error)',
+  errorBg: 'color-mix(in srgb, var(--color-error) 12%, transparent)',
 
   // Neutral colors
-  neutralText: '#6b7280',
-  neutralBorder: '#e5e7eb',
-  neutralBg: '#f3f4f6',
+  neutralText: 'var(--color-text-muted)',
+  neutralBorder: 'var(--color-border)',
+  neutralBg: 'var(--color-background-muted)',
 
-  plaintText: '#f8f9fa',
+  plaintText: 'var(--color-text-inverse)',
 };
 
 @Injectable({
   providedIn: 'root'
 })
 export class ComponentThemeService {
-  private readonly THEME_STORAGE_KEY = 'component-theme-preferences';
+  private readonly THEME_STORAGE_KEY = 'component-theme-preferences-v2';
   private themeSubject = new BehaviorSubject<ComponentTheme>(DEFAULT_THEME);
 
   public theme$: Observable<ComponentTheme> = this.themeSubject.asObservable();

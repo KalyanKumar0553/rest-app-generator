@@ -7,21 +7,19 @@ export type Theme = 'light' | 'dark';
   providedIn: 'root'
 })
 export class ThemeService {
-  private readonly THEME_KEY = 'quadprosol-theme';
+  private readonly THEME_KEY = 'theme_preference';
   private themeSubject = new BehaviorSubject<Theme>('light');
   
   public theme$ = this.themeSubject.asObservable();
 
   constructor() {
-    // Theme service disabled - always use light theme
-    this.setTheme('light');
+    this.initializeTheme();
   }
 
   /**
    * Initialize theme from localStorage or default to light
    */
   private initializeTheme(): void {
-    // Disabled - always use light theme
     this.setTheme('light');
   }
 
@@ -49,9 +47,7 @@ export class ThemeService {
    * Toggle between light and dark themes
    */
   toggleTheme(): void {
-    const currentTheme = this.getCurrentTheme();
-    const newTheme: Theme = currentTheme === 'light' ? 'dark' : 'light';
-    this.setTheme(newTheme);
+    this.setTheme('light');
   }
 
   /**
@@ -59,13 +55,17 @@ export class ThemeService {
    */
   private applyTheme(theme: Theme): void {
     if (typeof document !== 'undefined') {
-      document.body.className = document.body.className.replace(/theme-\w+/g, '');
+      document.body.classList.remove('theme-light', 'theme-dark');
       document.body.classList.add(`theme-${theme}`);
-      
-      // Update meta theme-color for mobile browsers
+
       const metaThemeColor = document.querySelector('meta[name="theme-color"]');
       if (metaThemeColor) {
-        metaThemeColor.setAttribute('content', theme === 'dark' ? '#1a1a2e' : '#ffffff');
+        const computedThemeColor = getComputedStyle(document.documentElement)
+          .getPropertyValue('--theme-browser-color')
+          .trim();
+        if (computedThemeColor) {
+          metaThemeColor.setAttribute('content', computedThemeColor);
+        }
       }
     }
   }

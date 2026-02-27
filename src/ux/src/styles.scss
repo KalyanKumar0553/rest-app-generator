@@ -154,8 +154,26 @@ body {
 }
 
 .mat-expansion-panel {
-  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1) !important;
+  box-shadow: var(--shadow-sm) !important;
   background-color: var(--color-background-white) !important;
+}
+
+.mat-mdc-dialog-container .mdc-dialog__surface,
+.mat-mdc-dialog-surface {
+  background-color: var(--theme-modal-container-bg) !important;
+  color: var(--theme-modal-body-text) !important;
+  border: 1px solid var(--theme-modal-border-color) !important;
+  box-shadow: var(--theme-modal-shadow) !important;
+}
+
+.cdk-overlay-backdrop.cdk-overlay-dark-backdrop {
+  background-color: var(--theme-modal-overlay-bg) !important;
+}
+
+.mat-mdc-menu-panel {
+  background-color: var(--theme-modal-container-bg) !important;
+  border: 1px solid var(--theme-modal-border-color) !important;
+  box-shadow: var(--theme-modal-shadow) !important;
 }
 
 .mat-expansion-panel-header {

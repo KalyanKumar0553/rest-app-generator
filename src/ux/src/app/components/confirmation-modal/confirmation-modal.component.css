@@ -4,7 +4,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: var(--theme-modal-overlay-bg, rgba(0, 0, 0, 0.5));
+  background-color: var(--theme-modal-overlay-bg);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -23,11 +23,11 @@
 }
 
 .modal-container {
-  background-color: var(--theme-modal-container-bg, #ffffff);
+  background-color: var(--theme-modal-container-bg);
   border-radius: 16px;
   max-width: 560px;
   width: 100%;
-  box-shadow: var(--theme-modal-shadow, 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04));
+  box-shadow: var(--theme-modal-shadow);
   animation: slideUp 0.3s ease;
   overflow: hidden;
 }
@@ -46,13 +46,13 @@
 .modal-header {
     padding: 23px 23px;
     text-align: left;
-    border-bottom: 1px solid var(--theme-modal-border-color, #e5e7eb);
+    border-bottom: 1px solid var(--theme-modal-border-color);
 }
 
 .modal-title {
   font-size: 24px;
   font-weight: 400;
-  color: var(--theme-neutral-text, #6b7280);
+  color: var(--theme-neutral-text);
   line-height: 1;
 }
 
@@ -64,7 +64,7 @@
 .modal-message {
   font-size: 15px;
   font-weight: 400;
-  color: var(--theme-modal-body-text, #374151);
+  color: var(--theme-modal-body-text);
   margin: 0 0 16px 0;
   line-height: 1.2;
 }
@@ -97,14 +97,14 @@
 }
 
 .btn-cancel {
-  background-color: var(--theme-cancel-btn-bg, #ffffff);
-  color: var(--theme-cancel-btn-text, #374151);
-  border: 2px solid var(--theme-cancel-btn-border, #d1d5db);
+  background-color: var(--theme-cancel-btn-bg);
+  color: var(--theme-cancel-btn-text);
+  border: 2px solid var(--theme-cancel-btn-border);
 }
 
 .btn-cancel:hover:not(:disabled) {
-  background-color: var(--theme-neutral-bg, #f9fafb);
-  border-color: var(--theme-neutral-border, #9ca3af);
+  background-color: var(--theme-neutral-bg);
+  border-color: var(--theme-neutral-border);
 }
 
 .btn-cancel:disabled {
@@ -117,13 +117,13 @@
 }
 
 .btn-confirm {
-  background-color: var(--theme-confirm-btn-bg, #dc6454);
-  color: var(--theme-primary-btn-text, #ffffff);
+  background-color: var(--theme-confirm-btn-bg);
+  color: var(--theme-primary-btn-text);
 }
 
 .btn-confirm:hover:not(:disabled) {
-  background-color: var(--theme-confirm-btn-hover-bg, #b91c1c);
-  box-shadow: var(--theme-primary-btn-shadow, 0 4px 8px rgba(220, 100, 84, 0.3));
+  background-color: var(--theme-confirm-btn-hover-bg);
+  box-shadow: var(--theme-primary-btn-shadow);
 }
 
 .btn-confirm:disabled {
@@ -132,13 +132,13 @@
 }
 
 .btn-primary {
-  background-color: var(--theme-primary-btn-bg, #dc6454);
-  color: var(--theme-primary-btn-text, #ffffff);
+  background-color: var(--theme-primary-btn-bg);
+  color: var(--theme-primary-btn-text);
 }
 
 .btn-primary:hover:not(:disabled) {
-  background-color: var(--theme-primary-btn-hover-bg, #c55544);
-  box-shadow: var(--theme-primary-btn-shadow, 0 4px 8px rgba(220, 100, 84, 0.3));
+  background-color: var(--theme-primary-btn-hover-bg);
+  box-shadow: var(--theme-primary-btn-shadow);
 }
 
 .btn-primary:disabled {

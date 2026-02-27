@@ -1,8 +1,16 @@
 <footer class="footer">
   <div class="footer-container">
-    
-    
     <div class="footer-bottom">
+      <!-- <div class="footer-theme-left">
+        <button
+          type="button"
+          class="theme-toggle-btn"
+          (click)="toggleTheme()"
+          [attr.aria-label]="currentTheme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'">
+          <i class="bi" [ngClass]="currentTheme === 'dark' ? 'bi-sun' : 'bi-moon-stars'"></i>
+        </button>
+      </div> -->
+
       <p class="copyright">
         &copy; {{ currentYear }}
         <a class="company-link" href="https://quadprosol.com/" target="_blank" rel="noopener noreferrer">
@@ -10,6 +18,10 @@
         </a>.
         All rights reserved.
       </p>
+
+      <!-- <div class="footer-theme-right">
+        <span class="footer-credit">Theme: {{ currentTheme === 'dark' ? 'Dark' : 'Light' }}</span>
+      </div> -->
     </div>
   </div>
 </footer>

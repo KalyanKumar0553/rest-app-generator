@@ -1,11 +1,13 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, NavigationEnd } from '@angular/router';
 import { filter } from 'rxjs/operators';
+import { Subscription } from 'rxjs';
 import { LocalStorageService } from '../../services/local-storage.service';
 import { AuthService } from '../../services/auth.service';
 import { ModalService } from '../../services/modal.service';
 import { APP_SETTINGS } from '../../settings/app-settings';
+import { Theme, ThemeService } from '../../services/theme.service';
 
 @Component({
   selector: 'app-header',
@@ -14,20 +16,27 @@ import { APP_SETTINGS } from '../../settings/app-settings';
   templateUrl: './header.component.html',
   styleUrls: ['./header.component.css']
 })
-export class HeaderComponent implements OnInit {
+export class HeaderComponent implements OnInit, OnDestroy {
   isMenuOpen = false;
   isDashboardRoute = false;
+  currentTheme: Theme = 'light';
+  private themeSubscription?: Subscription;
   readonly appSettings = APP_SETTINGS;
 
   constructor(
     private router: Router,
     private localStorageService: LocalStorageService,
     private authService: AuthService,
-    private modalService: ModalService
+    private modalService: ModalService,
+    private themeService: ThemeService
   ) {}
 
   ngOnInit(): void {
     this.checkRoute(this.router.url);
+    this.currentTheme = this.themeService.getCurrentTheme();
+    this.themeSubscription = this.themeService.theme$.subscribe((theme) => {
+      this.currentTheme = theme;
+    });
 
     this.router.events.pipe(
       filter(event => event instanceof NavigationEnd)
@@ -58,6 +67,10 @@ export class HeaderComponent implements OnInit {
     document.body.style.overflow = '';
   }
 
+  toggleTheme(): void {
+    this.themeService.toggleTheme();
+  }
+
   handleAccountClick(event: Event): void {
     event.preventDefault();
     this.closeMenu();
@@ -82,5 +95,9 @@ export class HeaderComponent implements OnInit {
     event.preventDefault();
     this.closeMenu();
     this.router.navigate(['/documentation']);
+  }
+
+  ngOnDestroy(): void {
+    this.themeSubscription?.unsubscribe();
   }
 }

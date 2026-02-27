@@ -4,7 +4,7 @@
   left: 0;
   width: 100%;
   height: 100%;
-  background-color: var(--theme-modal-overlay-bg, rgba(0, 0, 0, 0.6));
+  background-color: var(--theme-modal-overlay-bg);
   display: flex;
   justify-content: center;
   align-items: center;
@@ -23,12 +23,12 @@
 }
 
 .modal-container {
-  background-color: var(--theme-modal-container-bg, #ffffff);
+  background-color: var(--theme-modal-container-bg);
   border-radius: 8px;
   max-width: 600px;
   width: 100%;
   position: relative;
-  box-shadow: var(--theme-modal-shadow, 0 4px 20px rgba(0, 0, 0, 0.15));
+  box-shadow: var(--theme-modal-shadow);
   animation: slideUp 0.3s ease;
   max-height: 90vh;
   overflow-y: auto;
@@ -53,7 +53,7 @@
   border: none;
   cursor: pointer;
   padding: 8px;
-  color: var(--theme-plain-text, #6b7280);
+  color: var(--theme-plain-text);
   transition: color 0.2s ease;
   display: flex;
   align-items: center;
@@ -62,11 +62,11 @@
 }
 
 .close-btn:hover {
-  color: var(--theme-modal-body-text, #1f2937);
+  color: var(--theme-modal-body-text);
 }
 
 .modal-header {
-  background-color: var(--theme-modal-header-bg, #8b9fa6);
+  background-color: var(--theme-modal-header-bg);
   padding: 24px 32px;
   border-radius: 8px 8px 0 0;
 }
@@ -75,7 +75,7 @@
   margin: 0;
   font-size: 24px;
   font-weight: 600;
-  color: var(--theme-modal-header-text, #ffffff);
+  color: var(--theme-modal-header-text);
 }
 
 .modal-body {
@@ -84,7 +84,7 @@
 
 .modal-description {
   margin: 0 0 24px 0;
-  color: var(--theme-neutral-text, #6b7280);
+  color: var(--theme-neutral-text);
   font-size: 15px;
   line-height: 1.6;
 }
@@ -96,7 +96,7 @@
 .form-group label {
   display: block;
   margin-bottom: 8px;
-  color: var(--theme-modal-body-text, #374151);
+  color: var(--theme-modal-body-text);
   font-weight: 500;
   font-size: 14px;
 }
@@ -104,35 +104,35 @@
 .form-control {
   width: 100%;
   padding: 12px 16px;
-  border: 1px solid var(--theme-input-border-color, #d1d5db);
+  border: 1px solid var(--theme-input-border-color);
   border-radius: 6px;
   font-size: 15px;
   transition: all 0.2s ease;
   box-sizing: border-box;
-  background-color: var(--theme-input-bg, #ffffff);
-  color: var(--theme-input-text-color, #374151);
+  background-color: var(--theme-input-bg);
+  color: var(--theme-input-text-color);
 }
 
 .form-control:focus {
   outline: none;
-  border-color: var(--theme-input-focus-border-color, #8b9fa6);
-  box-shadow: 0 0 0 3px var(--theme-input-focus-shadow, rgba(139, 159, 166, 0.1));
+  border-color: var(--theme-input-focus-border-color);
+  box-shadow: 0 0 0 3px var(--theme-input-focus-shadow);
 }
 
 .form-control.error {
-  border-color: var(--theme-input-error-border-color, #ef4444);
-  background-color: var(--theme-error-bg, #fef2f2);
-  box-shadow: 0 0 0 3px var(--theme-input-error-shadow, rgba(239, 68, 68, 0.1));
+  border-color: var(--theme-input-error-border-color);
+  background-color: var(--theme-error-bg);
+  box-shadow: 0 0 0 3px var(--theme-input-error-shadow);
 }
 
 .form-control:disabled {
-  background-color: var(--theme-neutral-bg, #f3f4f6);
+  background-color: var(--theme-neutral-bg);
   cursor: not-allowed;
 }
 
 .error-message {
   display: block;
-  color: var(--theme-error-text-color, #ef4444);
+  color: var(--theme-error-text-color);
   font-size: 13px;
   margin-top: 6px;
   font-weight: 500;
@@ -145,12 +145,12 @@
 
 .resend-text {
   margin: 0;
-  color: var(--theme-neutral-text, #6b7280);
+  color: var(--theme-neutral-text);
   font-size: 14px;
 }
 
 .link {
-  color: var(--theme-link-color, #1f2937);
+  color: var(--theme-link-color);
   text-decoration: underline;
   font-weight: 500;
   transition: color 0.2s ease;
@@ -163,11 +163,11 @@
 }
 
 .link:hover:not(:disabled) {
-  color: var(--theme-link-hover-color, #374151);
+  color: var(--theme-link-hover-color);
 }
 
 .link:disabled {
-  color: var(--theme-input-placeholder-color, #9ca3af);
+  color: var(--theme-input-placeholder-color);
   cursor: not-allowed;
   text-decoration: none;
 }
@@ -178,7 +178,7 @@
 
 .modal-footer {
   padding: 24px 32px;
-  border-top: 1px solid var(--theme-modal-border-color, #e5e7eb);
+  border-top: 1px solid var(--theme-modal-border-color);
   display: flex;
   gap: 12px;
   justify-content: flex-end;
@@ -200,29 +200,29 @@
 }
 
 .btn-primary {
-  background-color: var(--theme-secondary-btn-bg, #8b9fa6);
+  background-color: var(--theme-secondary-btn-bg);
   color: var(--theme-secondary-btn-text, white);
 }
 
 .btn-primary:hover:not(:disabled) {
-  background-color: var(--theme-secondary-btn-hover-bg, #7a8e95);
+  background-color: var(--theme-secondary-btn-hover-bg);
   transform: translateY(-1px);
-  box-shadow: var(--theme-secondary-btn-shadow, 0 4px 12px rgba(139, 159, 166, 0.3));
+  box-shadow: var(--theme-secondary-btn-shadow);
 }
 
 .btn-primary:disabled {
-  background-color: var(--theme-input-border-color, #d1d5db);
+  background-color: var(--theme-input-border-color);
   cursor: not-allowed;
   transform: none;
 }
 
 .btn-secondary {
-  background-color: var(--theme-neutral-bg, #f3f4f6);
-  color: var(--theme-modal-body-text, #374151);
+  background-color: var(--theme-neutral-bg);
+  color: var(--theme-modal-body-text);
 }
 
 .btn-secondary:hover:not(:disabled) {
-  background-color: var(--theme-modal-border-color, #e5e7eb);
+  background-color: var(--theme-modal-border-color);
 }
 
 .btn-secondary:disabled {
