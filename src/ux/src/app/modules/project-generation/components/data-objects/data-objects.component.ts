@@ -25,6 +25,7 @@ import {
   isValidJavaEnumConstantName,
   isValidJavaTypeName
 } from '../../validators/naming-validation';
+import { AddMapperComponent, MapperDefinition } from '../add-mapper/add-mapper.component';
 
 interface DataObject {
   name: string;
@@ -54,6 +55,13 @@ interface EntityModel {
   fields?: Array<{ name?: string; type?: string }>;
 }
 
+interface MapperCardItem {
+  name: string;
+  dtoType?: 'request' | 'response';
+  metaTag?: string;
+  fields: Field[];
+}
+
 @Component({
   selector: 'app-data-objects',
   standalone: true,
@@ -72,6 +80,7 @@ interface EntityModel {
     PreviewEntitiesComponent,
     SearchSortComponent,
     AddDataObjectComponent,
+    AddMapperComponent,
     InfoBannerComponent
   ],
   templateUrl: './data-objects.component.html',
@@ -81,12 +90,17 @@ export class DataObjectsComponent implements OnInit, OnChanges {
   @Input() dataObjects: DataObject[] = [];
   @Input() entities: EntityModel[] = [];
   @Input() enums: EnumDefinition[] = [];
+  @Input() mappers: MapperDefinition[] = [];
+  @Input() defaultTab: 'dataObjects' | 'enums' | 'mappers' = 'dataObjects';
 
   @Output() dataObjectsChange = new EventEmitter<DataObject[]>();
   @Output() entitiesChange = new EventEmitter<EntityModel[]>();
   @Output() enumsChange = new EventEmitter<EnumDefinition[]>();
+  @Output() mappersChange = new EventEmitter<MapperDefinition[]>();
+  @Output() activeTabChange = new EventEmitter<'dataObjects' | 'enums' | 'mappers'>();
 
   @ViewChild(AddDataObjectComponent) addDataObjectComponent!: AddDataObjectComponent;
+  @ViewChild(AddMapperComponent) addMapperComponent!: AddMapperComponent;
   @ViewChildren('enumConstantInput') enumConstantInputs!: QueryList<ElementRef<HTMLInputElement>>;
 
   get enumTypeNames(): string[] {
@@ -103,6 +117,8 @@ export class DataObjectsComponent implements OnInit, OnChanges {
   showEnumDeleteConfirmation = false;
   showEnumFilters = false;
   showEnumConstantsModal = false;
+  showAddMapperModal = false;
+  showMapperDeleteConfirmation = false;
 
   editingDataObject: DataObject | null = null;
   editingDataObjectIndex: number | null = null;
@@ -113,6 +129,8 @@ export class DataObjectsComponent implements OnInit, OnChanges {
   showDataObjectDetailModal = false;
   viewingDataObject: DataObject | null = null;
   viewingDataObjectIndex: number | null = null;
+  viewingDetailCanDeleteFields = true;
+  viewingDetailType: 'dataObject' | 'mapper' = 'dataObject';
   showPropertyDeleteConfirmation = false;
   propertyDeleteIndex: number | null = null;
 
@@ -126,6 +144,11 @@ export class DataObjectsComponent implements OnInit, OnChanges {
   viewingEnumName = '';
   viewingEnumIndex: number | null = null;
   viewingEnumConstants: string[] = [];
+  editingMapper: MapperDefinition | null = null;
+  editingMapperIndex: number | null = null;
+  deletingMapperIndex: number | null = null;
+  visibleMapperCards: MapperCardItem[] = [];
+  activeTab: 'dataObjects' | 'enums' | 'mappers' = 'dataObjects';
 
   dataObjectSearchTerm = '';
   dataObjectSortOption: SortOption | null = null;
@@ -183,10 +206,21 @@ export class DataObjectsComponent implements OnInit, OnChanges {
       { text: 'Cancel', type: 'cancel' as const, action: 'cancel' as const }
     ]
   };
+  mapperDeleteModalConfig = {
+    title: 'Delete Mapper',
+    message: ['Are you sure you want to delete this mapper?'],
+    buttons: [
+      { text: 'Cancel', type: 'cancel' as const, action: 'cancel' as const },
+      { text: 'Delete', type: 'danger' as const, action: 'confirm' as const }
+    ]
+  };
 
   ngOnInit(): void {
+    this.applyDefaultTab(this.defaultTab);
+    this.activeTabChange.emit(this.activeTab);
     this.updateVisibleDataObjects();
     this.updateVisibleEnums();
+    this.updateVisibleMappers();
   }
 
   ngOnChanges(changes: SimpleChanges): void {
@@ -196,6 +230,13 @@ export class DataObjectsComponent implements OnInit, OnChanges {
     if (changes['enums'] || changes['entities']) {
       this.updateVisibleEnums();
     }
+    if (changes['mappers'] || changes['dataObjects'] || changes['entities']) {
+      this.updateVisibleMappers();
+    }
+    if (changes['defaultTab'] && changes['defaultTab'].currentValue) {
+      this.applyDefaultTab(changes['defaultTab'].currentValue);
+      this.activeTabChange.emit(this.activeTab);
+    }
   }
 
   toggleDataObjectsPanel(): void {
@@ -204,6 +245,27 @@ export class DataObjectsComponent implements OnInit, OnChanges {
 
   toggleEnumsPanel(): void {
     this.enumsExpanded = !this.enumsExpanded;
+  }
+
+  setActiveTab(tab: 'dataObjects' | 'enums' | 'mappers'): void {
+    this.activeTab = tab;
+    this.activeTabChange.emit(this.activeTab);
+  }
+
+  private applyDefaultTab(tab: 'dataObjects' | 'enums' | 'mappers'): void {
+    if (tab === 'mappers') {
+      this.activeTab = 'mappers';
+      return;
+    }
+
+    this.activeTab = tab;
+    if (tab === 'enums') {
+      this.enumsExpanded = true;
+      this.dataObjectsExpanded = false;
+    } else {
+      this.dataObjectsExpanded = true;
+      this.enumsExpanded = true;
+    }
   }
 
   addDataObject(): void {
@@ -225,6 +287,80 @@ export class DataObjectsComponent implements OnInit, OnChanges {
       'This action cannot be undone and all associated properties will be removed.'
     ];
     this.showDeleteConfirmation = true;
+  }
+
+  addMapper(): void {
+    this.editingMapper = null;
+    this.editingMapperIndex = null;
+    this.showAddMapperModal = true;
+  }
+
+  editMapper(mapper: MapperDefinition, index: number): void {
+    this.editingMapper = JSON.parse(JSON.stringify(mapper));
+    this.editingMapperIndex = index;
+    this.showAddMapperModal = true;
+  }
+
+  deleteMapper(index: number): void {
+    this.deletingMapperIndex = index;
+    const mapperName = this.mappers[index]?.name ?? 'this mapper';
+    this.mapperDeleteModalConfig.message = [`Are you sure you want to delete mapper "${mapperName}"?`];
+    this.showMapperDeleteConfirmation = true;
+  }
+
+  confirmDeleteMapper(): void {
+    if (this.deletingMapperIndex === null) {
+      this.cancelDeleteMapper();
+      return;
+    }
+    this.mappers.splice(this.deletingMapperIndex, 1);
+    this.emitMappers();
+    this.updateVisibleMappers();
+    this.cancelDeleteMapper();
+  }
+
+  cancelDeleteMapper(): void {
+    this.showMapperDeleteConfirmation = false;
+    this.deletingMapperIndex = null;
+  }
+
+  onMapperSave(mapper: MapperDefinition): void {
+    if (this.editingMapperIndex !== null) {
+      this.mappers[this.editingMapperIndex] = mapper;
+    } else {
+      this.mappers.push(mapper);
+    }
+    this.activeTab = 'mappers';
+    this.emitMappers();
+    this.updateVisibleMappers();
+    this.activeTabChange.emit(this.activeTab);
+    this.onMapperCancel();
+  }
+
+  onMapperCancel(): void {
+    this.showAddMapperModal = false;
+    this.editingMapper = null;
+    this.editingMapperIndex = null;
+  }
+
+  saveMapper(): void {
+    if (this.addMapperComponent) {
+      this.addMapperComponent.onSave();
+    }
+  }
+
+  editMapperFromCard(event: { entity: MapperCardItem; index: number }): void {
+    const index = event.index;
+    if (index >= 0 && index < this.mappers.length) {
+      this.editMapper(this.mappers[index], index);
+    }
+  }
+
+  deleteMapperFromCard(event: { entity: MapperCardItem; index: number }): void {
+    const index = event.index;
+    if (index >= 0 && index < this.mappers.length) {
+      this.deleteMapper(index);
+    }
   }
 
   confirmDelete(): void {
@@ -299,14 +435,38 @@ export class DataObjectsComponent implements OnInit, OnChanges {
     if (index !== null) {
       this.viewingDataObjectIndex = index;
       this.viewingDataObject = this.dataObjects[index];
+      this.viewingDetailCanDeleteFields = true;
+      this.viewingDetailType = 'dataObject';
       this.showDataObjectDetailModal = true;
     }
+  }
+
+  openMapperDetail(event: { entity: MapperCardItem; index: number }): void {
+    const index = event.index;
+    if (index < 0 || index >= this.mappers.length) {
+      return;
+    }
+    const mapper = this.mappers[index];
+    const mappings = Array.isArray(mapper?.mappings) ? mapper.mappings : [];
+    this.viewingDataObjectIndex = null;
+    this.viewingDataObject = {
+      name: String(mapper?.name ?? '').trim(),
+      fields: mappings.map((item: any) => ({
+        type: String(item?.sourceField ?? '').trim() || '-',
+        name: String(item?.targetField ?? '').trim() || '-'
+      }))
+    };
+    this.viewingDetailCanDeleteFields = false;
+    this.viewingDetailType = 'mapper';
+    this.showDataObjectDetailModal = true;
   }
 
   closeDataObjectDetail(): void {
     this.showDataObjectDetailModal = false;
     this.viewingDataObject = null;
     this.viewingDataObjectIndex = null;
+    this.viewingDetailCanDeleteFields = true;
+    this.viewingDetailType = 'dataObject';
   }
 
   deleteProperty(fieldIndex: number): void {
@@ -736,6 +896,23 @@ export class DataObjectsComponent implements OnInit, OnChanges {
 
   private emitEnums(): void {
     this.enumsChange.emit(JSON.parse(JSON.stringify(this.enums)));
+  }
+
+  private updateVisibleMappers(): void {
+    this.visibleMapperCards = (this.mappers ?? []).map((mapper) => {
+      const mappings = Array.isArray(mapper?.mappings) ? mapper.mappings : [];
+      const fields: Field[] = mappings.map((item) => ({ type: 'String', name: `${item.sourceField} -> ${item.targetField}` }));
+      return {
+        name: String(mapper?.name ?? '').trim(),
+        dtoType: undefined,
+        metaTag: `${mappings.length} mappings`,
+        fields
+      };
+    }).filter((item) => item.name);
+  }
+
+  private emitMappers(): void {
+    this.mappersChange.emit(JSON.parse(JSON.stringify(this.mappers)));
   }
 
   trackByIndex(index: number): number {

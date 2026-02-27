@@ -1,10 +1,12 @@
 import { ValidationRule } from '../../../services/validator.service';
+import { VALIDATION_MESSAGES } from '../constants/validation-messages';
 
 const JAVA_IDENTIFIER_PATTERN = /^[A-Za-z_$][A-Za-z0-9_$]*$/;
 const JAVA_TYPE_NAME_PATTERN = /^[A-Z][A-Za-z0-9]*$/;
 const JAVA_ENUM_CONSTANT_PATTERN = /^[A-Z0-9_]+$/;
 const MAVEN_GROUP_ID_PATTERN = /^[a-z0-9]+(?:[._-][a-z0-9]+)*(?:\.[a-z0-9]+(?:[._-][a-z0-9]+)*)*$/;
 const MAVEN_ARTIFACT_ID_PATTERN = /^[a-z0-9]+(?:[._-][a-z0-9]+)*$/;
+const JAVA_PROJECT_FOLDER_NAME_PATTERN = /^[A-Za-z0-9._-]+$/;
 
 const JAVA_KEYWORDS = new Set([
   'abstract', 'assert', 'boolean', 'break', 'byte', 'case', 'catch', 'char', 'class', 'const', 'continue',
@@ -61,6 +63,11 @@ export const isValidMavenArtifactId = (value: string): boolean => {
   return MAVEN_ARTIFACT_ID_PATTERN.test(trimmed);
 };
 
+export const isValidJavaProjectFolderName = (value: string): boolean => {
+  const trimmed = String(value ?? '').trim();
+  return JAVA_PROJECT_FOLDER_NAME_PATTERN.test(trimmed);
+};
+
 export interface JavaNameRuleParams {
   fieldName: string;
   label: string;
@@ -101,13 +108,13 @@ export const buildMavenNamingRules = (params: MavenRuleParams): ValidationRule[]
     constraints: [
       {
         type: 'required',
-        message: 'Project group is required.',
+        message: VALIDATION_MESSAGES.projectGroupRequired,
         messageType: 'error'
       },
       {
         type: 'custom',
         predicate: (value) => isValidMavenGroupId(String(value ?? '')),
-        message: 'Project group must be a valid Maven groupId (lowercase dot-separated segments).',
+        message: VALIDATION_MESSAGES.projectGroupInvalid,
         messageType: 'error'
       }
     ]
@@ -118,7 +125,7 @@ export const buildMavenNamingRules = (params: MavenRuleParams): ValidationRule[]
     constraints: [
       {
         type: 'required',
-        message: 'Artifact id is required.',
+        message: VALIDATION_MESSAGES.projectNameRequired,
         messageType: 'error'
       },
       {

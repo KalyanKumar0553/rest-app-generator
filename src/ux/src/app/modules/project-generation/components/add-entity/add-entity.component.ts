@@ -875,6 +875,7 @@ export class AddEntityComponent implements OnChanges {
         }
       },
       documentation: {
+        includeDefaultDocumentation: true,
         endpoints: {
           list: { description: 'List operation for API', group: 'API Group', descriptionTags: ['list'], deprecated: false },
           get: { description: 'Get By Key operation for API', group: 'API Group', descriptionTags: ['get'], deprecated: false },
@@ -1072,6 +1073,7 @@ export class AddEntityComponent implements OnChanges {
         }
       },
       documentation: {
+        includeDefaultDocumentation: (rawConfig as any).documentation?.includeDefaultDocumentation !== false,
         endpoints: {
           list: {
             description: String((rawConfig as any).documentation?.endpoints?.list?.description ?? '').trim(),

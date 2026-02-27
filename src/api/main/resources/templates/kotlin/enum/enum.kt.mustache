@@ -1,0 +1,7 @@
+package {{packageName}}
+
+enum class {{enumName}} {
+{{#constants}}
+    {{value}}{{^last}},{{/last}}
+{{/constants}}
+}

@@ -1,5 +1,6 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { HelpPopoverComponent } from '../../../../components/help-popover/help-popover.component';
 
 interface Field {
   type: string;
@@ -21,7 +22,7 @@ interface Entity {
 @Component({
   selector: 'app-entity-detail-view',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, HelpPopoverComponent],
   templateUrl: './entity-detail-view.component.html',
   styleUrls: ['./entity-detail-view.component.css']
 })
@@ -40,5 +41,19 @@ export class EntityDetailViewComponent {
       return;
     }
     this.deleteField.emit(index);
+  }
+
+  getFieldConstraintCount(field: Field): number {
+    let count = 0;
+    if (field.primaryKey) {
+      count += 1;
+    }
+    if (field.required) {
+      count += 1;
+    }
+    if (field.unique) {
+      count += 1;
+    }
+    return count;
   }
 }

@@ -1,0 +1,97 @@
+package {{servicePackage}}
+
+import org.springframework.data.domain.Pageable
+import org.springframework.http.HttpStatus
+import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
+import org.springframework.web.server.ResponseStatusException
+{{#idTypeImport}}
+import {{idTypeImport}}
+{{/idTypeImport}}
+import {{modelPackage}}.{{entityName}}
+import {{repositoryPackage}}.{{repositoryClass}}
+import {{supportPackage}}.{{entitySupportClass}}
+{{^noSql}}
+import {{supportPackage}}.{{filterSupportClass}}
+{{/noSql}}
+import {{supportPackage}}.{{querySupportClass}}
+
+@Service
+@Transactional(readOnly = true)
+class {{serviceClass}}(
+    private val repository: {{repositoryClass}}
+) {
+{{#createUseService}}
+    @Transactional
+    fun create(request: {{{createRequestType}}}): {{{createResponseType}}} = repository.save(request)
+{{/createUseService}}
+
+{{#bulkInsertUseService}}
+    @Transactional
+    fun saveAll(requests: {{{bulkInsertRequestType}}}): {{{bulkInsertResponseType}}} = repository.saveAll(requests)
+{{/bulkInsertUseService}}
+
+{{#bulkUpdateUseService}}
+    @Transactional
+    fun bulkUpdate(requests: {{{bulkUpdateRequestType}}}): {{{bulkUpdateResponseType}}} = repository.saveAll(requests)
+{{/bulkUpdateUseService}}
+
+{{#updateUseService}}
+    @Transactional
+    fun update(id: {{idType}}, request: {{{updateRequestType}}}): {{{updateResponseType}}} {
+        val existing = getById(id)
+        {{entitySupportClass}}.mergeNonNullFields(request, existing, "{{idName}}")
+        return repository.save(existing)
+    }
+{{/updateUseService}}
+
+{{#patchUseService}}
+    @Transactional
+    fun patch(id: {{idType}}, request: {{{patchRequestType}}}): {{{patchResponseType}}} {
+        val existing = getById(id)
+        {{entitySupportClass}}.mergeNonNullFields(request, existing, "{{idName}}")
+        return repository.save(existing)
+    }
+{{/patchUseService}}
+
+{{#deleteUseService}}
+    @Transactional
+    fun deleteById(id: {{idType}}) {
+        if (!repository.existsById(id)) {
+            throw ResponseStatusException(HttpStatus.NOT_FOUND, "{{entityName}} not found for id: $id")
+        }
+        repository.deleteById(id)
+    }
+{{/deleteUseService}}
+
+{{#bulkDeleteUseService}}
+    @Transactional
+    fun bulkDelete(ids: {{{bulkDeleteRequestType}}}) {
+        ids.forEach { id ->
+            if (repository.existsById(id)) {
+                repository.deleteById(id)
+            }
+        }
+    }
+{{/bulkDeleteUseService}}
+
+{{#getUseService}}
+    fun getById(id: {{idType}}): {{{getResponseType}}} = repository.findById(id)
+        .orElseThrow { ResponseStatusException(HttpStatus.NOT_FOUND, "{{entityName}} not found for id: $id") }
+{{/getUseService}}
+
+{{#listUseService}}
+    fun search(queryParams: Map<String, String>, pageable: Pageable): {{{listResponseType}}} {
+{{#noSql}}
+        return repository.findAll(pageable)
+{{/noSql}}
+{{^noSql}}
+        val filters = {{querySupportClass}}.extractFilterParams(queryParams)
+        if (filters.isEmpty()) {
+            return repository.findAll(pageable)
+        }
+        return repository.findAll({{filterSupportClass}}.buildSpecification(filters, {{entityName}}::class.java), pageable)
+{{/noSql}}
+    }
+{{/listUseService}}
+}

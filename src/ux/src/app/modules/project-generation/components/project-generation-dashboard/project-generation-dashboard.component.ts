@@ -1,14 +1,15 @@
-import { ChangeDetectorRef, Component, OnInit, OnDestroy, ViewChild } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit, OnDestroy, ViewChild, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, ActivatedRoute } from '@angular/router';
-import { Subject, firstValueFrom, takeUntil } from 'rxjs';
+import { Subject, Subscription, firstValueFrom, takeUntil } from 'rxjs';
 import { MatExpansionModule } from '@angular/material/expansion';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { MatRadioModule } from '@angular/material/radio';
 import { MatCheckboxModule } from '@angular/material/checkbox';
+import { MatCheckbox, MatCheckboxChange } from '@angular/material/checkbox';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatTooltipModule } from '@angular/material/tooltip';
@@ -29,9 +30,10 @@ import { ToastService } from '../../../../services/toast.service';
 import { HttpClient } from '@angular/common/http';
 import { API_CONFIG, API_ENDPOINTS } from '../../../../constants/api.constants';
 import { InfoBannerComponent } from '../../../../components/info-banner/info-banner.component';
+import { LoadingOverlayComponent } from '../../../../components/shared/loading-overlay/loading-overlay.component';
 import { finalize } from 'rxjs/operators';
 import { ValidatorService } from '../../../../services/validator.service';
-import { buildMavenNamingRules } from '../../validators/naming-validation';
+import { buildMavenNamingRules, isValidJavaProjectFolderName } from '../../validators/naming-validation';
 import { APP_SETTINGS } from '../../../../settings/app-settings';
 import { LocalStorageService } from '../../../../services/local-storage.service';
 import { ProjectGenerationStateService } from '../../services/project-generation-state.service';
@@ -42,6 +44,7 @@ import {
 } from '../actuator-config/actuator-config.component';
 import { RestConfigComponent, RestEndpointConfig } from '../rest-config/rest-config.component';
 import { ENTITY_FIELD_TYPE_OPTIONS } from '../../constants/backend-field-types';
+import { VALIDATION_MESSAGES } from '../../constants/validation-messages';
 
 interface ProjectSettings {
   projectGroup: string;
@@ -122,7 +125,8 @@ interface ControllerRestSpecRow {
     ControllersSpecTableComponent,
     RestConfigComponent,
     SidenavComponent,
-    InfoBannerComponent
+    InfoBannerComponent,
+    LoadingOverlayComponent
   ],
   templateUrl: './project-generation-dashboard.component.html',
   styleUrls: ['./project-generation-dashboard.component.css']
@@ -146,16 +150,22 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
   ];
   actuatorNavItem: NavItem = { icon: 'device_hub', label: 'Actuator', value: 'actuator' };
   controllersNavItem: NavItem = { icon: 'tune', label: 'Controllers', value: 'controllers' };
+  mappersNavItem: NavItem = { icon: 'shuffle', label: 'Mappers', value: 'mappers' };
 
   entities: any[] = [];
   dataObjects: any[] = [];
   relations: any[] = [];
   enums: any[] = [];
+  mappers: any[] = [];
+  dataObjectsDefaultTab: 'dataObjects' | 'enums' | 'mappers' = 'dataObjects';
+  dataObjectsActiveTab: 'dataObjects' | 'enums' | 'mappers' = 'dataObjects';
 
   showBackConfirmation = false;
   showEntitiesDeleteConfirmation = false;
   showRestSpecDeleteConfirmation = false;
+  showConfigureApiDisableConfirmation = false;
   showRecentProjectPrompt = false;
+  showGenerationCancelConfirmation = false;
   private previousDatabaseSelection = 'POSTGRES';
   private previousDatabaseType: 'SQL' | 'NOSQL' | 'NONE' = 'SQL';
   private pendingDatabaseSelection: string | null = null;
@@ -167,6 +177,8 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
   backendProjectId: string | null = null;
   private projectEventsSource: EventSource | null = null;
   private pendingGenerationYamlSpec: string | null = null;
+  private generationCreateSubscription: Subscription | null = null;
+  private generationGuestSubscription: Subscription | null = null;
   exploreZipBlob: Blob | null = null;
   exploreZipFileName = 'project.zip';
   backConfirmationConfig = {
@@ -193,12 +205,28 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
       { text: 'Cancel', type: 'cancel', action: 'cancel' }
     ]
   };
+  configureApiDisableConfirmationConfig: { title: string; message: string; buttons: ModalButton[] } = {
+    title: 'Confirmation',
+    message: 'All API configuration will be lost. Want to proceed ?',
+    buttons: [
+      { text: 'Continue', type: 'danger', action: 'confirm' },
+      { text: 'Cancel', type: 'cancel', action: 'cancel' }
+    ]
+  };
   controllersConfigDiscardConfirmationConfig: { title: string; message: string; buttons: ModalButton[] } = {
     title: 'Confirmation',
     message: 'All Change will be discarded from the configuration. Want to proceed ?',
     buttons: [
       { text: 'Confirm', type: 'danger', action: 'confirm' },
       { text: 'Cancel', type: 'cancel', action: 'cancel' }
+    ]
+  };
+  generationCancelConfirmationConfig: { title: string; message: string; buttons: ModalButton[] } = {
+    title: 'Cancel Generation',
+    message: 'Project generation is in progress. Do you want to cancel?',
+    buttons: [
+      { text: 'Confirm', type: 'danger', action: 'confirm' },
+      { text: 'Cancel', type: 'confirm', action: 'cancel' }
     ]
   };
   pendingRestSpecDeleteKey: string | null = null;
@@ -249,6 +277,7 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
   showYamlPreviewModal = false;
   yamlPreviewContent = '';
   showControllersConfigDiscardConfirmation = false;
+  private configureApiToggleSource: MatCheckbox | null = null;
   selectedActuatorConfiguration = 'default';
   actuatorConfigurationOptions: string[] = ['default'];
   actuatorProfileEndpoints: Record<string, string[]> = {
@@ -264,6 +293,8 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
   availableDependencies: string[] = [];
   projectGroupError = '';
   projectNameError = '';
+  @ViewChild('projectGroupInput') projectGroupInput?: ElementRef<HTMLInputElement>;
+  @ViewChild('projectNameInput') projectNameInput?: ElementRef<HTMLInputElement>;
 
   frontendOptions = ['None', 'React', 'Vue', 'Angular'];
   databaseOptions: DatabaseOption[] = [
@@ -298,10 +329,25 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
     if (this.developerPreferences.enableActuator) {
       navItems.splice(1, 0, this.actuatorNavItem);
     }
-    if (this.developerPreferences.configureApi) {
+    if (this.dataObjects.length > 0) {
       const dataObjectsIndex = navItems.findIndex((item) => item.value === 'data-objects');
-      const insertIndex = dataObjectsIndex >= 0 ? dataObjectsIndex + 1 : navItems.length - 1;
+      const mapperInsertIndex = dataObjectsIndex >= 0 ? dataObjectsIndex + 1 : navItems.length - 1;
+      navItems.splice(mapperInsertIndex, 0, this.mappersNavItem);
+    }
+
+    if (this.developerPreferences.configureApi) {
+      const mappersIndex = navItems.findIndex((item) => item.value === 'mappers');
+      const dataObjectsIndex = navItems.findIndex((item) => item.value === 'data-objects');
+      const insertIndex = mappersIndex >= 0 ? mappersIndex + 1 : (dataObjectsIndex >= 0 ? dataObjectsIndex + 1 : navItems.length - 1);
       navItems.splice(insertIndex, 0, this.controllersNavItem);
+    }
+
+    const shouldShowExplore = !this.isGeneratingFromDtoSave && !this.isExploreSyncing && this.hasCachedZipForCurrentProject();
+    if (!shouldShowExplore) {
+      const exploreIndex = navItems.findIndex((item) => item.value === 'explore');
+      if (exploreIndex >= 0) {
+        navItems.splice(exploreIndex, 1);
+      }
     }
 
     const isNoneDatabase = this.toDatabaseCode(this.databaseSettings.database) === 'NONE';
@@ -339,6 +385,7 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.cancelGenerationRequests();
     this.closeProjectEventsSource();
     this.destroy$.next();
     this.destroy$.complete();
@@ -371,7 +418,8 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
       entities: this.entities,
       dataObjects: this.dataObjects,
       relations: this.relations,
-      enums: this.enums
+      enums: this.enums,
+      mappers: this.mappers
     };
   }
 
@@ -385,6 +433,7 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
         this.dataObjects = projectData.dataObjects || [];
         this.relations = projectData.relations || [];
         this.enums = Array.isArray(projectData.enums) ? projectData.enums : [];
+        this.mappers = Array.isArray(projectData.mappers) ? projectData.mappers : [];
         this.projectSettings = projectData.settings || this.projectSettings;
         this.databaseSettings = projectData.database || this.databaseSettings;
         this.databaseSettings.dbType = this.resolveDatabaseType(this.databaseSettings.dbType, this.databaseSettings.database);
@@ -423,6 +472,7 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
         this.dataObjects = [];
         this.relations = [];
         this.enums = [];
+        this.mappers = [];
         this.controllersConfig = this.getDefaultControllersConfig();
         this.controllersConfigEnabled = true;
         this.syncActuatorConfigurationsWithProfiles();
@@ -515,6 +565,11 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
       this.closeSidebar();
       return;
     }
+    if (section === 'mappers') {
+      this.dataObjectsDefaultTab = 'mappers';
+    } else if (section === 'data-objects') {
+      this.dataObjectsDefaultTab = 'dataObjects';
+    }
     if (section === 'explore') {
       const previousSection = this.activeSection;
       this.handleExploreTab(previousSection);
@@ -605,11 +660,12 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
     if (this.useCachedZipIfAvailable(yamlSpec, true)) {
       return;
     }
+    this.clearLocalZipDataBeforeGeneration();
 
     this.isGeneratingFromDtoSave = true;
     this.pendingGenerationYamlSpec = yamlSpec;
 
-    this.createProjectOnBackend(yamlSpec)
+    this.generationCreateSubscription = this.createProjectOnBackend(yamlSpec)
       .pipe(finalize(() => {
         this.isGeneratingFromDtoSave = false;
       }))
@@ -629,6 +685,7 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
         error: () => {
           this.pendingGenerationYamlSpec = null;
           this.toastService.error('Failed to save and start project generation.');
+          this.generationCreateSubscription = null;
         }
       });
   }
@@ -642,11 +699,12 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
     if (this.useCachedZipIfAvailable(yamlSpec, true)) {
       return;
     }
+    this.clearLocalZipDataBeforeGeneration();
 
     const url = `${API_CONFIG.BASE_URL}${API_ENDPOINTS.PROJECT_VIEW.GENERATE_ZIP}`;
     this.isGeneratingFromDtoSave = true;
 
-    this.http.post(url, yamlSpec, {
+    this.generationGuestSubscription = this.http.post(url, yamlSpec, {
       headers: { 'Content-Type': 'text/plain' },
       responseType: 'arraybuffer'
     })
@@ -665,11 +723,32 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
           this.cacheZipFromArrayBuffer(yamlSpec, zipData, this.exploreZipFileName);
           this.activeSection = 'explore';
           this.toastService.success('Project generated successfully.');
+          this.generationGuestSubscription = null;
         },
         error: () => {
           this.toastService.error('Failed to generate project zip.');
+          this.generationGuestSubscription = null;
         }
       });
+  }
+
+  onCancelGenerationRequested(): void {
+    if (!this.isGeneratingFromDtoSave) {
+      return;
+    }
+    this.showGenerationCancelConfirmation = true;
+  }
+
+  confirmCancelGenerationRequest(): void {
+    this.showGenerationCancelConfirmation = false;
+    this.cancelGenerationRequests();
+    this.closeProjectEventsSource();
+    this.isGeneratingFromDtoSave = false;
+    this.toastService.success('Project generation canceled.');
+  }
+
+  cancelCancelGenerationRequest(): void {
+    this.showGenerationCancelConfirmation = false;
   }
 
   private buildCurrentProjectYaml(): string {
@@ -750,6 +829,17 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
       this.projectEventsSource = null;
     }
     this.pendingGenerationYamlSpec = null;
+  }
+
+  private cancelGenerationRequests(): void {
+    if (this.generationCreateSubscription) {
+      this.generationCreateSubscription.unsubscribe();
+      this.generationCreateSubscription = null;
+    }
+    if (this.generationGuestSubscription) {
+      this.generationGuestSubscription.unsubscribe();
+      this.generationGuestSubscription = null;
+    }
   }
 
   private getLatestRun(runs: ProjectRunSummary[] | null | undefined): ProjectRunSummary | null {
@@ -874,6 +964,20 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
     const artifactId = this.toArtifactId(this.projectSettings.projectName || 'project');
     const scope = this.isLoggedIn ? 'auth' : 'guest';
     return [scope, backendId || localProjectId || artifactId].join(':');
+  }
+
+  private hasCachedZipForCurrentProject(): boolean {
+    const cacheEntry = this.localStorageService.getProjectZipCache(this.getZipCacheKey());
+    return Boolean(cacheEntry?.zipBase64);
+  }
+
+  private clearLocalZipDataBeforeGeneration(): void {
+    this.localStorageService.clearProjectZipCache(this.getZipCacheKey());
+    this.exploreZipBlob = null;
+    this.exploreZipFileName = 'project.zip';
+    if (this.activeSection === 'explore') {
+      this.activeSection = 'general';
+    }
   }
 
   private base64ToUint8Array(base64Payload: string): Uint8Array {
@@ -1019,10 +1123,22 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
 
   onDataObjectsChange(dataObjects: any[]): void {
     this.dataObjects = dataObjects;
+    if (this.dataObjects.length === 0 && this.activeSection === 'mappers') {
+      this.activeSection = 'data-objects';
+      this.dataObjectsDefaultTab = 'dataObjects';
+    }
   }
 
   onEnumsChange(enums: any[]): void {
     this.enums = enums;
+  }
+
+  onMappersChange(mappers: any[]): void {
+    this.mappers = mappers;
+  }
+
+  onDataObjectsActiveTabChange(tab: 'dataObjects' | 'enums' | 'mappers'): void {
+    this.dataObjectsActiveTab = tab;
   }
 
   async setupEntities(): Promise<void> {
@@ -1041,6 +1157,7 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
   async setupDataObjects(): Promise<void> {
     this.isLoading = true;
     try {
+      this.dataObjectsDefaultTab = 'dataObjects';
       this.navigateToSection('data-objects');
       this.toastService.success('Data objects setup loaded');
     } catch (error) {
@@ -1056,6 +1173,20 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
     try {
       this.navigateToSection('controllers');
       this.toastService.success('Controller setup loaded');
+    } catch (error) {
+      this.toastService.error('Failed to proceed');
+      console.error('Error:', error);
+    } finally {
+      this.isLoading = false;
+    }
+  }
+
+  async setupMappers(): Promise<void> {
+    this.isLoading = true;
+    try {
+      this.dataObjectsDefaultTab = 'mappers';
+      this.navigateToSection('mappers');
+      this.toastService.success('Mapper setup loaded');
     } catch (error) {
       this.toastService.error('Failed to proceed');
       console.error('Error:', error);
@@ -1097,10 +1228,29 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
   }
 
   getDataObjectsPrimaryActionLabel(): string {
-    return this.developerPreferences.configureApi ? 'Setup Controller' : 'Save Project';
+    if (this.dataObjects.length === 0) {
+      return this.developerPreferences.configureApi ? 'Setup Controller' : 'Save Project';
+    }
+    return 'Setup Mappers';
   }
 
   async handleDataObjectsPrimaryAction(): Promise<void> {
+    if (this.dataObjects.length === 0) {
+      if (this.developerPreferences.configureApi) {
+        await this.setupControllers();
+        return;
+      }
+      await this.saveProjectAndInvokeApi();
+      return;
+    }
+    await this.setupMappers();
+  }
+
+  getMappersPrimaryActionLabel(): string {
+    return this.developerPreferences.configureApi ? 'Setup Controller' : 'Save Project';
+  }
+
+  async handleMappersPrimaryAction(): Promise<void> {
     if (this.developerPreferences.configureApi) {
       await this.setupControllers();
       return;
@@ -1154,6 +1304,10 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
       dtos: this.mapDtos(project?.dataObjects),
       enums: this.mapEnums(project?.enums)
     };
+    const mapperSpecs = this.mapMappers(project?.mappers);
+    if (mapperSpecs.length) {
+      spec.mappers = mapperSpecs;
+    }
     if (databaseCode !== 'NONE') {
       spec.dbGeneration = this.trimmed(project?.database?.dbGeneration) || 'Hibernate (update)';
       spec.pluralizeTableNames = Boolean(project?.database?.pluralizeTableNames);
@@ -1281,11 +1435,48 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
     }
   }
 
-  onEnableConfigureApiChange(enabled: boolean): void {
-    this.developerPreferences.configureApi = Boolean(enabled);
-    if (!this.developerPreferences.configureApi && this.activeSection === 'controllers') {
+  onEnableConfigureApiChange(event: MatCheckboxChange): void {
+    const nextEnabled = Boolean(event?.checked);
+    this.configureApiToggleSource = event?.source ?? null;
+    if (nextEnabled) {
+      this.developerPreferences.configureApi = true;
+      if (this.configureApiToggleSource) {
+        this.configureApiToggleSource.checked = true;
+      }
+      this.cdr.detectChanges();
+      return;
+    }
+
+    this.developerPreferences.configureApi = true;
+    if (this.configureApiToggleSource) {
+      this.configureApiToggleSource.checked = true;
+    }
+    this.showConfigureApiDisableConfirmation = true;
+    this.cdr.detectChanges();
+  }
+
+  confirmDisableConfigureApi(): void {
+    this.developerPreferences.configureApi = false;
+    if (this.configureApiToggleSource) {
+      this.configureApiToggleSource.checked = false;
+    }
+    this.clearAllApiConfigurations();
+    if (this.activeSection === 'controllers') {
       this.activeSection = 'general';
     }
+    this.showConfigureApiDisableConfirmation = false;
+    this.configureApiToggleSource = null;
+    this.cdr.detectChanges();
+  }
+
+  cancelDisableConfigureApi(): void {
+    this.developerPreferences.configureApi = true;
+    if (this.configureApiToggleSource) {
+      this.configureApiToggleSource.checked = true;
+    }
+    this.showConfigureApiDisableConfirmation = false;
+    this.configureApiToggleSource = null;
+    this.cdr.detectChanges();
   }
 
   onControllersConfigSave(config: RestEndpointConfig, persistAsGlobal = true): void {
@@ -1996,6 +2187,9 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
         updateLink: Boolean(restConfig?.hateoas?.updateLink),
         deleteLink: Boolean(restConfig?.hateoas?.deleteLink)
       },
+      documentation: {
+        includeDefaultDocumentation: restConfig?.documentation?.includeDefaultDocumentation !== false
+      },
       methods
     };
   }
@@ -2023,11 +2217,18 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
   }
 
   private buildOperationDocumentationConfig(restConfig: any, docKey: string): any | null {
-    const description = this.trimmed(restConfig?.documentation?.endpoints?.[docKey]?.description);
-    const group = this.trimmed(restConfig?.documentation?.endpoints?.[docKey]?.group);
+    const includeDefaults = restConfig?.documentation?.includeDefaultDocumentation !== false;
+    const defaultDocumentation = this.getDefaultDocumentationForOperation(docKey, this.trimmed(restConfig?.resourceName));
+    const description = this.trimmed(restConfig?.documentation?.endpoints?.[docKey]?.description)
+      || (includeDefaults ? defaultDocumentation.description : '');
+    const group = this.trimmed(restConfig?.documentation?.endpoints?.[docKey]?.group)
+      || (includeDefaults ? defaultDocumentation.group : '');
     const descriptionTags = Array.isArray(restConfig?.documentation?.endpoints?.[docKey]?.descriptionTags)
       ? restConfig.documentation.endpoints[docKey].descriptionTags.map((item: any) => this.trimmed(item)).filter(Boolean)
       : [];
+    const resolvedDescriptionTags = descriptionTags.length
+      ? descriptionTags
+      : (includeDefaults ? defaultDocumentation.descriptionTags : []);
     const deprecated = Boolean(restConfig?.documentation?.endpoints?.[docKey]?.deprecated);
 
     const documentation: Record<string, any> = {};
@@ -2037,14 +2238,37 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
     if (group) {
       documentation['group'] = group;
     }
-    if (descriptionTags.length) {
-      documentation['descriptionTags'] = descriptionTags;
+    if (resolvedDescriptionTags.length) {
+      documentation['descriptionTags'] = resolvedDescriptionTags;
     }
     if (deprecated) {
       documentation['deprecated'] = true;
     }
 
     return Object.keys(documentation).length ? documentation : null;
+  }
+
+  private getDefaultDocumentationForOperation(
+    operationKey: string,
+    resourceName: string
+  ): { description: string; group: string; descriptionTags: string[] } {
+    const endpointLabel: Record<string, string> = {
+      list: 'List',
+      get: 'Get By Key',
+      create: 'Create',
+      update: 'Update',
+      patch: 'Patch',
+      delete: 'Delete',
+      bulkInsert: 'Bulk Insert',
+      bulkUpdate: 'Bulk Update',
+      bulkDelete: 'Bulk Delete'
+    };
+    const target = this.trimmed(resourceName) || 'API';
+    return {
+      description: `${endpointLabel[String(operationKey)] || String(operationKey)} operation for ${target}`,
+      group: `${target} Group`,
+      descriptionTags: [String(operationKey)]
+    };
   }
 
   private buildOperationRequestConfig(operationKey: string, restConfig: any): any {
@@ -2298,6 +2522,7 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
         }
       },
       documentation: {
+        includeDefaultDocumentation: true,
         endpoints: {
           list: { description: 'List operation for API', group: 'API Group', descriptionTags: ['list'], deprecated: false },
           get: { description: 'Get By Key operation for API', group: 'API Group', descriptionTags: ['get'], deprecated: false },
@@ -2384,6 +2609,7 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
         }
       },
       documentation: {
+        includeDefaultDocumentation: (cloned as any).documentation?.includeDefaultDocumentation !== false,
         endpoints: {
           ...fallback.documentation.endpoints,
           ...(cloned as any).documentation?.endpoints
@@ -2441,6 +2667,24 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
       mappedEntity['rest-spec-name'] = nextSpecName || selectedEntityName;
     }
     this.entities = [...this.entities];
+  }
+
+  private clearAllApiConfigurations(): void {
+    this.controllersConfigEnabled = false;
+    this.controllersConfig = this.getDefaultControllersConfig();
+    this.controllersCreatingNewConfig = false;
+    this.controllersEditingSpecKey = null;
+    this.controllersEditingSpecConfig = null;
+
+    this.entities = (Array.isArray(this.entities) ? this.entities : []).map((entity: any) => {
+      const updated = { ...entity };
+      updated.addRestEndpoints = false;
+      delete updated.restConfig;
+      delete updated['rest-spec-name'];
+      delete updated.restSpecName;
+      delete updated.restSpec;
+      return updated;
+    });
   }
 
   private normalizeProfileName(value: unknown): string | null {
@@ -2549,6 +2793,25 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
           : []
       }))
       .filter((enumItem: any) => enumItem.name && enumItem.constants.length > 0);
+  }
+
+  private mapMappers(mappers: any): any[] {
+    const items = Array.isArray(mappers) ? mappers : [];
+    return items
+      .map((mapper: any) => ({
+        name: this.trimmed(mapper?.name),
+        fromModel: this.trimmed(mapper?.fromModel),
+        toModel: this.trimmed(mapper?.toModel),
+        mappings: Array.isArray(mapper?.mappings)
+          ? mapper.mappings
+            .map((item: any) => ({
+              sourceField: this.trimmed(item?.sourceField),
+              targetField: this.trimmed(item?.targetField)
+            }))
+            .filter((item: any) => item.sourceField && item.targetField)
+          : []
+      }))
+      .filter((mapper: any) => mapper.name && mapper.fromModel && mapper.toModel && mapper.mappings.length > 0);
   }
 
   private mapDtoField(field: any): any {
@@ -2883,9 +3146,18 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
 
   private validateProjectNaming(): boolean {
     const projectName = this.trimmed(this.projectSettings.projectName);
+    this.projectGroupError = '';
+    this.projectNameError = '';
+
     if (!projectName) {
-      this.projectNameError = 'Project name is required.';
-      this.toastService.error(this.projectNameError);
+      this.projectNameError = VALIDATION_MESSAGES.projectNameRequired;
+      this.focusProjectNamingErrorField();
+      return false;
+    }
+
+    if (!isValidJavaProjectFolderName(projectName)) {
+      this.projectNameError = VALIDATION_MESSAGES.projectNameInvalidFolder;
+      this.focusProjectNamingErrorField();
       return false;
     }
 
@@ -2903,17 +3175,29 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
           this.projectGroupError = message;
         },
         setArtifactError: (message) => {
-          this.projectNameError = `Project name generates invalid artifact id. ${message}`;
+          this.projectNameError = `${VALIDATION_MESSAGES.artifactIdInvalid} ${message}`;
         }
-      })
+      }),
+      { silent: true }
     );
 
-    if (valid) {
-      this.projectGroupError = '';
-      this.projectNameError = '';
+    if (!valid) {
+      this.focusProjectNamingErrorField();
     }
 
     return valid;
+  }
+
+  private focusProjectNamingErrorField(): void {
+    setTimeout(() => {
+      if (this.projectGroupError) {
+        this.projectGroupInput?.nativeElement?.focus();
+        return;
+      }
+      if (this.projectNameError) {
+        this.projectNameInput?.nativeElement?.focus();
+      }
+    });
   }
 
   private isNotNullConstraint(constraint: any): boolean {

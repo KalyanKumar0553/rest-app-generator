@@ -13,6 +13,8 @@ import com.src.main.dto.StepResult;
 import com.src.main.sm.config.StepExecutor;
 import com.src.main.sm.executor.common.BoilerplateStyle;
 import com.src.main.sm.executor.common.BoilerplateStyleResolver;
+import com.src.main.sm.executor.common.GenerationLanguage;
+import com.src.main.sm.executor.common.GenerationLanguageResolver;
 import com.src.main.sm.executor.exceptiongen.ExceptionPackageGenerationService;
 import com.src.main.sm.executor.exceptiongen.ExceptionPackageGenerationSupport;
 import com.src.main.util.ProjectMetaDataConstants;
@@ -50,8 +52,9 @@ public class ExceptionPackageGenerationExecutor implements StepExecutor {
 			String packageStructure = StringUtils.firstNonBlank(str(yaml.get("packages")), spec.getPackages(), "technical");
 			String exceptionPackage = ExceptionPackageGenerationSupport.resolveExceptionPackage(basePackage, packageStructure);
 			boolean useLombok = BoilerplateStyleResolver.resolveFromYaml(yaml, true) == BoilerplateStyle.LOMBOK;
+			GenerationLanguage language = GenerationLanguageResolver.resolveFromYaml(yaml);
 
-			exceptionPackageGenerationService.generate(root, exceptionPackage, useLombok);
+			exceptionPackageGenerationService.generate(root, exceptionPackage, useLombok, language);
 			return StepResult.ok(Map.of(
 					"status", "Success",
 					"exceptionPackageGenerated", true,

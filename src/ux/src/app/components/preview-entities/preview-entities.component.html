@@ -5,6 +5,9 @@
         <div class="entity-card__title-group">
           <div class="entity-card__title-wrap">
             <span class="entity-card__title">{{ entity.name }}</span>
+            <span class="entity-card__type-badge" *ngIf="entity.metaTag">
+              {{ entity.metaTag }}
+            </span>
             <span class="entity-card__type-badge" *ngIf="entity.dtoType">
               {{ entity.dtoType === 'request' ? 'Request DTO' : 'Response DTO' }}
             </span>
@@ -14,6 +17,14 @@
           <button class="entity-action-btn" type="button" (click)="onEdit(entity, i); $event.stopPropagation()" aria-label="Edit entity">
             <i class="bi bi-pencil"></i>
           </button>
+          <app-help-popover class="entity-mobile-help" [ariaLabel]="'Show field details'" placement="bottom">
+            <div class="entity-mobile-help-content">
+              <div class="entity-mobile-help-row">
+                <span class="help-field-meta"><strong>Fields:</strong> {{ getEntityFieldCount(entity) }}</span>
+                <span class="help-field-meta"><strong>Constraints:</strong> {{ getEntityConstraintCount(entity) }}</span>
+              </div>
+            </div>
+          </app-help-popover>
           <button class="entity-action-btn danger" type="button" (click)="onDelete(entity, i); $event.stopPropagation()" aria-label="Delete entity">
             <i class="bi bi-trash"></i>
           </button>

@@ -1,0 +1,57 @@
+package {{supportPackage}}
+
+import jakarta.persistence.criteria.Predicate
+import java.math.BigDecimal
+import java.time.Instant
+import java.time.LocalDate
+import java.time.LocalDateTime
+import java.time.OffsetDateTime
+import java.util.UUID
+import org.springframework.data.jpa.domain.Specification
+import org.springframework.util.ReflectionUtils
+
+object RestFilterUtils {
+
+    fun <T> buildSpecification(queryParams: Map<String, String>, entityType: Class<T>): Specification<T> {
+        return Specification { root, query, criteriaBuilder ->
+            val predicates = mutableListOf<Predicate>()
+            queryParams.forEach { (fieldName, rawValue) ->
+                if (rawValue.isBlank()) {
+                    return@forEach
+                }
+                val fieldType = resolveFieldType(entityType, fieldName)
+                val converted = convertValue(rawValue, fieldType)
+                predicates.add(criteriaBuilder.equal(root.get<Any>(fieldName), converted))
+            }
+            criteriaBuilder.and(*predicates.toTypedArray())
+        }
+    }
+
+    private fun resolveFieldType(entityType: Class<*>, fieldName: String): Class<*> {
+        val field = ReflectionUtils.findField(entityType, fieldName)
+            ?: throw IllegalArgumentException("Unknown query field: $fieldName")
+        return field.type
+    }
+
+    private fun convertValue(value: String, type: Class<*>): Any {
+        if (type.isEnum) {
+            @Suppress("UNCHECKED_CAST")
+            return java.lang.Enum.valueOf(type.asSubclass(Enum::class.java), value)
+        }
+        return when (type.name) {
+            "java.lang.String" -> value
+            "java.lang.Integer", "int" -> value.toInt()
+            "java.lang.Long", "long" -> value.toLong()
+            "java.lang.Boolean", "boolean" -> value.toBoolean()
+            "java.lang.Double", "double" -> value.toDouble()
+            "java.lang.Float", "float" -> value.toFloat()
+            "java.math.BigDecimal" -> BigDecimal(value)
+            "java.util.UUID" -> UUID.fromString(value)
+            "java.time.LocalDate" -> LocalDate.parse(value)
+            "java.time.LocalDateTime" -> LocalDateTime.parse(value)
+            "java.time.OffsetDateTime" -> OffsetDateTime.parse(value)
+            "java.time.Instant" -> Instant.parse(value)
+            else -> throw IllegalArgumentException("Unsupported query field type for field: ${type.simpleName}")
+        }
+    }
+}

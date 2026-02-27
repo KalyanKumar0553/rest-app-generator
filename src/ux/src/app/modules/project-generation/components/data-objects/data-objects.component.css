@@ -15,6 +15,7 @@
   min-height: 0;
 }
 
+
 .expansion-panel {
   background-color: var(--color-background-white);
   border-radius: 8px;
@@ -128,14 +129,22 @@
 .entity-detail-header-left {
   display: flex;
   align-items: center;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 12px;
+  min-width: 0;
+  width: 100%;
+  overflow: hidden;
 }
 
 .entity-detail-title {
   font-size: 22px;
   font-weight: 600;
   color: var(--theme-modal-header-text, var(--color-background-white));
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex-shrink: 1;
 }
 
 .entity-detail-tag {
@@ -147,6 +156,11 @@
   letter-spacing: 0.04em;
   color: var(--theme-modal-header-text, var(--color-background-white));
   border: 1px solid var(--color-background-white);
+  max-width: 170px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .enum-cards-scroll {

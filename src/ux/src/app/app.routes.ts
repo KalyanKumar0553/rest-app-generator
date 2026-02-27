@@ -3,11 +3,14 @@ import { HomeComponent } from './components/home/home.component';
 import { TermsComponent } from './components/terms/terms.component';
 import { PrivacyComponent } from './components/privacy/privacy.component';
 import { InprogressComponent } from './components/inprogress/inprogress.component';
+import { LoadingOverlayDemoComponent } from './components/shared/loading-overlay-demo/loading-overlay-demo.component';
+import { DocumentationComponent } from './components/documentation/documentation.component';
 
 export const routes: Routes = [
   {
     path: '',
-    component: HomeComponent
+    component: HomeComponent,
+    pathMatch: 'full'
   },
   {
     path: 'auth',
@@ -37,6 +40,14 @@ export const routes: Routes = [
   {
     path: 'in-progress',
     component: InprogressComponent
+  },
+  {
+    path: 'overlay-demo',
+    component: LoadingOverlayDemoComponent
+  },
+  {
+    path: 'documentation',
+    component: DocumentationComponent
   },
   {
     path: '**',

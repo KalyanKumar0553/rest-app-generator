@@ -44,6 +44,12 @@
   font-weight: 600;
 }
 
+.default-doc-toggle {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--theme-neutral-border);
+  background-color: var(--theme-input-bg);
+}
+
 .empty-state {
   border: 1px dashed var(--theme-neutral-border);
   border-radius: 10px;

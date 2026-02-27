@@ -16,10 +16,10 @@ import { ModalComponent } from '../../../../components/modal/modal.component';
 import { ValidatorService } from '../../../../services/validator.service';
 import { buildEntityNameRules, buildFieldListRules, buildFieldRules } from '../../validators/entity-validation';
 import { FieldFilterService } from '../../../../services/field-filter.service';
-import { ToastService } from '../../../../services/toast.service';
 import { HelpPopoverComponent } from '../../../../components/help-popover/help-popover.component';
 import { SearchableMultiSelectComponent } from '../../../../components/searchable-multi-select/searchable-multi-select.component';
 import { DTO_FIELD_TYPE_OPTIONS } from '../../constants/backend-field-types';
+import { VALIDATION_MESSAGES } from '../../constants/validation-messages';
 
 interface DataObject {
   name: string;
@@ -78,6 +78,7 @@ export class AddDataObjectComponent implements OnChanges {
   enableFieldProjection = true;
   includeHateoasLinks = true;
   nameError = '';
+  propertiesError = '';
 
   fields: Field[] = [];
 
@@ -141,8 +142,7 @@ export class AddDataObjectComponent implements OnChanges {
 
   constructor(
     private validatorService: ValidatorService,
-    private fieldFilterService: FieldFilterService,
-    private toastService: ToastService
+    private fieldFilterService: FieldFilterService
   ) {}
 
   ngOnChanges(changes: SimpleChanges): void {
@@ -176,6 +176,7 @@ export class AddDataObjectComponent implements OnChanges {
     this.includeHateoasLinks = Boolean(dataObject.includeHateoasLinks ?? true);
     this.fields = this.sanitizeProperties(JSON.parse(JSON.stringify(dataObject.fields)));
     this.nameError = '';
+    this.propertiesError = '';
     this.updateVisibleFields();
   }
 
@@ -188,11 +189,13 @@ export class AddDataObjectComponent implements OnChanges {
     this.enableFieldProjection = true;
     this.includeHateoasLinks = true;
     this.nameError = '';
+    this.propertiesError = '';
     this.fields = [];
     this.updateVisibleFields();
   }
 
   addField(): void {
+    this.propertiesError = '';
     this.fieldConfigMode = 'add';
     this.fieldConfigIndex = null;
     this.fieldDraft = {
@@ -249,7 +252,8 @@ export class AddDataObjectComponent implements OnChanges {
         setError: (message) => {
           this.nameError = message;
         }
-      })
+      }),
+      { silent: true }
     );
 
     if (valid) {
@@ -260,18 +264,23 @@ export class AddDataObjectComponent implements OnChanges {
 
   onSave(): void {
     if (!this.validateDataObjectName()) {
+      this.focusFirstErrorField();
       return;
     }
 
     if (!this.fields?.length) {
-      this.toastService.error('At least one property is required to save a data object.');
+      this.propertiesError = VALIDATION_MESSAGES.atLeastOneProperty;
+      this.focusFirstErrorField();
       return;
     }
+    this.propertiesError = '';
 
     if (!this.validatorService.validate(this, buildFieldListRules({
       requirePrimaryKey: false,
       itemLabel: 'property'
-    }))) {
+    }), { silent: true })) {
+      this.propertiesError = VALIDATION_MESSAGES.atLeastOneProperty;
+      this.focusFirstErrorField();
       return;
     }
 
@@ -394,7 +403,8 @@ export class AddDataObjectComponent implements OnChanges {
         setError: (message) => {
           field.nameError = message;
         }
-      })
+      }),
+      { silent: true }
     );
 
     if (valid) {
@@ -510,5 +520,19 @@ export class AddDataObjectComponent implements OnChanges {
       selected.push('Builder');
     }
     this.selectedClassMethods = selected;
+  }
+
+  private focusFirstErrorField(): void {
+    setTimeout(() => {
+      if (this.nameError) {
+        const nameInput = document.querySelector('.add-entity-container input[placeholder=\"Data object name\"]') as HTMLElement | null;
+        nameInput?.focus();
+        return;
+      }
+      if (this.propertiesError) {
+        const addPropertyButton = document.querySelector('.add-field-btn') as HTMLElement | null;
+        addPropertyButton?.focus();
+      }
+    });
   }
 }

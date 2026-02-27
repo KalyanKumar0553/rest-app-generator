@@ -8,14 +8,21 @@ import java.util.Map;
 import org.springframework.stereotype.Component;
 
 import com.src.main.sm.executor.TemplateEngine;
+import com.src.main.sm.executor.common.GenerationLanguage;
+import com.src.main.sm.executor.common.TemplatePathResolver;
+import com.src.main.util.PathUtils;
 
 @Component
 public class DtoValidationHelperGenerator {
 
-	private static final String TPL_VALIDATION_FIELD_MATCH = "templates/validation/field_match.mustache";
-	private static final String TPL_VALIDATION_FIELD_MATCH_VALIDATOR = "templates/validation/field_match_validator.mustache";
-	private static final String TPL_VALIDATION_CONDITIONAL_REQUIRED = "templates/validation/conditional_required.mustache";
-	private static final String TPL_VALIDATION_CONDITIONAL_REQUIRED_VALIDATOR = "templates/validation/conditional_required_validator.mustache";
+	private static final String TPL_VALIDATION_FIELD_MATCH_JAVA = "field_match.java.mustache";
+	private static final String TPL_VALIDATION_FIELD_MATCH_VALIDATOR_JAVA = "field_match_validator.java.mustache";
+	private static final String TPL_VALIDATION_CONDITIONAL_REQUIRED_JAVA = "conditional_required.java.mustache";
+	private static final String TPL_VALIDATION_CONDITIONAL_REQUIRED_VALIDATOR_JAVA = "conditional_required_validator.java.mustache";
+	private static final String TPL_VALIDATION_FIELD_MATCH_KOTLIN = "field_match.kt.mustache";
+	private static final String TPL_VALIDATION_FIELD_MATCH_VALIDATOR_KOTLIN = "field_match_validator.kt.mustache";
+	private static final String TPL_VALIDATION_CONDITIONAL_REQUIRED_KOTLIN = "conditional_required.kt.mustache";
+	private static final String TPL_VALIDATION_CONDITIONAL_REQUIRED_VALIDATOR_KOTLIN = "conditional_required_validator.kt.mustache";
 
 	private final TemplateEngine templateEngine;
 
@@ -23,15 +30,23 @@ public class DtoValidationHelperGenerator {
 		this.templateEngine = templateEngine;
 	}
 
-	public void ensureCrossFieldValidationHelpers(Path root, String basePkg) {
+	public void ensureCrossFieldValidationHelpers(Path root, String basePkg, GenerationLanguage language) {
 		try {
-			Path baseDir = root.resolve("src/main/java/" + basePkg.replace('.', '/') + "/validation");
+			Path baseDir = root.resolve(PathUtils.srcPathFromPackage(basePkg + ".validation", language));
 			Files.createDirectories(baseDir);
 
-			Map<String, String> files = Map.of("FieldMatch.java", TPL_VALIDATION_FIELD_MATCH,
-					"FieldMatchValidator.java", TPL_VALIDATION_FIELD_MATCH_VALIDATOR, "ConditionalRequired.java",
-					TPL_VALIDATION_CONDITIONAL_REQUIRED, "ConditionalRequiredValidator.java",
-					TPL_VALIDATION_CONDITIONAL_REQUIRED_VALIDATOR);
+			boolean kotlin = language == GenerationLanguage.KOTLIN;
+			Map<String, String> files = kotlin
+					? Map.of(
+							"FieldMatch.kt", TPL_VALIDATION_FIELD_MATCH_KOTLIN,
+							"FieldMatchValidator.kt", TPL_VALIDATION_FIELD_MATCH_VALIDATOR_KOTLIN,
+							"ConditionalRequired.kt", TPL_VALIDATION_CONDITIONAL_REQUIRED_KOTLIN,
+							"ConditionalRequiredValidator.kt", TPL_VALIDATION_CONDITIONAL_REQUIRED_VALIDATOR_KOTLIN)
+					: Map.of(
+							"FieldMatch.java", TPL_VALIDATION_FIELD_MATCH_JAVA,
+							"FieldMatchValidator.java", TPL_VALIDATION_FIELD_MATCH_VALIDATOR_JAVA,
+							"ConditionalRequired.java", TPL_VALIDATION_CONDITIONAL_REQUIRED_JAVA,
+							"ConditionalRequiredValidator.java", TPL_VALIDATION_CONDITIONAL_REQUIRED_VALIDATOR_JAVA);
 
 			files.forEach((fileName, templatePath) -> {
 				Path target = baseDir.resolve(fileName);
@@ -43,7 +58,8 @@ public class DtoValidationHelperGenerator {
 				}
 				String body;
 				try {
-					body = templateEngine.render(templatePath, Map.of("basePkg", basePkg));
+					body = templateEngine.renderAny(TemplatePathResolver.candidates(language, "validation", templatePath),
+							Map.of("basePkg", basePkg));
 				} catch (Exception renderErr) {
 					return;
 				}

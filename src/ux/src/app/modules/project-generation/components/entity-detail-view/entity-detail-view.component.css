@@ -110,7 +110,7 @@
   background: none;
   border: none;
   cursor: pointer;
-  color: #dc6454;
+  color: var(--theme-error-text-color, var(--color-error));
   font-size: 18px;
   padding: 6px;
   display: inline-flex;
@@ -121,8 +121,8 @@
 }
 
 .delete-field-btn:hover {
-  color: #b84c3f;
-  background-color: rgba(220, 100, 84, 0.12);
+  color: var(--theme-error-text-color, var(--color-error));
+  background-color: var(--theme-error-bg, var(--error-50));
 }
 
 .delete-field-btn:disabled {
@@ -159,6 +159,29 @@
   color: var(--theme-neutral-text);
 }
 
+.mobile-field-help {
+  display: none;
+}
+
+.field-help-popover-content {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 180px;
+  color: var(--theme-modal-body-text);
+}
+
+.mobile-inline-actions {
+  display: none;
+}
+
+.field-name-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 @media (max-width: 768px) {
   .detail-content {
     padding: 0;
@@ -176,52 +199,87 @@
 
   .table-row {
     padding: 16px;
+    border: 1px solid var(--color-border);
+    border-radius: 10px;
+    margin: 12px 0;
+    background-color: var(--color-background-white);
   }
 
   .col-type,
   .col-name,
-  .col-constraints {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
+  .col-constraints,
   .col-actions {
-    justify-content: flex-start;
+    display: flex;
+    align-items: center;
+    flex-direction: row;
+    gap: 8px;
+    min-height: 28px;
   }
 
   .col-type::before {
-    content: "Type: ";
-    font-weight: 600;
-    color: var(--theme-neutral-text);
-    font-size: 12px;
-    text-transform: uppercase;
+    content: "";
+    min-width: 0;
+    flex: 0 0 0;
   }
 
   .col-name::before {
-    content: "Name: ";
-    font-weight: 600;
-    color: var(--theme-neutral-text);
-    font-size: 12px;
-    text-transform: uppercase;
+    content: "";
+    min-width: 0;
+    flex: 0 0 0;
   }
 
   .col-constraints::before {
-    content: "Constraints: ";
-    font-weight: 600;
-    color: var(--theme-neutral-text);
-    font-size: 12px;
-    text-transform: uppercase;
-    margin-bottom: 8px;
+    content: "";
+    min-width: 0;
+    flex: 0 0 0;
   }
 
   .col-actions::before {
-    content: "Actions: ";
+    content: "";
+    min-width: 0;
+    flex: 0 0 0;
+  }
+
+  .col-type,
+  .col-constraints,
+  .col-actions {
+    display: none;
+  }
+
+  .col-name {
+    width: 100%;
+    justify-content: space-between;
+    min-height: 34px;
+    gap: 10px;
+  }
+
+  .field-name-text {
+    flex: 1;
+    font-size: 18px;
     font-weight: 600;
-    color: var(--theme-neutral-text);
-    font-size: 12px;
-    text-transform: uppercase;
-    margin-bottom: 8px;
+    color: var(--neutral-800);
+  }
+
+  .mobile-inline-actions {
+    display: inline-flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 10px;
+    flex-shrink: 0;
+  }
+
+  .mobile-field-help {
+    display: inline-flex;
+    align-items: center;
+  }
+
+  .mobile-field-help ::ng-deep .help-popover-button {
+    width: 32px;
+    height: 32px;
+  }
+
+  .mobile-inline-actions .delete-field-btn {
+    margin-left: 0;
   }
 
 }

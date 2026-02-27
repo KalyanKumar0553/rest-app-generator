@@ -14,6 +14,7 @@ import java.util.stream.Collectors;
 import com.src.main.common.util.CaseUtils;
 import com.src.main.common.util.StringUtils;
 import com.src.main.dto.ModelSpecDTO;
+import com.src.main.sm.executor.common.GenerationLanguage;
 
 public final class SwaggerGenerationSupport {
 
@@ -49,8 +50,9 @@ public final class SwaggerGenerationSupport {
 					String entity = CaseUtils.toPascal(StringUtils.firstNonBlank(model.getName(), "Entity"));
 					String endpoint = toKebabCase(entity) + "s";
 					String beanName = toCamelCase(entity) + "ApiGroup";
-					String pathPattern = "/api/" + endpoint + "/**";
-					return new SwaggerGroupSpec(beanName, endpoint, quotePath(pathPattern), false, "");
+					String basePath = "/api/" + endpoint;
+					String pathsToMatchArgs = quotePath(basePath) + ", " + quotePath(basePath + "/**");
+					return new SwaggerGroupSpec(beanName, endpoint, pathsToMatchArgs, false, "");
 				})
 				.collect(Collectors.toMap(SwaggerGroupSpec::groupName, group -> group, (left, right) -> left,
 						LinkedHashMap::new))
@@ -61,6 +63,12 @@ public final class SwaggerGenerationSupport {
 
 	@SuppressWarnings("unchecked")
 	public static List<SwaggerGroupSpec> buildGroupsFromYaml(Map<String, Object> yaml, List<ModelSpecDTO> models) {
+		return buildGroupsFromYaml(yaml, models, GenerationLanguage.JAVA);
+	}
+
+	@SuppressWarnings("unchecked")
+	public static List<SwaggerGroupSpec> buildGroupsFromYaml(Map<String, Object> yaml, List<ModelSpecDTO> models,
+			GenerationLanguage language) {
 		if (yaml == null) {
 			return buildGroups(models);
 		}
@@ -83,14 +91,15 @@ public final class SwaggerGenerationSupport {
 			if (normalizedBasePath == null) {
 				continue;
 			}
-			List<String> basePaths = resolveOperationBasePaths(normalizedBasePath);
+			List<String> basePaths = List.of(normalizedBasePath);
 
 			Map<String, Object> methodsMap = methodsMap(restSpec.get("methods"));
 			if (methodsMap.isEmpty()) {
 				continue;
 			}
 
-			Map<String, Set<OperationEntry>> groupOperations = collectGroupedOperations(configName, basePaths, methodsMap);
+			boolean includeDefaultDocumentation = resolveIncludeDefaultDocumentation(restSpec);
+			Map<String, Set<OperationEntry>> groupOperations = collectGroupedOperations(configName, basePaths, methodsMap, includeDefaultDocumentation);
 			if (groupOperations.isEmpty()) {
 				groupOperations.put(configName, new LinkedHashSet<>());
 			}
@@ -107,7 +116,14 @@ public final class SwaggerGenerationSupport {
 					}
 				}
 				GroupAccumulator accumulator = groupMap.computeIfAbsent(groupName, ignored -> new GroupAccumulator(groupName));
-				basePaths.forEach(basePath -> accumulator.pathPatterns.add(basePath + "/**"));
+				basePaths.forEach(basePath -> {
+					accumulator.pathPatterns.add(basePath);
+					accumulator.pathPatterns.add(basePath + "/**");
+					alternateBasePath(basePath).ifPresent(alternate -> {
+						accumulator.pathPatterns.add(alternate);
+						accumulator.pathPatterns.add(alternate + "/**");
+					});
+				});
 				accumulator.operations.addAll(combinedOps);
 			}
 		}
@@ -123,7 +139,7 @@ public final class SwaggerGenerationSupport {
 						group.groupName,
 						group.pathPatterns.stream().sorted().map(SwaggerGenerationSupport::quotePath).collect(Collectors.joining(", ")),
 						!group.operations.isEmpty(),
-						buildCustomizerBody(group.operations)))
+						buildCustomizerBody(group.operations, language)))
 				.collect(Collectors.toCollection(ArrayList::new));
 	}
 
@@ -143,21 +159,24 @@ public final class SwaggerGenerationSupport {
 	private static Map<String, Set<OperationEntry>> collectGroupedOperations(
 			String fallbackGroup,
 			List<String> basePaths,
-			Map<String, Object> methodsMap) {
+			Map<String, Object> methodsMap,
+			boolean includeDefaultDocumentation) {
 		Map<String, Set<OperationEntry>> grouped = new LinkedHashMap<>();
 		for (Map.Entry<String, Object> methodEntry : methodsMap.entrySet()) {
 			String methodKey = String.valueOf(methodEntry.getKey());
 			String groupName = StringUtils.firstNonBlank(fallbackGroup, "API") + " Group";
-			String description = defaultDescription(methodKey, fallbackGroup);
+			String description = includeDefaultDocumentation ? defaultDescription(methodKey, fallbackGroup) : null;
 			boolean deprecated = false;
-			List<String> tags = new ArrayList<>(List.of(defaultTag(methodKey)));
+			List<String> tags = new ArrayList<>(includeDefaultDocumentation ? List.of(defaultTag(methodKey)) : List.of());
 
 			if (methodEntry.getValue() instanceof Map<?, ?> blockRaw) {
 				Map<String, Object> block = (Map<String, Object>) blockRaw;
 				if (block.get("documentation") instanceof Map<?, ?> docRaw) {
 					Map<String, Object> doc = (Map<String, Object>) docRaw;
 					groupName = StringUtils.firstNonBlank(str(doc.get("group")), fallbackGroup + " Group");
-					description = StringUtils.firstNonBlank(StringUtils.trimToNull(str(doc.get("description"))), description);
+					description = StringUtils.firstNonBlank(
+							StringUtils.trimToNull(str(doc.get("description"))),
+							includeDefaultDocumentation ? description : null);
 					deprecated = Boolean.TRUE.equals(doc.get("deprecated"));
 					Object tagsRaw = doc.get("descriptionTags");
 					tags.clear();
@@ -169,7 +188,7 @@ public final class SwaggerGenerationSupport {
 							}
 						}
 					}
-					if (tags.isEmpty()) {
+					if (tags.isEmpty() && includeDefaultDocumentation) {
 						tags.add(defaultTag(methodKey));
 					}
 				}
@@ -235,10 +254,11 @@ public final class SwaggerGenerationSupport {
 		return false;
 	}
 
-	private static String buildCustomizerBody(Set<OperationEntry> entries) {
+	private static String buildCustomizerBody(Set<OperationEntry> entries, GenerationLanguage language) {
 		if (entries == null || entries.isEmpty()) {
 			return "";
 		}
+		boolean kotlin = language == GenerationLanguage.KOTLIN;
 		StringBuilder builder = new StringBuilder();
 		entries.stream()
 				.sorted(Comparator
@@ -255,16 +275,16 @@ public final class SwaggerGenerationSupport {
 						.append(escapeJava(entry.path))
 						.append("\", \"")
 						.append(entry.httpMethod)
-						.append("\");\n");
+						.append(kotlin ? "\")\n" : "\");\n");
 				return;
 			}
 
-			String tagsArg = "List.of()";
+			String tagsArg = kotlin ? "listOf()" : "List.of()";
 			if (entry.tags != null && !entry.tags.isEmpty()) {
 				String tags = entry.tags.stream()
 						.map(tag -> "\"" + escapeJava(tag) + "\"")
 						.collect(Collectors.joining(", "));
-				tagsArg = "List.of(" + tags + ")";
+				tagsArg = (kotlin ? "listOf(" : "List.of(") + tags + ")";
 			}
 			String descriptionArg = entry.description == null ? "" : entry.description;
 			builder.append("                applyOperationMetadata(openApi, \"")
@@ -277,7 +297,7 @@ public final class SwaggerGenerationSupport {
 					.append(tagsArg)
 					.append(", ")
 					.append(entry.deprecated)
-					.append(");\n");
+					.append(kotlin ? ")\n" : ");\n");
 		});
 		return builder.toString();
 	}
@@ -332,12 +352,25 @@ public final class SwaggerGenerationSupport {
 		return path;
 	}
 
-	private static List<String> resolveOperationBasePaths(String basePath) {
-		LinkedHashSet<String> paths = new LinkedHashSet<>();
-		paths.add(basePath);
-		String generatedPath = basePath.endsWith("s") ? basePath : basePath + "s";
-		paths.add(generatedPath);
-		return new ArrayList<>(paths);
+	private static java.util.Optional<String> alternateBasePath(String basePath) {
+		String normalized = StringUtils.trimToNull(basePath);
+		if (normalized == null) {
+			return java.util.Optional.empty();
+		}
+		String[] segments = normalized.split("/");
+		if (segments.length < 2) {
+			return java.util.Optional.empty();
+		}
+		String resource = segments[segments.length - 1];
+		if (resource == null || resource.isBlank()) {
+			return java.util.Optional.empty();
+		}
+		String alternate = resource.endsWith("s") ? resource.substring(0, resource.length() - 1) : resource + "s";
+		if (alternate.isBlank() || alternate.equals(resource)) {
+			return java.util.Optional.empty();
+		}
+		segments[segments.length - 1] = alternate;
+		return java.util.Optional.of(String.join("/", segments));
 	}
 
 	private static String quotePath(String path) {
@@ -398,6 +431,21 @@ public final class SwaggerGenerationSupport {
 				.replace("\"", "\\\"")
 				.replace("\n", "\\n")
 				.replace("\r", "");
+	}
+
+	@SuppressWarnings("unchecked")
+	private static boolean resolveIncludeDefaultDocumentation(Map<String, Object> restSpec) {
+		if (Boolean.FALSE.equals(restSpec.get("includeDefaultDocumentation"))) {
+			return false;
+		}
+		Object documentationRaw = restSpec.get("documentation");
+		if (documentationRaw instanceof Map<?, ?> documentationMapRaw) {
+			Map<String, Object> documentation = (Map<String, Object>) documentationMapRaw;
+			if (Boolean.FALSE.equals(documentation.get("includeDefaultDocumentation"))) {
+				return false;
+			}
+		}
+		return true;
 	}
 
 	private static final class GroupAccumulator {

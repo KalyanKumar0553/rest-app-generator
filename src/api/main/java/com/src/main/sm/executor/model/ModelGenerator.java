@@ -44,6 +44,8 @@ import com.src.main.dto.RelationSpecDTO;
 import com.src.main.sm.executor.TemplateEngine;
 import com.src.main.sm.executor.common.BoilerplateStyle;
 import com.src.main.sm.executor.common.BoilerplateStyleResolver;
+import com.src.main.sm.executor.common.GenerationLanguage;
+import com.src.main.sm.executor.common.TemplatePathResolver;
 import com.src.main.sm.executor.enumgen.EnumGenerationSupport;
 import com.src.main.sm.executor.enumgen.EnumSpecResolved;
 import com.src.main.util.PathUtils;
@@ -56,14 +58,19 @@ public class ModelGenerator {
 
 	private static final Logger log = LoggerFactory.getLogger(ModelGenerator.class);
 
-	private static final String TEMPLATE_MODEL = "templates/model/model.java.mustache";
-	private static final String TEMPLATE_MONGO_SEQUENCE = "templates/model/mongo-primary-sequence-service.java.mustache";
-	private static final String TEMPLATE_MONGO_SEQUENCE_DOCUMENT = "templates/model/mongo-database-sequence.java.mustache";
-	private static final String TEMPLATE_MONGO_LISTENER = "templates/model/mongo-listener.java.mustache";
+	private static final String TEMPLATE_MODEL_JAVA = "model.java.mustache";
+	private static final String TEMPLATE_MODEL_KOTLIN = "model.kt.mustache";
+	private static final String TEMPLATE_MONGO_SEQUENCE_JAVA = "mongo-primary-sequence-service.java.mustache";
+	private static final String TEMPLATE_MONGO_SEQUENCE_KOTLIN = "mongo-primary-sequence-service.kt.mustache";
+	private static final String TEMPLATE_MONGO_SEQUENCE_DOCUMENT_JAVA = "mongo-database-sequence.java.mustache";
+	private static final String TEMPLATE_MONGO_SEQUENCE_DOCUMENT_KOTLIN = "mongo-database-sequence.kt.mustache";
+	private static final String TEMPLATE_MONGO_LISTENER_JAVA = "mongo-listener.java.mustache";
+	private static final String TEMPLATE_MONGO_LISTENER_KOTLIN = "mongo-listener.kt.mustache";
 
 	private final TemplateEngine tpl;
 	private final ObjectMapper yaml;
 	private final String basePackage;
+	private final GenerationLanguage language;
 
 	private record ClassMethodsSelection(
 			boolean generateToString,
@@ -74,9 +81,10 @@ public class ModelGenerator {
 			boolean builder) {
 	}
 
-	public ModelGenerator(TemplateEngine tpl, String basePackage) {
+	public ModelGenerator(TemplateEngine tpl, String basePackage, GenerationLanguage language) {
 		this.tpl = tpl;
 		this.basePackage = basePackage;
+		this.language = language == null ? GenerationLanguage.JAVA : language;
 		this.yaml = new ObjectMapper(new YAMLFactory());
 	}
 
@@ -112,7 +120,7 @@ public class ModelGenerator {
 			spec.getModels().forEach(m -> {
 				try {
 					String modelPkg = resolveModelPackage(m, domainStructure);
-					Path outDir = projectRoot.resolve(PathUtils.javaSrcPathFromPackage(modelPkg));
+					Path outDir = projectRoot.resolve(PathUtils.srcPathFromPackage(modelPkg, language));
 					Files.createDirectories(outDir);
 					renderModel(m, modelPkg, outDir, spec, modelPackageByType, enumByName, enumPackage, boilerplateStyle, noSqlDatabase);
 				} catch (Exception ex) {
@@ -342,8 +350,9 @@ public class ModelGenerator {
 		ctx.put("imports", new ArrayList<>(imports));
 
 		// ----- Write file
-		Path outFile = outDir.resolve(className + ".java");
-		String content = tpl.render(TEMPLATE_MODEL, ctx);
+		String modelTemplate = language == GenerationLanguage.KOTLIN ? TEMPLATE_MODEL_KOTLIN : TEMPLATE_MODEL_JAVA;
+		Path outFile = outDir.resolve(className + "." + language.fileExtension());
+		String content = tpl.renderAny(TemplatePathResolver.candidates(language, "model", modelTemplate), ctx);
 		Files.createDirectories(outFile.getParent());
 		Files.writeString(outFile, content, StandardCharsets.UTF_8);
 
@@ -893,14 +902,22 @@ public class ModelGenerator {
 
 	private void generateMongoSupportClasses(AppSpecDTO spec, Path projectRoot, boolean domainStructure) throws Exception {
 		String utilPackage = domainStructure ? basePackage + ".domain.util" : basePackage + ".util";
-		Path utilDir = projectRoot.resolve(PathUtils.javaSrcPathFromPackage(utilPackage));
+		Path utilDir = projectRoot.resolve(PathUtils.srcPathFromPackage(utilPackage, language));
 		Files.createDirectories(utilDir);
 
 		Map<String, Object> utilCtx = Map.of("packageName", utilPackage);
-		String sequenceDocContent = tpl.render(TEMPLATE_MONGO_SEQUENCE_DOCUMENT, utilCtx);
-		Files.writeString(utilDir.resolve("DatabaseSequence.java"), sequenceDocContent, StandardCharsets.UTF_8);
-		String sequenceServiceContent = tpl.render(TEMPLATE_MONGO_SEQUENCE, utilCtx);
-		Files.writeString(utilDir.resolve("PrimarySequenceService.java"), sequenceServiceContent, StandardCharsets.UTF_8);
+		String sequenceDocTemplate = language == GenerationLanguage.KOTLIN ? TEMPLATE_MONGO_SEQUENCE_DOCUMENT_KOTLIN
+				: TEMPLATE_MONGO_SEQUENCE_DOCUMENT_JAVA;
+		String sequenceServiceTemplate = language == GenerationLanguage.KOTLIN ? TEMPLATE_MONGO_SEQUENCE_KOTLIN
+				: TEMPLATE_MONGO_SEQUENCE_JAVA;
+		String sequenceDocContent = tpl.renderAny(TemplatePathResolver.candidates(language, "model", sequenceDocTemplate),
+				utilCtx);
+		Files.writeString(utilDir.resolve("DatabaseSequence." + language.fileExtension()), sequenceDocContent,
+				StandardCharsets.UTF_8);
+		String sequenceServiceContent = tpl
+				.renderAny(TemplatePathResolver.candidates(language, "model", sequenceServiceTemplate), utilCtx);
+		Files.writeString(utilDir.resolve("PrimarySequenceService." + language.fileExtension()), sequenceServiceContent,
+				StandardCharsets.UTF_8);
 
 		if (spec == null || spec.getModels() == null) {
 			return;
@@ -911,7 +928,7 @@ public class ModelGenerator {
 				continue;
 			}
 			String modelPkg = resolveModelPackage(model, domainStructure);
-			Path modelDir = projectRoot.resolve(PathUtils.javaSrcPathFromPackage(modelPkg));
+			Path modelDir = projectRoot.resolve(PathUtils.srcPathFromPackage(modelPkg, language));
 			Files.createDirectories(modelDir);
 			String entityName = CaseUtils.toPascal(model.getName());
 			Map<String, Object> listenerCtx = new LinkedHashMap<>();
@@ -920,8 +937,12 @@ public class ModelGenerator {
 			listenerCtx.put("sequenceServicePackage", utilPackage);
 			listenerCtx.put("intId", isIntegerId(model));
 
-			String listenerContent = tpl.render(TEMPLATE_MONGO_LISTENER, listenerCtx);
-			Files.writeString(modelDir.resolve(entityName + "Listener.java"), listenerContent, StandardCharsets.UTF_8);
+			String listenerTemplate = language == GenerationLanguage.KOTLIN ? TEMPLATE_MONGO_LISTENER_KOTLIN
+					: TEMPLATE_MONGO_LISTENER_JAVA;
+			String listenerContent = tpl.renderAny(TemplatePathResolver.candidates(language, "model", listenerTemplate),
+					listenerCtx);
+			Files.writeString(modelDir.resolve(entityName + "Listener." + language.fileExtension()), listenerContent,
+					StandardCharsets.UTF_8);
 		}
 	}
 

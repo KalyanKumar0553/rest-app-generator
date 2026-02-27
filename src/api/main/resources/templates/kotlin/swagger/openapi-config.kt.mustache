@@ -1,0 +1,110 @@
+package {{packageName}}
+
+import io.swagger.v3.oas.models.OpenAPI
+import io.swagger.v3.oas.models.Operation
+import io.swagger.v3.oas.models.PathItem
+import io.swagger.v3.oas.models.info.Info
+import org.springdoc.core.models.GroupedOpenApi
+import org.springframework.context.annotation.Bean
+import org.springframework.context.annotation.Configuration
+
+@Configuration
+class OpenApiConfig {
+
+    @Bean
+    fun restAppOpenAPI(): OpenAPI {
+        return OpenAPI().info(
+            Info()
+                .title("{{appName}} API")
+                .version("v1")
+                .description("Auto-generated OpenAPI configuration")
+        )
+    }
+
+{{#groups}}
+    @Bean
+    fun {{beanName}}(): GroupedOpenApi {
+        return GroupedOpenApi.builder()
+            .group("{{groupName}}")
+            .pathsToMatch({{{pathsToMatchArgs}}})
+{{#hasCustomizer}}
+            .addOpenApiCustomizer { openApi ->
+{{{customizerBody}}}
+            }
+{{/hasCustomizer}}
+            .build()
+    }
+
+{{/groups}}
+    private fun applyOperationMetadata(
+        openApi: OpenAPI,
+        path: String,
+        httpMethod: String,
+        description: String?,
+        tags: List<String>?,
+        deprecated: Boolean
+    ) {
+        val operation = resolveOperation(openApi, path, httpMethod) ?: return
+        if (!description.isNullOrBlank()) {
+            operation.description = description
+        }
+        if (!tags.isNullOrEmpty()) {
+            operation.tags = tags
+        }
+        operation.deprecated = deprecated
+    }
+
+    private fun removeOperation(openApi: OpenAPI, path: String, httpMethod: String) {
+        val pathItem = resolvePathItem(openApi, path) ?: return
+        when (httpMethod) {
+            "GET" -> pathItem.get = null
+            "POST" -> pathItem.post = null
+            "PUT" -> pathItem.put = null
+            "PATCH" -> pathItem.patch = null
+            "DELETE" -> pathItem.delete = null
+        }
+    }
+
+    private fun resolveOperation(openApi: OpenAPI, path: String, httpMethod: String): Operation? {
+        val pathItem = resolvePathItem(openApi, path) ?: return null
+        return when (httpMethod) {
+            "GET" -> pathItem.get
+            "POST" -> pathItem.post
+            "PUT" -> pathItem.put
+            "PATCH" -> pathItem.patch
+            "DELETE" -> pathItem.delete
+            else -> null
+        }
+    }
+
+    private fun resolvePathItem(openApi: OpenAPI?, path: String?): PathItem? {
+        if (openApi?.paths == null || path.isNullOrBlank()) {
+            return null
+        }
+        openApi.paths[path]?.let { return it }
+        buildAlternatePaths(path).forEach { alternatePath ->
+            openApi.paths[alternatePath]?.let { return it }
+        }
+        return null
+    }
+
+    private fun buildAlternatePaths(path: String): List<String> {
+        val marker = path.indexOf("/{")
+        val suffix = if (marker >= 0) path.substring(marker) else ""
+        val resourcePath = if (marker >= 0) path.substring(0, marker) else path
+
+        val trimmed = resourcePath.removePrefix("/")
+        val segments = trimmed.split("/").toMutableList()
+        if (segments.size < 2) return emptyList()
+
+        val resource = segments.last()
+        if (resource.isBlank()) return emptyList()
+
+        val alternateResource = if (resource.endsWith("s")) resource.dropLast(1) else "${resource}s"
+        if (alternateResource.isBlank() || alternateResource == resource) return emptyList()
+
+        segments[segments.lastIndex] = alternateResource
+        val alternateBase = "/" + segments.joinToString("/")
+        return listOf(alternateBase + suffix)
+    }
+}

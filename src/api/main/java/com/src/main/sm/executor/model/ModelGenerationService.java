@@ -6,6 +6,7 @@ import java.util.Map;
 import org.springframework.stereotype.Service;
 
 import com.src.main.sm.executor.TemplateEngine;
+import com.src.main.sm.executor.common.GenerationLanguage;
 
 @Service
 public class ModelGenerationService {
@@ -16,8 +17,8 @@ public class ModelGenerationService {
 		this.templateEngine = templateEngine;
 	}
 
-	public void generate(Map<String, Object> yaml, Path root, String basePackage) throws Exception {
-		ModelGenerator generator = new ModelGenerator(templateEngine, basePackage);
+	public void generate(Map<String, Object> yaml, Path root, String basePackage, GenerationLanguage language) throws Exception {
+		ModelGenerator generator = new ModelGenerator(templateEngine, basePackage, language);
 		generator.generate(yaml, root);
 	}
 }

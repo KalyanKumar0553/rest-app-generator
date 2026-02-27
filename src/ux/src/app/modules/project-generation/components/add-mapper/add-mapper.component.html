@@ -1,0 +1,126 @@
+<div class="add-mapper-container">
+  <div class="mapper-form-layout">
+    <div class="section-title-row">
+      <span class="section-subtitle">Select source and destination models to start mapping compatible fields.</span>
+    </div>
+
+    <div class="mapper-name-row">
+      <div class="row-label">Name *</div>
+      <mat-form-field appearance="fill" class="name-field">
+        <mat-label>Name *</mat-label>
+        <input
+          matInput
+          [(ngModel)]="mapperName"
+          (ngModelChange)="onMapperNameChange()"
+          placeholder="Enter mapper name" />
+        <mat-error *ngIf="mapperNameError">{{ mapperNameError }}</mat-error>
+      </mat-form-field>
+    </div>
+
+    <div class="mapper-model-row">
+      <mat-form-field appearance="fill" class="full-width">
+        <mat-label>From Model</mat-label>
+        <mat-select [(ngModel)]="fromModel" (ngModelChange)="onFromModelChange()">
+          <mat-option *ngFor="let model of sourceModels" [value]="model.name">{{ model.name }}</mat-option>
+        </mat-select>
+        <mat-error *ngIf="fromModelError">{{ fromModelError }}</mat-error>
+      </mat-form-field>
+
+      <mat-form-field appearance="fill" class="full-width">
+        <mat-label>To Model</mat-label>
+        <mat-select [(ngModel)]="toModel" (ngModelChange)="onToModelChange()">
+          <mat-option *ngFor="let model of targetModels" [value]="model.name">{{ model.name }}</mat-option>
+        </mat-select>
+        <mat-error *ngIf="toModelError">{{ toModelError }}</mat-error>
+      </mat-form-field>
+    </div>
+  </div>
+
+  <div class="mapping-layout" *ngIf="fromModel && toModel">
+    <div class="mapping-title-row row g-2 align-items-center">
+      <div class="col-md-5 col-12">
+        <h3 class="mapping-title">Source Fields</h3>
+      </div>
+      <div class="col-md-1 d-none d-md-flex justify-content-center">
+        <span class="mapping-arrow" aria-hidden="true"><i class="bi bi-arrow-right"></i></span>
+      </div>
+      <div class="col-md-6 col-12">
+        <h3 class="mapping-title">Destination Fields</h3>
+      </div>
+    </div>
+
+    <div class="mapping-rows" *ngIf="getVisibleSourceFields().length > 0; else noSourceFields">
+      <div class="mapping-row row g-2 align-items-center flex-nowrap" *ngFor="let source of getVisibleSourceFields()">
+        <div class="col-4 col-md-5">
+          <div class="source-pill" [title]="source.name + ' : ' + source.type">
+            <span class="pill-name">{{ source.name }}</span>
+            <span class="pill-type">{{ source.type }}</span>
+          </div>
+        </div>
+
+        <div class="col-1 col-md-1 d-flex justify-content-center">
+          <div class="arrow-cell" aria-hidden="true"><i class="bi bi-arrow-right"></i></div>
+        </div>
+
+        <div class="col-5 col-md-4 target-cell">
+          <mat-form-field appearance="fill" class="target-select">
+            <mat-label>Map to</mat-label>
+            <mat-select
+              [ngModel]="mappedTargetBySource[source.name]"
+              (ngModelChange)="mappedTargetBySource[source.name] = $event; onTargetFieldChange()">
+              <mat-option [value]="''">None</mat-option>
+              <mat-option
+                *ngFor="let target of getCompatibleTargetFields(source)"
+                [value]="target.name">
+                {{ target.name }} ({{ target.type }})
+              </mat-option>
+            </mat-select>
+          </mat-form-field>
+        </div>
+
+        <div class="col-2 col-md-2 actions-cell">
+          <div class="row-actions">
+            <button
+              type="button"
+              class="mapping-add-btn"
+              [disabled]="!canAddMappingRow()"
+              (click)="addMappingRow(source.name); $event.stopPropagation()"
+              aria-label="Add mapping row">
+              <mat-icon>add</mat-icon>
+            </button>
+
+            <button
+              type="button"
+              class="mapping-remove-btn"
+              (click)="removeMappingRow(source.name); $event.stopPropagation()"
+              aria-label="Remove mapping row">
+              <mat-icon>delete</mat-icon>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <ng-template #noSourceFields>
+      <div class="empty-state">
+        <span>No mapping rows added yet.</span>
+        <button
+          type="button"
+          class="mapping-add-btn"
+          [disabled]="!canAddMappingRow()"
+          (click)="addMappingRow()"
+          aria-label="Add mapping row">
+          <mat-icon>add</mat-icon>
+        </button>
+      </div>
+    </ng-template>
+
+    <div class="input-error" *ngIf="mappingsError">{{ mappingsError }}</div>
+  </div>
+
+  <div class="mapping-empty-state" *ngIf="!fromModel || !toModel">
+    <div class="mapping-empty-icon"><i class="bi bi-diagram-3"></i></div>
+    <div class="mapping-empty-title">Field Mapping Preview</div>
+    <div class="mapping-empty-text">Choose both <strong>From Model</strong> and <strong>To Model</strong> to configure field mappings.</div>
+  </div>
+</div>

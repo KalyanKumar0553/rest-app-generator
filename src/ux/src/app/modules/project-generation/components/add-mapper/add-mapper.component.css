@@ -1,0 +1,345 @@
+.add-mapper-container {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  min-height: 420px;
+  padding: 6px 2px;
+}
+
+.mapper-form-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  border: 1px solid var(--theme-neutral-border);
+  border-radius: 14px;
+  background: var(--theme-input-bg);
+  padding: 16px;
+}
+
+.full-width {
+  width: 100%;
+}
+
+.section-title-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.section-title {
+  margin: 0;
+  font-size: 19px;
+  font-weight: 700;
+  color: var(--theme-modal-body-text);
+}
+
+.section-subtitle {
+  font-size: 13px;
+  color: var(--theme-neutral-text);
+}
+
+.mapper-name-row {
+  display: grid;
+  grid-template-columns: 150px minmax(0, 1fr);
+  gap: 12px;
+  align-items: center;
+}
+
+.row-label {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--theme-modal-body-text);
+}
+
+.name-field {
+  max-width: 560px;
+  width: 100%;
+}
+
+.mapper-model-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.mapping-layout {
+  border: 1px solid var(--theme-neutral-border);
+  border-radius: 14px;
+  background-color: var(--theme-input-bg);
+  padding: 16px 0;
+}
+
+.mapping-title-row {
+  padding: 0 12px;
+  margin-bottom: 8px;
+}
+
+.mapping-title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--theme-primary-btn-bg);
+  text-align: center;
+}
+
+.mapping-arrow {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 8px;
+  color: var(--theme-primary-btn-bg);
+  font-size: 24px;
+}
+
+.mapping-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.mapping-row {
+  padding: 0 12px;
+}
+
+.source-pill {
+  min-height: 52px;
+  border: 1px solid var(--theme-neutral-border);
+  border-radius: 10px;
+  background-color: var(--theme-neutral-bg);
+  padding: 8px 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  overflow: hidden;
+}
+
+.pill-name {
+  font-weight: 600;
+  color: var(--theme-modal-body-text);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pill-type {
+  display: inline-flex;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--theme-neutral-border);
+  color: var(--theme-neutral-text);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.arrow-cell {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 34px;
+  min-height: 34px;
+  padding: 6px;
+  border-radius: 999px;
+  background: var(--theme-neutral-bg);
+  color: var(--theme-neutral-text);
+  font-size: 18px;
+}
+
+.target-select {
+  width: 100%;
+  min-width: 0;
+}
+
+.target-cell {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.actions-cell {
+  min-width: 0;
+}
+
+.row-actions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.mapping-add-btn {
+  border: none;
+  background-color: var(--color-background-muted);
+  color: var(--theme-neutral-text);
+  border-radius: 999px;
+  width: 36px;
+  height: 36px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.mapping-add-btn:hover:not(:disabled) {
+  background-color: var(--color-border);
+  color: var(--theme-primary-btn-bg);
+}
+
+.mapping-add-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.mapping-remove-btn {
+  border: none;
+  background-color: var(--theme-error-bg);
+  color: var(--theme-error-text-color, var(--color-error));
+  border-radius: 10px;
+  width: 36px;
+  height: 36px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.15s ease, background-color 0.2s ease;
+}
+
+.mapping-remove-btn mat-icon {
+  font-size: 20px;
+  width: 20px;
+  height: 20px;
+}
+
+.mapping-remove-btn:hover {
+  background-color: var(--error-100);
+  transform: translateY(-1px);
+}
+
+.input-error {
+  margin-top: 6px;
+  padding: 0 12px;
+  color: var(--theme-error-text-color);
+  font-size: 13px;
+}
+
+.empty-state {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 12px;
+  color: var(--theme-neutral-text);
+}
+
+.mapping-empty-state {
+  min-height: 240px;
+  border: 1px dashed var(--theme-neutral-border);
+  border-radius: 14px;
+  background: var(--theme-input-bg);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 20px;
+  text-align: center;
+}
+
+.mapping-empty-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: 1px solid var(--theme-neutral-border);
+  color: var(--theme-primary-btn-bg);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  background: var(--theme-neutral-bg);
+}
+
+.mapping-empty-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--theme-modal-body-text);
+}
+
+.mapping-empty-text {
+  color: var(--theme-neutral-text);
+  max-width: 520px;
+}
+
+@media (max-width: 991px) {
+  .mapping-title-row {
+    display: none;
+  }
+
+  .mapper-name-row {
+    grid-template-columns: 1fr;
+    align-items: flex-start;
+  }
+
+  .row-label {
+    font-size: 14px;
+  }
+
+  .name-field {
+    max-width: 100%;
+  }
+
+  .mapper-model-row {
+    grid-template-columns: 1fr;
+  }
+
+  .mapping-title-row,
+  .mapping-row {
+    padding: 0 12px;
+  }
+
+  .mapping-row {
+    --bs-gutter-x: 0.4rem;
+  }
+
+  .source-pill {
+    min-height: 48px;
+    padding: 8px 10px;
+  }
+
+  .target-select {
+    width: 100%;
+  }
+
+  .actions-cell .row-actions {
+    justify-content: flex-end;
+  }
+
+  .pill-type {
+    max-width: 84px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .mapping-add-btn,
+  .mapping-remove-btn {
+    width: 34px;
+    height: 34px;
+  }
+
+  .mapping-arrow,
+  .arrow-cell {
+    padding-left: 8px;
+    padding-right: 8px;
+  }
+
+  .mapping-layout {
+    overflow-x: hidden;
+  }
+
+  .add-mapper-container ::ng-deep .mat-mdc-select-value-text,
+  .add-mapper-container ::ng-deep .mat-mdc-form-field-infix {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}

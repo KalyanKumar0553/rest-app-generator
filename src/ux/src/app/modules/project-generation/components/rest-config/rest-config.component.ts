@@ -124,6 +124,7 @@ export interface RestEndpointConfig {
     };
   };
   documentation: {
+    includeDefaultDocumentation: boolean;
     endpoints: {
       list: { description: string; group: string; descriptionTags: string[]; deprecated: boolean; };
       get: { description: string; group: string; descriptionTags: string[]; deprecated: boolean; };
@@ -251,6 +252,7 @@ const DEFAULT_REST_ENDPOINT_CONFIG: RestEndpointConfig = {
     }
   },
   documentation: {
+    includeDefaultDocumentation: true,
     endpoints: {
       list: { description: 'List operation for API', group: 'API Group', descriptionTags: ['list'], deprecated: false },
       get: { description: 'Get By Key operation for API', group: 'API Group', descriptionTags: ['get'], deprecated: false },
@@ -391,6 +393,7 @@ export class RestConfigComponent implements OnChanges, AfterViewInit, OnDestroy 
     if (!this.validateResourceNameUnique() || !this.validateBasePath() || !this.validateEntityMapping()) {
       this.activeTab = 'basic';
       this.scrollToActiveTab();
+      this.focusFirstValidationError();
       return;
     }
     this.save.emit(this.sanitizeConfig(this.draft));
@@ -565,6 +568,7 @@ export class RestConfigComponent implements OnChanges, AfterViewInit, OnDestroy 
         }
       },
       documentation: {
+        includeDefaultDocumentation: config?.documentation?.includeDefaultDocumentation !== false,
         endpoints: {
           list: this.normalizeDocumentationEntry('list', config?.documentation?.endpoints?.list, docResourceName),
           get: this.normalizeDocumentationEntry('get', config?.documentation?.endpoints?.get, docResourceName),
@@ -689,5 +693,13 @@ export class RestConfigComponent implements OnChanges, AfterViewInit, OnDestroy 
     const basePath = String(this.draft?.basePath ?? '').trim();
     this.basePathRequired = !basePath;
     return !this.basePathRequired;
+  }
+
+  private focusFirstValidationError(): void {
+    setTimeout(() => {
+      const selector = '.section-accordion .field-invalid input, .section-accordion .field-invalid .mat-mdc-select-trigger';
+      const errorField = document.querySelector(selector) as HTMLElement | null;
+      errorField?.focus();
+    });
   }
 }

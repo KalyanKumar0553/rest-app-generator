@@ -698,6 +698,7 @@ export class EntitiesComponent implements OnInit {
         }
       },
       documentation: {
+        includeDefaultDocumentation: true,
         endpoints: {
           list: { description: 'List operation for API', group: 'API Group', descriptionTags: ['list'], deprecated: false },
           get: { description: 'Get By Key operation for API', group: 'API Group', descriptionTags: ['get'], deprecated: false },

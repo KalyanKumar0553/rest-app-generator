@@ -10,43 +10,34 @@ import { Component, ElementRef, HostListener, Input } from '@angular/core';
 })
 export class HelpPopoverComponent {
   @Input() ariaLabel = 'Show help';
-  @Input() placement: 'left' | 'top' = 'left';
+  @Input() placement: 'left' | 'top' | 'bottom' = 'left';
 
   isOpen = false;
-  overlayLeft = 0;
-  overlayTop = 0;
 
   constructor(private readonly hostRef: ElementRef<HTMLElement>) {}
 
-  onPointerEnter(event: MouseEvent): void {
+  onPointerEnter(_: MouseEvent): void {
     this.isOpen = true;
-    const target = event.currentTarget as HTMLElement | null;
-    if (target) {
-      this.updateOverlayPositionFromElement(target);
-      return;
-    }
-    this.updateOverlayPosition(event.clientX, event.clientY);
-  }
-
-  onPointerMove(event: MouseEvent): void {
-    if (!this.isOpen) {
-      return;
-    }
-    this.updateOverlayPosition(event.clientX, event.clientY);
   }
 
   onPointerLeave(): void {
     this.isOpen = false;
   }
 
-  onTriggerFocus(event: FocusEvent): void {
+  onTriggerClick(event: MouseEvent): void {
+    event.preventDefault();
+    event.stopPropagation();
+    this.isOpen = !this.isOpen;
+  }
+
+  onTriggerTouchStart(event: TouchEvent): void {
+    event.preventDefault();
+    event.stopPropagation();
+    this.isOpen = !this.isOpen;
+  }
+
+  onTriggerFocus(_: FocusEvent): void {
     this.isOpen = true;
-    const target = event.target as HTMLElement | null;
-    if (!target) {
-      return;
-    }
-    const rect = target.getBoundingClientRect();
-    this.updateOverlayPosition(rect.right, rect.top + rect.height / 2);
   }
 
   @HostListener('document:click', ['$event'])
@@ -60,22 +51,14 @@ export class HelpPopoverComponent {
     }
   }
 
-  private updateOverlayPosition(clientX: number, clientY: number): void {
-    const panelWidth = 320;
-    const panelHeight = 180;
-    const offsetX = 16;
-    const offsetY = 12;
-    const viewportPadding = 12;
-
-    const maxLeft = Math.max(viewportPadding, window.innerWidth - panelWidth - viewportPadding);
-    const maxTop = Math.max(viewportPadding, window.innerHeight - panelHeight - viewportPadding);
-
-    this.overlayLeft = Math.min(maxLeft, Math.max(viewportPadding, clientX + offsetX));
-    this.overlayTop = Math.min(maxTop, Math.max(viewportPadding, clientY - offsetY));
-  }
-
-  private updateOverlayPositionFromElement(target: HTMLElement): void {
-    const rect = target.getBoundingClientRect();
-    this.updateOverlayPosition(rect.right, rect.top + rect.height / 2);
+  @HostListener('document:touchstart', ['$event'])
+  onDocumentTouchStart(event: TouchEvent): void {
+    const target = event.target as Node | null;
+    if (!target) {
+      return;
+    }
+    if (!this.hostRef.nativeElement.contains(target)) {
+      this.isOpen = false;
+    }
   }
 }

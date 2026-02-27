@@ -17,6 +17,8 @@ import com.src.main.dto.AppSpecDTO;
 import com.src.main.dto.ModelSpecDTO;
 import com.src.main.dto.StepResult;
 import com.src.main.sm.config.StepExecutor;
+import com.src.main.sm.executor.common.GenerationLanguage;
+import com.src.main.sm.executor.common.GenerationLanguageResolver;
 import com.src.main.sm.executor.rest.RestControllerGenerator;
 import com.src.main.sm.executor.rest.RestGenerationSupport;
 import com.src.main.sm.executor.rest.RestGenerationUnit;
@@ -63,12 +65,13 @@ public class RestGenerationExecutor implements StepExecutor {
 					(String) data.getVariables().get(ProjectMetaDataConstants.GROUP_ID),
 					ProjectMetaDataConstants.DEFAULT_GROUP);
 			String packageStructure = StringUtils.firstNonBlank(str(yaml.get("packages")), spec.getPackages(), "technical");
+			GenerationLanguage language = GenerationLanguageResolver.resolveFromYaml(yaml);
 			boolean noSql = isNoSqlDatabase(yaml);
 			Map<String, Map<String, Object>> restSpecByName = resolveRestSpecByName(yaml);
 			Map<String, String> restSpecBasePathByName = resolveRestSpecBasePathByName(restSpecByName);
 			Map<Integer, String> modelRestSpecNameByIndex = resolveModelRestSpecNameByIndex(yaml);
 			String utilPackage = RestGenerationSupport.resolveUtilPackage(basePackage, packageStructure);
-			sharedSupportGenerator.generate(root, utilPackage, noSql);
+			sharedSupportGenerator.generate(root, utilPackage, noSql, language);
 
 			int generatedCount = 0;
 			for (int modelIndex = 0; modelIndex < models.size(); modelIndex++) {
@@ -85,10 +88,10 @@ public class RestGenerationExecutor implements StepExecutor {
 				RestGenerationUnit unit = RestGenerationSupport.buildUnit(model, basePackage, packageStructure, noSql, mappedBasePath, runtimeConfig);
 				boolean hasServiceLayer = Boolean.TRUE.equals(runtimeConfig.get("hasServiceLayer"));
 				if (hasServiceLayer) {
-					repositoryGenerator.generate(root, unit);
-					serviceGenerator.generate(root, unit);
+					repositoryGenerator.generate(root, unit, language);
+					serviceGenerator.generate(root, unit, language);
 				}
-				controllerGenerator.generate(root, unit);
+				controllerGenerator.generate(root, unit, language);
 				generatedCount += 1;
 			}
 
@@ -406,43 +409,43 @@ public class RestGenerationExecutor implements StepExecutor {
 
 	private static String resolveRequestType(String key, Map<String, Object> request, String defaultType) {
 		if (request == null || request.isEmpty()) {
-			return defaultType;
+			return decodeHtmlType(defaultType);
 		}
 		String explicitType = StringUtils.trimToNull(str(request.get("type")));
 		if (explicitType != null) {
-			return explicitType;
+			return decodeHtmlType(explicitType);
 		}
 		String dtoName = StringUtils.trimToNull(str(request.get("dtoName")));
 		if (dtoName != null) {
 			if (key.startsWith("bulk") && !dtoName.startsWith("List<")) {
-				return "List<" + dtoName + ">";
+				return decodeHtmlType("List<" + dtoName + ">");
 			}
-			return dtoName;
+			return decodeHtmlType(dtoName);
 		}
-		return defaultType;
+		return decodeHtmlType(defaultType);
 	}
 
 	private static String resolveResponseType(String key, Map<String, Object> response, String defaultType) {
 		if (response == null || response.isEmpty()) {
-			return defaultType;
+			return decodeHtmlType(defaultType);
 		}
 		String dtoName = StringUtils.trimToNull(str(response.get("dtoName")));
 		if (dtoName == null) {
-			return defaultType;
+			return decodeHtmlType(defaultType);
 		}
 		if ("list".equals(key)) {
 			if (dtoName.startsWith("Page<") || dtoName.startsWith("List<")) {
-				return dtoName;
+				return decodeHtmlType(dtoName);
 			}
-			return "Page<" + dtoName + ">";
+			return decodeHtmlType("Page<" + dtoName + ">");
 		}
 		if (key.startsWith("bulk")) {
 			if ("bulkDelete".equals(key)) {
 				return "Void";
 			}
-			return dtoName.startsWith("List<") ? dtoName : "List<" + dtoName + ">";
+			return decodeHtmlType(dtoName.startsWith("List<") ? dtoName : "List<" + dtoName + ">");
 		}
-		return dtoName;
+		return decodeHtmlType(dtoName);
 	}
 
 	private static boolean isServiceCompatible(String key, String requestType, String responseType, String entityType, String idType) {
@@ -474,8 +477,19 @@ public class RestGenerationExecutor implements StepExecutor {
 		case "datetime", "localdatetime" -> "LocalDateTime";
 		case "offsetdatetime" -> "OffsetDateTime";
 		case "instant" -> "Instant";
-		default -> raw;
+		default -> decodeHtmlType(raw);
 		};
+	}
+
+	private static String decodeHtmlType(String raw) {
+		if (raw == null) {
+			return null;
+		}
+		return raw
+				.replace("&lt;", "<")
+				.replace("&gt;", ">")
+				.replace("&amp;", "&")
+				.trim();
 	}
 
 	@SuppressWarnings("unchecked")

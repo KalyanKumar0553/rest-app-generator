@@ -4,6 +4,7 @@ import com.github.mustachejava.*;
 import org.springframework.stereotype.Component;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 import java.util.Map;
 
 @Component
@@ -22,5 +23,21 @@ public class TemplateEngine {
 		} catch (IOException e) {
 			throw new UncheckedIOException(e);
 		}
+	}
+
+	public String renderAny(List<String> templates, Map<String, Object> model) {
+		if (templates == null || templates.isEmpty()) {
+			throw new IllegalArgumentException("No template candidates provided");
+		}
+		for (String candidate : templates) {
+			if (candidate != null && exists(candidate)) {
+				return render(candidate, model);
+			}
+		}
+		throw new IllegalArgumentException("Template not found in candidates: " + templates);
+	}
+
+	public boolean exists(String templatePath) {
+		return getClass().getClassLoader().getResource(templatePath) != null;
 	}
 }

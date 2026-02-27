@@ -1,0 +1,8 @@
+package {{packageName}}
+
+import org.springframework.http.HttpStatus
+
+class GenericException(
+    var status: HttpStatus = HttpStatus.INTERNAL_SERVER_ERROR,
+    var errorMsg: String = ""
+) : RuntimeException(errorMsg)

@@ -22,6 +22,7 @@ export interface ValidationRule {
 
 export interface ValidationOptions {
   stopOnFirst?: boolean;
+  silent?: boolean;
 }
 
 @Injectable({
@@ -32,6 +33,7 @@ export class ValidatorService {
 
   validate(form: any, rules: ValidationRule[], options: ValidationOptions = {}): boolean {
     const stopOnFirst = options.stopOnFirst !== false;
+    const silent = options.silent === true;
     let isValid = true;
 
     for (const rule of rules) {
@@ -45,7 +47,9 @@ export class ValidatorService {
         if (rule.setError) {
           rule.setError(message);
         }
-        this.notify(constraint.messageType ?? rule.messageType, message);
+        if (!silent) {
+          this.notify(constraint.messageType ?? rule.messageType, message);
+        }
         isValid = false;
         if (stopOnFirst) {
           return false;

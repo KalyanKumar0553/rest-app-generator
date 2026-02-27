@@ -1,0 +1,55 @@
+package {{supportPackage}}
+
+import org.springframework.data.domain.PageRequest
+import org.springframework.data.domain.Pageable
+import org.springframework.data.domain.Sort
+
+object RestQueryUtils {
+
+    private const val DEFAULT_PAGE = 0
+    private const val DEFAULT_SIZE = 20
+    private const val MAX_SIZE = 200
+    private val RESERVED_PARAMS = setOf("page", "size", "sort")
+
+    fun resolvePageable(queryParams: Map<String, String>?, allowedSortFields: Set<String>?): Pageable {
+        val page = parseInt(queryParams?.get("page"), DEFAULT_PAGE, 0, Int.MAX_VALUE)
+        val size = parseInt(queryParams?.get("size"), DEFAULT_SIZE, 1, MAX_SIZE)
+        val sort = resolveSort(queryParams?.get("sort"), allowedSortFields)
+        return PageRequest.of(page, size, sort)
+    }
+
+    fun extractFilterParams(queryParams: Map<String, String>?): Map<String, String> {
+        if (queryParams.isNullOrEmpty()) {
+            return emptyMap()
+        }
+        return queryParams.entries
+            .filter { !RESERVED_PARAMS.contains(it.key) }
+            .filter { !it.value.isNullOrBlank() }
+            .associate { it.key to it.value }
+    }
+
+    private fun resolveSort(sortRaw: String?, allowedSortFields: Set<String>?): Sort {
+        if (sortRaw.isNullOrBlank()) {
+            return Sort.unsorted()
+        }
+        val parts = sortRaw.split(",")
+        val field = parts.firstOrNull()?.trim().orEmpty()
+        if (field.isBlank()) {
+            return Sort.unsorted()
+        }
+        if (!allowedSortFields.isNullOrEmpty() && !allowedSortFields.contains(field)) {
+            throw IllegalArgumentException("Unsupported sort field: $field")
+        }
+        val direction = if (parts.size > 1 && parts[1].trim().equals("desc", ignoreCase = true)) {
+            Sort.Direction.DESC
+        } else {
+            Sort.Direction.ASC
+        }
+        return Sort.by(direction, field)
+    }
+
+    private fun parseInt(raw: String?, defaultValue: Int, min: Int, max: Int): Int {
+        val parsed = raw?.trim()?.toIntOrNull() ?: return defaultValue
+        return parsed.coerceIn(min, max)
+    }
+}

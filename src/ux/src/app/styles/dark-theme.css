@@ -99,6 +99,8 @@
   --color-success: #B0B0B0;
   --color-warning: #B0B0B0;
   --color-error: #B0B0B0;
+  --theme-loading-overlay-bg: rgba(0, 0, 0, 0.5);
+  --theme-mobile-header-bg: linear-gradient(180deg, #222222 0%, #1a1a1a 100%);
 
   /* Gradients */
   --gradient-primary: linear-gradient(135deg, #B0B0B0, #a4a4a4);

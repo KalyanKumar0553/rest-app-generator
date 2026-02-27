@@ -1,0 +1,18 @@
+package {{basePkg}}.validation
+
+import jakarta.validation.Constraint
+import jakarta.validation.Payload
+import kotlin.reflect.KClass
+
+@Target(AnnotationTarget.CLASS)
+@Retention(AnnotationRetention.RUNTIME)
+@MustBeDocumented
+@Constraint(validatedBy = [ConditionalRequiredValidator::class])
+annotation class ConditionalRequired(
+    val message: String = "{validation.conditionalRequired}",
+    val groups: Array<KClass<*>> = [],
+    val payload: Array<KClass<out Payload>> = [],
+    val field: String,
+    val dependsOn: String,
+    val equals: String = ""
+)

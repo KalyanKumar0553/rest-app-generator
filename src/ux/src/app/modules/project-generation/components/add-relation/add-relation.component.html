@@ -125,7 +125,8 @@
       </div>
     </ng-container>
 
-    <div class="relation-config" *ngIf="relationType">
+    <!-- Temporarily disabled. Keep relation configuration panel for future enablement. -->
+    <div class="relation-config" *ngIf="false && relationType">
       <button type="button" class="relation-config-header" (click)="toggleRelationConfig()" aria-label="Toggle relation configuration">
         <span class="config-title">Relation configuration</span>
         <i class="bi" [ngClass]="relationConfigExpanded ? 'bi-chevron-up' : 'bi-chevron-down'"></i>

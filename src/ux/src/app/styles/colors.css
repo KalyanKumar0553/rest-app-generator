@@ -88,12 +88,14 @@
 
   /* Component theme aliases (centralized defaults) */
   --theme-modal-overlay-bg: rgba(0, 0, 0, 0.6);
+  --theme-loading-overlay-bg: rgba(0, 0, 0, 0.45);
   --theme-modal-container-bg: var(--color-background-white);
   --theme-modal-shadow: var(--shadow-xl);
   --theme-modal-header-bg: var(--color-text-secondary);
   --theme-modal-header-text: var(--color-text-inverse);
   --theme-modal-body-text: var(--color-text-primary);
   --theme-modal-border-color: var(--color-border);
+  --theme-mobile-header-bg: linear-gradient(180deg, #e7eff1 0%, #dbe6ea 100%);
 
   --theme-primary-btn-bg: var(--color-primary);
   --theme-primary-btn-hover-bg: var(--color-primary-hover);

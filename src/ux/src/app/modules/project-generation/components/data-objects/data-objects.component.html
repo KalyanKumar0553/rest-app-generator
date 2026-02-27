@@ -8,6 +8,7 @@
   </div>
 
   <div class="entities-scrollable">
+    <ng-container *ngIf="activeTab !== 'mappers'">
     <div class="expansion-panel">
       <div class="panel-header" (click)="toggleDataObjectsPanel()">
         <div class="panel-title-section">
@@ -143,6 +144,37 @@
         </div>
       </div>
     </div>
+
+    </ng-container>
+
+    <div class="expansion-panel" *ngIf="activeTab === 'mappers'">
+      <div class="panel-header">
+        <div class="panel-title-section">
+          <h2 class="panel-title">Mappers</h2>
+        </div>
+        <div class="panel-actions" (click)="$event.stopPropagation()">
+          <button type="button" class="add-btn" (click)="addMapper()" aria-label="Add mapper">
+            <i class="bi bi-plus-circle"></i>
+          </button>
+        </div>
+      </div>
+
+      <div class="panel-body">
+        <app-preview-entities
+          *ngIf="visibleMapperCards.length > 0"
+          [entities]="visibleMapperCards"
+          [relations]="[]"
+          [showActions]="true"
+          (viewMore)="openMapperDetail($event)"
+          (editEntity)="editMapperFromCard($event)"
+          (deleteEntity)="deleteMapperFromCard($event)">
+        </app-preview-entities>
+
+        <div class="empty-state" *ngIf="mappers.length === 0">
+          <p>No mappers created yet. Click the + button to add your first mapper.</p>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -250,6 +282,26 @@
 </app-modal>
 
 <app-modal
+  [isOpen]="showAddMapperModal"
+  [title]="editingMapper ? 'Edit mapper' : 'Add mapper'"
+  [size]="'large'"
+  (close)="onMapperCancel()">
+  <app-add-mapper
+    [isOpen]="showAddMapperModal"
+    [editMapper]="editingMapper"
+    [existingMappers]="mappers"
+    [dataObjects]="dataObjects"
+    [entities]="entities"
+    (save)="onMapperSave($event)"
+    (cancel)="onMapperCancel()">
+  </app-add-mapper>
+  <div modal-footer>
+    <button mat-raised-button type="button" (click)="onMapperCancel()">Cancel</button>
+    <button mat-raised-button color="primary" type="button" (click)="saveMapper()">Save</button>
+  </div>
+</app-modal>
+
+<app-modal
   [isOpen]="showDataObjectDetailModal"
   [title]="''"
   [customHeader]="true"
@@ -258,15 +310,15 @@
   <div modal-header class="entity-detail-modal-header">
     <div class="entity-detail-header-left">
       <span class="entity-detail-title">{{ viewingDataObject?.name }}</span>
-      <span class="entity-detail-tag">Data Object</span>
-      <span class="entity-detail-tag" *ngIf="viewingDataObject?.dtoType">
+      <span class="entity-detail-tag">{{ viewingDetailType === 'mapper' ? 'Mapper' : 'Data Object' }}</span>
+      <span class="entity-detail-tag" *ngIf="viewingDetailType !== 'mapper' && viewingDataObject?.dtoType">
         {{ viewingDataObject?.dtoType === 'request' ? 'Request DTO' : 'Response DTO' }}
       </span>
     </div>
   </div>
   <app-entity-detail-view
     [entity]="viewingDataObject"
-    [canDeleteFields]="true"
+    [canDeleteFields]="viewingDetailCanDeleteFields"
     (deleteField)="deleteProperty($event)"
     (close)="closeDataObjectDetail()">
   </app-entity-detail-view>
@@ -336,4 +388,13 @@
   [buttons]="enumDeleteModalConfig.buttons"
   (confirm)="confirmEnumDelete()"
   (cancel)="cancelEnumDelete()">
+</app-confirmation-modal>
+
+<app-confirmation-modal
+  *ngIf="showMapperDeleteConfirmation"
+  [title]="mapperDeleteModalConfig.title"
+  [message]="mapperDeleteModalConfig.message"
+  [buttons]="mapperDeleteModalConfig.buttons"
+  (confirm)="confirmDeleteMapper()"
+  (cancel)="cancelDeleteMapper()">
 </app-confirmation-modal>

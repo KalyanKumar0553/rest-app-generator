@@ -51,6 +51,8 @@ public class StateMachineConfig extends EnumStateMachineConfigurerAdapter<States
 						runStep(States.ACTUATOR_CONFIGURATION, Events.ACTUATOR_DONE, Events.ACTUATOR_FAIL))
 				.stateEntry(States.EXCEPTION_PACKAGE_GENERATION,
 						runStep(States.EXCEPTION_PACKAGE_GENERATION, Events.EXCEPTION_PACKAGE_DONE, Events.EXCEPTION_PACKAGE_FAIL))
+				.stateEntry(States.MAPPER_GENERATION,
+						runStep(States.MAPPER_GENERATION, Events.MAPPER_DONE, Events.MAPPER_FAIL))
 				.stateEntry(States.APPLICATION_FILES,
 						runStep(States.APPLICATION_FILES, Events.APPFILES_DONE, Events.APPFILES_FAIL))
 				.stateEntry(States.DOCKER_GENERATION,
@@ -100,10 +102,15 @@ public class StateMachineConfig extends EnumStateMachineConfigurerAdapter<States
 					.event(Events.ACTUATOR_DONE).and().withExternal().source(States.ACTUATOR_CONFIGURATION)
 					.target(States.ERROR).event(Events.ACTUATOR_FAIL).and()
 
-				// EXCEPTION PACKAGE → DOCKER / ERROR
-				.withExternal().source(States.EXCEPTION_PACKAGE_GENERATION).target(States.DOCKER_GENERATION)
+				// EXCEPTION PACKAGE → MAPPER / ERROR
+				.withExternal().source(States.EXCEPTION_PACKAGE_GENERATION).target(States.MAPPER_GENERATION)
 				.event(Events.EXCEPTION_PACKAGE_DONE).and().withExternal().source(States.EXCEPTION_PACKAGE_GENERATION)
 				.target(States.ERROR).event(Events.EXCEPTION_PACKAGE_FAIL).and()
+
+				// MAPPER → DOCKER / ERROR
+				.withExternal().source(States.MAPPER_GENERATION).target(States.DOCKER_GENERATION)
+				.event(Events.MAPPER_DONE).and().withExternal().source(States.MAPPER_GENERATION)
+				.target(States.ERROR).event(Events.MAPPER_FAIL).and()
 
 				// DOCKER → SCAFFOLD / ERROR
 				.withExternal().source(States.DOCKER_GENERATION).target(States.SCAFFOLD).event(Events.DOCKER_DONE)
@@ -123,6 +130,7 @@ public class StateMachineConfig extends EnumStateMachineConfigurerAdapter<States
 					.withExternal().source(States.CRUD_GENERATION).target(States.ERROR).event(Events.FAIL).and()
 					.withExternal().source(States.ACTUATOR_CONFIGURATION).target(States.ERROR).event(Events.FAIL).and()
 					.withExternal().source(States.EXCEPTION_PACKAGE_GENERATION).target(States.ERROR).event(Events.FAIL).and()
+					.withExternal().source(States.MAPPER_GENERATION).target(States.ERROR).event(Events.FAIL).and()
 					.withExternal().source(States.APPLICATION_FILES).target(States.ERROR).event(Events.FAIL).and()
 				.withExternal().source(States.DOCKER_GENERATION).target(States.ERROR).event(Events.FAIL).and()
 				.withExternal().source(States.SCAFFOLD).target(States.ERROR).event(Events.FAIL);

@@ -1,0 +1,27 @@
+package {{packageName}}
+
+{{#imports}}
+import {{.}}
+{{/imports}}
+import com.fasterxml.jackson.databind.ObjectMapper
+import org.springframework.stereotype.Component
+
+@Component
+class {{className}}(
+    private val objectMapper: ObjectMapper
+) {
+
+    fun mapTo{{targetSimpleName}}(source: {{sourceTypeName}}?): {{targetTypeName}}? {
+        if (source == null) {
+            return null
+        }
+        return objectMapper.convertValue(source, {{targetTypeName}}::class.java)
+    }
+
+    fun mapTo{{sourceSimpleName}}(source: {{targetTypeName}}?): {{sourceTypeName}}? {
+        if (source == null) {
+            return null
+        }
+        return objectMapper.convertValue(source, {{sourceTypeName}}::class.java)
+    }
+}

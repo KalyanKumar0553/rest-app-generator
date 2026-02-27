@@ -5,6 +5,8 @@ import java.nio.file.Paths;
 
 import org.apache.commons.lang3.Validate;
 
+import com.src.main.sm.executor.common.GenerationLanguage;
+
 /**
  * Utility methods for converting package names to filesystem paths and related
  * path helpers.
@@ -28,6 +30,16 @@ public final class PathUtils {
 	public static Path javaSrcPathFromPackage(String packageName) {
 		Validate.notBlank(packageName, "packageName must not be blank");
 		String normalized = packageName.replace('.', '/');
+		return Paths.get("src", "main", "java", normalized);
+	}
+
+	public static Path srcPathFromPackage(String packageName, GenerationLanguage language) {
+		Validate.notBlank(packageName, "packageName must not be blank");
+		GenerationLanguage resolved = language == null ? GenerationLanguage.JAVA : language;
+		String normalized = packageName.replace('.', '/');
+		if (resolved == GenerationLanguage.KOTLIN) {
+			return Paths.get("src", "main", "kotlin", normalized);
+		}
 		return Paths.get("src", "main", "java", normalized);
 	}
 

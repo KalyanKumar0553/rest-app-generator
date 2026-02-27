@@ -1,6 +1,6 @@
 <ng-template #baseSettingsBody>
   <div class="form-grid two-column">
-    <div class="field-label">Name:</div>
+    <div class="field-label">Name *:</div>
     <mat-form-field appearance="fill" subscriptSizing="dynamic" class="form-field"
       [class.field-invalid]="showResourceNameErrors && (resourceNameModel?.errors?.['requiredName'] || resourceNameModel?.errors?.['duplicateName'])">
       <input matInput name="resourceName" #resourceNameModel="ngModel" [(ngModel)]="draft.resourceName"
@@ -11,7 +11,7 @@
         configured REST specs.</mat-error>
     </mat-form-field>
 
-    <div class="field-label">Base Endpoint:</div>
+    <div class="field-label">Base Endpoint *:</div>
     <mat-form-field appearance="fill" subscriptSizing="dynamic" class="form-field"
       [class.field-invalid]="basePathRequired">
       <input matInput name="basePath" #basePathModel="ngModel" [(ngModel)]="draft.basePath"
@@ -28,7 +28,7 @@
         (ngModelChange)="onMapToEntityToggle($event)"></mat-checkbox>
     </div>
 
-    <div class="field-label" *ngIf="draft.mapToEntity">Entity:</div>
+    <div class="field-label" *ngIf="draft.mapToEntity">Entity *:</div>
     <mat-form-field *ngIf="draft.mapToEntity" appearance="fill" subscriptSizing="dynamic" class="form-field"
       [class.field-invalid]="mapToEntityRequired">
       <mat-select name="mappedEntityName" #mappedEntityModel="ngModel" [(ngModel)]="draft.mappedEntityName"

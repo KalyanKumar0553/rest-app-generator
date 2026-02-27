@@ -1,0 +1,86 @@
+package {{basePkg}}.dto.{{sub}}
+
+{{#classAnnotations}}
+{{{.}}}
+{{/classAnnotations}}
+class {{dtoName}} {
+
+{{#fields}}
+  {{#annotations}}
+  {{{.}}}
+  {{/annotations}}
+  var {{name}}: {{{javaType}}}? = null
+
+{{/fields}}
+{{^useLombok}}
+  {{#generateAllArgsConstructor}}
+  constructor({{#fields}}{{name}}: {{{javaType}}}?{{^isLast}}, {{/isLast}}{{/fields}}) : this() {
+{{#fields}}    this.{{name}} = {{name}}
+{{/fields}}  }
+
+  {{/generateAllArgsConstructor}}
+  {{#generateBuilder}}
+  companion object {
+    @JvmStatic
+    fun builder(): {{dtoName}}Builder = {{dtoName}}Builder()
+  }
+
+  class {{dtoName}}Builder {
+{{#fields}}
+    private var {{name}}: {{{javaType}}}? = null
+{{/fields}}
+
+{{#fields}}
+    fun {{name}}({{name}}: {{{javaType}}}?): {{dtoName}}Builder {
+      this.{{name}} = {{name}}
+      return this
+    }
+{{/fields}}
+
+    fun build(): {{dtoName}} {
+      val instance = {{dtoName}}()
+{{#fields}}
+      instance.{{name}} = this.{{name}}
+{{/fields}}
+      return instance
+    }
+  }
+
+  {{/generateBuilder}}
+  {{#generateToString}}
+  override fun toString(): String {
+    return "{{dtoName}}(" +
+{{#hasFields}}
+{{#fields}}
+        "{{name}}=$" + {{name}}{{^isLast}} + ", " +{{/isLast}}{{#isLast}} +{{/isLast}}
+{{/fields}}
+{{/hasFields}}
+{{^hasFields}}
+        "" +
+{{/hasFields}}
+        ")"
+  }
+
+  {{/generateToString}}
+  {{#generateEquals}}
+  override fun equals(other: Any?): Boolean {
+    if (this === other) return true
+    if (javaClass != other?.javaClass) return false
+    other as {{dtoName}}
+{{#hasFields}}
+    return {{#fields}}{{name}} == other.{{name}}{{^isLast}} && {{/isLast}}{{/fields}}
+{{/hasFields}}
+{{^hasFields}}
+    return true
+{{/hasFields}}
+  }
+
+  {{/generateEquals}}
+  {{#generateHashCode}}
+  override fun hashCode(): Int {
+    return java.util.Objects.hash({{#fields}}{{name}}{{^isLast}}, {{/isLast}}{{/fields}})
+  }
+
+  {{/generateHashCode}}
+{{/useLombok}}
+}

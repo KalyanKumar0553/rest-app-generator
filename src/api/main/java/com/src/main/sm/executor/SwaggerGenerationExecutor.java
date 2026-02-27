@@ -13,6 +13,8 @@ import com.src.main.common.util.StringUtils;
 import com.src.main.dto.AppSpecDTO;
 import com.src.main.dto.StepResult;
 import com.src.main.sm.config.StepExecutor;
+import com.src.main.sm.executor.common.GenerationLanguage;
+import com.src.main.sm.executor.common.GenerationLanguageResolver;
 import com.src.main.sm.executor.swagger.SwaggerGenerationService;
 import com.src.main.sm.executor.swagger.SwaggerGenerationSupport;
 import com.src.main.sm.executor.swagger.SwaggerGroupSpec;
@@ -46,31 +48,31 @@ public class SwaggerGenerationExecutor implements StepExecutor {
 					(String) data.getVariables().get(ProjectMetaDataConstants.GROUP_ID), ProjectMetaDataConstants.DEFAULT_GROUP);
 			String packageStructure = StringUtils.firstNonBlank(str(yaml.get("packages")), spec.getPackages(),
 					"technical");
+			GenerationLanguage language = GenerationLanguageResolver.resolveFromYaml(yaml);
 			String swaggerPackage = SwaggerGenerationSupport.resolveSwaggerPackage(basePackage, packageStructure);
 			if (!SwaggerGenerationSupport.isOpenApiEnabled(enabledRaw)) {
-				deleteOpenApiConfigIfExists(root, swaggerPackage);
+				deleteOpenApiConfigIfExists(root, swaggerPackage, language);
 				return StepResult.ok(Map.of("status", "Success", "swaggerGenerated", false));
 			}
 
 			String appName = extractAppName(yaml);
-			List<SwaggerGroupSpec> groups = SwaggerGenerationSupport.buildGroupsFromYaml(yaml, spec.getModels());
+			List<SwaggerGroupSpec> groups = SwaggerGenerationSupport.buildGroupsFromYaml(yaml, spec.getModels(), language);
 			if (groups.isEmpty()) {
-				deleteOpenApiConfigIfExists(root, swaggerPackage);
+				deleteOpenApiConfigIfExists(root, swaggerPackage, language);
 				return StepResult.ok(Map.of("status", "Success", "swaggerGenerated", false, "swaggerGroupCount", 0));
 			}
 
-			swaggerGenerationService.generate(root, swaggerPackage, appName, groups);
+			swaggerGenerationService.generate(root, swaggerPackage, appName, groups, language);
 			return StepResult.ok(Map.of("status", "Success", "swaggerGenerated", true, "swaggerGroupCount", groups.size()));
 		} catch (Exception ex) {
 			return StepResult.error("SWAGGER_GENERATION", ex.getMessage());
 		}
 	}
 
-	private void deleteOpenApiConfigIfExists(Path root, String swaggerPackage) {
+	private void deleteOpenApiConfigIfExists(Path root, String swaggerPackage, GenerationLanguage language) {
 		try {
-			Path file = root.resolve("src/main/java")
-					.resolve(PathUtils.javaSrcPathFromPackage(swaggerPackage))
-					.resolve("OpenApiConfig.java");
+			Path file = root.resolve(PathUtils.srcPathFromPackage(swaggerPackage, language))
+					.resolve("OpenApiConfig." + language.fileExtension());
 			Files.deleteIfExists(file);
 		} catch (Exception ignored) {
 			// Best-effort cleanup of stale swagger config from earlier generations.

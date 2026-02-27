@@ -120,6 +120,7 @@
 .entity-card__actions {
   display: flex;
   gap: 8px;
+  align-items: center;
 }
 
 .entity-action-btn {
@@ -147,6 +148,41 @@
   color: var(--theme-error-text-color, var(--color-error));
   background-color: var(--theme-error-bg, var(--error-50));
   border-radius: 8px;
+}
+
+.entity-mobile-help {
+  display: none;
+}
+
+.entity-mobile-help-content {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 200px;
+  max-width: 260px;
+}
+
+.entity-mobile-help-row {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.help-field-name {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--theme-modal-body-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.help-field-meta {
+  font-size: 12px;
+  color: var(--theme-neutral-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .entity-card__relations {
@@ -270,5 +306,10 @@
   .entity-card {
     width: 98%;
     max-width: 98%;
+  }
+
+  .entity-mobile-help {
+    display: inline-flex;
+    align-items: center;
   }
 }

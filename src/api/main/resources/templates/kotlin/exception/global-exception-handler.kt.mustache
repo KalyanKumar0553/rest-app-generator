@@ -1,0 +1,49 @@
+package {{packageName}}
+
+import jakarta.validation.ConstraintViolationException
+import org.springframework.http.HttpStatus
+import org.springframework.http.ResponseEntity
+import org.springframework.web.bind.MethodArgumentNotValidException
+import org.springframework.web.bind.annotation.ExceptionHandler
+import org.springframework.web.bind.annotation.RestControllerAdvice
+
+@RestControllerAdvice
+class GlobalExceptionHandler {
+
+    @ExceptionHandler(ConstraintViolationException::class)
+    fun onConstraintViolation(ex: ConstraintViolationException): ResponseEntity<Map<String, Any?>> {
+        val firstError = ex.constraintViolations.firstOrNull()?.let { "${it.propertyPath} ${it.message}" } ?: "Validation failed"
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(
+            mapOf("errorCode" to HttpStatus.BAD_REQUEST.value(), "errorMsg" to firstError)
+        )
+    }
+
+    @ExceptionHandler(MethodArgumentNotValidException::class)
+    fun onMethodArgInvalid(ex: MethodArgumentNotValidException): ResponseEntity<Map<String, Any?>> {
+        val firstError = ex.bindingResult.fieldErrors.firstOrNull()?.defaultMessage ?: "Validation failed"
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(
+            mapOf("errorCode" to HttpStatus.BAD_REQUEST.value(), "errorMsg" to firstError)
+        )
+    }
+
+    @ExceptionHandler(GenericException::class)
+    fun onError(ex: GenericException): ResponseEntity<Map<String, Any?>> {
+        return ResponseEntity.status(ex.status).body(
+            mapOf("errorCode" to ex.status.value(), "errorMsg" to ex.errorMsg)
+        )
+    }
+
+    @ExceptionHandler(IllegalArgumentException::class)
+    fun onIllegalArgument(ex: IllegalArgumentException): ResponseEntity<Map<String, Any?>> {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(
+            mapOf("errorCode" to HttpStatus.BAD_REQUEST.value(), "message" to ex.message)
+        )
+    }
+
+    @ExceptionHandler(Exception::class)
+    fun onError(ex: Exception): ResponseEntity<Map<String, Any?>> {
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
+            mapOf("errorCode" to HttpStatus.INTERNAL_SERVER_ERROR.value(), "errorMsg" to ex.message)
+        )
+    }
+}

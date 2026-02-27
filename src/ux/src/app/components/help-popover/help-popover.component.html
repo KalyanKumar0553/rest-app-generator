@@ -3,8 +3,9 @@
     type="button"
     class="help-trigger"
     [attr.aria-label]="ariaLabel"
+    (click)="onTriggerClick($event)"
+    (touchstart)="onTriggerTouchStart($event)"
     (mouseenter)="onPointerEnter($event)"
-    (mousemove)="onPointerMove($event)"
     (mouseleave)="onPointerLeave()"
     (focus)="onTriggerFocus($event)"
     (blur)="onPointerLeave()">
@@ -16,9 +17,13 @@
     role="tooltip"
     [class.top]="placement === 'top'"
     [class.left]="placement === 'left'"
-    [style.left.px]="overlayLeft"
-    [style.top.px]="overlayTop">
-    <div class="help-arrow" aria-hidden="true" [class.top]="placement === 'top'" [class.left]="placement === 'left'"></div>
+    [class.bottom]="placement === 'bottom'">
+    <div
+      class="help-arrow"
+      aria-hidden="true"
+      [class.top]="placement === 'top'"
+      [class.left]="placement === 'left'"
+      [class.bottom]="placement === 'bottom'"></div>
     <div class="help-panel">
       <ng-content></ng-content>
     </div>

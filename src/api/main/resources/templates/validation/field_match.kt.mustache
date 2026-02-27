@@ -1,0 +1,17 @@
+package {{basePkg}}.validation
+
+import jakarta.validation.Constraint
+import jakarta.validation.Payload
+import kotlin.reflect.KClass
+
+@Target(AnnotationTarget.CLASS)
+@Retention(AnnotationRetention.RUNTIME)
+@MustBeDocumented
+@Constraint(validatedBy = [FieldMatchValidator::class])
+annotation class FieldMatch(
+    val message: String = "{validation.fieldMatch}",
+    val groups: Array<KClass<*>> = [],
+    val payload: Array<KClass<out Payload>> = [],
+    val first: String,
+    val second: String
+)

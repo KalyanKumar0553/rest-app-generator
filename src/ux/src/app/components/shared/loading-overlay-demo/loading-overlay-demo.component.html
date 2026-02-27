@@ -1,0 +1,15 @@
+<div class="overlay-demo-page">
+  <section class="overlay-demo-card">
+    <h2>Loading Overlay Demo</h2>
+    <p>Use this screen to verify backdrop darkness, centered progress, ellipsis behavior, and cancel action.</p>
+    <button type="button" mat-raised-button class="demo-open-btn" (click)="openOverlay()">Show Overlay</button>
+  </section>
+
+  <app-loading-overlay
+    [visible]="showOverlay"
+    [title]="'Generating Project'"
+    [message]="'Saving configuration and generating project artifacts. This is a long demo message to verify that text clipping with ellipsis works correctly in the loading overlay panel.'"
+    [showCancel]="true"
+    (cancel)="closeOverlay()">
+  </app-loading-overlay>
+</div>

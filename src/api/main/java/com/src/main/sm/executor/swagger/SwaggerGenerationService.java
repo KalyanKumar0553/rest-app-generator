@@ -11,12 +11,15 @@ import java.util.Map;
 import org.springframework.stereotype.Service;
 
 import com.src.main.sm.executor.TemplateEngine;
+import com.src.main.sm.executor.common.GenerationLanguage;
+import com.src.main.sm.executor.common.TemplatePathResolver;
 import com.src.main.util.PathUtils;
 
 @Service
 public class SwaggerGenerationService {
 
-	private static final String TEMPLATE = "templates/swagger/openapi-config.java.mustache";
+	private static final String TEMPLATE_JAVA = "openapi-config.java.mustache";
+	private static final String TEMPLATE_KOTLIN = "openapi-config.kt.mustache";
 
 	private final TemplateEngine templateEngine;
 
@@ -24,8 +27,9 @@ public class SwaggerGenerationService {
 		this.templateEngine = templateEngine;
 	}
 
-	public void generate(Path root, String swaggerPackage, String appName, List<SwaggerGroupSpec> groups) throws Exception {
-		Path outDir = root.resolve(PathUtils.javaSrcPathFromPackage(swaggerPackage));
+	public void generate(Path root, String swaggerPackage, String appName, List<SwaggerGroupSpec> groups,
+			GenerationLanguage language) throws Exception {
+		Path outDir = root.resolve(PathUtils.srcPathFromPackage(swaggerPackage, language));
 		Files.createDirectories(outDir);
 
 		Map<String, Object> model = new LinkedHashMap<>();
@@ -33,7 +37,8 @@ public class SwaggerGenerationService {
 		model.put("appName", appName);
 		model.put("groups", groups);
 
-		String code = templateEngine.render(TEMPLATE, model);
-		Files.writeString(outDir.resolve("OpenApiConfig.java"), code, UTF_8);
+		String template = language == GenerationLanguage.KOTLIN ? TEMPLATE_KOTLIN : TEMPLATE_JAVA;
+		String code = templateEngine.renderAny(TemplatePathResolver.candidates(language, "swagger", template), model);
+		Files.writeString(outDir.resolve("OpenApiConfig." + language.fileExtension()), code, UTF_8);
 	}
 }

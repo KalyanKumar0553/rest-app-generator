@@ -1,0 +1,39 @@
+package {{packageName}};
+
+{{#imports}}
+import {{.}};
+{{/imports}}
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.stereotype.Component;
+
+@Component
+public class {{className}} {
+
+    private final ObjectMapper objectMapper;
+
+    public {{className}}(ObjectMapper objectMapper) {
+        this.objectMapper = objectMapper;
+    }
+
+    public {{targetTypeName}} mapTo{{targetSimpleName}}({{sourceTypeName}} source) {
+        if (source == null) {
+            return null;
+        }
+        {{targetTypeName}} target = this.objectMapper.convertValue(source, {{targetClassLiteral}});
+{{#forwardMappings}}
+        target.set{{targetSetter}}(source.get{{sourceGetter}}());
+{{/forwardMappings}}
+        return target;
+    }
+
+    public {{sourceTypeName}} mapTo{{sourceSimpleName}}({{targetTypeName}} source) {
+        if (source == null) {
+            return null;
+        }
+        {{sourceTypeName}} target = this.objectMapper.convertValue(source, {{sourceClassLiteral}});
+{{#reverseMappings}}
+        target.set{{targetSetter}}(source.get{{sourceGetter}}());
+{{/reverseMappings}}
+        return target;
+    }
+}

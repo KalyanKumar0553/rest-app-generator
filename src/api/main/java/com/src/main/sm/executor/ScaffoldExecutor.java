@@ -32,6 +32,10 @@ import com.src.main.util.DatabaseDependencyCatalog;
 import com.src.main.util.ProjectMetaDataConstants;
 import com.src.main.sm.executor.common.BoilerplateStyle;
 import com.src.main.sm.executor.common.BoilerplateStyleResolver;
+import com.src.main.sm.executor.common.GenerationLanguage;
+import com.src.main.sm.executor.common.GenerationLanguageResolver;
+import com.src.main.sm.executor.common.TemplatePathResolver;
+import com.src.main.util.PathUtils;
 
 @Component
 public class ScaffoldExecutor implements StepExecutor {
@@ -40,8 +44,10 @@ public class ScaffoldExecutor implements StepExecutor {
 	
 	private static final String TPL_README = "templates/project/README.md.mustache";
 	private static final String TPL_VALIDATION_MESSAGES = "templates/project/messages.properties.mustache";
-	private static final String TPL_VALIDATION_CONFIG = "templates/validation/validation-message-config.java.mustache";
-	private static final String TPL_MAIN = "templates/project/main.mustache";
+	private static final String TPL_VALIDATION_CONFIG_JAVA = "validation-message-config.java.mustache";
+	private static final String TPL_VALIDATION_CONFIG_KOTLIN = "validation-message-config.kt.mustache";
+	private static final String TPL_MAIN_JAVA = "main.java.mustache";
+	private static final String TPL_MAIN_KOTLIN = "main.kt.mustache";
 	
 	private final DependencyResolver dependencyResolver;
 	private final InitializrPomGenerator pomGenerator;
@@ -80,13 +86,14 @@ public class ScaffoldExecutor implements StepExecutor {
 		final Path root = resolveRoot(data);
 		
 		final Map<String, Object> yaml = (Map<String, Object>) data.getVariables().get("yaml");
+		final GenerationLanguage language = GenerationLanguageResolver.resolveFromYaml(yaml);
 			final boolean openapi = resolveOpenApiEnabled(data, yaml) && hasRestEndpointEntities(yaml);
 			final boolean includeLombok = resolveLombokEnabled(yaml);
 			final String databaseCode = resolveDatabaseCode(yaml);
 			final List<String> depReq = resolveDependenciesFromYaml(yaml);
 
 
-		createMinimalLayout(root, packageName, buildTool);
+		createMinimalLayout(root, packageName, buildTool, language);
 			List<MavenDependencyDTO> resolvedDeps = dependencyResolver.resolveForMaven(depReq, bootVersion, openapi);
 			List<MavenDependencyDTO> deps = new ArrayList<>(resolvedDeps == null ? List.of() : resolvedDeps);
 			enrichDependenciesWithDatabase(deps, databaseCode);
@@ -106,7 +113,7 @@ public class ScaffoldExecutor implements StepExecutor {
 			Files.writeString(root.resolve("pom.xml"), pom, UTF_8);
 		}
 		String mainClassName = toPascal(artifactId) + "Application";
-		writeMainClass(root, packageName, mainClassName);
+		writeMainClass(root, packageName, mainClassName, language);
 		writeResources(root, name, yaml);
 		writeDocsAndGitignore(root, name);
 		Map<String,Object> result = new HashMap<>();
@@ -418,18 +425,21 @@ public class ScaffoldExecutor implements StepExecutor {
 		});
 	}
 
-	private static void createMinimalLayout(Path root, String packageName, String buildTool) throws Exception {
-		Path mainJava = root.resolve("src/main/java/" + packageName.replace('.', '/'));
+	private static void createMinimalLayout(Path root, String packageName, String buildTool, GenerationLanguage language) throws Exception {
+		Path mainSource = root.resolve(PathUtils.srcPathFromPackage(packageName, language));
 		Path mainRes = root.resolve("src/main/resources");
-		Path testJava = root.resolve("src/test/java/" + packageName.replace('.', '/'));
-		Files.createDirectories(mainJava);
+		Path testSource = root.resolve("src/test/" + language.templateFolder() + "/" + packageName.replace('.', '/'));
+		Files.createDirectories(mainSource);
 		Files.createDirectories(mainRes);
-		Files.createDirectories(testJava);
+		Files.createDirectories(testSource);
 	}
 
-	private void writeMainClass(Path root, String packageName, String mainClassName) throws Exception {
-		Path target = root.resolve("src/main/java/" + packageName.replace('.', '/') + "/" + mainClassName + ".java");
-		String rendered = tpl.render(TPL_MAIN, Map.of("basePkg", packageName, "mainClass", mainClassName));
+	private void writeMainClass(Path root, String packageName, String mainClassName, GenerationLanguage language) throws Exception {
+		Path target = root.resolve(PathUtils.srcPathFromPackage(packageName, language))
+				.resolve(mainClassName + "." + language.fileExtension());
+		String mainTemplate = language == GenerationLanguage.KOTLIN ? TPL_MAIN_KOTLIN : TPL_MAIN_JAVA;
+		String rendered = tpl.renderAny(TemplatePathResolver.candidates(language, "project", mainTemplate),
+				Map.of("basePkg", packageName, "mainClass", mainClassName));
 
 		Files.writeString(target, rendered, UTF_8);
 	}
@@ -562,11 +572,14 @@ public class ScaffoldExecutor implements StepExecutor {
 			String configPackage = "domain".equalsIgnoreCase(packageStructure)
 					? basePackage + ".domain.config"
 					: basePackage + ".config";
-
-			Path outDir = root.resolve("src/main/java/" + configPackage.replace('.', '/'));
+			GenerationLanguage language = GenerationLanguageResolver.resolveFromYaml(yaml);
+			Path outDir = root.resolve(PathUtils.srcPathFromPackage(configPackage, language));
 			Files.createDirectories(outDir);
-			String content = tpl.render(TPL_VALIDATION_CONFIG, Map.of("packageName", configPackage));
-			Files.writeString(outDir.resolve("ValidationMessageConfig.java"), content, UTF_8);
+			String configTemplate = language == GenerationLanguage.KOTLIN ? TPL_VALIDATION_CONFIG_KOTLIN
+					: TPL_VALIDATION_CONFIG_JAVA;
+			String content = tpl.renderAny(TemplatePathResolver.candidates(language, "validation", configTemplate),
+					Map.of("packageName", configPackage));
+			Files.writeString(outDir.resolve("ValidationMessageConfig." + language.fileExtension()), content, UTF_8);
 		} catch (Exception ex) {
 			log.warn("Failed to write ValidationMessageConfig: {}", ex.getMessage());
 		}

@@ -16,7 +16,7 @@ import {
   getConstraintValueMode,
   normalizeConstraintValuesForMode
 } from '../../constants/field-constraints';
-import { ToastService } from '../../../../services/toast.service';
+import { VALIDATION_MESSAGES } from '../../constants/validation-messages';
 
 @Component({
   selector: 'app-edit-property',
@@ -42,8 +42,6 @@ export class EditPropertyComponent implements OnChanges {
   @Output() cancel = new EventEmitter<void>();
 
   constraintError = '';
-
-  constructor(private toastService: ToastService) {}
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['field'] || changes['mode']) {
@@ -84,8 +82,8 @@ export class EditPropertyComponent implements OnChanges {
     this.constraintError = '';
     const error = getConstraintValidationError(this.field.constraints);
     if (error) {
-      this.constraintError = error;
-      this.toastService.error(this.constraintError);
+      this.constraintError = error || VALIDATION_MESSAGES.constraintInvalid;
+      this.focusFirstConstraintField();
       return;
     }
 
@@ -193,6 +191,14 @@ export class EditPropertyComponent implements OnChanges {
         return true;
       }
       return allowedOptions.has(name);
+    });
+  }
+
+  private focusFirstConstraintField(): void {
+    setTimeout(() => {
+      const selector = '.constraints-list .constraint-row mat-select, .constraints-list .constraint-row input';
+      const fieldEl = document.querySelector(selector) as HTMLElement | null;
+      fieldEl?.focus();
     });
   }
 }

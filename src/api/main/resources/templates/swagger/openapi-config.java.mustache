@@ -57,7 +57,7 @@ public class OpenApiConfig {
         if (openApi == null || openApi.getPaths() == null) {
             return;
         }
-        PathItem pathItem = openApi.getPaths().get(path);
+        PathItem pathItem = resolvePathItem(openApi, path);
         if (pathItem == null) {
             return;
         }
@@ -76,7 +76,7 @@ public class OpenApiConfig {
         if (openApi == null || openApi.getPaths() == null) {
             return null;
         }
-        PathItem pathItem = openApi.getPaths().get(path);
+        PathItem pathItem = resolvePathItem(openApi, path);
         if (pathItem == null) {
             return null;
         }
@@ -88,5 +88,50 @@ public class OpenApiConfig {
             case "DELETE" -> pathItem.getDelete();
             default -> null;
         };
+    }
+
+    private PathItem resolvePathItem(OpenAPI openApi, String path) {
+        if (openApi == null || openApi.getPaths() == null || path == null || path.isBlank()) {
+            return null;
+        }
+        PathItem direct = openApi.getPaths().get(path);
+        if (direct != null) {
+            return direct;
+        }
+        for (String alternatePath : buildAlternatePaths(path)) {
+            PathItem alternate = openApi.getPaths().get(alternatePath);
+            if (alternate != null) {
+                return alternate;
+            }
+        }
+        return null;
+    }
+
+    private List<String> buildAlternatePaths(String path) {
+        int marker = path.indexOf("/{");
+        String suffix = marker >= 0 ? path.substring(marker) : "";
+        String resourcePath = marker >= 0 ? path.substring(0, marker) : path;
+
+        String trimmed = resourcePath.startsWith("/") ? resourcePath.substring(1) : resourcePath;
+        String[] segments = trimmed.split("/");
+        if (segments.length < 2) {
+            return List.of();
+        }
+
+        String resource = segments[segments.length - 1];
+        if (resource.isBlank()) {
+            return List.of();
+        }
+
+        String alternateResource = resource.endsWith("s")
+                ? resource.substring(0, resource.length() - 1)
+                : resource + "s";
+        if (alternateResource.isBlank() || alternateResource.equals(resource)) {
+            return List.of();
+        }
+
+        segments[segments.length - 1] = alternateResource;
+        String alternateBase = "/" + String.join("/", segments);
+        return List.of(alternateBase + suffix);
     }
 }

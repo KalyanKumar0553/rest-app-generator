@@ -15,7 +15,28 @@
               <span class="field-type-badge">{{ field.type }}</span>
               <span class="field-length" *ngIf="field.maxLength">({{ field.maxLength }})</span>
             </div>
-            <div class="col-name">{{ field.name }}</div>
+            <div class="col-name">
+              <span class="field-name-text">{{ field.name }}</span>
+              <div class="mobile-inline-actions">
+                <app-help-popover
+                  class="mobile-field-help"
+                  [ariaLabel]="'Show field details'"
+                  placement="top">
+                  <div class="field-help-popover-content">
+                    <div><strong>Fields:</strong> {{ entity?.fields?.length || 0 }}</div>
+                    <div><strong>Constraints:</strong> {{ getFieldConstraintCount(field) }}</div>
+                  </div>
+                </app-help-popover>
+                <button
+                  class="delete-field-btn"
+                  type="button"
+                  [disabled]="!canDeleteFields"
+                  (click)="onDeleteField(i)"
+                  aria-label="Delete field">
+                  <i class="bi bi-trash"></i>
+                </button>
+              </div>
+            </div>
             <div class="col-constraints">
               <span class="constraint-badge primary" *ngIf="field.primaryKey">Primary Key</span>
               <span class="constraint-badge required" *ngIf="field.required">Required</span>

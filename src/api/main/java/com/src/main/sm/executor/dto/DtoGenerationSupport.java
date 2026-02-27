@@ -511,15 +511,22 @@ public final class DtoGenerationSupport {
 		if (pkgIdx < 0) {
 			return importBlock.append('\n').append(code).toString();
 		}
-		int semi = code.indexOf(';', pkgIdx);
-		if (semi < 0) {
-			return importBlock.append('\n').append(code).toString();
+		int pkgLineEnd = code.indexOf('\n', pkgIdx);
+		if (pkgLineEnd < 0) {
+			pkgLineEnd = code.length();
 		}
-		int lineEnd = code.indexOf('\n', semi);
-		if (lineEnd < 0)
-			lineEnd = semi + 1;
-		String prefix = code.substring(0, lineEnd + 1);
-		String suffix = code.substring(lineEnd + 1);
+		int semi = code.indexOf(';', pkgIdx);
+		int lineEnd;
+		if (semi >= 0 && semi < pkgLineEnd) {
+			lineEnd = code.indexOf('\n', semi);
+			if (lineEnd < 0)
+				lineEnd = semi + 1;
+		} else {
+			lineEnd = pkgLineEnd;
+		}
+		int insertPos = Math.min(lineEnd + 1, code.length());
+		String prefix = code.substring(0, insertPos);
+		String suffix = code.substring(insertPos);
 		return prefix + "\n" + importBlock + "\n" + suffix;
 	}
 

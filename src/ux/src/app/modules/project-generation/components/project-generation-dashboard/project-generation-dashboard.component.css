@@ -6,7 +6,7 @@
 
 .mobile-header {
   display: none;
-  background-color: var(--neutral-50);
+  background: var(--theme-mobile-header-bg);
   border-bottom: 1px solid var(--color-border);
   position: fixed;
   top: 0;

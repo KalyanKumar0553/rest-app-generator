@@ -16,6 +16,7 @@ import com.src.main.sm.executor.ModelGenerationExecutor;
 import com.src.main.sm.executor.RestGenerationExecutor;
 import com.src.main.sm.executor.ScaffoldExecutor;
 import com.src.main.sm.executor.SwaggerGenerationExecutor;
+import com.src.main.sm.executor.MapperGenerationExecutor;
 
 @Component
 public class StepExecutorFactory {
@@ -31,7 +32,8 @@ public class StepExecutorFactory {
 			 RestGenerationExecutor restGenerationExecutor,
 			 CrudGenerationExecutor crudGenerationExecutor,
 			 ActuatorConfigurationExecutor actuatorConfigurationExecutor,
-			 ExceptionPackageGenerationExecutor exceptionPackageGenerationExecutor
+			 ExceptionPackageGenerationExecutor exceptionPackageGenerationExecutor,
+			 MapperGenerationExecutor mapperGenerationExecutor
 			 ) {
      registry.put(States.DTO_GENERATION, dtoGenerationExecutor);
      registry.put(States.ENUM_GENERATION, enumGenerationExecutor);
@@ -44,6 +46,7 @@ public class StepExecutorFactory {
 	     registry.put(States.CRUD_GENERATION, crudGenerationExecutor);
 	     registry.put(States.ACTUATOR_CONFIGURATION, actuatorConfigurationExecutor);
 	     registry.put(States.EXCEPTION_PACKAGE_GENERATION, exceptionPackageGenerationExecutor);
+	     registry.put(States.MAPPER_GENERATION, mapperGenerationExecutor);
 	 }
 
  public StepExecutor forState(States state) {

@@ -1,0 +1,63 @@
+<section class="documentation-page">
+  <div class="documentation-shell">
+    <div class="documentation-mobile-nav">
+      <mat-form-field appearance="outline" class="doc-section-field">
+        <mat-select [ngModel]="activeKey" (ngModelChange)="selectSection($event)">
+          <mat-option *ngFor="let section of sections" [value]="section.key">{{ section.title }}</mat-option>
+        </mat-select>
+      </mat-form-field>
+    </div>
+
+    <div class="documentation-layout">
+      <aside class="documentation-nav">
+        <button
+          *ngFor="let section of sections"
+          type="button"
+          class="doc-nav-item"
+          [class.active]="section.key === activeKey"
+          (click)="selectSection(section.key)">
+          <span class="doc-nav-title">{{ section.title }}</span>
+          <span class="doc-nav-subtitle">{{ section.subtitle }}</span>
+        </button>
+      </aside>
+
+      <article class="documentation-content">
+        <h2>{{ activeSection.title }}</h2>
+        <p class="section-subtitle">{{ activeSection.subtitle }}</p>
+
+        <div class="content-block desktop-only">
+          <h3>What You Can Do</h3>
+          <ul>
+            <li *ngFor="let item of activeSection.points">{{ item }}</li>
+          </ul>
+        </div>
+
+        <mat-accordion class="mobile-only documentation-accordion">
+          <mat-expansion-panel [expanded]="true">
+            <mat-expansion-panel-header>
+              <mat-panel-title>What You Can Do</mat-panel-title>
+            </mat-expansion-panel-header>
+            <ul>
+              <li *ngFor="let item of activeSection.points">{{ item }}</li>
+            </ul>
+          </mat-expansion-panel>
+        </mat-accordion>
+
+        <div class="content-block visual-placeholder">
+          <h3>Screen Guide</h3>
+          <div class="screen-preview"></div>
+          <div class="screen-guide-copy">
+            <h4>Header Area</h4>
+            <p>Use this section to understand the top-level controls and navigation structure for this tab.</p>
+            <h4>Body Area</h4>
+            <p>Focus on the form fields, cards, actions, and expected workflows that belong to this feature.</p>
+          </div>
+        </div>
+
+        <div class="documentation-actions">
+          <button type="button" class="start-btn" (click)="startProject()">Start Project</button>
+        </div>
+      </article>
+    </div>
+  </div>
+</section>

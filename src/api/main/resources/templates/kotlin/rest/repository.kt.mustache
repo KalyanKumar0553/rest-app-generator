@@ -1,0 +1,20 @@
+package {{repositoryPackage}}
+
+{{#noSql}}
+import org.springframework.data.mongodb.repository.MongoRepository
+{{/noSql}}
+{{^noSql}}
+import org.springframework.data.jpa.repository.JpaRepository
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor
+{{/noSql}}
+{{#idTypeImport}}
+import {{idTypeImport}}
+{{/idTypeImport}}
+import {{modelPackage}}.{{entityName}}
+
+{{#noSql}}
+interface {{repositoryClass}} : MongoRepository<{{entityName}}, {{idType}}>
+{{/noSql}}
+{{^noSql}}
+interface {{repositoryClass}} : JpaRepository<{{entityName}}, {{idType}}>, JpaSpecificationExecutor<{{entityName}}>
+{{/noSql}}

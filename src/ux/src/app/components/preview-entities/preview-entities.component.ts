@@ -1,16 +1,20 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { HelpPopoverComponent } from '../help-popover/help-popover.component';
 
 export interface PreviewEntityField {
   name: string;
   type: string;
   maxLength?: number;
   required?: boolean;
+  primaryKey?: boolean;
+  unique?: boolean;
 }
 
 export interface PreviewEntity {
   name: string;
   dtoType?: 'request' | 'response';
+  metaTag?: string;
   fields?: PreviewEntityField[];
 }
 
@@ -23,7 +27,7 @@ export interface PreviewRelation {
 @Component({
   selector: 'app-preview-entities',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, HelpPopoverComponent],
   templateUrl: './preview-entities.component.html',
   styleUrls: ['./preview-entities.component.css']
 })
@@ -70,5 +74,40 @@ export class PreviewEntitiesComponent {
 
   onViewRelations(entity: PreviewEntity, index: number): void {
     this.viewRelations.emit({ entity, index });
+  }
+
+  getFieldConstraints(field: PreviewEntityField): string {
+    const constraints: string[] = [];
+    if (field.primaryKey) {
+      constraints.push('Primary Key');
+    }
+    if (field.required) {
+      constraints.push('Required');
+    }
+    if (field.unique) {
+      constraints.push('Unique');
+    }
+    return constraints.length ? constraints.join(', ') : 'None';
+  }
+
+  getEntityFieldCount(entity: PreviewEntity): number {
+    return (entity.fields ?? []).length;
+  }
+
+  getEntityConstraintCount(entity: PreviewEntity): number {
+    const fields = entity.fields ?? [];
+    return fields.reduce((count, field) => {
+      let fieldCount = 0;
+      if (field.primaryKey) {
+        fieldCount += 1;
+      }
+      if (field.required) {
+        fieldCount += 1;
+      }
+      if (field.unique) {
+        fieldCount += 1;
+      }
+      return count + fieldCount;
+    }, 0);
   }
 }

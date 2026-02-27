@@ -13,6 +13,8 @@ import com.src.main.dto.AppSpecDTO;
 import com.src.main.dto.ModelSpecDTO;
 import com.src.main.dto.StepResult;
 import com.src.main.sm.config.StepExecutor;
+import com.src.main.sm.executor.common.GenerationLanguage;
+import com.src.main.sm.executor.common.GenerationLanguageResolver;
 import com.src.main.sm.executor.crud.CrudGenerationService;
 import com.src.main.sm.executor.crud.CrudGenerationSupport;
 import com.src.main.sm.executor.crud.CrudGenerationUnit;
@@ -57,12 +59,13 @@ public class CrudGenerationExecutor implements StepExecutor {
 					ProjectMetaDataConstants.DEFAULT_GROUP);
 			String packageStructure = StringUtils.firstNonBlank(str(yaml.get("packages")), spec.getPackages(),
 					"technical");
+			GenerationLanguage language = GenerationLanguageResolver.resolveFromYaml(yaml);
 			boolean noSql = isNoSqlDatabase(yaml);
 
 			List<CrudGenerationUnit> units = crudEnabledModels.stream()
 					.map(model -> CrudGenerationSupport.buildUnit(model, basePackage, packageStructure, noSql))
 					.toList();
-			crudGenerationService.generate(root, units);
+			crudGenerationService.generate(root, units, language);
 			return StepResult.ok(Map.of("status", "Success", "crudGeneratedCount", units.size()));
 		} catch (Exception ex) {
 			return StepResult.error("CRUD_GENERATION", ex.getMessage());

@@ -159,6 +159,13 @@
   margin-bottom: 0;
 }
 
+.input-error {
+  color: var(--color-danger);
+  font-size: 13px;
+  line-height: 1.2;
+  margin: -12px 0 12px;
+}
+
 .fields-title {
   display: flex;
   align-items: center;

@@ -1,0 +1,83 @@
+.loading-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 5000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: var(--theme-loading-overlay-bg);
+  pointer-events: auto;
+}
+
+.loading-panel {
+  width: min(460px, 100%);
+  background-color: var(--theme-modal-container-bg);
+  border: 1px solid var(--theme-modal-border-color);
+  border-radius: 14px;
+  box-shadow: var(--theme-modal-shadow);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.loading-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.loading-header mat-icon {
+  color: var(--color-primary);
+}
+
+.loading-header h3 {
+  margin: 0;
+  color: var(--theme-modal-body-text);
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1.2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.loading-message {
+  margin: 0;
+  color: var(--theme-neutral-text);
+  font-size: 15px;
+  line-height: 1.25;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+:host ::ng-deep .loading-panel .mat-mdc-progress-bar {
+  width: min(520px, 100%);
+  align-self: center;
+}
+
+.loading-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.loading-cancel-btn {
+  color: var(--theme-confirm-btn-text, #ffffff) !important;
+  border-color: var(--theme-confirm-btn-bg, #dc6454) !important;
+  background-color: var(--theme-confirm-btn-bg, #dc6454) !important;
+}
+
+.loading-cancel-btn:hover:not(:disabled) {
+  border-color: var(--theme-confirm-btn-hover-bg, var(--theme-confirm-btn-bg, #dc6454)) !important;
+  background-color: var(--theme-confirm-btn-hover-bg, var(--theme-confirm-btn-bg, #dc6454)) !important;
+}
+
+:host ::ng-deep .loading-panel .mdc-linear-progress__bar-inner {
+  border-color: var(--color-primary);
+}
+
+:host ::ng-deep .loading-panel .mdc-linear-progress__buffer {
+  background-color: var(--theme-neutral-bg);
+}

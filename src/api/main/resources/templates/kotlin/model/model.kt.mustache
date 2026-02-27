@@ -1,0 +1,55 @@
+package {{packageName}}
+
+{{#imports}}
+import {{.}}
+{{/imports}}
+
+{{#classAnnotations}}
+{{{.}}}
+{{/classAnnotations}}
+class {{className}}{{#implements}} : {{.}}{{/implements}} {
+
+    companion object {
+        private const val serialVersionUID = 1L
+    }
+
+    {{#idBlock}}
+    {{#annotations}}
+    {{{.}}}
+    {{/annotations}}
+    var {{name}}: {{{type}}}? = null
+
+    {{/idBlock}}
+    {{#fields}}
+    {{#annotations}}
+    {{{.}}}
+    {{/annotations}}
+    var {{name}}: {{{type}}}? = null
+
+    {{/fields}}
+    {{#relations}}
+    {{#annotations}}
+    {{{.}}}
+    {{/annotations}}
+    var {{name}}: {{{declarationType}}}? = null
+
+    {{/relations}}
+    {{#auditing.enabled}}
+    @CreatedDate
+    var createdAt: OffsetDateTime? = null
+
+    @LastModifiedDate
+    var updatedAt: OffsetDateTime? = null
+
+    {{/auditing.enabled}}
+    {{#noSql}}
+    @Version
+    var version: Integer? = null
+
+    {{/noSql}}
+    {{#softDelete.enabled}}
+    var deleted: Boolean = false
+
+    var deletedAt: OffsetDateTime? = null
+    {{/softDelete.enabled}}
+}

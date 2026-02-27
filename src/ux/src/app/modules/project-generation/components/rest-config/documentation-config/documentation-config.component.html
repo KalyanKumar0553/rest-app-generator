@@ -8,11 +8,24 @@
     <h5>Endpoint Documentation</h5>
   </header>
 
+  <div class="default-doc-toggle">
+    <mat-checkbox
+      color="primary"
+      [(ngModel)]="draft.documentation.includeDefaultDocumentation"
+      (ngModelChange)="onIncludeDefaultDocumentationChange($event)">
+      Include Default Documentation for the Endpoints
+    </mat-checkbox>
+  </div>
+
   <div class="empty-state" *ngIf="selectedEndpoints.length === 0">
     Select endpoints in the Endpoints tab to configure documentation.
   </div>
 
-  <div class="table-wrap" *ngIf="selectedEndpoints.length > 0">
+  <div class="empty-state" *ngIf="selectedEndpoints.length > 0 && draft?.documentation?.includeDefaultDocumentation">
+    Default endpoint documentation is enabled. Uncheck the option above to customize documentation per endpoint.
+  </div>
+
+  <div class="table-wrap" *ngIf="selectedEndpoints.length > 0 && !draft?.documentation?.includeDefaultDocumentation">
     <table class="endpoint-table">
       <thead>
         <tr>

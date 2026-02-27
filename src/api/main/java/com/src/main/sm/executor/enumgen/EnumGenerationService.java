@@ -14,12 +14,15 @@ import java.util.stream.IntStream;
 import org.springframework.stereotype.Service;
 
 import com.src.main.sm.executor.TemplateEngine;
+import com.src.main.sm.executor.common.GenerationLanguage;
+import com.src.main.sm.executor.common.TemplatePathResolver;
 import com.src.main.util.PathUtils;
 
 @Service
 public class EnumGenerationService {
 
-	private static final String TEMPLATE = "templates/enum/enum.java.mustache";
+	private static final String TEMPLATE_JAVA = "enum.java.mustache";
+	private static final String TEMPLATE_KOTLIN = "enum.kt.mustache";
 
 	private final TemplateEngine templateEngine;
 
@@ -27,18 +30,18 @@ public class EnumGenerationService {
 		this.templateEngine = templateEngine;
 	}
 
-	public void generate(Path root, String enumPackage, List<EnumSpecResolved> enums) throws Exception {
+	public void generate(Path root, String enumPackage, List<EnumSpecResolved> enums, GenerationLanguage language) throws Exception {
 		if (enums == null || enums.isEmpty()) {
 			return;
 		}
 
-		Path outDir = root.resolve(PathUtils.javaSrcPathFromPackage(enumPackage));
+		Path outDir = root.resolve(PathUtils.srcPathFromPackage(enumPackage, language));
 		Files.createDirectories(outDir);
 
 		try {
 			enums.forEach(enumSpec -> {
 				try {
-					writeEnumFile(outDir, enumPackage, enumSpec);
+					writeEnumFile(outDir, enumPackage, enumSpec, language);
 				} catch (Exception ex) {
 					throw new RuntimeException(ex);
 				}
@@ -51,9 +54,11 @@ public class EnumGenerationService {
 		}
 	}
 
-	private void writeEnumFile(Path outDir, String enumPackage, EnumSpecResolved enumSpec) throws Exception {
-		String code = templateEngine.render(TEMPLATE, buildTemplateModel(enumPackage, enumSpec));
-		Files.writeString(outDir.resolve(enumSpec.name() + ".java"), code, UTF_8);
+	private void writeEnumFile(Path outDir, String enumPackage, EnumSpecResolved enumSpec, GenerationLanguage language) throws Exception {
+		String template = language == GenerationLanguage.KOTLIN ? TEMPLATE_KOTLIN : TEMPLATE_JAVA;
+		String code = templateEngine.renderAny(TemplatePathResolver.candidates(language, "enum", template),
+				buildTemplateModel(enumPackage, enumSpec));
+		Files.writeString(outDir.resolve(enumSpec.name() + "." + language.fileExtension()), code, UTF_8);
 	}
 
 	private Map<String, Object> buildTemplateModel(String enumPackage, EnumSpecResolved enumSpec) {

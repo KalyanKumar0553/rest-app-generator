@@ -12,6 +12,8 @@ import com.src.main.common.util.StringUtils;
 import com.src.main.dto.AppSpecDTO;
 import com.src.main.dto.StepResult;
 import com.src.main.sm.config.StepExecutor;
+import com.src.main.sm.executor.common.GenerationLanguage;
+import com.src.main.sm.executor.common.GenerationLanguageResolver;
 import com.src.main.sm.executor.enumgen.EnumGenerationService;
 import com.src.main.sm.executor.enumgen.EnumGenerationSupport;
 import com.src.main.sm.executor.enumgen.EnumSpecResolved;
@@ -47,8 +49,9 @@ public class EnumGenerationExecutor implements StepExecutor {
 					(String) data.getVariables().get(ProjectMetaDataConstants.GROUP_ID), ProjectMetaDataConstants.DEFAULT_GROUP);
 			String packageStructure = StringUtils.firstNonBlank(str(yaml.get("packages")), spec.getPackages(), "technical");
 			String enumPackage = EnumGenerationSupport.resolveEnumPackage(basePackage, packageStructure);
+			GenerationLanguage language = GenerationLanguageResolver.resolveFromYaml(yaml);
 
-			enumGenerationService.generate(root, enumPackage, enums);
+			enumGenerationService.generate(root, enumPackage, enums, language);
 			return StepResult.ok(Map.of("status", "Success", "enumGenerated", true, "enumCount", enums.size()));
 		} catch (Exception ex) {
 			return StepResult.error("ENUM_GENERATION", ex.getMessage());

@@ -81,6 +81,6 @@ export class HeaderComponent implements OnInit {
   handleLearnClick(event: Event): void {
     event.preventDefault();
     this.closeMenu();
-    this.router.navigate(['/in-progress']);
+    this.router.navigate(['/documentation']);
   }
 }

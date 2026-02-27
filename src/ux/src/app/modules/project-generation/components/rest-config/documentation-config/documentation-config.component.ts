@@ -57,6 +57,14 @@ export class DocumentationConfigComponent implements OnChanges {
     this.ensureDocumentationDefaults();
   }
 
+  onIncludeDefaultDocumentationChange(enabled: boolean): void {
+    if (!this.draft?.documentation) {
+      this.draft.documentation = { includeDefaultDocumentation: true, endpoints: {} };
+    }
+    this.draft.documentation.includeDefaultDocumentation = Boolean(enabled);
+    this.ensureDocumentationDefaults();
+  }
+
   get selectedEndpoints(): Array<{ key: EndpointKey; label: string; }> {
     return this.endpointDefinitions.filter((endpoint) => Boolean(this.draft?.methods?.[endpoint.key]));
   }
@@ -193,26 +201,36 @@ export class DocumentationConfigComponent implements OnChanges {
     }
 
     if (!this.draft.documentation) {
-      this.draft.documentation = { endpoints: {} };
+      this.draft.documentation = { includeDefaultDocumentation: true, endpoints: {} };
+    }
+    if (typeof this.draft.documentation.includeDefaultDocumentation !== 'boolean') {
+      this.draft.documentation.includeDefaultDocumentation = true;
     }
     if (!this.draft.documentation.endpoints) {
       this.draft.documentation.endpoints = {};
     }
+    const includeDefaults = Boolean(this.draft.documentation.includeDefaultDocumentation);
 
     this.endpointDefinitions.forEach((endpoint) => {
       const current = this.draft.documentation.endpoints[endpoint.key];
       const defaults = this.getDefaultEntry(endpoint.key, endpoint.label);
       if (!current || typeof current !== 'object') {
-        this.draft.documentation.endpoints[endpoint.key] = defaults;
+        this.draft.documentation.endpoints[endpoint.key] = includeDefaults
+          ? defaults
+          : { description: '', group: '', descriptionTags: [], deprecated: false };
         return;
       }
       const tags = Array.isArray(current.descriptionTags)
         ? current.descriptionTags.map((item: unknown) => String(item ?? '').trim()).filter(Boolean)
         : [];
       this.draft.documentation.endpoints[endpoint.key] = {
-        description: String(current.description ?? '').trim() || defaults.description,
-        group: String(current.group ?? '').trim() || defaults.group,
-        descriptionTags: Array.from(new Set(tags.length ? tags : defaults.descriptionTags)),
+        description: includeDefaults
+          ? (String(current.description ?? '').trim() || defaults.description)
+          : String(current.description ?? '').trim(),
+        group: includeDefaults
+          ? (String(current.group ?? '').trim() || defaults.group)
+          : String(current.group ?? '').trim(),
+        descriptionTags: Array.from(new Set(includeDefaults ? (tags.length ? tags : defaults.descriptionTags) : tags)),
         deprecated: Boolean(current.deprecated)
       };
     });

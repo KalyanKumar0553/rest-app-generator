@@ -3,6 +3,7 @@ package com.src.main.util;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -36,7 +37,7 @@ public class GradleWrapperInstaller {
 
 			trySetExecutable(gradlew);
 
-			copyClasspathIfPresent("/templates/gradle/wrapper/gradle-wrapper.jar", wrapperJar);
+			ensureWrapperJar(version, wrapperJar);
 
 			String distroType = "bin";
 			Properties p = new Properties();
@@ -76,6 +77,25 @@ public class GradleWrapperInstaller {
 					StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.WRITE)) {
 				in.transferTo(out);
 			}
+		}
+	}
+
+	private static void ensureWrapperJar(String gradleVersion, Path wrapperJar) throws IOException {
+		copyClasspathIfPresent("/templates/gradle/wrapper/gradle-wrapper.jar", wrapperJar);
+		if (Files.exists(wrapperJar) && Files.size(wrapperJar) > 0L) {
+			return;
+		}
+
+		Files.createDirectories(wrapperJar.getParent());
+		String url = "https://raw.githubusercontent.com/gradle/gradle/v" + gradleVersion
+				+ "/gradle/wrapper/gradle-wrapper.jar";
+		try (InputStream in = URI.create(url).toURL().openStream();
+				OutputStream out = Files.newOutputStream(wrapperJar, StandardOpenOption.CREATE,
+						StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.WRITE)) {
+			in.transferTo(out);
+		}
+		if (!Files.exists(wrapperJar) || Files.size(wrapperJar) == 0L) {
+			throw new IOException("Failed to provision gradle-wrapper.jar at " + wrapperJar);
 		}
 	}
 

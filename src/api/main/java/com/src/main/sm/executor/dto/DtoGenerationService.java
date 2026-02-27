@@ -16,6 +16,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.src.main.dto.AppSpecDTO;
 import com.src.main.sm.executor.common.BoilerplateStyle;
 import com.src.main.sm.executor.common.BoilerplateStyleResolver;
+import com.src.main.sm.executor.common.GenerationLanguage;
+import com.src.main.sm.executor.common.GenerationLanguageResolver;
+import com.src.main.sm.executor.common.TemplatePathResolver;
 import com.src.main.sm.executor.TemplateEngine;
 import com.src.main.sm.executor.enumgen.EnumGenerationSupport;
 import com.src.main.sm.executor.enumgen.EnumSpecResolved;
@@ -23,7 +26,8 @@ import com.src.main.sm.executor.enumgen.EnumSpecResolved;
 @Service
 public class DtoGenerationService {
 
-	private static final String TPL_DTO = "templates/dto/class.java.mustache";
+	private static final String TPL_DTO_JAVA = "class.java.mustache";
+	private static final String TPL_DTO_KOTLIN = "class.kt.mustache";
 
 	private record ClassMethodsSelection(
 			boolean generateToString,
@@ -46,6 +50,7 @@ public class DtoGenerationService {
 	public void generate(Path root, Map<String, Object> yaml, String groupId, String artifact) throws Exception {
 		String basePkg = resolveBasePackage(yaml, groupId, artifact);
 		BoilerplateStyle style = BoilerplateStyleResolver.resolveFromYaml(yaml, true);
+		GenerationLanguage language = GenerationLanguageResolver.resolveFromYaml(yaml);
 
 		List<Map<String, Object>> dtos = (List<Map<String, Object>>) yaml.getOrDefault("dtos", List.of());
 		if (dtos.isEmpty()) {
@@ -57,14 +62,14 @@ public class DtoGenerationService {
 		String enumPackage = EnumGenerationSupport.resolveEnumPackage(basePkg, spec.getPackages());
 
 		if (dtos.stream().anyMatch(d -> DtoGenerationSupport.hasNonEmpty(d.get("classConstraints")))) {
-			validationHelperGenerator.ensureCrossFieldValidationHelpers(root, basePkg);
+			validationHelperGenerator.ensureCrossFieldValidationHelpers(root, basePkg, language);
 		}
 
 		List<Map<String, Object>> dtosForMessages = new ArrayList<>();
 		try {
 			dtos.stream().map(dto -> buildUnit(dto, enumByName, enumPackage, style)).forEach(unit -> {
 				try {
-					writeDtoUnit(root, basePkg, unit);
+					writeDtoUnit(root, basePkg, unit, language);
 					dtosForMessages.add(unit.getMessageModel());
 				} catch (Exception ex) {
 					throw new RuntimeException(ex);
@@ -88,7 +93,7 @@ public class DtoGenerationService {
 		return basePkg;
 	}
 
-	private void writeDtoUnit(Path root, String basePkg, DtoGenerationUnit unit) throws Exception {
+	private void writeDtoUnit(Path root, String basePkg, DtoGenerationUnit unit, GenerationLanguage language) throws Exception {
 		Map<String, Object> templateModel = new LinkedHashMap<>();
 		templateModel.put("basePkg", basePkg);
 		templateModel.put("sub", unit.getSubPackage());
@@ -104,11 +109,12 @@ public class DtoGenerationService {
 		templateModel.put("generateToString", !unit.isUseLombok() && unit.isGenerateToString());
 		templateModel.put("generateEquals", !unit.isUseLombok() && unit.isGenerateEquals());
 		templateModel.put("generateHashCode", !unit.isUseLombok() && unit.isGenerateHashCode());
-		String code = templateEngine.render(TPL_DTO, templateModel);
+		String dtoTemplate = language == GenerationLanguage.KOTLIN ? TPL_DTO_KOTLIN : TPL_DTO_JAVA;
+		String code = templateEngine.renderAny(TemplatePathResolver.candidates(language, "dto", dtoTemplate), templateModel);
 		code = DtoGenerationSupport.injectImportsAfterPackage(code, unit.getImports());
-		Path dir = root.resolve("src/main/java/" + basePkg.replace('.', '/') + "/dto/" + unit.getSubPackage());
+		Path dir = root.resolve("src/main/" + language.templateFolder() + "/" + basePkg.replace('.', '/') + "/dto/" + unit.getSubPackage());
 		Files.createDirectories(dir);
-		Files.writeString(dir.resolve(unit.getName() + ".java"), code, StandardCharsets.UTF_8);
+		Files.writeString(dir.resolve(unit.getName() + "." + language.fileExtension()), code, StandardCharsets.UTF_8);
 	}
 
 	@SuppressWarnings("unchecked")

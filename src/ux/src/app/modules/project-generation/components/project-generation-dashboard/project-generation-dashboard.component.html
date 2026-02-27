@@ -35,6 +35,15 @@
 ></app-confirmation-modal>
 
 <app-confirmation-modal
+  *ngIf="showConfigureApiDisableConfirmation"
+  [title]="configureApiDisableConfirmationConfig.title"
+  [message]="configureApiDisableConfirmationConfig.message"
+  [buttons]="configureApiDisableConfirmationConfig.buttons"
+  (confirm)="confirmDisableConfigureApi()"
+  (cancel)="cancelDisableConfigureApi()"
+></app-confirmation-modal>
+
+<app-confirmation-modal
   *ngIf="showControllersConfigDiscardConfirmation"
   [title]="controllersConfigDiscardConfirmationConfig.title"
   [message]="controllersConfigDiscardConfirmationConfig.message"
@@ -42,6 +51,23 @@
   (confirm)="confirmCancelControllersConfiguration()"
   (cancel)="cancelCancelControllersConfiguration()"
 ></app-confirmation-modal>
+
+<app-confirmation-modal
+  *ngIf="showGenerationCancelConfirmation"
+  [title]="generationCancelConfirmationConfig.title"
+  [message]="generationCancelConfirmationConfig.message"
+  [buttons]="generationCancelConfirmationConfig.buttons"
+  (confirm)="confirmCancelGenerationRequest()"
+  (cancel)="cancelCancelGenerationRequest()"
+></app-confirmation-modal>
+
+<app-loading-overlay
+  [visible]="isGeneratingFromDtoSave"
+  [title]="'Generating Project'"
+  [message]="'Saving configuration and generating project artifacts. Please wait.'"
+  [showCancel]="true"
+  (cancel)="onCancelGenerationRequested()">
+</app-loading-overlay>
 
 <div class="mobile-header">
   <div class="container">
@@ -107,9 +133,10 @@
 
           <div class="panel-content">
             <mat-form-field appearance="fill" class="full-width">
-              <mat-label>Project group</mat-label>
+              <mat-label>Project group *</mat-label>
               <input
                 matInput
+                #projectGroupInput
                 [(ngModel)]="projectSettings.projectGroup"
                 (ngModelChange)="onProjectGroupChange()"
                 [placeholder]="appSettings.defaultProjectGroup">
@@ -117,9 +144,10 @@
             </mat-form-field>
 
             <mat-form-field appearance="fill" class="full-width">
-              <mat-label>Project name</mat-label>
+              <mat-label>Project name *</mat-label>
               <input
                 matInput
+                #projectNameInput
                 [(ngModel)]="projectSettings.projectName"
                 (ngModelChange)="onProjectNameChange()"
                 placeholder="my-app">
@@ -265,7 +293,7 @@
             </div>
 
             <div class="form-row">
-              <mat-checkbox [(ngModel)]="developerPreferences.configureApi" (ngModelChange)="onEnableConfigureApiChange($event)">
+              <mat-checkbox [checked]="developerPreferences.configureApi" (change)="onEnableConfigureApiChange($event)">
                 Enable API Configuration Screen
                 <mat-icon class="inline-icon" matTooltip="Enable API controller configuration"
                   (mousedown)="onHelpIconInteraction($event)" (click)="onHelpIconInteraction($event)">info</mat-icon>
@@ -453,9 +481,13 @@
           [dataObjects]="dataObjects"
           [entities]="entities"
           [enums]="enums"
+          [mappers]="mappers"
+          [defaultTab]="'dataObjects'"
           (dataObjectsChange)="onDataObjectsChange($event)"
           (entitiesChange)="onEntitiesFromDataObjectsChange($event)"
-          (enumsChange)="onEnumsChange($event)">
+          (enumsChange)="onEnumsChange($event)"
+          (mappersChange)="onMappersChange($event)"
+          (activeTabChange)="onDataObjectsActiveTabChange($event)">
         </app-data-objects>
       </div>
 
@@ -463,6 +495,43 @@
         <div class="action-section">
           <button mat-raised-button type="button" (click)="handleDataObjectsPrimaryAction()" [disabled]="isLoading || isGeneratingFromDtoSave">
             {{ getDataObjectsPrimaryActionLabel() }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="content-body" *ngIf="activeSection === 'mappers'" id="mappers">
+      <div class="sticky-header">
+        <div class="top-actions">
+          <button class="back-btn-desktop" (click)="openYamlPreviewModal()" aria-label="Preview YAML spec" mat-stroked-button>
+            <i class="bi bi-eye"></i>
+          </button>
+          <button class="back-btn-desktop" (click)="handleHome()" aria-label="Go to home" mat-stroked-button>
+            <i class="bi bi-house-door"></i>
+            Home
+          </button>
+        </div>
+      </div>
+
+      <div class="scrollable-content">
+        <app-data-objects
+          [dataObjects]="dataObjects"
+          [entities]="entities"
+          [enums]="enums"
+          [mappers]="mappers"
+          [defaultTab]="'mappers'"
+          (dataObjectsChange)="onDataObjectsChange($event)"
+          (entitiesChange)="onEntitiesFromDataObjectsChange($event)"
+          (enumsChange)="onEnumsChange($event)"
+          (mappersChange)="onMappersChange($event)"
+          (activeTabChange)="onDataObjectsActiveTabChange($event)">
+        </app-data-objects>
+      </div>
+
+      <div class="sticky-footer">
+        <div class="action-section">
+          <button mat-raised-button type="button" (click)="handleMappersPrimaryAction()" [disabled]="isLoading || isGeneratingFromDtoSave">
+            {{ getMappersPrimaryActionLabel() }}
           </button>
         </div>
       </div>

@@ -16,3 +16,11 @@
 ### Scope
 - Apply this rule across all UX files (components, shared styles, modal styling, graph styling, etc.).
 - Keep theming reusable and consistent across screens.
+
+### Confirmation Toggle State (Mandatory)
+- For any destructive checkbox toggle that needs confirmation, do not let UI commit unchecked state before user confirms.
+- With Angular Material checkbox, prefer `(change)` and pass full `MatCheckboxChange` event.
+- Keep previous state visually checked until confirmation result.
+- On `Continue`, commit unchecked state and run cleanup.
+- On `Cancel`, explicitly restore checked state on both bound model and checkbox source (`event.source.checked = true`), then trigger change detection.
+- Apply this pattern across desktop and mobile to avoid visual desync.

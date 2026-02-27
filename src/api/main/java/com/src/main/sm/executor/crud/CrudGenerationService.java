@@ -5,6 +5,8 @@ import java.util.List;
 
 import org.springframework.stereotype.Service;
 
+import com.src.main.sm.executor.common.GenerationLanguage;
+
 @Service
 public class CrudGenerationService {
 
@@ -14,9 +16,9 @@ public class CrudGenerationService {
 		this.repositoryGenerator = repositoryGenerator;
 	}
 
-	public void generate(Path root, List<CrudGenerationUnit> units) throws Exception {
+	public void generate(Path root, List<CrudGenerationUnit> units, GenerationLanguage language) throws Exception {
 		for (CrudGenerationUnit unit : units) {
-			repositoryGenerator.generate(root, unit);
+			repositoryGenerator.generate(root, unit, language);
 		}
 	}
 }

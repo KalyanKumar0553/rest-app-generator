@@ -1,0 +1,33 @@
+package {{basePkg}}.validation
+
+import jakarta.validation.ConstraintValidator
+import jakarta.validation.ConstraintValidatorContext
+
+class FieldMatchValidator : ConstraintValidator<FieldMatch, Any> {
+    private var first: String = ""
+    private var second: String = ""
+
+    override fun initialize(constraint: FieldMatch) {
+        first = constraint.first
+        second = constraint.second
+    }
+
+    override fun isValid(value: Any?, context: ConstraintValidatorContext): Boolean {
+        if (value == null) return true
+        val v1 = read(value, first)
+        val v2 = read(value, second)
+        return when {
+            v1 == null && v2 == null -> true
+            v1 == null || v2 == null -> false
+            else -> v1 == v2
+        }
+    }
+
+    private fun read(bean: Any, field: String): Any? = try {
+        val f = bean.javaClass.getDeclaredField(field)
+        f.isAccessible = true
+        f.get(bean)
+    } catch (_: Exception) {
+        null
+    }
+}

@@ -39,13 +39,14 @@ public class InitializrGradleGenerator {
 		String packaging = model.getPackaging();
 		String jdk = model.getJdkVersion();
 		boolean kotlin = isKotlinDsl(model.getGenerator());
+		String mainClassFqcn = groupId + "." + toPascal(artifact) + "Application" + (kotlin ? "Kt" : "");
 
 		GradleBuild build = createBaseBuild(groupId, artifact, bootVer, appVer, packaging, jdk);
 		addModelDependencies(build, deps);
 		addStandardDependencies(build, packaging, model.isIncludeOpenapi(), hasJpaDependency(deps),
 				model.isIncludeLombok());
 
-		String buildContent = renderBuild(build, kotlin, jdk);
+		String buildContent = renderBuild(build, kotlin, jdk, mainClassFqcn);
 		String settingsContent = renderSettings(artifact, build, kotlin);
 
 		String buildFileName = kotlin ? "build.gradle.kts" : "build.gradle";
@@ -137,7 +138,7 @@ public class InitializrGradleGenerator {
 		}
 	}
 
-	private String renderBuild(GradleBuild build, boolean kotlinDsl, String jdk) {
+	private String renderBuild(GradleBuild build, boolean kotlinDsl, String jdk, String mainClassFqcn) {
 	    StringWriter out = new StringWriter();
 	    try (IndentingWriter iw = new IndentingWriter(out, s -> "    ")) {
 	        if (kotlinDsl) {
@@ -161,7 +162,37 @@ public class InitializrGradleGenerator {
 	        );
 	    }
 
+	    if (kotlinDsl) {
+	    	result = ensureKotlinGradlePlugins(result);
+	    	result = ensureKotlinBootMainClass(result, mainClassFqcn);
+	    }
+
 	    return result;
+	}
+
+	private String ensureKotlinGradlePlugins(String gradleKts) {
+		if (gradleKts == null || gradleKts.isBlank() || gradleKts.contains("org.jetbrains.kotlin.jvm")) {
+			return gradleKts;
+		}
+		String kotlinPlugins = """
+        id("org.jetbrains.kotlin.jvm") version "1.9.25"
+        id("org.jetbrains.kotlin.plugin.spring") version "1.9.25"
+        id("org.jetbrains.kotlin.plugin.jpa") version "1.9.25"
+""";
+		return gradleKts.replaceFirst("(?m)^\\s*id\\(\"java\"\\)\\s*$", kotlinPlugins + "    id(\"java\")");
+	}
+
+	private String ensureKotlinBootMainClass(String gradleKts, String mainClassFqcn) {
+		if (gradleKts == null || gradleKts.isBlank() || mainClassFqcn == null || mainClassFqcn.isBlank()
+				|| gradleKts.contains("tasks.named<org.springframework.boot.gradle.tasks.bundling.BootJar>(\"bootJar\")")) {
+			return gradleKts;
+		}
+		return gradleKts + """
+
+tasks.named<org.springframework.boot.gradle.tasks.bundling.BootJar>("bootJar") {
+    mainClass.set("%s")
+}
+""".formatted(mainClassFqcn);
 	}
 
 	private String renderSettings(String artifactId, GradleBuild build, boolean kotlinDsl) {
@@ -198,6 +229,24 @@ public class InitializrGradleGenerator {
 		if ("8".equals(trimmed) || "1.8".equals(trimmed))
 			return "8";
 		return trimmed;
+	}
+
+	private static String toPascal(String raw) {
+		if (raw == null || raw.isBlank()) {
+			return "MyApp";
+		}
+		String normalized = raw.replace('-', ' ').replace('_', ' ');
+		StringBuilder result = new StringBuilder();
+		for (String token : normalized.trim().split("\\s+")) {
+			if (token.isBlank()) {
+				continue;
+			}
+			result.append(Character.toUpperCase(token.charAt(0)));
+			if (token.length() > 1) {
+				result.append(token.substring(1).toLowerCase());
+			}
+		}
+		return result.isEmpty() ? "MyApp" : result.toString();
 	}
 
 	private static String req(String v, String name) {
