@@ -19,8 +19,11 @@ public class NewsletterSubscriptionEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "email", nullable = false, unique = true, length = 320)
+    @Column(name = "email", nullable = false, length = 1024)
     private String email;
+
+    @Column(name = "email_hash", length = 64)
+    private String emailHash;
 
     @Column(name = "subscribed_at", nullable = false)
     private OffsetDateTime subscribedAt;

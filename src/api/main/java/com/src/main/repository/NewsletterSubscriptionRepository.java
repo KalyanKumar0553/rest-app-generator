@@ -16,12 +16,31 @@ public interface NewsletterSubscriptionRepository extends JpaRepository<Newslett
     @Modifying
     @Transactional
     @Query(value = """
-            INSERT INTO newsletter_subscriptions (email, subscribed_at, welcome_email_sent, sending_in_progress, send_attempt_count)
-            VALUES (:email, :now, false, false, 0)
-            ON CONFLICT (email)
+            INSERT INTO newsletter_subscriptions (email, email_hash, subscribed_at, welcome_email_sent, sending_in_progress, send_attempt_count)
+            VALUES (:email, :emailHash, :now, false, false, 0)
+            ON CONFLICT (email_hash)
             DO NOTHING
             """, nativeQuery = true)
-    int insertIgnoreDuplicate(@Param("email") String email, @Param("now") OffsetDateTime now);
+    int insertIgnoreDuplicate(@Param("email") String email, @Param("emailHash") String emailHash, @Param("now") OffsetDateTime now);
+
+    @Query("""
+            SELECT n
+              FROM NewsletterSubscriptionEntity n
+             WHERE n.email = :email
+             ORDER BY n.id ASC
+            """)
+    List<NewsletterSubscriptionEntity> findLegacyByEmail(@Param("email") String email);
+
+    boolean existsByEmailHash(String emailHash);
+
+    @Modifying
+    @Transactional
+    @Query("""
+            UPDATE NewsletterSubscriptionEntity n
+               SET n.emailHash = :emailHash
+             WHERE n.id = :id
+            """)
+    int setEmailHash(@Param("id") Long id, @Param("emailHash") String emailHash);
 
     List<NewsletterSubscriptionEntity> findTop50ByWelcomeEmailSentFalseAndSendingInProgressFalseOrderBySubscribedAtAsc();
 

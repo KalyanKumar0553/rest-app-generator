@@ -70,7 +70,7 @@
   background: none;
   border: none;
   cursor: pointer;
-  color: var(--theme-modal-header-text);
+  color: var(--theme-primary-btn-text);
   font-size: 24px;
   padding: 6px;
   display: flex;
@@ -82,8 +82,8 @@
 }
 
 .modal-close-btn:hover {
-  color: var(--theme-modal-header-text);
-  background-color: color-mix(in srgb, var(--theme-modal-header-text) 16%, transparent);
+  color: var(--theme-primary-btn-text);
+  background-color: color-mix(in srgb, var(--theme-primary-btn-text) 16%, transparent);
 }
 
 .modal-header {
@@ -104,7 +104,7 @@
   margin: 0;
   font-size: 24px;
   font-weight: 600;
-  color: var(--theme-modal-header-text);
+  color: var(--theme-primary-btn-text);
   padding-right: 12px;
   flex: 1;
 }
@@ -127,6 +127,14 @@
   position: sticky;
   bottom: 0;
   z-index: 10;
+}
+
+.modal-footer > button {
+  margin-right: 13px;
+}
+
+.modal-footer > button:last-child {
+  margin-right: 0;
 }
 
 @media (max-width: 768px) {

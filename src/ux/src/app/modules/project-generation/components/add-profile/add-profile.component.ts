@@ -55,7 +55,7 @@ export class AddProfileComponent implements OnChanges {
     }
 
     if (!this.isValidProfileName(normalized)) {
-      this.toastService.error('Profile must contain only letters, numbers, dot, dash, or underscore.');
+      this.toastService.error('Profile must contain only alphabets.');
       return;
     }
 
@@ -93,6 +93,6 @@ export class AddProfileComponent implements OnChanges {
   }
 
   private isValidProfileName(profile: string): boolean {
-    return /^[a-z0-9._-]+$/.test(profile);
+    return /^[a-z]+$/.test(profile);
   }
 }

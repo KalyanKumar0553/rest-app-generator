@@ -27,6 +27,7 @@ export class FeaturesComponent implements OnInit, OnDestroy {
       title: 'Project and database settings',
       description: 'Select the package name, the Java Version, the Maven or Gradle. Add the name of your first database model. Create and manage multiple entities and define relationships.',
       visual: 'mockup',
+      image: 'assets/images/home-carousel/slide-2-mockup-content.png',
       reverse: false
     },
     {
@@ -34,6 +35,7 @@ export class FeaturesComponent implements OnInit, OnDestroy {
       title: 'Define your database schema',
       description: 'Create your entities and databases as simple, fast and managed as you want. Add fields, REST API or a complete CRUD for the entity. Define all model properties and relations required for later application building.',
       visual: 'schema',
+      image: 'assets/images/home-carousel/slide-3-visual-mockup.png',
       reverse: true
     },
     {
@@ -41,6 +43,7 @@ export class FeaturesComponent implements OnInit, OnDestroy {
       title: 'Explore and download your code',
       description: 'When you are done and happy with the result, download the complete package. Just extract it and import the project to your IDE for further testing and work.',
       visual: 'code',
+      image: 'assets/images/home-carousel/slide-4-code-preview.png',
       reverse: false
     }
   ];
@@ -72,6 +75,14 @@ export class FeaturesComponent implements OnInit, OnDestroy {
 
   startProject(): void {
     this.router.navigate(['/project-generation']);
+  }
+
+  onVisualImageError(event: Event): void {
+    const image = event.target as HTMLImageElement | null;
+    if (!image) {
+      return;
+    }
+    image.style.display = 'none';
   }
 
   pauseAutoSlide(): void {

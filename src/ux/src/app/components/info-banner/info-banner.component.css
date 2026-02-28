@@ -1,6 +1,6 @@
 .info-banner {
-  background-color: #97a9ae;
-  color: #ffffff;
+  background-color: var(--theme-info-banner-bg);
+  color: var(--color-text-inverse);
   padding: 20px 24px;
   border-radius: 8px;
   margin-bottom: 32px;
@@ -27,7 +27,7 @@
 .info-content a,
 .info-content a:visited,
 .info-content a:active {
-  color: #ffffff;
+  color: var(--color-text-inverse);
   text-decoration: underline;
   font-weight: 500;
   display: inline-flex;
@@ -35,7 +35,7 @@
 }
 
 .info-content a.info-link {
-  color: #ffffff !important;
+  color: var(--color-text-inverse) !important;
 }
 
 .info-content a:hover {
@@ -45,7 +45,7 @@
 
 :host ::ng-deep .info-content .info-link {
   white-space: break-spaces;
-  color: #ffffff !important;
+  color: var(--color-text-inverse) !important;
   text-decoration: underline;
   font-weight: 500;
   display: inline-flex;
@@ -60,7 +60,7 @@
 .close-banner-btn {
   background: none;
   border: none;
-  color: #ffffff;
+  color: var(--color-text-inverse);
   cursor: pointer;
   padding: 4px;
   display: flex;

@@ -80,6 +80,14 @@
   justify-content: right;
 }
 
+.modal-footer button {
+  margin-right: 13px;
+}
+
+.modal-footer > button:last-child {
+  margin-right: 0;
+}
+
 .btn-cancel,
 .btn-action {
   padding: 14px 40px;

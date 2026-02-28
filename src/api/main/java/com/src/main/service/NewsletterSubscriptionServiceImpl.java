@@ -26,6 +26,7 @@ public class NewsletterSubscriptionServiceImpl implements NewsletterSubscription
 
     private final NewsletterSubscriptionRepository newsletterSubscriptionRepository;
     private final MsgService msgService;
+    private final DataEncryptionService dataEncryptionService;
 
     @Value("${app.newsletter.email.from:no-reply@bootrid.io}")
     private String emailFrom;
@@ -37,8 +38,19 @@ public class NewsletterSubscriptionServiceImpl implements NewsletterSubscription
     @Transactional
     public boolean subscribe(String email) {
         String normalizedEmail = normalizeEmail(email);
+        String emailHash = dataEncryptionService.hashForLookup(normalizedEmail);
+        String encryptedEmail = dataEncryptionService.encrypt(normalizedEmail);
         OffsetDateTime now = OffsetDateTime.now();
-        int inserted = newsletterSubscriptionRepository.insertIgnoreDuplicate(normalizedEmail, now);
+        int inserted = newsletterSubscriptionRepository.insertIgnoreDuplicate(encryptedEmail, emailHash, now);
+        if (inserted == 0) {
+            // Backward compatibility for legacy plain-text rows created before encryption rollout.
+            var legacyRows = newsletterSubscriptionRepository.findLegacyByEmail(normalizedEmail);
+            for (NewsletterSubscriptionEntity row : legacyRows) {
+                if (row.getId() != null && row.getEmailHash() == null && !newsletterSubscriptionRepository.existsByEmailHash(emailHash)) {
+                    newsletterSubscriptionRepository.setEmailHash(row.getId(), emailHash);
+                }
+            }
+        }
         return inserted > 0;
     }
 
@@ -60,13 +72,17 @@ public class NewsletterSubscriptionServiceImpl implements NewsletterSubscription
             }
 
             try {
-                String htmlBody = buildWelcomeHtml(subscription.getEmail());
-                msgService.sendEmail(emailFrom, subscription.getEmail(), emailSubject, htmlBody);
+                String decryptedEmail = dataEncryptionService.decrypt(subscription.getEmail());
+                if (decryptedEmail == null || decryptedEmail.isBlank()) {
+                    throw new IllegalArgumentException("Decrypted email is empty");
+                }
+                String htmlBody = buildWelcomeHtml(decryptedEmail);
+                msgService.sendEmail(emailFrom, decryptedEmail, emailSubject, htmlBody);
                 markSent(id);
             } catch (Exception ex) {
                 String error = ex.getMessage() == null ? "Email send failed" : ex.getMessage();
                 markFailed(id, abbreviate(error, 800));
-                log.warn("Failed to send newsletter welcome email to {}", subscription.getEmail(), ex);
+                log.warn("Failed to send newsletter welcome email for subscription id={}", id, ex);
             }
         }
     }

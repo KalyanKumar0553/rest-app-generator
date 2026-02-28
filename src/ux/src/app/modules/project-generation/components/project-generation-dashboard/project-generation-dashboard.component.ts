@@ -46,56 +46,39 @@ import { RestConfigComponent, RestEndpointConfig } from '../rest-config/rest-con
 import { ENTITY_FIELD_TYPE_OPTIONS } from '../../constants/backend-field-types';
 import { VALIDATION_MESSAGES } from '../../constants/validation-messages';
 
-interface ProjectSettings {
-  projectGroup: string;
-  projectName: string;
-  buildType: 'gradle' | 'maven';
-  language: 'java' | 'kotlin';
-  frontend: string;
-}
-
-interface DatabaseSettings {
-  dbType: 'SQL' | 'NOSQL' | 'NONE';
-  database: string;
-  dbGeneration: string;
-  pluralizeTableNames: boolean;
-}
-
-interface DatabaseOption {
-  value: string;
-  label: string;
-  type: 'SQL' | 'NOSQL';
-}
-
-interface DeveloperPreferences {
-  applFormat: 'yaml' | 'properties';
-  packages: 'technical' | 'domain' | 'mixed';
-  enableOpenAPI: boolean;
-  enableActuator: boolean;
-  configureApi: boolean;
-  enableLombok: boolean;
-  useDockerCompose: boolean;
-  profiles: string[];
-  javaVersion: string;
-  deployment: string;
-}
-
-interface ProjectRunSummary {
-  id: string;
-  projectId: string;
-  status: string;
-  createdAt?: string;
-  runNumber?: number;
-}
-
-interface ControllerRestSpecRow {
-  key: string;
-  name: string;
-  totalEndpoints: number;
-  mappedEntities: string[];
-  entityIndexes: number[];
-  hasControllersConfig: boolean;
-}
+import {
+  ProjectSettings,
+  DatabaseSettings,
+  DatabaseOption,
+  DeveloperPreferences,
+  ProjectRunSummary,
+  ControllerRestSpecRow
+} from './project-generation-dashboard.models';
+import {
+  BASE_NAV_ITEMS,
+  ACTUATOR_NAV_ITEM,
+  CONTROLLERS_NAV_ITEM,
+  MAPPERS_NAV_ITEM,
+  FRONTEND_OPTIONS,
+  DATABASE_OPTIONS,
+  DB_TYPE_OPTIONS,
+  DB_GENERATION_OPTIONS,
+  JAVA_VERSION_OPTIONS,
+  DEPLOYMENT_OPTIONS,
+  DEFAULT_PROJECT_SETTINGS,
+  DEFAULT_DATABASE_SETTINGS,
+  DEFAULT_DEVELOPER_PREFERENCES,
+  DEFAULT_CONTROLLERS_CONFIG,
+  BACK_CONFIRMATION_CONFIG,
+  ENTITIES_DELETE_CONFIRMATION_CONFIG,
+  REST_SPEC_DELETE_CONFIRMATION_CONFIG,
+  CONFIGURE_API_DISABLE_CONFIRMATION_CONFIG,
+  CONTROLLERS_CONFIG_DISCARD_CONFIRMATION_CONFIG,
+  GENERATION_CANCEL_CONFIRMATION_CONFIG,
+  RECENT_PROJECT_PROMPT_CONFIG
+} from './project-generation-dashboard.defaults';
+import { ProjectSpecMapperService } from '../../services/project-spec-mapper.service';
+import { toDatabaseCode, resolveDatabaseType, trimmed, toArtifactId, hasNumber } from '../../utils/project-generation.utils';
 
 @Component({
   selector: 'app-project-generation-dashboard',
@@ -143,15 +126,10 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
   hasUnsavedChanges = false;
   activeSection = 'general';
 
-  baseNavItems: NavItem[] = [
-    { icon: 'public', label: 'General', value: 'general' },
-    { icon: 'storage', label: 'Entities', value: 'entities' },
-    { icon: 'category', label: 'Data Objects', value: 'data-objects' },
-    { icon: 'search', label: 'Explore', value: 'explore' },
-  ];
-  actuatorNavItem: NavItem = { icon: 'device_hub', label: 'Actuator', value: 'actuator' };
-  controllersNavItem: NavItem = { icon: 'tune', label: 'Controllers', value: 'controllers' };
-  mappersNavItem: NavItem = { icon: 'shuffle', label: 'Mappers', value: 'mappers' };
+  baseNavItems: NavItem[] = [...BASE_NAV_ITEMS];
+  actuatorNavItem: NavItem = ACTUATOR_NAV_ITEM;
+  controllersNavItem: NavItem = CONTROLLERS_NAV_ITEM;
+  mappersNavItem: NavItem = MAPPERS_NAV_ITEM;
 
   entities: any[] = [];
   dataObjects: any[] = [];
@@ -182,93 +160,21 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
   private generationGuestSubscription: Subscription | null = null;
   exploreZipBlob: Blob | null = null;
   exploreZipFileName = 'project.zip';
-  backConfirmationConfig = {
-    title: 'Unsaved Changes',
-    message: ['You have unsaved changes. All changes will be discarded if you leave this page.', 'Are you sure you want to continue?'],
-    buttons: [
-      { text: 'Cancel', type: 'cancel' as const, action: 'cancel' as const },
-      { text: 'Discard Changes', type: 'danger' as const, action: 'confirm' as const }
-    ]
-  };
-  entitiesDeleteConfirmationConfig: { title: string; message: string; buttons: ModalButton[] } = {
-    title: 'Confirmation',
-    message: 'All Configured Entities will be deleted. Want to Continue ?',
-    buttons: [
-      { text: 'Continue', type: 'danger', action: 'confirm' },
-      { text: 'Cancel', type: 'cancel', action: 'cancel' }
-    ]
-  };
-  restSpecDeleteConfirmationConfig: { title: string; message: string; buttons: ModalButton[] } = {
-    title: 'Delete REST Configuration',
-    message: 'This will remove REST endpoint configuration and related model mapping.',
-    buttons: [
-      { text: 'Delete', type: 'danger', action: 'confirm' },
-      { text: 'Cancel', type: 'cancel', action: 'cancel' }
-    ]
-  };
-  configureApiDisableConfirmationConfig: { title: string; message: string; buttons: ModalButton[] } = {
-    title: 'Confirmation',
-    message: 'All API configuration will be lost. Want to proceed ?',
-    buttons: [
-      { text: 'Continue', type: 'danger', action: 'confirm' },
-      { text: 'Cancel', type: 'cancel', action: 'cancel' }
-    ]
-  };
-  controllersConfigDiscardConfirmationConfig: { title: string; message: string; buttons: ModalButton[] } = {
-    title: 'Confirmation',
-    message: 'All Change will be discarded from the configuration. Want to proceed ?',
-    buttons: [
-      { text: 'Confirm', type: 'danger', action: 'confirm' },
-      { text: 'Cancel', type: 'cancel', action: 'cancel' }
-    ]
-  };
-  generationCancelConfirmationConfig: { title: string; message: string; buttons: ModalButton[] } = {
-    title: 'Cancel Generation',
-    message: 'Project generation is in progress. Do you want to cancel?',
-    buttons: [
-      { text: 'Confirm', type: 'danger', action: 'confirm' },
-      { text: 'Cancel', type: 'confirm', action: 'cancel' }
-    ]
-  };
+
+  backConfirmationConfig = BACK_CONFIRMATION_CONFIG;
+  entitiesDeleteConfirmationConfig: { title: string; message: string; buttons: ModalButton[] } = { ...ENTITIES_DELETE_CONFIRMATION_CONFIG };
+  restSpecDeleteConfirmationConfig: { title: string; message: string; buttons: ModalButton[] } = { ...REST_SPEC_DELETE_CONFIRMATION_CONFIG };
+  configureApiDisableConfirmationConfig: { title: string; message: string; buttons: ModalButton[] } = { ...CONFIGURE_API_DISABLE_CONFIRMATION_CONFIG };
+  controllersConfigDiscardConfirmationConfig: { title: string; message: string; buttons: ModalButton[] } = { ...CONTROLLERS_CONFIG_DISCARD_CONFIRMATION_CONFIG };
+  generationCancelConfirmationConfig: { title: string; message: string; buttons: ModalButton[] } = { ...GENERATION_CANCEL_CONFIRMATION_CONFIG };
+  recentProjectPromptConfig: { title: string; message: string; buttons: ModalButton[] } = { ...RECENT_PROJECT_PROMPT_CONFIG };
   pendingRestSpecDeleteKey: string | null = null;
 
-  recentProjectPromptConfig: { title: string; message: string; buttons: ModalButton[] } = {
-    title: 'Load Recent project',
-    message: "You've worked on an another project before. Would you like to continue there?",
-    buttons: [
-      { text: 'Resume Last Project', type: 'confirm', action: 'confirm' },
-      { text: 'Create New project', type: 'cancel', action: 'cancel' }
-    ]
-  };
+  projectSettings: ProjectSettings = { ...DEFAULT_PROJECT_SETTINGS };
+  databaseSettings: DatabaseSettings = { ...DEFAULT_DATABASE_SETTINGS };
+  developerPreferences: DeveloperPreferences = { ...DEFAULT_DEVELOPER_PREFERENCES, profiles: [] };
 
-  projectSettings: ProjectSettings = {
-    projectGroup: APP_SETTINGS.defaultProjectGroup,
-    projectName: 'my-app',
-    buildType: 'gradle',
-    language: 'java',
-    frontend: 'none'
-  };
-
-  databaseSettings: DatabaseSettings = {
-    dbType: 'SQL',
-    database: 'POSTGRES',
-    dbGeneration: 'Hibernate (update)',
-    pluralizeTableNames: false
-  };
-
-  developerPreferences: DeveloperPreferences = {
-    applFormat: 'yaml',
-    packages: 'technical',
-    enableOpenAPI: false,
-    enableActuator: false,
-    configureApi: true,
-    enableLombok: false,
-    useDockerCompose: false,
-    profiles: [],
-    javaVersion: '21',
-    deployment: 'None'
-  };
-  controllersConfig: RestEndpointConfig = this.getDefaultControllersConfig();
+  controllersConfig: RestEndpointConfig = { ...DEFAULT_CONTROLLERS_CONFIG };
   controllersConfigEnabled = true;
   controllersCreatingNewConfig = false;
   controllersEditingSpecKey: string | null = null;
@@ -297,22 +203,13 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
   @ViewChild('projectGroupInput') projectGroupInput?: ElementRef<HTMLInputElement>;
   @ViewChild('projectNameInput') projectNameInput?: ElementRef<HTMLInputElement>;
 
-  frontendOptions = ['None', 'React', 'Vue', 'Angular'];
-  databaseOptions: DatabaseOption[] = [
-    { value: 'MSSQL', label: 'MSSQL Server', type: 'SQL' },
-    { value: 'MYSQL', label: 'MySQL', type: 'SQL' },
-    { value: 'MARIADB', label: 'MariaDB', type: 'SQL' },
-    { value: 'ORACLE', label: 'Oracle', type: 'SQL' },
-    { value: 'POSTGRES', label: 'PostgreSQL', type: 'SQL' },
-    { value: 'DERBY', label: 'Apache Derby', type: 'SQL' },
-    { value: 'H2', label: 'H2 Database', type: 'SQL' },
-    { value: 'HSQL', label: 'HyperSQL', type: 'SQL' },
-    { value: 'MONGODB', label: 'MongoDB', type: 'NOSQL' }
-  ];
-  dbTypeOptions: Array<'SQL' | 'NOSQL' | 'NONE'> = ['SQL', 'NOSQL', 'NONE'];
-  dbGenerationOptions = ['Hibernate (update)', 'Hibernate (create)'];
-  javaVersionOptions = ['17', '21'];
-  deploymentOptions = ['None', 'Docker', 'Kubernetes', 'Cloud'];
+  frontendOptions = FRONTEND_OPTIONS;
+  databaseOptions: DatabaseOption[] = DATABASE_OPTIONS;
+  dbTypeOptions: Array<'SQL' | 'NOSQL' | 'NONE'> = DB_TYPE_OPTIONS;
+  dbGenerationOptions = DB_GENERATION_OPTIONS;
+  javaVersionOptions = JAVA_VERSION_OPTIONS;
+  deploymentOptions = DEPLOYMENT_OPTIONS;
+
   constructor(
     private router: Router,
     private route: ActivatedRoute,
@@ -322,7 +219,8 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
     private validatorService: ValidatorService,
     private localStorageService: LocalStorageService,
     private cdr: ChangeDetectorRef,
-    private projectGenerationState: ProjectGenerationStateService
+    private projectGenerationState: ProjectGenerationStateService,
+    private specMapper: ProjectSpecMapperService
   ) {}
 
   get visibleNavItems(): NavItem[] {
@@ -351,7 +249,7 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
       }
     }
 
-    const isNoneDatabase = this.toDatabaseCode(this.databaseSettings.database) === 'NONE';
+    const isNoneDatabase = toDatabaseCode(this.databaseSettings.database) === 'NONE';
     if (!isNoneDatabase) {
       return navItems;
     }
@@ -359,7 +257,7 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
   }
 
   isEntitiesTabVisible(): boolean {
-    return this.toDatabaseCode(this.databaseSettings.database) !== 'NONE';
+    return toDatabaseCode(this.databaseSettings.database) !== 'NONE';
   }
 
   ngOnInit(): void {
@@ -416,6 +314,7 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
         configurations: this.sanitizeActuatorConfigurations(this.actuatorProfileEndpoints)
       },
       dependencies: this.dependencies,
+      selectedDependencies: this.selectedDependencies,
       entities: this.entities,
       dataObjects: this.dataObjects,
       relations: this.relations,
@@ -437,8 +336,8 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
         this.mappers = Array.isArray(projectData.mappers) ? projectData.mappers : [];
         this.projectSettings = projectData.settings || this.projectSettings;
         this.databaseSettings = projectData.database || this.databaseSettings;
-        this.databaseSettings.dbType = this.resolveDatabaseType(this.databaseSettings.dbType, this.databaseSettings.database);
-        this.databaseSettings.database = this.toDatabaseCode(this.databaseSettings.database);
+        this.databaseSettings.dbType = resolveDatabaseType(this.databaseSettings.dbType, this.databaseSettings.database);
+        this.databaseSettings.database = toDatabaseCode(this.databaseSettings.database);
         this.ensureDatabaseSelectionForType();
         this.previousDatabaseSelection = this.databaseSettings.database;
         this.previousDatabaseType = this.databaseSettings.dbType;
@@ -456,8 +355,8 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
         this.controllersConfigEnabled = projectData?.controllers?.enabled === undefined
           ? true
           : Boolean(projectData?.controllers?.enabled);
-        this.controllersConfig = this.parseControllersConfig(projectData?.controllers?.config);
-        const configurationOptions = this.getActuatorConfigurationOptions(projectData?.preferences?.profiles);
+        this.controllersConfig = this.specMapper.parseControllersConfig(projectData?.controllers?.config);
+        const configurationOptions = this.specMapper.getActuatorConfigurationOptions(projectData?.preferences?.profiles);
         this.actuatorConfigurationOptions = configurationOptions;
         this.actuatorProfileEndpoints = this.sanitizeActuatorConfigurations(
           projectData?.actuator?.configurations ?? projectData?.actuator?.endpoints,
@@ -474,7 +373,7 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
         this.relations = [];
         this.enums = [];
         this.mappers = [];
-        this.controllersConfig = this.getDefaultControllersConfig();
+        this.controllersConfig = { ...DEFAULT_CONTROLLERS_CONFIG };
         this.controllersConfigEnabled = true;
         this.syncActuatorConfigurationsWithProfiles();
         this.syncActuatorStateStore();
@@ -551,7 +450,7 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
       this.cancelControllerRestSpecEdit();
       this.showControllersConfigDiscardConfirmation = false;
     }
-    if (section === 'entities' && this.toDatabaseCode(this.databaseSettings.database) === 'NONE') {
+    if (section === 'entities' && toDatabaseCode(this.databaseSettings.database) === 'NONE') {
       this.activeSection = 'general';
       this.closeSidebar();
       return;
@@ -726,7 +625,7 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
           }
 
           this.exploreZipBlob = new Blob([zipData], { type: 'application/zip' });
-          this.exploreZipFileName = `${this.toArtifactId(this.projectSettings.projectName || 'project')}.zip`;
+          this.exploreZipFileName = `${toArtifactId(this.projectSettings.projectName || 'project')}.zip`;
           this.cacheZipFromArrayBuffer(yamlSpec, zipData, this.exploreZipFileName);
           this.activeSection = 'explore';
           this.toastService.success('Project generated successfully.');
@@ -759,8 +658,7 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
   }
 
   private buildCurrentProjectYaml(): string {
-    const generatorSpec = this.mapProjectToGeneratorSpec(this.getProjectData());
-    return this.convertObjectToYaml(generatorSpec);
+    return this.specMapper.buildYaml(this.getProjectData());
   }
 
   private createProjectOnBackend(yamlSpec: string) {
@@ -822,7 +720,7 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
     try {
       const bytes = this.base64ToUint8Array(base64Payload);
       this.exploreZipBlob = new Blob([bytes.buffer as ArrayBuffer], { type: 'application/zip' });
-      this.exploreZipFileName = fileName || `${this.toArtifactId(this.projectSettings.projectName || 'project')}.zip`;
+      this.exploreZipFileName = fileName || `${toArtifactId(this.projectSettings.projectName || 'project')}.zip`;
       this.cacheZipFromBase64(yamlSpec, base64Payload, this.exploreZipFileName);
       this.activeSection = 'explore';
     } catch {
@@ -874,7 +772,7 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
     }
 
     this.exploreZipBlob = new Blob([zipData], { type: 'application/zip' });
-    this.exploreZipFileName = `${this.toArtifactId(this.projectSettings.projectName || projectId)}.zip`;
+    this.exploreZipFileName = `${toArtifactId(this.projectSettings.projectName || projectId)}.zip`;
     this.cacheZipFromArrayBuffer(yamlSpec, zipData, this.exploreZipFileName);
   }
 
@@ -907,7 +805,7 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
           }
 
           this.exploreZipBlob = new Blob([zipData], { type: 'application/zip' });
-          this.exploreZipFileName = `${this.toArtifactId(this.projectSettings.projectName || 'project')}.zip`;
+          this.exploreZipFileName = `${toArtifactId(this.projectSettings.projectName || 'project')}.zip`;
           this.cacheZipFromArrayBuffer(yamlSpec, zipData, this.exploreZipFileName);
           this.activeSection = 'explore';
         },
@@ -932,7 +830,7 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
     try {
       const bytes = this.base64ToUint8Array(cachedEntry.zipBase64);
       this.exploreZipBlob = new Blob([bytes.buffer as ArrayBuffer], { type: 'application/zip' });
-      this.exploreZipFileName = cachedEntry.fileName || `${this.toArtifactId(this.projectSettings.projectName || 'project')}.zip`;
+      this.exploreZipFileName = cachedEntry.fileName || `${toArtifactId(this.projectSettings.projectName || 'project')}.zip`;
       if (switchToExplore) {
         this.activeSection = 'explore';
       }
@@ -981,9 +879,9 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
   }
 
   private getZipCacheKey(): string {
-    const backendId = this.trimmed(this.backendProjectId);
+    const backendId = trimmed(this.backendProjectId);
     const localProjectId = this.projectId ? String(this.projectId) : '';
-    const artifactId = this.toArtifactId(this.projectSettings.projectName || 'project');
+    const artifactId = toArtifactId(this.projectSettings.projectName || 'project');
     const scope = this.isLoggedIn ? 'auth' : 'guest';
     return [scope, backendId || localProjectId || artifactId].join(':');
   }
@@ -1283,167 +1181,6 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
     this.saveProjectAndInvokeApi();
   }
 
-  private convertObjectToYaml(value: any): string {
-    return this.toYaml(value, 0).trim() + '\n';
-  }
-
-  private mapProjectToGeneratorSpec(project: any): any {
-    const projectGroup = this.trimmed(project?.settings?.projectGroup) || 'com.example';
-    const projectName = this.trimmed(project?.settings?.projectName) || 'demo-app';
-    const databaseCode = this.toDatabaseCode(project?.database?.database);
-
-    const app = {
-      name: projectName,
-      groupId: projectGroup,
-      artifactId: this.toArtifactId(projectName),
-      description: 'Generated by Rest App Generator',
-      version: '0.0.1-SNAPSHOT',
-      jdkVersion: this.trimmed(project?.preferences?.javaVersion) || '17',
-      buildTool: this.trimmed(project?.settings?.buildType) || 'gradle',
-      generator: this.trimmed(project?.settings?.language) || 'java'
-    };
-
-    const includeControllersSpec =
-      Boolean(project?.preferences?.configureApi)
-      && project?.controllers?.enabled !== false
-      && this.hasNamedControllersConfig(project?.controllers?.config);
-    const restSpecSection = this.buildRestSpecSection(project?.entities, project?.controllers?.config, includeControllersSpec);
-    const spec: any = {
-      app,
-      database: databaseCode,
-      dbType: this.resolveDatabaseType(project?.database?.dbType, databaseCode),
-      applFormat: this.trimmed(project?.preferences?.applFormat) || 'yaml',
-      enableOpenapi: Boolean(project?.preferences?.enableOpenAPI),
-      enableActuator: Boolean(project?.preferences?.enableActuator),
-      enableLombok: Boolean(
-        project?.preferences?.enableLombok === undefined
-          ? project?.preferences?.optionalLombok
-          : project?.preferences?.enableLombok
-      ),
-      useDockerCompose: Boolean(project?.preferences?.useDockerCompose),
-      packages: this.trimmed(project?.preferences?.packages) || 'technical',
-      profiles: this.mapProfiles(project?.preferences?.profiles),
-      dependencies: this.extractDependencies(project),
-      basePackage: projectGroup,
-      models: this.mapModels(project?.entities, project?.relations, restSpecSection.entityToSpecName),
-      dtos: this.mapDtos(project?.dataObjects),
-      enums: this.mapEnums(project?.enums)
-    };
-    const mapperSpecs = this.mapMappers(project?.mappers);
-    if (mapperSpecs.length) {
-      spec.mappers = mapperSpecs;
-    }
-    if (databaseCode !== 'NONE') {
-      spec.dbGeneration = this.trimmed(project?.database?.dbGeneration) || 'Hibernate (update)';
-      spec.pluralizeTableNames = Boolean(project?.database?.pluralizeTableNames);
-    }
-    if (Boolean(project?.preferences?.enableActuator)) {
-      const actuatorConfigurations = this.sanitizeActuatorConfigurations(
-        project?.actuator?.configurations ?? project?.actuator?.endpoints,
-        this.getActuatorConfigurationOptions(project?.preferences?.profiles)
-      );
-      spec.actuator = {
-        endpoints: {
-          include: this.sanitizeActuatorEndpoints(actuatorConfigurations['default'])
-        },
-        profiles: Object.entries(actuatorConfigurations)
-          .filter(([profile]) => profile !== 'default')
-          .reduce((acc, [profile, endpoints]) => {
-            acc[profile] = {
-              endpoints: {
-                include: this.sanitizeActuatorEndpoints(endpoints)
-              }
-            };
-            return acc;
-          }, {} as Record<string, unknown>)
-      };
-    }
-
-    if (
-      Boolean(project?.preferences?.configureApi)
-      && project?.controllers?.enabled !== false
-      && this.hasNamedControllersConfig(project?.controllers?.config)
-    ) {
-      const controllersConfig = this.mapRestConfig(project?.controllers?.config);
-      if (controllersConfig) {
-        spec.controllers = controllersConfig;
-      }
-    }
-
-    if (restSpecSection.specs.length) {
-      spec['rest-spec'] = restSpecSection.specs;
-    }
-
-    if (!spec.dependencies.length) {
-      delete spec.dependencies;
-    }
-    if (!spec.models.length) {
-      delete spec.models;
-    }
-    if (!spec.dtos.length) {
-      delete spec.dtos;
-    }
-    if (!spec.enums.length) {
-      delete spec.enums;
-    }
-
-    return spec;
-  }
-
-  private toDatabaseCode(value: unknown): string {
-    const raw = this.trimmed(value) || '';
-    const normalized = raw.toLowerCase();
-    if (['NONE', 'OTHER', 'MSSQL', 'MYSQL', 'MARIADB', 'ORACLE', 'POSTGRES', 'MONGODB', 'DERBY', 'H2', 'HSQL'].includes(raw.toUpperCase())) {
-      return raw.toUpperCase();
-    }
-    switch (normalized) {
-      case 'none':
-        return 'NONE';
-      case 'other':
-        return 'OTHER';
-      case 'mssql':
-      case 'mssql server':
-      case 'sql server':
-        return 'MSSQL';
-      case 'mysql':
-        return 'MYSQL';
-      case 'mariadb':
-        return 'MARIADB';
-      case 'oracle':
-        return 'ORACLE';
-      case 'postgres':
-      case 'postgresql':
-        return 'POSTGRES';
-      case 'mongodb':
-      case 'mongo':
-        return 'MONGODB';
-      case 'derby':
-      case 'apache derby':
-        return 'DERBY';
-      case 'h2':
-      case 'h2 database':
-        return 'H2';
-      case 'hsql':
-      case 'hypersql':
-      case 'hsql database':
-        return 'HSQL';
-      default:
-        return 'POSTGRES';
-    }
-  }
-
-  private extractDependencies(project: any): string[] {
-    const fromString = String(project?.dependencies ?? '')
-      .split(',')
-      .map((item) => item.trim())
-      .filter(Boolean);
-    const fromSelected = Array.isArray(this.selectedDependencies)
-      ? this.selectedDependencies.map((item) => String(item).trim()).filter(Boolean)
-      : [];
-
-    return Array.from(new Set([...fromSelected, ...fromString]));
-  }
-
   onAddProfileClick(): void {
     this.showProfileModal = true;
   }
@@ -1505,7 +1242,7 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
   }
 
   onControllersConfigSave(config: RestEndpointConfig, persistAsGlobal = true): void {
-    const sanitizedConfig = this.parseControllersConfig(config);
+    const sanitizedConfig = this.specMapper.parseControllersConfig(config);
     if (persistAsGlobal) {
       this.controllersConfig = sanitizedConfig;
       this.controllersConfigEnabled = true;
@@ -1526,9 +1263,9 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
       if (!Boolean(entity?.addRestEndpoints) || !entity?.restConfig) {
         return;
       }
-      const normalizedConfig = this.parseControllersConfig(entity.restConfig);
-      const name = this.trimmed(normalizedConfig.resourceName);
-      const entityName = this.trimmed(entity?.name);
+      const normalizedConfig = this.specMapper.parseControllersConfig(entity.restConfig);
+      const name = trimmed(normalizedConfig.resourceName);
+      const entityName = trimmed(entity?.name);
       if (!name || !entityName) {
         return;
       }
@@ -1556,13 +1293,13 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
       }
     });
 
-    const controllerConfigName = this.trimmed(this.controllersConfig?.resourceName);
+    const controllerConfigName = trimmed(this.controllersConfig?.resourceName);
     if (this.controllersConfigEnabled && controllerConfigName) {
-      const normalizedControllerConfig = this.parseControllersConfig(this.controllersConfig);
+      const normalizedControllerConfig = this.specMapper.parseControllersConfig(this.controllersConfig);
       const existingControllerRow = rowsByName.get(controllerConfigName);
       if (!existingControllerRow) {
         const mappedEntityName = normalizedControllerConfig.mapToEntity
-          ? this.trimmed(normalizedControllerConfig.mappedEntityName)
+          ? trimmed(normalizedControllerConfig.mappedEntityName)
           : '';
         rowsByName.set(controllerConfigName, {
           key: controllerConfigName,
@@ -1571,7 +1308,7 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
           mappedEntities: mappedEntityName ? [mappedEntityName] : [],
           entityIndexes: mappedEntityName
             ? entityList
-              .map((entity: any, index: number) => ({ name: this.trimmed(entity?.name), index }))
+              .map((entity: any, index: number) => ({ name: trimmed(entity?.name), index }))
               .filter((item) => item.name === mappedEntityName)
               .map((item) => item.index)
             : [],
@@ -1581,11 +1318,11 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
         existingControllerRow.totalEndpoints = this.countEnabledEndpoints(normalizedControllerConfig);
         existingControllerRow.hasControllersConfig = true;
         if (normalizedControllerConfig.mapToEntity) {
-          const mappedEntityName = this.trimmed(normalizedControllerConfig.mappedEntityName);
+          const mappedEntityName = trimmed(normalizedControllerConfig.mappedEntityName);
           if (mappedEntityName && !existingControllerRow.mappedEntities.includes(mappedEntityName)) {
             existingControllerRow.mappedEntities.push(mappedEntityName);
           }
-          const mappedIndex = entityList.findIndex((entity: any) => this.trimmed(entity?.name) === mappedEntityName);
+          const mappedIndex = entityList.findIndex((entity: any) => trimmed(entity?.name) === mappedEntityName);
           if (mappedIndex >= 0 && !existingControllerRow.entityIndexes.includes(mappedIndex)) {
             existingControllerRow.entityIndexes.push(mappedIndex);
           }
@@ -1603,7 +1340,7 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
       if (entity?.restConfig) {
         return;
       }
-      const entityName = this.trimmed(entity?.name);
+      const entityName = trimmed(entity?.name);
       const specName = this.resolveEntityRestSpecName(entity);
       if (!entityName || !specName) {
         return;
@@ -1658,19 +1395,19 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
     this.controllersCreatingNewConfig = false;
     this.controllersEditingSpecKey = row.key;
     if (row.hasControllersConfig) {
-      this.controllersEditingSpecConfig = this.parseControllersConfig(this.controllersConfig);
+      this.controllersEditingSpecConfig = this.specMapper.parseControllersConfig(this.controllersConfig);
       return;
     }
     const firstEntityIndex = row.entityIndexes[0];
     const entity = firstEntityIndex >= 0 ? this.entities[firstEntityIndex] : null;
     this.controllersEditingSpecConfig = entity?.restConfig
-      ? this.parseControllersConfig(entity.restConfig)
+      ? this.specMapper.parseControllersConfig(entity.restConfig)
       : null;
     if (this.controllersEditingSpecConfig) {
       const currentMapToEntity = Boolean((this.controllersEditingSpecConfig as any).mapToEntity);
-      const currentMappedEntity = this.trimmed((this.controllersEditingSpecConfig as any).mappedEntityName);
+      const currentMappedEntity = trimmed((this.controllersEditingSpecConfig as any).mappedEntityName);
       if (!currentMapToEntity || !currentMappedEntity) {
-        const firstMapped = this.trimmed(row.mappedEntities?.[0]);
+        const firstMapped = trimmed(row.mappedEntities?.[0]);
         (this.controllersEditingSpecConfig as any).mapToEntity = Boolean(firstMapped);
         (this.controllersEditingSpecConfig as any).mappedEntityName = firstMapped;
       }
@@ -1700,8 +1437,8 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
       return;
     }
 
-    const editingKey = this.trimmed(this.controllersEditingSpecKey);
-    const globalKey = this.trimmed(this.controllersConfig?.resourceName);
+    const editingKey = trimmed(this.controllersEditingSpecKey);
+    const globalKey = trimmed(this.controllersConfig?.resourceName);
     const editingGlobalConfig = Boolean(this.controllersConfigEnabled && editingKey && editingKey === globalKey);
 
     this.onControllersConfigSave(config, editingGlobalConfig);
@@ -1769,9 +1506,9 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
     });
     this.entities = [...this.entities];
 
-    if (row.hasControllersConfig && this.trimmed(this.controllersConfig?.resourceName) === key) {
+    if (row.hasControllersConfig && trimmed(this.controllersConfig?.resourceName) === key) {
       this.controllersConfigEnabled = false;
-      this.controllersConfig = this.getDefaultControllersConfig();
+      this.controllersConfig = { ...DEFAULT_CONTROLLERS_CONFIG };
     }
 
     if (this.controllersEditingSpecKey === key) {
@@ -1859,22 +1596,28 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
     return this.sanitizeActuatorEndpoints(selected);
   }
 
-  private getActuatorConfigurationOptions(profileSource: unknown = this.developerPreferences.profiles): string[] {
-    const normalizedProfiles = this.mapProfiles(profileSource).filter(profile => profile !== 'default');
-    return ['default', ...normalizedProfiles];
-  }
-
   private normalizeActuatorConfigurationName(value: unknown): string | null {
-    const normalized = this.normalizeProfileName(value);
+    const normalized = this.normalizeActuatorProfileName(value);
     if (!normalized) {
       return null;
     }
     return normalized === 'default' ? 'default' : normalized;
   }
 
+  private normalizeActuatorProfileName(value: unknown): string | null {
+    if (value === null || value === undefined) {
+      return null;
+    }
+    const t = String(value).trim();
+    if (!t) {
+      return null;
+    }
+    return t.toLowerCase();
+  }
+
   private sanitizeActuatorConfigurations(
     rawConfigurations: unknown,
-    availableConfigurations: string[] = this.getActuatorConfigurationOptions()
+    availableConfigurations: string[] = this.specMapper.getActuatorConfigurationOptions(this.developerPreferences.profiles)
   ): Record<string, string[]> {
     const allowedConfigurations = new Set(availableConfigurations);
     const sanitized: Record<string, string[]> = {
@@ -1911,7 +1654,7 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
   }
 
   private syncActuatorConfigurationsWithProfiles(): void {
-    const options = this.getActuatorConfigurationOptions();
+    const options = this.specMapper.getActuatorConfigurationOptions(this.developerPreferences.profiles);
     this.actuatorConfigurationOptions = options;
     this.actuatorProfileEndpoints = this.sanitizeActuatorConfigurations(this.actuatorProfileEndpoints, options);
     if (!options.includes(this.selectedActuatorConfiguration)) {
@@ -1933,7 +1676,7 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
   }
 
   onDatabaseSelectionChange(value: string): void {
-    const selectedCode = this.toDatabaseCode(value);
+    const selectedCode = toDatabaseCode(value);
     if (selectedCode === 'NONE' && this.hasConfiguredEntities()) {
       this.databaseSelectionBeforeConfirmation = this.previousDatabaseSelection;
       this.pendingDatabaseSelection = selectedCode;
@@ -1981,7 +1724,7 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
 
   private applyDatabaseSelection(code: string): void {
     this.databaseSettings.database = code;
-    this.databaseSettings.dbType = this.resolveDatabaseType(this.databaseSettings.dbType, code);
+    this.databaseSettings.dbType = resolveDatabaseType(this.databaseSettings.dbType, code);
     this.previousDatabaseSelection = code;
     this.previousDatabaseType = this.databaseSettings.dbType;
     if (code === 'NONE' && this.activeSection === 'entities') {
@@ -1999,18 +1742,18 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
   }
 
   shouldShowDbGeneration(): boolean {
-    return this.databaseSettings.dbType !== 'NONE' && this.toDatabaseCode(this.databaseSettings.database) !== 'NONE';
+    return this.databaseSettings.dbType !== 'NONE' && toDatabaseCode(this.databaseSettings.database) !== 'NONE';
   }
 
   shouldShowPluralizeTableNames(): boolean {
-    return this.databaseSettings.dbType !== 'NONE' && this.toDatabaseCode(this.databaseSettings.database) !== 'NONE';
+    return this.databaseSettings.dbType !== 'NONE' && toDatabaseCode(this.databaseSettings.database) !== 'NONE';
   }
 
   private restoreDatabaseSelection(value: string): void {
-    const selection = this.toDatabaseCode(value);
+    const selection = toDatabaseCode(value);
     setTimeout(() => {
       this.databaseSettings.database = selection;
-      this.databaseSettings.dbType = this.resolveDatabaseType(this.databaseSettings.dbType, selection);
+      this.databaseSettings.dbType = resolveDatabaseType(this.databaseSettings.dbType, selection);
       this.cdr.detectChanges();
     }, 0);
   }
@@ -2020,7 +1763,7 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
       this.databaseSettings.database = 'NONE';
       return;
     }
-    const selectedDatabase = this.toDatabaseCode(this.databaseSettings.database);
+    const selectedDatabase = toDatabaseCode(this.databaseSettings.database);
     const allowed = this.filteredDatabaseOptions.some(option => option.value === selectedDatabase);
     if (allowed) {
       return;
@@ -2029,379 +1772,95 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
     this.databaseSettings.database = firstMatching || 'POSTGRES';
   }
 
-  private resolveDatabaseType(type: unknown, databaseCode: unknown): 'SQL' | 'NOSQL' | 'NONE' {
-    const normalizedType = this.trimmed(type)?.toUpperCase();
-    if (normalizedType === 'NONE') {
-      return 'NONE';
+  private countEnabledEndpoints(config: RestEndpointConfig): number {
+    const methods = config?.methods;
+    if (!methods) {
+      return 0;
     }
-    if (normalizedType === 'NOSQL') {
-      return 'NOSQL';
-    }
-    if (normalizedType === 'SQL') {
-      return 'SQL';
-    }
-
-    const normalizedDb = this.toDatabaseCode(databaseCode);
-    if (normalizedDb === 'NONE') {
-      return 'NONE';
-    }
-    if (normalizedDb === 'MONGODB') {
-      return 'NOSQL';
-    }
-    return 'SQL';
+    return [
+      methods.list, methods.get, methods.create, methods.patch,
+      methods.delete, methods.bulkInsert, methods.bulkUpdate, methods.bulkDelete
+    ].filter(Boolean).length;
   }
 
-  private mapProfiles(profiles: unknown): string[] {
-    if (!Array.isArray(profiles)) {
-      return [];
+  private resolveEntityRestSpecName(entity: any): string {
+    const inlineName = trimmed(entity?.restConfig?.resourceName);
+    if (inlineName) {
+      return inlineName;
     }
-    const normalized = profiles
-      .map(profile => this.normalizeProfileName(profile))
-      .filter((profile): profile is string => Boolean(profile))
-      .filter(profile => this.isValidProfileName(profile));
-    return Array.from(new Set(normalized));
+    return trimmed(
+      entity?.['rest-spec-name']
+      ?? entity?.restSpecName
+      ?? entity?.restSpec
+    );
   }
 
-  private mapModels(entities: any, relations: any, entityToSpecName: Record<string, string> = {}): any[] {
-    const entityList = Array.isArray(entities) ? entities : [];
-    const relationList = Array.isArray(relations) ? relations : [];
+  private applyControllersEntityMapping(config: RestEndpointConfig, previousSpecKey: string | null): void {
+    const nextSpecName = trimmed(config?.resourceName);
+    const previousName = trimmed(previousSpecKey);
+    const selectedEntityName = config.mapToEntity ? trimmed(config?.mappedEntityName) : '';
+    const normalizedConfig = this.specMapper.parseControllersConfig(config);
 
-    return entityList.map((entity) => {
-      const fields = Array.isArray(entity?.fields) ? entity.fields : [];
-      const idField = fields.find((field: any) => Boolean(field?.primaryKey));
-      const nonIdFields = fields.filter((field: any) => !field?.primaryKey);
-      const modelRelations = relationList
-        .filter((relation: any) => this.trimmed(relation?.sourceEntity) === this.trimmed(entity?.name))
-        .map((relation: any) => this.mapRelation(relation));
+    this.entities.forEach((entity: any) => {
+      const entityName = trimmed(entity?.name);
+      const mappedSpecName = this.resolveEntityRestSpecName(entity);
+      const inlineSpecName = trimmed(entity?.restConfig?.resourceName);
+      const matchesPrevious = Boolean(previousName) && (mappedSpecName === previousName || inlineSpecName === previousName);
+      const matchesNext = Boolean(nextSpecName) && (mappedSpecName === nextSpecName || inlineSpecName === nextSpecName);
+      const shouldClear = matchesPrevious || matchesNext;
 
-      const model: any = {
-        name: this.trimmed(entity?.name) || 'Entity',
-        tableName: this.toSnakeCase(this.trimmed(entity?.name) || 'entity'),
-        addRestEndpoints: Boolean(entity?.addRestEndpoints),
-        addCrudOperations: Boolean(entity?.addCrudOperations),
-        classMethods: this.mapClassMethods(entity?.classMethods),
-        options: {
-          entity: !Boolean(entity?.mappedSuperclass),
-          immutable: Boolean(entity?.immutable),
-          auditing: Boolean(entity?.auditable),
-          softDelete: Boolean(entity?.softDelete),
-          naturalIdCache: Boolean(entity?.naturalIdCache)
-        },
-        id: this.mapId(idField),
-        fields: nonIdFields.map((field: any) => this.mapModelField(field))
-      };
-
-      const entityName = this.trimmed(entity?.name);
-      const mappedSpecName = entityToSpecName[entityName];
-      if (mappedSpecName) {
-        model['rest-spec-name'] = mappedSpecName;
-      }
-
-      const restConfig = this.mapRestConfig(entity?.restConfig);
-      if (restConfig) {
-        model.rest = restConfig;
-      }
-
-      if (modelRelations.length) {
-        model.relations = modelRelations;
-      }
-
-      return model;
-    });
-  }
-
-  private buildRestSpecSection(
-    entities: any,
-    controllersConfig: any,
-    includeControllers: boolean
-  ): { specs: any[]; entityToSpecName: Record<string, string> } {
-    const specs: any[] = [];
-    const entityToSpecName: Record<string, string> = {};
-    const specIndexByName = new Map<string, number>();
-    const entityList = Array.isArray(entities) ? entities : [];
-
-    const addOrUpdateSpec = (name: string, config: any): string => {
-      const specName = this.trimmed(name) || 'RestSpec';
-      const existingIndex = specIndexByName.get(specName);
-      if (existingIndex === undefined) {
-        specIndexByName.set(specName, specs.length);
-        specs.push({ name: specName, ...config });
-      } else {
-        specs[existingIndex] = { name: specName, ...config };
-      }
-      return specName;
-    };
-
-    entityList.forEach((entity: any) => {
-      if (!Boolean(entity?.addRestEndpoints)) {
+      if (!shouldClear) {
         return;
       }
-      const mapped = this.mapRestConfig(entity?.restConfig);
-      if (!mapped) {
+
+      if (!selectedEntityName) {
+        entity.addRestEndpoints = true;
+        entity.restConfig = this.specMapper.parseControllersConfig({
+          ...normalizedConfig,
+          mapToEntity: false,
+          mappedEntityName: ''
+        });
+        delete entity['rest-spec-name'];
         return;
       }
-      const entityName = this.trimmed(entity?.name);
-      const specName = addOrUpdateSpec(this.trimmed(mapped.resourceName) || entityName || 'EntityRest', mapped);
-      if (entityName) {
-        entityToSpecName[entityName] = specName;
+
+      if (entityName !== selectedEntityName) {
+        entity.addRestEndpoints = false;
+        entity.restConfig = undefined;
+        delete entity['rest-spec-name'];
       }
     });
 
-    if (includeControllers) {
-      const mappedControllers = this.mapRestConfig(controllersConfig);
-      if (mappedControllers) {
-        addOrUpdateSpec(this.trimmed(mappedControllers.resourceName) || 'ControllersRest', mappedControllers);
-      }
+    if (!selectedEntityName) {
+      this.entities = [...this.entities];
+      return;
     }
 
-    return { specs, entityToSpecName };
-  }
-
-  private hasNamedControllersConfig(config: any): boolean {
-    return Boolean(this.trimmed(config?.resourceName));
-  }
-
-  private mapRestConfig(restConfig: any): any | null {
-    if (!restConfig || typeof restConfig !== 'object') {
-      return null;
+    const mappedEntity = this.entities.find((entity: any) => trimmed(entity?.name) === selectedEntityName);
+    if (mappedEntity) {
+      mappedEntity.addRestEndpoints = true;
+      mappedEntity.restConfig = this.specMapper.parseControllersConfig(config);
+      mappedEntity['rest-spec-name'] = nextSpecName || selectedEntityName;
     }
-    const operations: string[] = [
-      'list',
-      'get',
-      'create',
-      'patch',
-      'delete',
-      'bulkInsert',
-      'bulkUpdate',
-      'bulkDelete'
-    ];
+    this.entities = [...this.entities];
+  }
 
-    const methods: Record<string, any> = {};
-    operations.forEach((key) => {
-      if (!Boolean(restConfig?.methods?.[key])) {
-        return;
-      }
-      const documentation = this.buildOperationDocumentationConfig(restConfig, key);
-      methods[key] = {
-        request: this.buildOperationRequestConfig(key, restConfig),
-        response: this.buildOperationResponseConfig(restConfig, key),
-        ...(documentation ? { documentation } : {})
-      };
+  private clearAllApiConfigurations(): void {
+    this.controllersConfigEnabled = false;
+    this.controllersConfig = { ...DEFAULT_CONTROLLERS_CONFIG };
+    this.controllersCreatingNewConfig = false;
+    this.controllersEditingSpecKey = null;
+    this.controllersEditingSpecConfig = null;
+
+    this.entities = (Array.isArray(this.entities) ? this.entities : []).map((entity: any) => {
+      const updated = { ...entity };
+      updated.addRestEndpoints = false;
+      delete updated.restConfig;
+      delete updated['rest-spec-name'];
+      delete updated.restSpecName;
+      delete updated.restSpec;
+      return updated;
     });
-
-    return {
-      resourceName: this.trimmed(restConfig.resourceName),
-      basePath: this.trimmed(restConfig.basePath),
-      apiVersioning: {
-        enabled: Boolean(restConfig?.apiVersioning?.enabled),
-        strategy: restConfig?.apiVersioning?.strategy === 'path' ? 'path' : 'header',
-        headerName: this.trimmed(restConfig?.apiVersioning?.headerName),
-        defaultVersion: this.trimmed(restConfig?.apiVersioning?.defaultVersion)
-      },
-      pathVariableType: ['UUID', 'LONG', 'STRING'].includes(String(restConfig?.pathVariableType))
-        ? restConfig.pathVariableType
-        : 'UUID',
-      deletion: {
-        mode: restConfig?.deletion?.mode === 'HARD' ? 'HARD' : 'SOFT',
-        restoreEndpoint: Boolean(restConfig?.deletion?.restoreEndpoint),
-        includeDeletedParam: Boolean(restConfig?.deletion?.includeDeletedParam)
-      },
-      hateoas: {
-        enabled: Boolean(restConfig?.hateoas?.enabled),
-        selfLink: Boolean(restConfig?.hateoas?.selfLink),
-        updateLink: Boolean(restConfig?.hateoas?.updateLink),
-        deleteLink: Boolean(restConfig?.hateoas?.deleteLink)
-      },
-      documentation: {
-        includeDefaultDocumentation: restConfig?.documentation?.includeDefaultDocumentation !== false
-      },
-      methods
-    };
-  }
-
-  private buildOperationResponseConfig(restConfig: any, operationKey: string): any {
-    const responseType = restConfig?.requestResponse?.response?.responseType === 'DTO_DIRECT'
-      ? 'DTO_DIRECT'
-      : restConfig?.requestResponse?.response?.responseType === 'CUSTOM_WRAPPER'
-        ? 'CUSTOM_WRAPPER'
-        : 'RESPONSE_ENTITY';
-    const perOperationDto = this.trimmed(restConfig?.requestResponse?.response?.endpointDtos?.[operationKey]);
-    return {
-      responseType,
-      dtoName: responseType === 'CUSTOM_WRAPPER'
-        ? (perOperationDto || this.trimmed(restConfig?.requestResponse?.response?.dtoName))
-        : this.trimmed(restConfig?.requestResponse?.response?.dtoName),
-      responseWrapper: restConfig?.requestResponse?.response?.responseWrapper === 'NONE'
-        ? 'NONE'
-        : restConfig?.requestResponse?.response?.responseWrapper === 'UPSERT'
-          ? 'UPSERT'
-          : 'STANDARD_ENVELOPE',
-      enableFieldProjection: Boolean(restConfig?.requestResponse?.response?.enableFieldProjection),
-      includeHateoasLinks: Boolean(restConfig?.requestResponse?.response?.includeHateoasLinks)
-    };
-  }
-
-  private buildOperationDocumentationConfig(restConfig: any, docKey: string): any | null {
-    const includeDefaults = restConfig?.documentation?.includeDefaultDocumentation !== false;
-    const defaultDocumentation = this.getDefaultDocumentationForOperation(docKey, this.trimmed(restConfig?.resourceName));
-    const description = this.trimmed(restConfig?.documentation?.endpoints?.[docKey]?.description)
-      || (includeDefaults ? defaultDocumentation.description : '');
-    const group = this.trimmed(restConfig?.documentation?.endpoints?.[docKey]?.group)
-      || (includeDefaults ? defaultDocumentation.group : '');
-    const descriptionTags = Array.isArray(restConfig?.documentation?.endpoints?.[docKey]?.descriptionTags)
-      ? restConfig.documentation.endpoints[docKey].descriptionTags.map((item: any) => this.trimmed(item)).filter(Boolean)
-      : [];
-    const resolvedDescriptionTags = descriptionTags.length
-      ? descriptionTags
-      : (includeDefaults ? defaultDocumentation.descriptionTags : []);
-    const deprecated = Boolean(restConfig?.documentation?.endpoints?.[docKey]?.deprecated);
-
-    const documentation: Record<string, any> = {};
-    if (description) {
-      documentation['description'] = description;
-    }
-    if (group) {
-      documentation['group'] = group;
-    }
-    if (resolvedDescriptionTags.length) {
-      documentation['descriptionTags'] = resolvedDescriptionTags;
-    }
-    if (deprecated) {
-      documentation['deprecated'] = true;
-    }
-
-    return Object.keys(documentation).length ? documentation : null;
-  }
-
-  private getDefaultDocumentationForOperation(
-    operationKey: string,
-    resourceName: string
-  ): { description: string; group: string; descriptionTags: string[] } {
-    const endpointLabel: Record<string, string> = {
-      list: 'List',
-      get: 'Get By Key',
-      create: 'Create',
-      update: 'Update',
-      patch: 'Patch',
-      delete: 'Delete',
-      bulkInsert: 'Bulk Insert',
-      bulkUpdate: 'Bulk Update',
-      bulkDelete: 'Bulk Delete'
-    };
-    const target = this.trimmed(resourceName) || 'API';
-    return {
-      description: `${endpointLabel[String(operationKey)] || String(operationKey)} operation for ${target}`,
-      group: `${target} Group`,
-      descriptionTags: [String(operationKey)]
-    };
-  }
-
-  private buildOperationRequestConfig(operationKey: string, restConfig: any): any {
-    switch (operationKey) {
-      case 'create':
-        return {
-          mode: restConfig?.requestResponse?.request?.create?.mode === 'NONE' ? 'NONE' : 'GENERATE_DTO',
-          dtoName: this.trimmed(restConfig?.requestResponse?.request?.create?.dtoName)
-        };
-      case 'update':
-        return {
-          mode: restConfig?.requestResponse?.request?.update?.mode === 'NONE' ? 'NONE' : 'GENERATE_DTO',
-          dtoName: this.trimmed(restConfig?.requestResponse?.request?.update?.dtoName)
-        };
-      case 'patch':
-        return {
-          mode: restConfig?.requestResponse?.request?.patch?.mode === 'JSON_PATCH' ? 'JSON_PATCH' : 'JSON_MERGE_PATCH'
-        };
-      case 'list':
-        return {
-          mode: restConfig?.requestResponse?.request?.list?.mode === 'NONE' ? 'NONE' : 'GENERATE_DTO',
-          dtoName: this.trimmed(restConfig?.requestResponse?.request?.list?.dtoName),
-          pagination: {
-            enabled: Boolean(restConfig?.pagination?.enabled ?? restConfig?.pagination),
-            mode: restConfig?.pagination?.mode === 'CURSOR' ? 'CURSOR' : 'OFFSET',
-            sortField: this.trimmed(restConfig?.pagination?.sortField),
-            sortDirection: restConfig?.pagination?.sortDirection === 'ASC' ? 'ASC' : 'DESC'
-          },
-          searchFiltering: {
-            keywordSearch: Boolean(restConfig?.searchFiltering?.keywordSearch),
-            jpaSpecification: Boolean(restConfig?.searchFiltering?.jpaSpecification),
-            searchableFields: Array.isArray(restConfig?.searchFiltering?.searchableFields)
-              ? restConfig.searchFiltering.searchableFields.map((item: any) => this.trimmed(item)).filter(Boolean)
-              : []
-          }
-        };
-      case 'get':
-        return {
-          idType: this.trimmed(restConfig?.requestResponse?.request?.getByIdType)
-        };
-      case 'delete':
-        return {
-          mode: restConfig?.requestResponse?.request?.delete?.mode === 'NONE' ? 'NONE' : 'GENERATE_DTO',
-          dtoName: this.trimmed(restConfig?.requestResponse?.request?.delete?.dtoName),
-          idType: this.trimmed(restConfig?.requestResponse?.request?.deleteByIdType)
-        };
-      case 'bulkInsert':
-        {
-          const createDto = this.trimmed(restConfig?.requestResponse?.request?.create?.dtoName);
-          const derivedType = createDto ? `List<${createDto}>` : '';
-        return {
-          type: derivedType,
-          batch: {
-            batchSize: Number(restConfig?.batchOperations?.insert?.batchSize) || 1,
-            enableAsyncMode: Boolean(restConfig?.batchOperations?.insert?.enableAsyncMode)
-          }
-        };
-        }
-      case 'bulkUpdate':
-        {
-          const updateDto = this.trimmed(restConfig?.requestResponse?.request?.update?.dtoName);
-          const createDto = this.trimmed(restConfig?.requestResponse?.request?.create?.dtoName);
-          const derivedType = updateDto
-            ? `List<${updateDto}>`
-            : createDto
-              ? `List<${createDto}>`
-              : '';
-        return {
-          type: derivedType,
-          batch: {
-            batchSize: Number(restConfig?.batchOperations?.update?.batchSize) || 1,
-            updateMode: restConfig?.batchOperations?.update?.updateMode === 'PATCH' ? 'PATCH' : 'PUT',
-            optimisticLockHandling: restConfig?.batchOperations?.update?.optimisticLockHandling === 'SKIP_CONFLICTS'
-              ? 'SKIP_CONFLICTS'
-              : 'FAIL_ON_CONFLICT',
-            validationStrategy: restConfig?.batchOperations?.update?.validationStrategy === 'SKIP_DUPLICATES'
-              ? 'SKIP_DUPLICATES'
-              : 'VALIDATE_ALL_FIRST',
-            enableAsyncMode: Boolean(restConfig?.batchOperations?.update?.enableAsyncMode),
-            asyncProcessing: Boolean(restConfig?.batchOperations?.update?.asyncProcessing)
-          }
-        };
-        }
-      case 'bulkDelete':
-        {
-          const deleteDto = this.trimmed(restConfig?.requestResponse?.request?.delete?.dtoName);
-          const deleteIdType = this.trimmed(restConfig?.requestResponse?.request?.deleteByIdType);
-          const derivedType = deleteDto
-            ? `List<${deleteDto}>`
-            : deleteIdType
-              ? `List<${deleteIdType}>`
-              : '';
-        return {
-          type: derivedType,
-          batch: {
-            deletionStrategy: restConfig?.batchOperations?.bulkDelete?.deletionStrategy === 'HARD' ? 'HARD' : 'SOFT',
-            batchSize: Number(restConfig?.batchOperations?.bulkDelete?.batchSize) || 1,
-            failureStrategy: restConfig?.batchOperations?.bulkDelete?.failureStrategy === 'CONTINUE_AND_REPORT_FAILURES'
-              ? 'CONTINUE_AND_REPORT_FAILURES'
-              : 'STOP_ON_FIRST_ERROR',
-            enableAsyncMode: Boolean(restConfig?.batchOperations?.bulkDelete?.enableAsyncMode),
-            allowIncludeDeletedParam: Boolean(restConfig?.batchOperations?.bulkDelete?.allowIncludeDeletedParam)
-          }
-        };
-        }
-      default:
-        return {};
-    }
   }
 
   get controllersEntityFields(): Array<{ name: string; type?: string }> {
@@ -2447,730 +1906,8 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
       .filter(Boolean);
   }
 
-  private getDefaultControllersConfig(): RestEndpointConfig {
-    return {
-      resourceName: '',
-      basePath: '',
-      mapToEntity: false,
-      mappedEntityName: '',
-      methods: {
-        list: true,
-        get: true,
-        create: true,
-        update: false,
-        patch: true,
-        delete: true,
-        bulkInsert: true,
-        bulkUpdate: true,
-        bulkDelete: true
-      },
-      apiVersioning: {
-        enabled: false,
-        strategy: 'header',
-        headerName: 'X-API-VERSION',
-        defaultVersion: '1'
-      },
-      pathVariableType: 'UUID',
-      deletion: {
-        mode: 'SOFT',
-        restoreEndpoint: true,
-        includeDeletedParam: true
-      },
-      hateoas: {
-        enabled: true,
-        selfLink: true,
-        updateLink: true,
-        deleteLink: true
-      },
-      pagination: {
-        enabled: true,
-        mode: 'OFFSET',
-        sortField: 'createdAt',
-        sortDirection: 'DESC'
-      },
-      searchFiltering: {
-        keywordSearch: true,
-        jpaSpecification: true,
-        searchableFields: []
-      },
-      batchOperations: {
-        insert: {
-          batchSize: 500,
-          enableAsyncMode: false
-        },
-        update: {
-          batchSize: 500,
-          updateMode: 'PUT',
-          optimisticLockHandling: 'FAIL_ON_CONFLICT',
-          validationStrategy: 'VALIDATE_ALL_FIRST',
-          enableAsyncMode: false,
-          asyncProcessing: true
-        },
-        bulkDelete: {
-          deletionStrategy: 'SOFT',
-          batchSize: 1000,
-          failureStrategy: 'STOP_ON_FIRST_ERROR',
-          enableAsyncMode: false,
-          allowIncludeDeletedParam: true
-        }
-      },
-      requestResponse: {
-        request: {
-          list: { mode: 'GENERATE_DTO', dtoName: '' },
-          create: { mode: 'GENERATE_DTO', dtoName: '' },
-          delete: { mode: 'GENERATE_DTO', dtoName: '' },
-          update: { mode: 'GENERATE_DTO', dtoName: '' },
-          patch: { mode: 'JSON_MERGE_PATCH' },
-          getByIdType: 'UUID',
-          deleteByIdType: 'UUID',
-          bulkInsertType: '',
-          bulkUpdateType: '',
-          bulkDeleteType: ''
-        },
-        response: {
-          responseType: 'RESPONSE_ENTITY',
-          dtoName: '',
-          endpointDtos: {
-            list: '',
-            get: '',
-            create: '',
-            update: '',
-            patch: '',
-            delete: '',
-            bulkInsert: '',
-            bulkUpdate: '',
-            bulkDelete: ''
-          },
-          responseWrapper: 'STANDARD_ENVELOPE',
-          enableFieldProjection: true,
-          includeHateoasLinks: true
-        }
-      },
-      documentation: {
-        includeDefaultDocumentation: true,
-        endpoints: {
-          list: { description: 'List operation for API', group: 'API Group', descriptionTags: ['list'], deprecated: false },
-          get: { description: 'Get By Key operation for API', group: 'API Group', descriptionTags: ['get'], deprecated: false },
-          create: { description: 'Create operation for API', group: 'API Group', descriptionTags: ['create'], deprecated: false },
-          update: { description: 'Update operation for API', group: 'API Group', descriptionTags: ['update'], deprecated: false },
-          patch: { description: 'Patch operation for API', group: 'API Group', descriptionTags: ['patch'], deprecated: false },
-          delete: { description: 'Delete operation for API', group: 'API Group', descriptionTags: ['delete'], deprecated: false },
-          bulkInsert: { description: 'Bulk Insert operation for API', group: 'API Group', descriptionTags: ['bulkInsert'], deprecated: false },
-          bulkUpdate: { description: 'Bulk Update operation for API', group: 'API Group', descriptionTags: ['bulkUpdate'], deprecated: false },
-          bulkDelete: { description: 'Bulk Delete operation for API', group: 'API Group', descriptionTags: ['bulkDelete'], deprecated: false }
-        }
-      }
-    };
-  }
-
-  private countEnabledEndpoints(config: RestEndpointConfig): number {
-    const methods = config?.methods;
-    if (!methods) {
-      return 0;
-    }
-    return [
-      methods.list,
-      methods.get,
-      methods.create,
-      methods.patch,
-      methods.delete,
-      methods.bulkInsert,
-      methods.bulkUpdate,
-      methods.bulkDelete
-    ].filter(Boolean).length;
-  }
-
-  private resolveEntityRestSpecName(entity: any): string {
-    const inlineName = this.trimmed(entity?.restConfig?.resourceName);
-    if (inlineName) {
-      return inlineName;
-    }
-    return this.trimmed(
-      entity?.['rest-spec-name']
-      ?? entity?.restSpecName
-      ?? entity?.restSpec
-    );
-  }
-
-  private parseControllersConfig(rawConfig: RestEndpointConfig | null | undefined): RestEndpointConfig {
-    const fallback = this.getDefaultControllersConfig();
-    if (!rawConfig || typeof rawConfig !== 'object') {
-      return fallback;
-    }
-    const cloned = JSON.parse(JSON.stringify(rawConfig)) as RestEndpointConfig;
-    const merged: RestEndpointConfig = {
-      ...fallback,
-      ...cloned,
-      mapToEntity: Boolean((cloned as any).mapToEntity ?? fallback.mapToEntity),
-      mappedEntityName: this.trimmed((cloned as any).mappedEntityName),
-      methods: { ...fallback.methods, ...(cloned as any).methods },
-      apiVersioning: { ...fallback.apiVersioning, ...(cloned as any).apiVersioning },
-      deletion: { ...fallback.deletion, ...(cloned as any).deletion },
-      hateoas: { ...fallback.hateoas, ...(cloned as any).hateoas },
-      pagination: { ...fallback.pagination, ...(cloned as any).pagination },
-      searchFiltering: { ...fallback.searchFiltering, ...(cloned as any).searchFiltering },
-      batchOperations: {
-        insert: { ...fallback.batchOperations.insert, ...(cloned as any).batchOperations?.insert },
-        update: { ...fallback.batchOperations.update, ...(cloned as any).batchOperations?.update },
-        bulkDelete: { ...fallback.batchOperations.bulkDelete, ...(cloned as any).batchOperations?.bulkDelete }
-      },
-      requestResponse: {
-        request: {
-          ...fallback.requestResponse.request,
-          ...(cloned as any).requestResponse?.request,
-          list: { ...fallback.requestResponse.request.list, ...(cloned as any).requestResponse?.request?.list },
-          create: { ...fallback.requestResponse.request.create, ...(cloned as any).requestResponse?.request?.create },
-          delete: { ...fallback.requestResponse.request.delete, ...(cloned as any).requestResponse?.request?.delete },
-          update: { ...fallback.requestResponse.request.update, ...(cloned as any).requestResponse?.request?.update },
-          patch: { ...fallback.requestResponse.request.patch, ...(cloned as any).requestResponse?.request?.patch }
-        },
-        response: {
-          ...fallback.requestResponse.response,
-          ...(cloned as any).requestResponse?.response,
-          endpointDtos: {
-            ...fallback.requestResponse.response.endpointDtos,
-            ...(cloned as any).requestResponse?.response?.endpointDtos
-          }
-        }
-      },
-      documentation: {
-        includeDefaultDocumentation: (cloned as any).documentation?.includeDefaultDocumentation !== false,
-        endpoints: {
-          ...fallback.documentation.endpoints,
-          ...(cloned as any).documentation?.endpoints
-        }
-      }
-    };
-    return merged;
-  }
-
-  private applyControllersEntityMapping(config: RestEndpointConfig, previousSpecKey: string | null): void {
-    const nextSpecName = this.trimmed(config?.resourceName);
-    const previousName = this.trimmed(previousSpecKey);
-    const selectedEntityName = config.mapToEntity ? this.trimmed(config?.mappedEntityName) : '';
-    const normalizedConfig = this.parseControllersConfig(config);
-
-    this.entities.forEach((entity: any) => {
-      const entityName = this.trimmed(entity?.name);
-      const mappedSpecName = this.resolveEntityRestSpecName(entity);
-      const inlineSpecName = this.trimmed(entity?.restConfig?.resourceName);
-      const matchesPrevious = Boolean(previousName) && (mappedSpecName === previousName || inlineSpecName === previousName);
-      const matchesNext = Boolean(nextSpecName) && (mappedSpecName === nextSpecName || inlineSpecName === nextSpecName);
-      const shouldClear = matchesPrevious || matchesNext;
-
-      if (!shouldClear) {
-        return;
-      }
-
-      if (!selectedEntityName) {
-        entity.addRestEndpoints = true;
-        entity.restConfig = this.parseControllersConfig({
-          ...normalizedConfig,
-          mapToEntity: false,
-          mappedEntityName: ''
-        });
-        delete entity['rest-spec-name'];
-        return;
-      }
-
-      if (entityName !== selectedEntityName) {
-        entity.addRestEndpoints = false;
-        entity.restConfig = undefined;
-        delete entity['rest-spec-name'];
-      }
-    });
-
-    if (!selectedEntityName) {
-      this.entities = [...this.entities];
-      return;
-    }
-
-    const mappedEntity = this.entities.find((entity: any) => this.trimmed(entity?.name) === selectedEntityName);
-    if (mappedEntity) {
-      mappedEntity.addRestEndpoints = true;
-      mappedEntity.restConfig = this.parseControllersConfig(config);
-      mappedEntity['rest-spec-name'] = nextSpecName || selectedEntityName;
-    }
-    this.entities = [...this.entities];
-  }
-
-  private clearAllApiConfigurations(): void {
-    this.controllersConfigEnabled = false;
-    this.controllersConfig = this.getDefaultControllersConfig();
-    this.controllersCreatingNewConfig = false;
-    this.controllersEditingSpecKey = null;
-    this.controllersEditingSpecConfig = null;
-
-    this.entities = (Array.isArray(this.entities) ? this.entities : []).map((entity: any) => {
-      const updated = { ...entity };
-      updated.addRestEndpoints = false;
-      delete updated.restConfig;
-      delete updated['rest-spec-name'];
-      delete updated.restSpecName;
-      delete updated.restSpec;
-      return updated;
-    });
-  }
-
-  private normalizeProfileName(value: unknown): string | null {
-    if (value === null || value === undefined) {
-      return null;
-    }
-    const trimmed = String(value).trim();
-    if (!trimmed) {
-      return null;
-    }
-    return trimmed.toLowerCase();
-  }
-
-  private isValidProfileName(profile: string): boolean {
-    return /^[a-z0-9._-]+$/.test(profile);
-  }
-
-  private mapId(primaryKeyField: any): any {
-    if (!primaryKeyField) {
-      return {
-        field: 'id',
-        type: 'Long',
-        generation: {
-          strategy: 'IDENTITY'
-        }
-      };
-    }
-
-    const type = this.normalizeType(primaryKeyField?.type);
-    const generation = type === 'UUID'
-      ? { strategy: 'UUID', generatorName: 'uuid', hibernateUuidStrategy: 'uuid2' }
-      : { strategy: 'IDENTITY' };
-
-    return {
-      field: this.trimmed(primaryKeyField?.name) || 'id',
-      type,
-      generation
-    };
-  }
-
-  private mapModelField(field: any): any {
-    const mapped: any = {
-      name: this.trimmed(field?.name) || 'field',
-      type: this.normalizeType(field?.type)
-    };
-
-    const constraints = this.mapConstraints(field?.constraints);
-    if (constraints.length) {
-      mapped.constraints = constraints;
-    }
-
-    const column: any = {};
-    if (this.trimmed(field?.name)) {
-      column.name = this.toSnakeCase(field.name);
-    }
-    if (typeof field?.required === 'boolean') {
-      column.nullable = !field.required;
-    } else if (constraints.some((constraint: any) => this.isNotNullConstraint(constraint))) {
-      column.nullable = false;
-    }
-    if (field?.unique === true) {
-      column.unique = true;
-    }
-    if (this.normalizeType(field?.type) === 'String' && this.hasNumber(field?.maxLength)) {
-      column.length = Number(field.maxLength);
-    }
-
-    if (Object.keys(column).length) {
-      mapped.column = column;
-    }
-
-    return mapped;
-  }
-
-  private mapDtos(dataObjects: any): any[] {
-    const items = Array.isArray(dataObjects) ? dataObjects : [];
-    return items.map((dataObject: any) => {
-      const dto: any = {
-        name: this.trimmed(dataObject?.name) || 'DataObject',
-        type: this.trimmed(dataObject?.dtoType) || 'request',
-        classMethods: this.mapClassMethods(dataObject?.classMethods),
-        fields: (Array.isArray(dataObject?.fields) ? dataObject.fields : []).map((field: any) => this.mapDtoField(field))
-      };
-
-      if (dataObject?.mapperEnabled && Array.isArray(dataObject?.mapperModels) && dataObject.mapperModels.length) {
-        dto.mapper = {
-          enabled: true,
-          models: dataObject.mapperModels
-            .map((name: any) => this.trimmed(name))
-            .filter(Boolean)
-        };
-      }
-
-      return dto;
-    });
-  }
-
-  private mapEnums(enums: any): any[] {
-    const items = Array.isArray(enums) ? enums : [];
-    return items
-      .map((enumItem: any) => ({
-        name: this.trimmed(enumItem?.name),
-        storage: this.trimmed(enumItem?.storage) || 'STRING',
-        constants: Array.isArray(enumItem?.constants)
-          ? enumItem.constants.map((item: any) => this.trimmed(item)).filter(Boolean)
-          : []
-      }))
-      .filter((enumItem: any) => enumItem.name && enumItem.constants.length > 0);
-  }
-
-  private mapMappers(mappers: any): any[] {
-    const items = Array.isArray(mappers) ? mappers : [];
-    return items
-      .map((mapper: any) => ({
-        name: this.trimmed(mapper?.name),
-        fromModel: this.trimmed(mapper?.fromModel),
-        toModel: this.trimmed(mapper?.toModel),
-        mappings: Array.isArray(mapper?.mappings)
-          ? mapper.mappings
-            .map((item: any) => ({
-              sourceField: this.trimmed(item?.sourceField),
-              targetField: this.trimmed(item?.targetField)
-            }))
-            .filter((item: any) => item.sourceField && item.targetField)
-          : []
-      }))
-      .filter((mapper: any) => mapper.name && mapper.fromModel && mapper.toModel && mapper.mappings.length > 0);
-  }
-
-  private mapDtoField(field: any): any {
-    const dtoField: any = {
-      name: this.trimmed(field?.name) || 'field',
-      type: this.normalizeType(field?.type)
-    };
-
-    const jsonProperty = this.trimmed(field?.jsonProperty);
-    if (jsonProperty) {
-      dtoField.jsonProperty = jsonProperty;
-    }
-
-    const constraints = this.mapConstraints(field?.constraints);
-    if (constraints.length) {
-      dtoField.constraints = constraints;
-    }
-
-    return dtoField;
-  }
-
-  private mapClassMethods(classMethods: any): any {
-    return {
-      toString: Boolean(classMethods?.toString ?? true),
-      hashCode: Boolean(classMethods?.hashCode ?? true),
-      equals: Boolean(classMethods?.equals ?? true),
-      noArgsConstructor: Boolean(classMethods?.noArgsConstructor ?? true),
-      allArgsConstructor: Boolean(classMethods?.allArgsConstructor ?? true),
-      builder: Boolean(classMethods?.builder ?? false)
-    };
-  }
-
-  private mapRelation(relation: any): any {
-    const type = this.trimmed(relation?.relationType) || 'ManyToOne';
-    const mapped: any = {
-      name: this.trimmed(relation?.sourceFieldName) || 'relation',
-      type,
-      target: this.trimmed(relation?.targetEntity) || 'Target'
-    };
-
-    const cascade = Array.isArray(relation?.cascade)
-      ? relation.cascade.map((item: any) => this.trimmed(item)).filter(Boolean)
-      : [];
-    if (cascade.length) {
-      mapped.cascade = Array.from(new Set(cascade));
-    }
-
-    const mappedBy = this.trimmed(relation?.mappedBy);
-    if (mappedBy) {
-      mapped.mappedBy = mappedBy;
-    }
-    if (relation?.orphanRemoval === true) {
-      mapped.orphanRemoval = true;
-    }
-    const orderBy = this.trimmed(relation?.orderBy);
-    if (orderBy) {
-      mapped.orderBy = orderBy;
-    }
-    const orderColumnName = this.trimmed(relation?.orderColumn?.name);
-    if (orderColumnName) {
-      mapped.orderColumn = { name: orderColumnName };
-    }
-
-    if (type === 'ManyToOne' || type === 'OneToOne') {
-      if (typeof relation?.optional === 'boolean') {
-        mapped.optional = relation.optional;
-      } else if (typeof relation?.required === 'boolean') {
-        mapped.optional = !relation.required;
-      }
-      const joinColumn = this.mapJoinColumn(relation?.joinColumn);
-      if (joinColumn) {
-        mapped.joinColumn = joinColumn;
-      }
-    }
-
-    if (type === 'ManyToMany') {
-      const joinTable = this.mapJoinTable(relation?.joinTable);
-      if (joinTable) {
-        mapped.joinTable = joinTable;
-      }
-    }
-
-    return mapped;
-  }
-
-  private mapJoinColumn(joinColumn: any): any | null {
-    if (!joinColumn || typeof joinColumn !== 'object') {
-      return null;
-    }
-    const mapped: any = {};
-    const name = this.trimmed(joinColumn?.name);
-    const referenced = this.trimmed(joinColumn?.referencedColumnName);
-    if (name) {
-      mapped.name = name;
-    }
-    if (referenced) {
-      mapped.referencedColumnName = referenced;
-    }
-    if (typeof joinColumn?.nullable === 'boolean') {
-      mapped.nullable = joinColumn.nullable;
-    }
-    if (joinColumn?.index === true) {
-      mapped.index = true;
-    }
-    const onDelete = this.trimmed(joinColumn?.onDelete);
-    if (onDelete) {
-      mapped.onDelete = onDelete;
-    }
-    return Object.keys(mapped).length ? mapped : null;
-  }
-
-  private mapJoinTable(joinTable: any): any | null {
-    if (!joinTable || typeof joinTable !== 'object') {
-      return null;
-    }
-
-    const mapped: any = {};
-    const name = this.trimmed(joinTable?.name);
-    if (name) {
-      mapped.name = name;
-    }
-
-    const joinColumns = this.mapJoinColumns(joinTable?.joinColumns);
-    if (joinColumns.length) {
-      mapped.joinColumns = joinColumns;
-    }
-
-    const inverseJoinColumns = this.mapJoinColumns(joinTable?.inverseJoinColumns);
-    if (inverseJoinColumns.length) {
-      mapped.inverseJoinColumns = inverseJoinColumns;
-    }
-
-    if (joinTable?.uniquePair === true) {
-      mapped.uniquePair = true;
-    }
-    const onDelete = this.trimmed(joinTable?.onDelete);
-    if (onDelete) {
-      mapped.onDelete = onDelete;
-    }
-
-    return Object.keys(mapped).length ? mapped : null;
-  }
-
-  private mapJoinColumns(columns: any): any[] {
-    const items = Array.isArray(columns) ? columns : [];
-    return items
-      .map((column) => this.mapJoinColumn(column))
-      .filter(Boolean);
-  }
-
-  private mapConstraints(constraints: any): any[] {
-    const items = Array.isArray(constraints) ? constraints : [];
-    return items
-      .map((constraint: any) => this.mapConstraint(constraint))
-      .filter(Boolean);
-  }
-
-  private mapConstraint(constraint: any): any | null {
-    const name = this.trimmed(constraint?.name);
-    if (!name) {
-      return null;
-    }
-
-    const value = this.trimmed(constraint?.value);
-    const value2 = this.trimmed(constraint?.value2);
-    const params: any = {};
-
-    if (name === 'Size') {
-      if (value) {
-        params.min = this.toNumberIfPossible(value);
-      }
-      if (value2) {
-        params.max = this.toNumberIfPossible(value2);
-      }
-    } else if (name === 'Min' || name === 'Max') {
-      if (value) {
-        params.value = this.toNumberIfPossible(value);
-      }
-    } else if (name === 'DecimalMin' || name === 'DecimalMax') {
-      if (value) {
-        params.value = value;
-      }
-      if (value2) {
-        params.inclusive = this.toBooleanIfPossible(value2);
-      }
-    } else if (name === 'Digits') {
-      if (value) {
-        params.integer = this.toNumberIfPossible(value);
-      }
-      if (value2) {
-        params.fraction = this.toNumberIfPossible(value2);
-      }
-    } else if (name === 'Pattern') {
-      if (value) {
-        params.regex = value;
-      }
-    } else {
-      if (value) {
-        params.value = this.toNumberIfPossible(value);
-      }
-      if (value2) {
-        params.value2 = this.toNumberIfPossible(value2);
-      }
-    }
-
-    if (Object.keys(params).length === 0) {
-      return name;
-    }
-
-    return { [name]: params };
-  }
-
-  private toYaml(value: any, indent: number): string {
-    const indentation = '  '.repeat(indent);
-
-    if (value === null || value === undefined) {
-      return 'null';
-    }
-
-    if (Array.isArray(value)) {
-      if (value.length === 0) {
-        return '[]';
-      }
-      return value.map(item => {
-        if (this.isScalar(item)) {
-          return `${indentation}- ${this.formatScalar(item)}`;
-        }
-        const nested = this.toYaml(item, indent + 1);
-        return `${indentation}-\n${nested}`;
-      }).join('\n');
-    }
-
-    if (typeof value === 'object') {
-      const entries = Object.entries(value).filter(([, v]) => v !== undefined);
-      if (entries.length === 0) {
-        return '{}';
-      }
-      return entries.map(([key, val]) => {
-        if (this.isScalar(val)) {
-          return `${indentation}${key}: ${this.formatScalar(val)}`;
-        }
-        if (Array.isArray(val) && val.length === 0) {
-          return `${indentation}${key}: []`;
-        }
-        if (typeof val === 'object' && val !== null && !Array.isArray(val) && Object.keys(val).length === 0) {
-          return `${indentation}${key}: {}`;
-        }
-        return `${indentation}${key}:\n${this.toYaml(val, indent + 1)}`;
-      }).join('\n');
-    }
-
-    return this.formatScalar(value);
-  }
-
-  private isScalar(value: any): boolean {
-    return value === null || ['string', 'number', 'boolean'].includes(typeof value);
-  }
-
-  private formatScalar(value: any): string {
-    if (value === null || value === undefined) {
-      return 'null';
-    }
-    if (typeof value === 'number' || typeof value === 'boolean') {
-      return String(value);
-    }
-    const stringValue = String(value);
-    if (stringValue === '') {
-      return '""';
-    }
-    if (/^[a-zA-Z0-9_\-./]+$/.test(stringValue)) {
-      return stringValue;
-    }
-    return `"${stringValue.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`;
-  }
-
-  private trimmed(value: unknown): string {
-    return String(value ?? '').trim();
-  }
-
-  private hasNumber(value: unknown): boolean {
-    if (value === null || value === undefined) {
-      return false;
-    }
-    return !Number.isNaN(Number(value));
-  }
-
-  private toNumberIfPossible(value: string): string | number {
-    const numeric = Number(value);
-    return Number.isNaN(numeric) ? value : numeric;
-  }
-
-  private toBooleanIfPossible(value: string): string | boolean {
-    const normalized = value.toLowerCase();
-    if (normalized === 'true') {
-      return true;
-    }
-    if (normalized === 'false') {
-      return false;
-    }
-    return value;
-  }
-
-  private normalizeType(type: unknown): string {
-    const value = this.trimmed(type);
-    const typeMap: Record<string, string> = {
-      Int: 'Integer',
-      Decimal: 'BigDecimal',
-      Date: 'LocalDate',
-      Time: 'LocalTime',
-      DateTime: 'OffsetDateTime',
-      Json: 'String'
-    };
-    return typeMap[value] || value || 'String';
-  }
-
-  private toSnakeCase(value: string): string {
-    return value
-      .replace(/([a-z0-9])([A-Z])/g, '$1_$2')
-      .replace(/[\s\-]+/g, '_')
-      .replace(/__+/g, '_')
-      .toLowerCase();
-  }
-
-  private toArtifactId(value: string): string {
-    return value
-      .trim()
-      .replace(/([a-z0-9])([A-Z])/g, '$1-$2')
-      .replace(/[\s_]+/g, '-')
-      .replace(/-+/g, '-')
-      .toLowerCase();
-  }
-
   private validateProjectNaming(): boolean {
-    const projectName = this.trimmed(this.projectSettings.projectName);
+    const projectName = trimmed(this.projectSettings.projectName);
     this.projectGroupError = '';
     this.projectNameError = '';
 
@@ -3188,7 +1925,7 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
 
     const validationTarget = {
       projectGroup: this.projectSettings.projectGroup,
-      artifactId: this.toArtifactId(projectName)
+      artifactId: toArtifactId(projectName)
     };
 
     const valid = this.validatorService.validate(
@@ -3225,17 +1962,6 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
     });
   }
 
-  private isNotNullConstraint(constraint: any): boolean {
-    if (typeof constraint === 'string') {
-      return constraint === 'NotNull';
-    }
-    if (!constraint || typeof constraint !== 'object') {
-      return false;
-    }
-    const [firstKey] = Object.keys(constraint);
-    return firstKey === 'NotNull';
-  }
-
   private promptForRecentProjectIfAvailable(): void {
     const projects = this.getSavedProjects();
     if (!projects.length) {
@@ -3243,7 +1969,7 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
     }
 
     const latestProject = projects
-      .filter(project => this.hasNumber(project?.id))
+      .filter(project => hasNumber(project?.id))
       .sort((left, right) => Number(right.id) - Number(left.id))[0];
 
     if (!latestProject) {
@@ -3263,5 +1989,4 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
       return [];
     }
   }
-
 }

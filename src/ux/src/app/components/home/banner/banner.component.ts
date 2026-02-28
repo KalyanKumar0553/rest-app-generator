@@ -15,4 +15,12 @@ export class BannerComponent {
   startProject(): void {
     this.router.navigate(['/project-generation']);
   }
+
+  onDecorativeImageError(event: Event): void {
+    const image = event.target as HTMLImageElement | null;
+    if (!image) {
+      return;
+    }
+    image.style.display = 'none';
+  }
 }

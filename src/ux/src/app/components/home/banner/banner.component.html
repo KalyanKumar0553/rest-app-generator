@@ -8,6 +8,10 @@
       </h1>
       <button class="cta-button" type="button" (click)="startProject()">Start Project</button>
     </div>
-    <div class="decorative-paper"></div>
+    <img
+      class="decorative-paper"
+      src="assets/images/home-carousel/slide-1-banner-paper.png"
+      alt="BootRid banner preview"
+      (error)="onDecorativeImageError($event)" />
   </div>
 </section>

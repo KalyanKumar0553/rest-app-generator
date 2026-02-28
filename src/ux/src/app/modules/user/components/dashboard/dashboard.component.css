@@ -6,7 +6,7 @@
 
 .sidebar {
   width: 240px;
-  background-color: var(--color-background-white);
+  background-color: var(--color-background-secondary);
   border-right: 1px solid var(--color-border);
   display: flex;
   flex-direction: column;
@@ -314,7 +314,7 @@
 @media (max-width: 1024px) {
   .mobile-header {
     display: flex;
-    background-color: var(--color-background-white);
+    background-color: var(--color-background-secondary);
     border-bottom: 1px solid var(--color-border);
     position: fixed;
     top: 0;

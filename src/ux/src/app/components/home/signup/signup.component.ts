@@ -32,17 +32,17 @@ export class SignupComponent {
 
     this.isSubmitting = true;
     this.toastService.success('Subscribed successfully for product updates.');
-    // this.newsletterService.subscribe(email).subscribe({
-    //   next: () => {
-    //     this.toastService.success('Subscribed successfully for product updates.');
-    //     emailInput.value = '';
-    //     this.isSubmitting = false;
-    //   },
-    //   error: () => {
-    //     this.toastService.error('Failed to subscribe. Please try again.');
-    //     this.isSubmitting = false;
-    //   }
-    // });
+    this.newsletterService.subscribe(email).subscribe({
+      next: () => {
+        this.toastService.success('Subscribed successfully for product updates.');
+        emailInput.value = '';
+        this.isSubmitting = false;
+      },
+      error: () => {
+        this.toastService.error('Failed to subscribe. Please try again.');
+        this.isSubmitting = false;
+      }
+    });
   }
 
   private isValidEmail(email: string): boolean {

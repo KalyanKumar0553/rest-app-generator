@@ -34,11 +34,13 @@
   --color-border: #4e5254;
   --color-border-light: #44484b;
   --color-border-dark: #606366;
+  --color-modal-header-bg: var(--color-background-secondary);
+  --color-modal-overlay-bg: color-mix(in srgb, var(--color-background) 80%, transparent);
 
   --color-success: #629755;
   --color-warning: #bbb529;
   --color-error: #f44747;
-  --theme-modal-overlay-bg: color-mix(in srgb, var(--color-background) 72%, transparent);
+  --theme-modal-overlay-bg: var(--color-modal-overlay-bg);
   --theme-loading-overlay-bg: color-mix(in srgb, var(--color-background) 64%, transparent);
   --theme-modal-container-bg: var(--color-background-white);
   --theme-modal-shadow: var(--shadow-xl);
@@ -46,6 +48,7 @@
   --theme-modal-header-text: var(--color-text-primary);
   --theme-modal-body-text: var(--color-text-primary);
   --theme-modal-border-color: var(--color-border);
+  --theme-info-banner-bg: var(--color-background-secondary);
   --theme-mobile-header-bg: linear-gradient(180deg, #353739 0%, #2b2b2b 100%);
   --theme-browser-color: var(--color-background);
   --theme-footer-toggle-glint-bg: linear-gradient(90deg, transparent, color-mix(in srgb, var(--color-text-primary) 16%, transparent), transparent);

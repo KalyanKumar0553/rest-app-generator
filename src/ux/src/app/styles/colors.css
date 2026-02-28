@@ -70,6 +70,8 @@
   --color-border: var(--neutral-200);
   --color-border-light: #e5f0ee;
   --color-border-dark: var(--neutral-300);
+  --color-modal-header-bg: #97a9ae;
+  --color-modal-overlay-bg: rgba(0, 0, 0, 0.8);
   --color-success: var(--success-600);
   --color-warning: var(--warning-600);
   --color-error: var(--error-600);
@@ -87,14 +89,15 @@
   --gradient-secondary: linear-gradient(135deg, var(--color-text-secondary), var(--color-primary));
 
   /* Component theme aliases (centralized defaults) */
-  --theme-modal-overlay-bg: rgba(0, 0, 0, 0.6);
+  --theme-modal-overlay-bg: var(--color-modal-overlay-bg);
   --theme-loading-overlay-bg: rgba(0, 0, 0, 0.45);
   --theme-modal-container-bg: var(--color-background-white);
   --theme-modal-shadow: var(--shadow-xl);
-  --theme-modal-header-bg: var(--color-text-secondary);
+  --theme-modal-header-bg: var(--color-modal-header-bg);
   --theme-modal-header-text: var(--color-text-inverse);
   --theme-modal-body-text: var(--color-text-primary);
   --theme-modal-border-color: var(--color-border);
+  --theme-info-banner-bg: var(--color-text-secondary);
   --theme-mobile-header-bg: linear-gradient(180deg, #e7eff1 0%, #dbe6ea 100%);
 
   --theme-primary-btn-bg: var(--color-primary);

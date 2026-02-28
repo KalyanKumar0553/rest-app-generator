@@ -6,7 +6,7 @@
 
 .mobile-header {
   display: none;
-  background: #f8f9fa;;
+  background-color: var(--color-background-secondary);
   border-bottom: 1px solid var(--color-border);
   position: fixed;
   top: 0;
@@ -87,7 +87,7 @@
 
 .sidebar {
   width: 240px;
-  background-color: var(--color-background-white);
+  background-color: var(--color-background-secondary);
   display: flex;
   flex-direction: column;
   border-right: 1px solid var(--color-border-light);

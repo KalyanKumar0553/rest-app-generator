@@ -55,10 +55,10 @@ export interface ComponentTheme {
 
 const DEFAULT_THEME: ComponentTheme = {
   // Modal themes
-  modalOverlayBg: 'color-mix(in srgb, var(--color-background) 65%, transparent)',
+  modalOverlayBg: 'var(--color-modal-overlay-bg)',
   modalContainerBg: 'var(--color-background-white)',
   modalShadow: 'var(--shadow-xl)',
-  modalHeaderBg: 'var(--color-background-secondary)',
+  modalHeaderBg: 'var(--color-modal-header-bg)',
   modalHeaderText: 'var(--color-text-primary)',
   modalBodyText: 'var(--color-text-primary)',
   modalBorderColor: 'var(--color-border)',

@@ -110,11 +110,11 @@
 
 .footer-bottom {
   display: grid;
-  grid-template-columns: auto 1fr auto;
+  grid-template-columns: 1fr;
   align-items: center;
   gap: 12px;
-  border-top: 1px solid var(--neutral-700);
-  padding-top: 16px;
+  border-top: none;
+  justify-items: center;
 }
 
 .footer-theme-left {

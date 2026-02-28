@@ -31,10 +31,10 @@ public class DBConfig {
 	private Environment env;
 	
 	
-	@Value("${spring.jpa.properties.hibernate.dialect}")
+	@Value("${spring.jpa.properties.hibernate.dialect:org.hibernate.dialect.PostgreSQLDialect}")
     private String hibernateDialect;
 	
-	 @Value("${spring.jpa.hibernate.ddl-auto}")
+	 @Value("${spring.jpa.hibernate.ddl-auto:none}")
 	 private String ddlAuto;
 	
 
@@ -56,10 +56,10 @@ public class DBConfig {
 	@Bean
 	DataSource dbDataSource() {
 		DriverManagerDataSource dataSource = new DriverManagerDataSource();
-		dataSource.setDriverClassName(env.getProperty("spring.datasource.driver-class-name"));
-		dataSource.setUrl(env.getProperty("spring.datasource.url"));
-		dataSource.setUsername(env.getProperty("spring.datasource.username"));
-		dataSource.setPassword(env.getProperty("spring.datasource.password"));
+		dataSource.setDriverClassName(env.getProperty("spring.datasource.driver-class-name", "org.postgresql.Driver"));
+		dataSource.setUrl(env.getProperty("spring.datasource.url", "jdbc:postgresql://localhost:5432/rest-init"));
+		dataSource.setUsername(env.getProperty("spring.datasource.username", "postgres"));
+		dataSource.setPassword(env.getProperty("spring.datasource.password", "postgres"));
 		return dataSource;
 	}
 

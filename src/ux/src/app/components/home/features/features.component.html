@@ -9,25 +9,38 @@
         <div class="feature-grid" [style.transform]="'translateX(-' + (currentIndex * 100) + '%)'">
           <article class="feature-card" *ngFor="let feature of features" [class.reverse]="feature.reverse" [class.banner-slide]="feature.visual === 'banner'">
             <div class="feature-visual">
-              <div *ngIf="feature.visual === 'mockup'" class="visual-mockup">
-                <div class="mockup-sidebar"></div>
-                <div class="mockup-content">
-                  <div class="mockup-line"></div>
-                  <div class="mockup-line short"></div>
-                  <div class="mockup-line"></div>
-                </div>
+              <div *ngIf="feature.visual === 'mockup'" class="visual-mockup" [class.image-only]="!!feature.image">
+                <ng-container *ngIf="feature.image; else mockupPlaceholder">
+                  <img
+                    class="visual-image mockup-image"
+                    [src]="feature.image"
+                    [alt]="feature.title"
+                    (error)="onVisualImageError($event)" />
+                </ng-container>
+                <ng-template #mockupPlaceholder>
+                  <div class="mockup-sidebar"></div>
+                  <div class="mockup-content">
+                    <div class="mockup-line"></div>
+                    <div class="mockup-line short"></div>
+                    <div class="mockup-line"></div>
+                  </div>
+                </ng-template>
               </div>
 
               <div *ngIf="feature.visual === 'schema'" class="visual-mockup schema">
-                <div class="schema-item"></div>
-                <div class="schema-item"></div>
-                <div class="schema-item"></div>
+                <img
+                  class="visual-image"
+                  [src]="feature.image"
+                  [alt]="feature.title"
+                  (error)="onVisualImageError($event)" />
               </div>
 
               <div *ngIf="feature.visual === 'code'" class="code-preview">
-                <div class="code-line"></div>
-                <div class="code-line short"></div>
-                <div class="code-line"></div>
+                <img
+                  class="visual-image"
+                  [src]="feature.image"
+                  [alt]="feature.title"
+                  (error)="onVisualImageError($event)" />
               </div>
 
               <div *ngIf="feature.visual === 'icon'" class="advanced-icon">⚙</div>

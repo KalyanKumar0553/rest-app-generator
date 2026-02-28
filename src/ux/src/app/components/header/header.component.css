@@ -1,5 +1,5 @@
 .header {
-  background-color: var(--color-background-white);
+  background-color: var(--color-background-secondary);
   padding: 16px 0;
   border-bottom: 1px solid var(--color-border);
 }
@@ -119,7 +119,7 @@
   right: -320px;
   width: 320px;
   height: 100%;
-  background-color: var(--color-background-white);
+  background-color: var(--color-background-secondary);
   box-shadow: var(--shadow-lg);
   transition: right 0.3s ease;
   z-index: 999;
