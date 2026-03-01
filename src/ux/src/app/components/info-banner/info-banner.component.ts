@@ -14,22 +14,65 @@ export class InfoBannerComponent implements OnInit {
   @Input() show = true;
 
   isVisible = true;
+  private readonly sessionIdKey = 'app:session-id';
 
   ngOnInit(): void {
-    const dismissed = this.storageKey
-      ? sessionStorage.getItem(this.buildStorageKey())
-      : null;
+    const dismissed = this.storageKey ? this.isDismissedForCurrentSession() : false;
     this.isVisible = this.show && !dismissed;
   }
 
   close(): void {
     this.isVisible = false;
-    if (this.storageKey) {
-      sessionStorage.setItem(this.buildStorageKey(), 'dismissed');
+    if (!this.storageKey || typeof window === 'undefined') {
+      return;
     }
+
+    const key = this.buildStorageKey();
+    const sessionId = this.getOrCreateSessionId();
+    if (!sessionId) {
+      return;
+    }
+
+    window.localStorage.setItem(key, sessionId);
+    window.sessionStorage.setItem(key, 'dismissed');
   }
 
   private buildStorageKey(): string {
     return `info-banner:${this.storageKey}`;
+  }
+
+  private isDismissedForCurrentSession(): boolean {
+    if (typeof window === 'undefined') {
+      return false;
+    }
+
+    const key = this.buildStorageKey();
+    const sessionDismissed = window.sessionStorage.getItem(key) === 'dismissed';
+    if (sessionDismissed) {
+      return true;
+    }
+
+    const sessionId = this.getOrCreateSessionId();
+    if (!sessionId) {
+      return false;
+    }
+
+    const persistedSessionId = window.localStorage.getItem(key);
+    return persistedSessionId === sessionId;
+  }
+
+  private getOrCreateSessionId(): string {
+    if (typeof window === 'undefined') {
+      return '';
+    }
+
+    const existing = window.sessionStorage.getItem(this.sessionIdKey);
+    if (existing) {
+      return existing;
+    }
+
+    const generated = `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+    window.sessionStorage.setItem(this.sessionIdKey, generated);
+    return generated;
   }
 }

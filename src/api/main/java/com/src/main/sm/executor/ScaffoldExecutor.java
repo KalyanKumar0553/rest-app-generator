@@ -34,6 +34,7 @@ import com.src.main.sm.executor.common.BoilerplateStyle;
 import com.src.main.sm.executor.common.BoilerplateStyleResolver;
 import com.src.main.sm.executor.common.GenerationLanguage;
 import com.src.main.sm.executor.common.GenerationLanguageResolver;
+import com.src.main.sm.executor.common.JavaNamingUtils;
 import com.src.main.sm.executor.common.TemplatePathResolver;
 import com.src.main.util.PathUtils;
 
@@ -100,11 +101,13 @@ public class ScaffoldExecutor implements StepExecutor {
 
 		InitializrProjectModel model = new InitializrProjectModel(groupId, artifactId, version, name, description,
 				packaging, generator, jdkVersion, bootVersion, openapi, includeLombok, angular);
+		String mainClassName = JavaNamingUtils.toJavaTypeName(artifactId, "App") + "Application";
 
 		log.info("Scaffolding project: {} ",model);
 
 		if ("gradle".equalsIgnoreCase(buildTool)) {
-			InitializrGradleGenerator.GradleFiles files = gradleGenerator.generateFiles(model,deps);
+			InitializrGradleGenerator.GradleFiles files = gradleGenerator.generateFiles(model, deps, packageName,
+					mainClassName, language == GenerationLanguage.KOTLIN);
 			Files.writeString(root.resolve(files.getBuildFileName()), files.getBuildContent(), UTF_8);
 			Files.writeString(root.resolve(files.getSettingsFileName()), files.getSettingsContent(), UTF_8);
 			gradleWrapperInstaller.installWrapper(root, GradleVersionResolver.forBoot(model.getBootVersion()));
@@ -112,7 +115,6 @@ public class ScaffoldExecutor implements StepExecutor {
 			String pom = pomGenerator.generatePom(model, deps);
 			Files.writeString(root.resolve("pom.xml"), pom, UTF_8);
 		}
-		String mainClassName = toPascal(artifactId) + "Application";
 		writeMainClass(root, packageName, mainClassName, language);
 		writeResources(root, name, yaml);
 		writeDocsAndGitignore(root, name);
@@ -233,7 +235,26 @@ public class ScaffoldExecutor implements StepExecutor {
 				.filter(Map.class::isInstance)
 				.map(Map.class::cast)
 				.map(modelRaw -> ((Map<String, Object>) modelRaw).get("addRestEndpoints"))
-				.anyMatch(addRestEndpoints -> parseBoolean(addRestEndpoints, false));
+					.anyMatch(addRestEndpoints -> parseBoolean(addRestEndpoints, false));
+	}
+
+	@SuppressWarnings("unchecked")
+	private static boolean hasRestSpec(Map<String, Object> yaml) {
+		if (yaml == null) {
+			return false;
+		}
+		Object restSpecRaw = yaml.get("rest-spec");
+		if (!(restSpecRaw instanceof List<?> restSpecs)) {
+			return false;
+		}
+		return restSpecs.stream()
+				.filter(Map.class::isInstance)
+				.map(Map.class::cast)
+				.anyMatch(specRaw -> {
+					Map<String, Object> spec = (Map<String, Object>) specRaw;
+					Object methodsRaw = spec.get("methods");
+					return methodsRaw instanceof Map<?, ?> methods && !methods.isEmpty();
+				});
 	}
 
 	private static List<String> removeJpaDependencies(List<String> dependencies) {
@@ -284,9 +305,12 @@ public class ScaffoldExecutor implements StepExecutor {
 	private static List<String> resolveDependenciesFromYaml(Map<String, Object> yaml) {
 		Set<String> dependencies = new LinkedHashSet<>(extractDependenciesFromYaml(yaml));
 		boolean noSql = isNoSqlDatabase(yaml);
+		boolean restEnabled = hasRestEndpointEntities(yaml) || hasRestSpec(yaml);
 
-		if (hasRestEndpointEntities(yaml)) {
+		if (restEnabled) {
 			dependencies.add("web");
+			// REST templates use @Valid in controllers; always include validation starter.
+			dependencies.add("validation");
 		}
 		if (hasValidationConstraints(yaml)) {
 			dependencies.add("validation");
@@ -462,16 +486,6 @@ public class ScaffoldExecutor implements StepExecutor {
 		// Write README.md
 		Path readmePath = root.resolve("README.md");
 		Files.writeString(readmePath, readmeRendered, StandardCharsets.UTF_8);
-	}
-
-	private static String toPascal(String s) {
-		if (s == null || s.isBlank())
-			return "Application";
-		String[] parts = s.replace('-', ' ').replace('_', ' ').trim().split("\\s+");
-		return java.util.Arrays.stream(parts)
-				.filter(p -> !p.isEmpty())
-				.map(p -> Character.toUpperCase(p.charAt(0)) + p.substring(1))
-				.collect(java.util.stream.Collectors.joining());
 	}
 
 	@SuppressWarnings("unchecked")

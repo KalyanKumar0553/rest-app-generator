@@ -142,7 +142,7 @@ export const DEFAULT_CONTROLLERS_CONFIG: RestEndpointConfig = {
       create: { mode: 'GENERATE_DTO', dtoName: '' },
       delete: { mode: 'GENERATE_DTO', dtoName: '' },
       update: { mode: 'GENERATE_DTO', dtoName: '' },
-      patch: { mode: 'JSON_MERGE_PATCH' },
+      patch: { mode: 'JSON_MERGE_PATCH', dtoName: '' },
       getByIdType: 'UUID',
       deleteByIdType: 'UUID',
       bulkInsertType: '',

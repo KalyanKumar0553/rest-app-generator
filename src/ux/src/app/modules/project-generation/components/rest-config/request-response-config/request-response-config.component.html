@@ -9,10 +9,14 @@
         <div class="request-item" *ngIf="draft?.methods?.create">
           <div class="request-op-label">Create</div>
           <div class="request-item-body dto-inline">
-            <mat-form-field appearance="outline" class="dto-input">
-              <mat-select [(ngModel)]="draft.requestResponse.request.create.dtoName">
+            <mat-form-field appearance="outline" class="dto-input" [class.field-invalid]="isRequestFieldInvalid('create')">
+              <mat-select
+                [(ngModel)]="draft.requestResponse.request.create.dtoName"
+                [required]="shouldValidateRequiredFields"
+                [errorStateMatcher]="requiredFieldErrorStateMatcher">
                 <mat-option *ngFor="let option of createRequestOptions" [value]="option">{{ option }}</mat-option>
               </mat-select>
+              <mat-error *ngIf="isRequestFieldInvalid('create')">Create request object is required.</mat-error>
             </mat-form-field>
             <button type="button" class="dto-add-btn" aria-label="Configure create DTO" (click)="openDtoConfig('create')">
               <mat-icon>add</mat-icon>
@@ -23,7 +27,7 @@
         <div class="request-item" *ngIf="draft?.methods?.get">
           <div class="request-op-label">Get By Key</div>
           <div class="request-item-body">
-            <div class="input-align-wrap">
+            <div class="input-align-wrap" [class.field-invalid]="isRequestFieldInvalid('getByIdType')">
               <app-field-type-select
                 [label]="'Key Type'"
                 [appearance]="'outline'"
@@ -39,10 +43,14 @@
         <div class="request-item" *ngIf="draft?.methods?.list">
           <div class="request-op-label">List</div>
           <div class="request-item-body dto-inline">
-            <mat-form-field appearance="outline" class="dto-input">
-              <mat-select [(ngModel)]="draft.requestResponse.request.list.dtoName">
+            <mat-form-field appearance="outline" class="dto-input" [class.field-invalid]="isRequestFieldInvalid('list')">
+              <mat-select
+                [(ngModel)]="draft.requestResponse.request.list.dtoName"
+                [required]="shouldValidateRequiredFields"
+                [errorStateMatcher]="requiredFieldErrorStateMatcher">
                 <mat-option *ngFor="let option of listRequestOptions" [value]="option">{{ option }}</mat-option>
               </mat-select>
+              <mat-error *ngIf="isRequestFieldInvalid('list')">List request object is required.</mat-error>
             </mat-form-field>
             <button type="button" class="dto-add-btn" aria-label="Configure list DTO" (click)="openDtoConfig('list')">
               <mat-icon>add</mat-icon>
@@ -52,28 +60,21 @@
 
         <div class="request-item" *ngIf="draft?.methods?.patch">
           <div class="request-op-label">Patch</div>
-          <div class="request-item-body">
-            <mat-radio-group class="inline-radio" [(ngModel)]="draft.requestResponse.request.patch.mode">
-              <mat-radio-button value="JSON_MERGE_PATCH">JSON Merge</mat-radio-button>
-              <mat-radio-button value="JSON_PATCH">JSON Patch</mat-radio-button>
-            </mat-radio-group>
-          </div>
-        </div>
-
-        <div class="request-item" *ngIf="draft?.methods?.delete">
-          <div class="request-op-label">Delete</div>
           <div class="request-item-body dto-inline">
-            <mat-form-field appearance="outline" class="dto-input">
-              <mat-select [(ngModel)]="draft.requestResponse.request.delete.dtoName">
-                <mat-option *ngFor="let option of requestDtoOptions" [value]="option">{{ option }}</mat-option>
+            <mat-form-field appearance="outline" class="dto-input" [class.field-invalid]="isRequestFieldInvalid('patch')">
+              <mat-select
+                [(ngModel)]="draft.requestResponse.request.patch.dtoName"
+                [required]="shouldValidateRequiredFields"
+                [errorStateMatcher]="requiredFieldErrorStateMatcher">
+                <mat-option *ngFor="let option of createRequestOptions" [value]="option">{{ option }}</mat-option>
               </mat-select>
+              <mat-error *ngIf="isRequestFieldInvalid('patch')">Patch request object is required.</mat-error>
             </mat-form-field>
-            <button type="button" class="dto-add-btn" aria-label="Configure delete DTO" (click)="openDtoConfig('delete')">
+            <button type="button" class="dto-add-btn" aria-label="Configure patch DTO" (click)="openDtoConfig('patch')">
               <mat-icon>add</mat-icon>
             </button>
           </div>
         </div>
-
       </div>
     </mat-expansion-panel>
   </mat-accordion>
@@ -84,9 +85,8 @@
         <mat-panel-title>Response Configuration</mat-panel-title>
       </mat-expansion-panel-header>
 
-      <mat-radio-group class="stack-radio" [(ngModel)]="draft.requestResponse.response.responseType">
+      <mat-radio-group class="stack-radio" [(ngModel)]="draft.requestResponse.response.responseType" (ngModelChange)="onResponseTypeChange($event)">
         <mat-radio-button value="RESPONSE_ENTITY">ResponseEntity&lt;T&gt;</mat-radio-button>
-        <mat-radio-button value="DTO_DIRECT">Return DTO Directly</mat-radio-button>
         <mat-radio-button value="CUSTOM_WRAPPER">Custom Wrapper Class</mat-radio-button>
       </mat-radio-group>
 
@@ -94,12 +94,15 @@
         <div class="request-item" *ngFor="let operation of selectedResponseOperations">
           <div class="request-op-label">{{ getResponseOperationLabel(operation) }}</div>
           <div class="request-item-body">
-            <mat-form-field appearance="outline" class="dto-input">
+            <mat-form-field appearance="outline" class="dto-input" [class.field-invalid]="isResponseEndpointInvalid(operation)">
               <mat-select
                 [ngModel]="getResponseEndpointDtoName(operation)"
-                (ngModelChange)="setResponseEndpointDtoName(operation, $event)">
+                (ngModelChange)="setResponseEndpointDtoName(operation, $event)"
+                [required]="shouldValidateRequiredFields"
+                [errorStateMatcher]="requiredFieldErrorStateMatcher">
                 <mat-option *ngFor="let option of getResponseOptions(operation)" [value]="option">{{ option }}</mat-option>
               </mat-select>
+              <mat-error *ngIf="isResponseEndpointInvalid(operation)">Response object is required.</mat-error>
             </mat-form-field>
           </div>
         </div>

@@ -16,6 +16,7 @@ public class RestGenerationUnit {
 	private final String servicePackage;
 	private final String controllerPackage;
 	private final String supportPackage;
+	private final String mapperPackage;
 	private final String entitySupportClass;
 	private final String filterSupportClass;
 	private final String querySupportClass;
@@ -28,7 +29,7 @@ public class RestGenerationUnit {
 
 	public RestGenerationUnit(String entityName, String idName, String idType, String idTypeImport, String endpointPath, String requestBasePath,
 			String modelPackage,
-			String repositoryPackage, String servicePackage, String controllerPackage, String supportPackage,
+			String repositoryPackage, String servicePackage, String controllerPackage, String supportPackage, String mapperPackage,
 			String allowedSortFieldsLiteral, boolean noSql, Map<String, Object> runtimeConfig) {
 		this.entityName = entityName;
 		this.idName = idName;
@@ -41,6 +42,7 @@ public class RestGenerationUnit {
 		this.servicePackage = servicePackage;
 		this.controllerPackage = controllerPackage;
 		this.supportPackage = supportPackage;
+		this.mapperPackage = mapperPackage;
 		this.allowedSortFieldsLiteral = allowedSortFieldsLiteral;
 		this.repositoryClass = entityName + "Repository";
 		this.serviceClass = entityName + "Service";
@@ -96,6 +98,10 @@ public class RestGenerationUnit {
 		return supportPackage;
 	}
 
+	public String getMapperPackage() {
+		return mapperPackage;
+	}
+
 	public String getEntitySupportClass() {
 		return entitySupportClass;
 	}
@@ -145,6 +151,7 @@ public class RestGenerationUnit {
 		model.put("servicePackage", servicePackage);
 		model.put("controllerPackage", controllerPackage);
 		model.put("supportPackage", supportPackage);
+		model.put("mapperPackage", mapperPackage);
 		model.put("entitySupportClass", entitySupportClass);
 		model.put("filterSupportClass", filterSupportClass);
 		model.put("querySupportClass", querySupportClass);

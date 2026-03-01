@@ -31,7 +31,7 @@
           Add REST endpoints
         </mat-checkbox>
         <button
-          *ngIf="addRestEndpoints"
+          *ngIf="addRestEndpoints && !!editEntity"
           type="button"
           class="configure-btn"
           (click)="openConfigureRestModal()">

@@ -836,7 +836,7 @@ export class AddEntityComponent implements OnChanges {
           },
           create: {
             mode: 'GENERATE_DTO',
-            dtoName: 'Request'
+            dtoName: ''
           },
           delete: {
             mode: 'GENERATE_DTO',
@@ -844,10 +844,11 @@ export class AddEntityComponent implements OnChanges {
           },
           update: {
             mode: 'GENERATE_DTO',
-            dtoName: 'UpdateRequest'
+            dtoName: ''
           },
           patch: {
-            mode: 'JSON_MERGE_PATCH'
+            mode: 'JSON_MERGE_PATCH',
+            dtoName: ''
           },
           getByIdType: 'UUID',
           deleteByIdType: 'UUID',
@@ -1037,7 +1038,8 @@ export class AddEntityComponent implements OnChanges {
             dtoName: String((rawConfig as any).requestResponse?.request?.update?.dtoName ?? fallback.requestResponse.request.update.dtoName).trim()
           },
           patch: {
-            mode: (rawConfig as any).requestResponse?.request?.patch?.mode === 'JSON_PATCH' ? 'JSON_PATCH' : 'JSON_MERGE_PATCH'
+            mode: (rawConfig as any).requestResponse?.request?.patch?.mode === 'JSON_PATCH' ? 'JSON_PATCH' : 'JSON_MERGE_PATCH',
+            dtoName: String((rawConfig as any).requestResponse?.request?.patch?.dtoName ?? fallback.requestResponse.request.patch.dtoName).trim()
           },
           getByIdType: String((rawConfig as any).requestResponse?.request?.getByIdType ?? fallback.requestResponse.request.getByIdType).trim(),
           deleteByIdType: String((rawConfig as any).requestResponse?.request?.deleteByIdType ?? fallback.requestResponse.request.deleteByIdType).trim(),

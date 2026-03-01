@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, Input, OnChanges, SimpleChanges, ViewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { ErrorStateMatcher } from '@angular/material/core';
 import { MatExpansionModule } from '@angular/material/expansion';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
@@ -32,9 +33,14 @@ import { ENTITY_FIELD_TYPE_OPTIONS } from '../../../constants/backend-field-type
   styleUrls: ['./request-response-config.component.css']
 })
 export class RequestResponseConfigComponent implements OnChanges {
-  readonly responseOperationOrder: Array<'create' | 'get' | 'list' | 'delete' | 'bulkInsert' | 'bulkDelete'> =
-    ['create', 'get', 'list', 'delete', 'bulkInsert', 'bulkDelete'];
+  readonly requiredFieldErrorStateMatcher: ErrorStateMatcher = {
+    isErrorState: (control) => Boolean(this.shouldValidateRequiredFields && control?.invalid)
+  };
+
+  readonly responseOperationOrder: Array<'create' | 'get' | 'list' | 'patch' | 'delete' | 'bulkInsert' | 'bulkUpdate' | 'bulkDelete'> =
+    ['create', 'get', 'list', 'patch', 'delete', 'bulkInsert', 'bulkUpdate', 'bulkDelete'];
   @Input({ required: true }) draft: any;
+  @Input() showRequiredErrors = false;
   @Input() entityFieldTypeOptions: string[] = [];
   @Input() availableModels: Array<{ name?: string }> = [];
   @Input() dtoObjects: Array<{
@@ -50,8 +56,8 @@ export class RequestResponseConfigComponent implements OnChanges {
   @ViewChild('dtoConfigComponent') dtoConfigComponent?: AddDataObjectComponent;
 
   showDtoConfigModal = false;
-  dtoConfigTarget: 'list' | 'create' | 'delete' | 'response' = 'create';
-  responseTargetOperation: 'create' | 'get' | 'list' | 'delete' | 'bulkInsert' | 'bulkDelete' | null = null;
+  dtoConfigTarget: 'list' | 'create' | 'patch' | 'delete' | 'response' = 'create';
+  responseTargetOperation: 'create' | 'get' | 'list' | 'patch' | 'delete' | 'bulkInsert' | 'bulkUpdate' | 'bulkDelete' | null = null;
   dtoEditDataObject: {
     name: string;
     dtoType?: 'request' | 'response';
@@ -83,7 +89,7 @@ export class RequestResponseConfigComponent implements OnChanges {
   }
 
   get listRequestOptions(): string[] {
-    return this.createRequestOptions.map((item) => `List<${item}>`);
+    return this.createRequestOptions;
   }
 
   get responseDtoOptions(): string[] {
@@ -102,19 +108,23 @@ export class RequestResponseConfigComponent implements OnChanges {
   }
 
   get listResponseOptions(): string[] {
+    const mappedEntityLists = this.createRequestOptions.map((item) => `List<${item}>`);
     const typedList = this.idTypeOptions.map((item) => `List<${item}>`);
     const dtoList = this.responseDtoOptions.map((item) => `List<${item}>`);
-    return Array.from(new Set([...typedList, ...dtoList]));
+    return Array.from(new Set([...mappedEntityLists, ...typedList, ...dtoList]));
   }
 
   get booleanOptions(): string[] {
     return ['true', 'false'];
   }
 
-  get selectedResponseOperations(): Array<'create' | 'get' | 'list' | 'delete' | 'bulkInsert' | 'bulkDelete'> {
+  get selectedResponseOperations(): Array<'create' | 'get' | 'list' | 'patch' | 'delete' | 'bulkInsert' | 'bulkUpdate' | 'bulkDelete'> {
     return this.responseOperationOrder.filter((key) => {
       if (key === 'bulkInsert') {
         return Boolean(this.draft?.methods?.bulkInsert);
+      }
+      if (key === 'bulkUpdate') {
+        return Boolean(this.draft?.methods?.bulkUpdate);
       }
       if (key === 'bulkDelete') {
         return Boolean(this.draft?.methods?.bulkDelete);
@@ -129,13 +139,24 @@ export class RequestResponseConfigComponent implements OnChanges {
     return cleaned.length ? Array.from(new Set(cleaned)) : ENTITY_FIELD_TYPE_OPTIONS;
   }
 
+  get shouldValidateRequiredFields(): boolean {
+    return this.showRequiredErrors && !Boolean(this.draft?.mapToEntity);
+  }
+
   ngOnChanges(_changes: SimpleChanges): void {
     this.ensureRequestDefaults();
+    this.ensureResponseDefaults();
+  }
+
+  onResponseTypeChange(value: string): void {
+    if (String(value ?? '') === 'CUSTOM_WRAPPER') {
+      this.ensureResponseDefaults();
+    }
   }
 
   openDtoConfig(
-    target: 'list' | 'create' | 'delete' | 'response',
-    responseOperation?: 'create' | 'get' | 'list' | 'delete' | 'bulkInsert' | 'bulkDelete'
+    target: 'list' | 'create' | 'patch' | 'delete' | 'response',
+    responseOperation?: 'create' | 'get' | 'list' | 'patch' | 'delete' | 'bulkInsert' | 'bulkUpdate' | 'bulkDelete'
   ): void {
     this.dtoConfigTarget = target;
     this.responseTargetOperation = target === 'response' ? (responseOperation ?? null) : null;
@@ -203,11 +224,7 @@ export class RequestResponseConfigComponent implements OnChanges {
       }
       this.applyResponseSettingsFromDto(dto);
     } else {
-      if (this.dtoConfigTarget === 'list') {
-        this.draft.requestResponse.request.list.dtoName = `List<${name}>`;
-      } else {
-        this.draft.requestResponse.request[this.dtoConfigTarget].dtoName = name;
-      }
+      this.draft.requestResponse.request[this.dtoConfigTarget].dtoName = name;
       if (this.dtoConfigTarget === 'create' && !this.draft.requestResponse.request.bulkInsertType) {
         this.draft.requestResponse.request.bulkInsertType = `List<${name}>`;
       }
@@ -231,7 +248,7 @@ export class RequestResponseConfigComponent implements OnChanges {
     }
   }
 
-  getResponseOperationLabel(operation: 'create' | 'get' | 'list' | 'delete' | 'bulkInsert' | 'bulkDelete'): string {
+  getResponseOperationLabel(operation: 'create' | 'get' | 'list' | 'patch' | 'delete' | 'bulkInsert' | 'bulkUpdate' | 'bulkDelete'): string {
     if (operation === 'get') {
       return 'Get By Key';
     }
@@ -241,8 +258,14 @@ export class RequestResponseConfigComponent implements OnChanges {
     if (operation === 'bulkInsert') {
       return 'Bulk Insert';
     }
+    if (operation === 'bulkUpdate') {
+      return 'Bulk Update';
+    }
     if (operation === 'bulkDelete') {
       return 'Bulk Delete';
+    }
+    if (operation === 'patch') {
+      return 'Patch';
     }
     if (operation === 'list') {
       return 'List';
@@ -250,7 +273,7 @@ export class RequestResponseConfigComponent implements OnChanges {
     return 'Create';
   }
 
-  getResponseEndpointDtoName(operation: 'create' | 'get' | 'list' | 'delete' | 'bulkInsert' | 'bulkDelete' | null): string {
+  getResponseEndpointDtoName(operation: 'create' | 'get' | 'list' | 'patch' | 'delete' | 'bulkInsert' | 'bulkUpdate' | 'bulkDelete' | null): string {
     if (!operation) {
       return '';
     }
@@ -259,7 +282,7 @@ export class RequestResponseConfigComponent implements OnChanges {
   }
 
   setResponseEndpointDtoName(
-    operation: 'create' | 'get' | 'list' | 'delete' | 'bulkInsert' | 'bulkDelete',
+    operation: 'create' | 'get' | 'list' | 'patch' | 'delete' | 'bulkInsert' | 'bulkUpdate' | 'bulkDelete',
     value: string
   ): void {
     this.ensureResponseEndpointDtos();
@@ -268,6 +291,59 @@ export class RequestResponseConfigComponent implements OnChanges {
     if (selected) {
       this.applyResponseSettingsFromDto(selected);
     }
+  }
+
+  isRequestFieldInvalid(field: 'create' | 'list' | 'patch' | 'delete' | 'getByIdType' | 'deleteByIdType' | 'bulkInsertType' | 'bulkUpdateType' | 'bulkDeleteType'): boolean {
+    if (!this.shouldValidateRequiredFields) {
+      return false;
+    }
+    const methods = this.draft?.methods ?? {};
+    if (field === 'create' && !methods.create) {
+      return false;
+    }
+    if (field === 'list' && !methods.list) {
+      return false;
+    }
+    if (field === 'patch' && !methods.patch) {
+      return false;
+    }
+    if ((field === 'delete' || field === 'deleteByIdType') && !methods.delete) {
+      return false;
+    }
+    if (field === 'getByIdType' && !methods.get) {
+      return false;
+    }
+    if (field === 'bulkInsertType' && !methods.bulkInsert) {
+      return false;
+    }
+    if (field === 'bulkUpdateType' && !methods.bulkUpdate) {
+      return false;
+    }
+    if (field === 'bulkDeleteType' && !methods.bulkDelete) {
+      return false;
+    }
+
+    if (field === 'create' || field === 'list' || field === 'patch' || field === 'delete') {
+      return !this.hasValue(this.draft?.requestResponse?.request?.[field]?.dtoName);
+    }
+    return !this.hasValue(this.draft?.requestResponse?.request?.[field]);
+  }
+
+  isResponseEndpointInvalid(operation: 'create' | 'get' | 'list' | 'patch' | 'delete' | 'bulkInsert' | 'bulkUpdate' | 'bulkDelete'): boolean {
+    if (!this.shouldValidateRequiredFields) {
+      return false;
+    }
+    if (this.draft?.requestResponse?.response?.responseType !== 'CUSTOM_WRAPPER') {
+      return false;
+    }
+    if (!this.draft?.methods?.[operation]) {
+      return false;
+    }
+    return !this.hasValue(this.getResponseEndpointDtoName(operation));
+  }
+
+  private hasValue(value: unknown): boolean {
+    return String(value ?? '').trim().length > 0;
   }
 
   private ensureResponseEndpointDtos(): void {
@@ -284,18 +360,27 @@ export class RequestResponseConfigComponent implements OnChanges {
     });
   }
 
-  getResponseOptions(operation: 'create' | 'get' | 'list' | 'delete' | 'bulkInsert' | 'bulkDelete'): string[] {
+  getResponseOptions(operation: 'create' | 'get' | 'list' | 'patch' | 'delete' | 'bulkInsert' | 'bulkUpdate' | 'bulkDelete'): string[] {
     if (operation === 'get') {
-      return Array.from(new Set([...this.idTypeOptions, ...this.allDtoOptions]));
+      return Array.from(new Set([...this.createRequestOptions, ...this.allDtoOptions]));
     }
     if (operation === 'list') {
       return this.listResponseOptions;
     }
+    if (operation === 'patch') {
+      return Array.from(new Set([...this.createRequestOptions, ...this.responseDtoOptions]));
+    }
     if (operation === 'create') {
       return this.idTypeOptions;
     }
-    if (operation === 'delete' || operation === 'bulkInsert' || operation === 'bulkDelete') {
-      return this.booleanOptions;
+    if (operation === 'delete') {
+      return this.idTypeOptions;
+    }
+    if (operation === 'bulkInsert' || operation === 'bulkDelete') {
+      return this.idTypeOptions.map((item) => `List<${item}>`);
+    }
+    if (operation === 'bulkUpdate') {
+      return this.listResponseOptions;
     }
     return this.responseDtoOptions;
   }
@@ -317,12 +402,65 @@ export class RequestResponseConfigComponent implements OnChanges {
     }
 
     const mapped = this.mappedEntityName;
-    if (this.draft?.methods?.create && !String(request?.create?.dtoName ?? '').trim() && mapped) {
+    const shouldReplaceLegacyValue = (value: unknown): boolean => {
+      const normalized = String(value ?? '').trim().toLowerCase();
+      return !normalized || normalized === 'request' || normalized === 'createrequest' || normalized === 'updaterequest' || normalized === 'patchrequest';
+    };
+
+    if (this.draft?.methods?.create && shouldReplaceLegacyValue(request?.create?.dtoName) && mapped) {
       request.create.dtoName = mapped;
     }
 
-    if (this.draft?.methods?.list && !String(request?.list?.dtoName ?? '').trim() && mapped) {
-      request.list.dtoName = `List<${mapped}>`;
+    if (this.draft?.methods?.list && shouldReplaceLegacyValue(request?.list?.dtoName) && mapped) {
+      request.list.dtoName = mapped;
     }
+
+    if (this.draft?.methods?.patch && shouldReplaceLegacyValue(request?.patch?.dtoName) && mapped) {
+      request.patch.dtoName = mapped;
+    }
+  }
+
+  private ensureResponseDefaults(): void {
+    if (this.draft?.requestResponse?.response?.responseType !== 'CUSTOM_WRAPPER') {
+      return;
+    }
+    this.ensureResponseEndpointDtos();
+    const keyType = this.resolveKeyType();
+    const entity = this.mappedEntityName;
+    if (!entity) {
+      return;
+    }
+
+    const defaults: Record<string, string> = {
+      create: keyType,
+      get: entity,
+      list: `List<${entity}>`,
+      patch: entity,
+      delete: keyType,
+      bulkInsert: `List<${keyType}>`,
+      bulkUpdate: `List<${entity}>`,
+      bulkDelete: `List<${keyType}>`
+    };
+
+    this.responseOperationOrder.forEach((operation) => {
+      if (!this.draft?.methods?.[operation]) {
+        return;
+      }
+      const current = String(this.draft.requestResponse.response.endpointDtos?.[operation] ?? '').trim();
+      if (!current) {
+        this.draft.requestResponse.response.endpointDtos[operation] = defaults[operation] ?? '';
+      }
+    });
+  }
+
+  private resolveKeyType(): string {
+    const raw = String(this.draft?.pathVariableType ?? '').trim().toUpperCase();
+    if (raw === 'LONG') {
+      return 'Long';
+    }
+    if (raw === 'STRING') {
+      return 'String';
+    }
+    return 'UUID';
   }
 }

@@ -68,7 +68,7 @@
   <div class="form-grid two-column">
     <div class="field-label">Select Key Type</div>
     <mat-form-field appearance="fill" subscriptSizing="dynamic" class="form-field">
-      <mat-select [(ngModel)]="draft.pathVariableType">
+      <mat-select [(ngModel)]="draft.pathVariableType" (ngModelChange)="onPathVariableTypeChanged()">
         <mat-option value="UUID">UUID</mat-option>
         <mat-option value="LONG">Long (Auto Increment)</mat-option>
         <mat-option value="STRING">String (Custom)</mat-option>

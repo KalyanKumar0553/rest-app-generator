@@ -11,10 +11,10 @@ import java.util.Set;
 import java.util.Comparator;
 import java.util.stream.Collectors;
 
-import com.src.main.common.util.CaseUtils;
 import com.src.main.common.util.StringUtils;
 import com.src.main.dto.ModelSpecDTO;
 import com.src.main.sm.executor.common.GenerationLanguage;
+import com.src.main.sm.executor.common.JavaNamingUtils;
 
 public final class SwaggerGenerationSupport {
 
@@ -47,7 +47,7 @@ public final class SwaggerGenerationSupport {
 				.filter(model -> Boolean.TRUE.equals(model.getAddRestEndpoints()))
 				.filter(model -> !Boolean.TRUE.equals(model.getAddCrudOperations()))
 				.map(model -> {
-					String entity = CaseUtils.toPascal(StringUtils.firstNonBlank(model.getName(), "Entity"));
+					String entity = JavaNamingUtils.toJavaTypeName(StringUtils.firstNonBlank(model.getName(), "Entity"), "Entity");
 					String endpoint = toKebabCase(entity) + "s";
 					String beanName = toCamelCase(entity) + "ApiGroup";
 					String basePath = "/api/" + endpoint;
@@ -397,7 +397,7 @@ public final class SwaggerGenerationSupport {
 		if (value == null || value.isBlank()) {
 			return "entity";
 		}
-		String pascal = CaseUtils.toPascal(value);
+		String pascal = JavaNamingUtils.toJavaTypeName(value, "Entity");
 		return Character.toLowerCase(pascal.charAt(0)) + pascal.substring(1);
 	}
 

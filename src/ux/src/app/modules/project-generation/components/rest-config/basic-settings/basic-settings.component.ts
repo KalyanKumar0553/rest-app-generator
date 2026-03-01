@@ -37,6 +37,7 @@ export class BasicSettingsComponent implements OnChanges, AfterViewInit {
   @Output() resourceNameChange = new EventEmitter<void>();
   @Output() basePathChange = new EventEmitter<void>();
   @Output() mappingChange = new EventEmitter<void>();
+  @Output() pathVariableTypeChange = new EventEmitter<void>();
   @ViewChild('resourceNameModel') resourceNameModel?: NgModel;
   @ViewChild('mappedEntityModel') mappedEntityModel?: NgModel;
 
@@ -125,6 +126,10 @@ export class BasicSettingsComponent implements OnChanges, AfterViewInit {
 
   onBasePathInput(): void {
     this.basePathChange.emit();
+  }
+
+  onPathVariableTypeChanged(): void {
+    this.pathVariableTypeChange.emit();
   }
 
   private syncResourceNameErrorState(): void {

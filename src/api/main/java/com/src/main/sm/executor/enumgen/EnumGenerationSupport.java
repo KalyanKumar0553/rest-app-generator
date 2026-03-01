@@ -8,9 +8,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import com.src.main.common.util.CaseUtils;
 import com.src.main.common.util.StringUtils;
 import com.src.main.dto.EnumSpecDTO;
+import com.src.main.sm.executor.common.JavaNamingUtils;
 
 public final class EnumGenerationSupport {
 
@@ -32,7 +32,7 @@ public final class EnumGenerationSupport {
 		return enums.stream()
 				.filter(java.util.Objects::nonNull)
 				.map(enumSpec -> new EnumSpecResolved(
-						CaseUtils.toPascal(StringUtils.firstNonBlank(enumSpec.getName(), "").trim()),
+						JavaNamingUtils.toJavaTypeName(StringUtils.firstNonBlank(enumSpec.getName(), "").trim(), "Enum"),
 						normalizeStorage(enumSpec.getStorage()),
 						normalizeConstants(enumSpec.getConstants())))
 				.filter(spec -> !spec.name().isBlank())

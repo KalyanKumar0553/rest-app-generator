@@ -5,6 +5,7 @@ import org.apache.logging.log4j.util.Strings;
 import com.src.main.common.util.CaseUtils;
 import com.src.main.common.util.StringUtils;
 import com.src.main.dto.ModelSpecDTO;
+import com.src.main.sm.executor.common.JavaNamingUtils;
 
 public final class CrudGenerationSupport {
 
@@ -12,7 +13,7 @@ public final class CrudGenerationSupport {
 	}
 
 	public static CrudGenerationUnit buildUnit(ModelSpecDTO model, String basePackage, String packageStructure, boolean noSql) {
-		String entityName = CaseUtils.toPascal(StringUtils.firstNonBlank(model.getName(), "Entity"));
+		String entityName = JavaNamingUtils.toJavaTypeName(StringUtils.firstNonBlank(model.getName(), "Entity"), "Entity");
 		String idName = StringUtils.firstNonBlank(model.getId() != null ? model.getId().getField() : null, "id");
 		JavaTypeRef idType = mapJavaType(model.getId() != null ? model.getId().getType() : null);
 		boolean domainStructure = "domain".equalsIgnoreCase(StringUtils.firstNonBlank(packageStructure, "technical"));
@@ -63,9 +64,10 @@ public final class CrudGenerationSupport {
 	private static JavaTypeRef toJavaTypeRef(String normalized) {
 		if (normalized.contains(".")) {
 			String simple = normalized.substring(normalized.lastIndexOf('.') + 1);
-			return new JavaTypeRef(simple, normalized);
+			String safeSimple = JavaNamingUtils.toJavaTypeName(simple, "Id");
+			return new JavaTypeRef(safeSimple, normalized.substring(0, normalized.lastIndexOf('.') + 1) + safeSimple);
 		}
-		return new JavaTypeRef(normalized, null);
+		return new JavaTypeRef(JavaNamingUtils.toJavaTypeName(normalized, "Id"), null);
 	}
 
 	private record JavaTypeRef(String simpleName, String importName) {

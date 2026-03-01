@@ -12,11 +12,13 @@ import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
+import org.springframework.web.bind.annotation.ResponseStatus
 import org.springframework.web.bind.annotation.RestController
 import jakarta.validation.Valid
 {{#idTypeImport}}
 import {{idTypeImport}}
 {{/idTypeImport}}
+import {{modelPackage}}.{{entityName}}
 {{#hasServiceLayer}}
 import {{servicePackage}}.{{serviceClass}}
 {{/hasServiceLayer}}
@@ -30,111 +32,229 @@ class {{controllerClass}}{{#hasServiceLayer}}(
 
 {{#createEnabled}}
     @PostMapping
-    fun create(@Valid @RequestBody request: {{{createRequestType}}}): ResponseEntity<{{{createResponseType}}}> {
+{{^createReturnsResponseEntity}}
+    @ResponseStatus(HttpStatus.CREATED)
+{{/createReturnsResponseEntity}}
+    fun create(@Valid @RequestBody request: {{{createRequestType}}}): {{{createControllerReturnType}}} {
 {{#createUseService}}
+{{#createReturnsResponseEntity}}
         return ResponseEntity.status(HttpStatus.CREATED).body(service.create(request))
+{{/createReturnsResponseEntity}}
+{{^createReturnsResponseEntity}}
+        return service.create(request)
+{{/createReturnsResponseEntity}}
 {{/createUseService}}
 {{^createUseService}}
+{{#createReturnsResponseEntity}}
         return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).build()
+{{/createReturnsResponseEntity}}
+{{^createReturnsResponseEntity}}
+        throw org.springframework.web.server.ResponseStatusException(HttpStatus.NOT_IMPLEMENTED)
+{{/createReturnsResponseEntity}}
 {{/createUseService}}
     }
 {{/createEnabled}}
 
 {{#bulkInsertEnabled}}
     @PostMapping("/bulk")
-    fun saveAll(@Valid @RequestBody requests: {{{bulkInsertRequestType}}}): ResponseEntity<{{{bulkInsertResponseType}}}> {
+{{^bulkInsertReturnsResponseEntity}}
+    @ResponseStatus(HttpStatus.CREATED)
+{{/bulkInsertReturnsResponseEntity}}
+    fun saveAll(@Valid @RequestBody requests: {{{bulkInsertRequestType}}}): {{{bulkInsertControllerReturnType}}} {
 {{#bulkInsertUseService}}
+{{#bulkInsertReturnsResponseEntity}}
         return ResponseEntity.status(HttpStatus.CREATED).body(service.saveAll(requests))
+{{/bulkInsertReturnsResponseEntity}}
+{{^bulkInsertReturnsResponseEntity}}
+        return service.saveAll(requests)
+{{/bulkInsertReturnsResponseEntity}}
 {{/bulkInsertUseService}}
 {{^bulkInsertUseService}}
+{{#bulkInsertReturnsResponseEntity}}
         return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).build()
+{{/bulkInsertReturnsResponseEntity}}
+{{^bulkInsertReturnsResponseEntity}}
+        throw org.springframework.web.server.ResponseStatusException(HttpStatus.NOT_IMPLEMENTED)
+{{/bulkInsertReturnsResponseEntity}}
 {{/bulkInsertUseService}}
     }
 {{/bulkInsertEnabled}}
 
 {{#bulkUpdateEnabled}}
     @PutMapping("/bulk")
-    fun bulkUpdate(@Valid @RequestBody requests: {{{bulkUpdateRequestType}}}): ResponseEntity<{{{bulkUpdateResponseType}}}> {
+    fun bulkUpdate(@Valid @RequestBody requests: {{{bulkUpdateRequestType}}}): {{{bulkUpdateControllerReturnType}}} {
 {{#bulkUpdateUseService}}
+{{#bulkUpdateReturnsResponseEntity}}
         return ResponseEntity.ok(service.bulkUpdate(requests))
+{{/bulkUpdateReturnsResponseEntity}}
+{{^bulkUpdateReturnsResponseEntity}}
+        return service.bulkUpdate(requests)
+{{/bulkUpdateReturnsResponseEntity}}
 {{/bulkUpdateUseService}}
 {{^bulkUpdateUseService}}
+{{#bulkUpdateReturnsResponseEntity}}
         return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).build()
+{{/bulkUpdateReturnsResponseEntity}}
+{{^bulkUpdateReturnsResponseEntity}}
+        throw org.springframework.web.server.ResponseStatusException(HttpStatus.NOT_IMPLEMENTED)
+{{/bulkUpdateReturnsResponseEntity}}
 {{/bulkUpdateUseService}}
     }
 {{/bulkUpdateEnabled}}
 
 {{#bulkDeleteEnabled}}
     @DeleteMapping("/bulk")
-    fun bulkDelete(@RequestBody requests: {{{bulkDeleteRequestType}}}): ResponseEntity<Void> {
+    fun bulkDelete(@RequestBody requests: {{{bulkDeleteRequestType}}}{{#bulkDeleteAllowIncludeDeletedParam}}, @RequestParam(name = "includeDeleted", required = false, defaultValue = "false") includeDeleted: Boolean{{/bulkDeleteAllowIncludeDeletedParam}}): {{{bulkDeleteControllerReturnType}}} {
 {{#bulkDeleteUseService}}
-        service.bulkDelete(requests)
+{{#bulkDeleteReturnsResponseEntity}}
+{{#bulkDeleteResponseIsVoid}}
+        service.bulkDelete(requests{{#bulkDeleteAllowIncludeDeletedParam}}, includeDeleted{{/bulkDeleteAllowIncludeDeletedParam}})
         return ResponseEntity.noContent().build()
+{{/bulkDeleteResponseIsVoid}}
+{{#bulkDeleteResponseIsIdList}}
+        return ResponseEntity.ok(service.bulkDelete(requests{{#bulkDeleteAllowIncludeDeletedParam}}, includeDeleted{{/bulkDeleteAllowIncludeDeletedParam}}))
+{{/bulkDeleteResponseIsIdList}}
+{{/bulkDeleteReturnsResponseEntity}}
+{{^bulkDeleteReturnsResponseEntity}}
+{{#bulkDeleteResponseIsVoid}}
+        service.bulkDelete(requests{{#bulkDeleteAllowIncludeDeletedParam}}, includeDeleted{{/bulkDeleteAllowIncludeDeletedParam}})
+        return null
+{{/bulkDeleteResponseIsVoid}}
+{{#bulkDeleteResponseIsIdList}}
+        return service.bulkDelete(requests{{#bulkDeleteAllowIncludeDeletedParam}}, includeDeleted{{/bulkDeleteAllowIncludeDeletedParam}})
+{{/bulkDeleteResponseIsIdList}}
+{{/bulkDeleteReturnsResponseEntity}}
 {{/bulkDeleteUseService}}
 {{^bulkDeleteUseService}}
+{{#bulkDeleteReturnsResponseEntity}}
         return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).build()
+{{/bulkDeleteReturnsResponseEntity}}
+{{^bulkDeleteReturnsResponseEntity}}
+        throw org.springframework.web.server.ResponseStatusException(HttpStatus.NOT_IMPLEMENTED)
+{{/bulkDeleteReturnsResponseEntity}}
 {{/bulkDeleteUseService}}
     }
 {{/bulkDeleteEnabled}}
 
 {{#updateEnabled}}
     @PutMapping("/{id}")
-    fun update(@PathVariable("id") id: {{idType}}, @Valid @RequestBody request: {{{updateRequestType}}}): ResponseEntity<{{{updateResponseType}}}> {
+    fun update(@PathVariable("id") id: {{idType}}, @Valid @RequestBody request: {{{updateRequestType}}}): {{{updateControllerReturnType}}} {
 {{#updateUseService}}
+{{#updateReturnsResponseEntity}}
         return ResponseEntity.ok(service.update(id, request))
+{{/updateReturnsResponseEntity}}
+{{^updateReturnsResponseEntity}}
+        return service.update(id, request)
+{{/updateReturnsResponseEntity}}
 {{/updateUseService}}
 {{^updateUseService}}
+{{#updateReturnsResponseEntity}}
         return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).build()
+{{/updateReturnsResponseEntity}}
+{{^updateReturnsResponseEntity}}
+        throw org.springframework.web.server.ResponseStatusException(HttpStatus.NOT_IMPLEMENTED)
+{{/updateReturnsResponseEntity}}
 {{/updateUseService}}
     }
 {{/updateEnabled}}
 
 {{#patchEnabled}}
     @PatchMapping("/{id}")
-    fun patch(@PathVariable("id") id: {{idType}}, @Valid @RequestBody request: {{{patchRequestType}}}): ResponseEntity<{{{patchResponseType}}}> {
+    fun patch(@PathVariable("id") id: {{idType}}, @Valid @RequestBody request: {{{patchRequestType}}}): {{{patchControllerReturnType}}} {
 {{#patchUseService}}
+{{#patchReturnsResponseEntity}}
         return ResponseEntity.ok(service.patch(id, request))
+{{/patchReturnsResponseEntity}}
+{{^patchReturnsResponseEntity}}
+        return service.patch(id, request)
+{{/patchReturnsResponseEntity}}
 {{/patchUseService}}
 {{^patchUseService}}
+{{#patchReturnsResponseEntity}}
         return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).build()
+{{/patchReturnsResponseEntity}}
+{{^patchReturnsResponseEntity}}
+        throw org.springframework.web.server.ResponseStatusException(HttpStatus.NOT_IMPLEMENTED)
+{{/patchReturnsResponseEntity}}
 {{/patchUseService}}
     }
 {{/patchEnabled}}
 
 {{#deleteEnabled}}
     @DeleteMapping("/{id}")
-    fun deleteById(@PathVariable("id") id: {{idType}}): ResponseEntity<Void> {
+    fun deleteById(@PathVariable("id") id: {{idType}}): {{{deleteControllerReturnType}}} {
 {{#deleteUseService}}
+{{#deleteReturnsResponseEntity}}
+{{#deleteResponseIsVoid}}
         service.deleteById(id)
         return ResponseEntity.noContent().build()
+{{/deleteResponseIsVoid}}
+{{#deleteResponseIsId}}
+        return ResponseEntity.ok(service.deleteById(id))
+{{/deleteResponseIsId}}
+{{/deleteReturnsResponseEntity}}
+{{^deleteReturnsResponseEntity}}
+{{#deleteResponseIsVoid}}
+        service.deleteById(id)
+        return null
+{{/deleteResponseIsVoid}}
+{{#deleteResponseIsId}}
+        return service.deleteById(id)
+{{/deleteResponseIsId}}
+{{/deleteReturnsResponseEntity}}
 {{/deleteUseService}}
 {{^deleteUseService}}
+{{#deleteReturnsResponseEntity}}
         return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).build()
+{{/deleteReturnsResponseEntity}}
+{{^deleteReturnsResponseEntity}}
+        throw org.springframework.web.server.ResponseStatusException(HttpStatus.NOT_IMPLEMENTED)
+{{/deleteReturnsResponseEntity}}
 {{/deleteUseService}}
     }
 {{/deleteEnabled}}
 
 {{#getEnabled}}
     @GetMapping("/{id}")
-    fun getById(@PathVariable("id") id: {{idType}}): ResponseEntity<{{{getResponseType}}}> {
+    fun getById(@PathVariable("id") id: {{idType}}): {{{getControllerReturnType}}} {
 {{#getUseService}}
+{{#getReturnsResponseEntity}}
         return ResponseEntity.ok(service.getById(id))
+{{/getReturnsResponseEntity}}
+{{^getReturnsResponseEntity}}
+        return service.getById(id)
+{{/getReturnsResponseEntity}}
 {{/getUseService}}
 {{^getUseService}}
+{{#getReturnsResponseEntity}}
         return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).build()
+{{/getReturnsResponseEntity}}
+{{^getReturnsResponseEntity}}
+        throw org.springframework.web.server.ResponseStatusException(HttpStatus.NOT_IMPLEMENTED)
+{{/getReturnsResponseEntity}}
 {{/getUseService}}
     }
 {{/getEnabled}}
 
 {{#listEnabled}}
     @GetMapping
-    fun getAllOrByQuery(@RequestParam queryParams: Map<String, String>): ResponseEntity<{{{listResponseType}}}> {
+    fun getAllOrByQuery(@RequestParam queryParams: Map<String, String>): {{{listControllerReturnType}}} {
 {{#listUseService}}
         val pageable: Pageable = {{querySupportClass}}.resolvePageable(queryParams, {{{allowedSortFieldsLiteral}}})
+{{#listReturnsResponseEntity}}
         return ResponseEntity.ok(service.search(queryParams, pageable))
+{{/listReturnsResponseEntity}}
+{{^listReturnsResponseEntity}}
+        return service.search(queryParams, pageable)
+{{/listReturnsResponseEntity}}
 {{/listUseService}}
 {{^listUseService}}
+{{#listReturnsResponseEntity}}
         return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).build()
+{{/listReturnsResponseEntity}}
+{{^listReturnsResponseEntity}}
+        throw org.springframework.web.server.ResponseStatusException(HttpStatus.NOT_IMPLEMENTED)
+{{/listReturnsResponseEntity}}
 {{/listUseService}}
     }
 {{/listEnabled}}

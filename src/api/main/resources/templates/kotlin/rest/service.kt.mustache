@@ -1,16 +1,33 @@
 package {{servicePackage}}
 
 import org.springframework.data.domain.Pageable
+import org.springframework.dao.OptimisticLockingFailureException
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import org.springframework.web.server.ResponseStatusException
+import java.util.concurrent.CompletableFuture
 {{#idTypeImport}}
 import {{idTypeImport}}
 {{/idTypeImport}}
 import {{modelPackage}}.{{entityName}}
 import {{repositoryPackage}}.{{repositoryClass}}
 import {{supportPackage}}.{{entitySupportClass}}
+{{#createRequestMapperEnabled}}
+import {{mapperPackage}}.{{createRequestMapperClass}}
+{{/createRequestMapperEnabled}}
+{{#updateRequestMapperEnabled}}
+import {{mapperPackage}}.{{updateRequestMapperClass}}
+{{/updateRequestMapperEnabled}}
+{{#patchRequestMapperEnabled}}
+import {{mapperPackage}}.{{patchRequestMapperClass}}
+{{/patchRequestMapperEnabled}}
+{{#bulkInsertRequestMapperEnabled}}
+import {{mapperPackage}}.{{bulkInsertRequestMapperClass}}
+{{/bulkInsertRequestMapperEnabled}}
+{{#bulkUpdateRequestMapperEnabled}}
+import {{mapperPackage}}.{{bulkUpdateRequestMapperClass}}
+{{/bulkUpdateRequestMapperEnabled}}
 {{^noSql}}
 import {{supportPackage}}.{{filterSupportClass}}
 {{/noSql}}
@@ -19,28 +36,110 @@ import {{supportPackage}}.{{querySupportClass}}
 @Service
 @Transactional(readOnly = true)
 class {{serviceClass}}(
-    private val repository: {{repositoryClass}}
+    private val repository: {{repositoryClass}}{{#createRequestMapperEnabled}},
+    private val createRequestMapper: {{createRequestMapperClass}}{{/createRequestMapperEnabled}}{{#updateRequestMapperEnabled}},
+    private val updateRequestMapper: {{updateRequestMapperClass}}{{/updateRequestMapperEnabled}}{{#patchRequestMapperEnabled}},
+    private val patchRequestMapper: {{patchRequestMapperClass}}{{/patchRequestMapperEnabled}}{{#bulkInsertRequestMapperEnabled}},
+    private val bulkInsertRequestMapper: {{bulkInsertRequestMapperClass}}{{/bulkInsertRequestMapperEnabled}}{{#bulkUpdateRequestMapperEnabled}},
+    private val bulkUpdateRequestMapper: {{bulkUpdateRequestMapperClass}}{{/bulkUpdateRequestMapperEnabled}}
 ) {
 {{#createUseService}}
     @Transactional
-    fun create(request: {{{createRequestType}}}): {{{createResponseType}}} = repository.save(request)
+    fun create(request: {{{createRequestType}}}): {{{createResponseType}}} {
+{{#createRequestMapperEnabled}}
+        val mappedRequest = createRequestMapper.mapTo{{entityName}}(request)!!
+{{/createRequestMapperEnabled}}
+{{^createRequestMapperEnabled}}
+        val mappedRequest = request
+{{/createRequestMapperEnabled}}
+        val saved = repository.save(mappedRequest)
+{{#createResponseIsId}}
+        return requireNotNull(saved.{{idName}}) { "{{idName}} is null after create" }
+{{/createResponseIsId}}
+{{#createResponseIsEntity}}
+        return saved
+{{/createResponseIsEntity}}
+    }
 {{/createUseService}}
 
 {{#bulkInsertUseService}}
     @Transactional
-    fun saveAll(requests: {{{bulkInsertRequestType}}}): {{{bulkInsertResponseType}}} = repository.saveAll(requests)
+    fun saveAll(requests: {{{bulkInsertRequestType}}}): {{{bulkInsertResponseType}}} {
+{{#bulkInsertRequestMapperEnabled}}
+        val mappedRequests = requests.map { bulkInsertRequestMapper.mapTo{{entityName}}(it)!! }
+{{/bulkInsertRequestMapperEnabled}}
+{{^bulkInsertRequestMapperEnabled}}
+        val mappedRequests = requests
+{{/bulkInsertRequestMapperEnabled}}
+        val saved = mutableListOf<{{entityName}}>()
+        val batches = partition(mappedRequests, {{bulkInsertBatchSize}})
+{{#bulkInsertAsyncEnabled}}
+        if (batches.size > 1) {
+            val futures = batches.map { batch ->
+                CompletableFuture.supplyAsync { repository.saveAll(batch) }
+            }
+            futures.forEach { saved.addAll(it.join()) }
+        } else {
+            batches.forEach { saved.addAll(repository.saveAll(it)) }
+        }
+{{/bulkInsertAsyncEnabled}}
+{{^bulkInsertAsyncEnabled}}
+        batches.forEach { saved.addAll(repository.saveAll(it)) }
+{{/bulkInsertAsyncEnabled}}
+{{#bulkInsertResponseIsEntityList}}
+        return saved
+{{/bulkInsertResponseIsEntityList}}
+{{#bulkInsertResponseIsIdList}}
+        return saved.map { requireNotNull(it.{{idName}}) { "{{idName}} is null after bulk insert" } }
+{{/bulkInsertResponseIsIdList}}
+    }
 {{/bulkInsertUseService}}
 
 {{#bulkUpdateUseService}}
     @Transactional
-    fun bulkUpdate(requests: {{{bulkUpdateRequestType}}}): {{{bulkUpdateResponseType}}} = repository.saveAll(requests)
+    fun bulkUpdate(requests: {{{bulkUpdateRequestType}}}): {{{bulkUpdateResponseType}}} {
+{{#bulkUpdateRequestMapperEnabled}}
+        var mappedRequests = requests.map { bulkUpdateRequestMapper.mapTo{{entityName}}(it)!! }
+{{/bulkUpdateRequestMapperEnabled}}
+{{^bulkUpdateRequestMapperEnabled}}
+        var mappedRequests = requests.toList()
+{{/bulkUpdateRequestMapperEnabled}}
+{{#bulkUpdateValidationSkipDuplicates}}
+        mappedRequests = dedupeById(mappedRequests)
+{{/bulkUpdateValidationSkipDuplicates}}
+{{#bulkUpdateValidationValidateAllFirst}}
+        validateBulkUpdateTargets(mappedRequests)
+{{/bulkUpdateValidationValidateAllFirst}}
+        val saved = mutableListOf<{{entityName}}>()
+        val batches = partition(mappedRequests, {{bulkUpdateBatchSize}})
+{{#bulkUpdateAsyncEnabled}}
+        if (batches.size > 1) {
+            val futures = batches.map { batch ->
+                CompletableFuture.supplyAsync { processBulkUpdateBatch(batch) }
+            }
+            futures.forEach { saved.addAll(it.join()) }
+        } else {
+            batches.forEach { saved.addAll(processBulkUpdateBatch(it)) }
+        }
+{{/bulkUpdateAsyncEnabled}}
+{{^bulkUpdateAsyncEnabled}}
+        batches.forEach { saved.addAll(processBulkUpdateBatch(it)) }
+{{/bulkUpdateAsyncEnabled}}
+        return saved
+    }
 {{/bulkUpdateUseService}}
 
 {{#updateUseService}}
     @Transactional
     fun update(id: {{idType}}, request: {{{updateRequestType}}}): {{{updateResponseType}}} {
         val existing = getById(id)
+{{#updateRequestMapperEnabled}}
+        val mappedRequest = updateRequestMapper.mapTo{{entityName}}(request)!!
+        {{entitySupportClass}}.mergeNonNullFields(mappedRequest, existing, "{{idName}}")
+{{/updateRequestMapperEnabled}}
+{{^updateRequestMapperEnabled}}
         {{entitySupportClass}}.mergeNonNullFields(request, existing, "{{idName}}")
+{{/updateRequestMapperEnabled}}
         return repository.save(existing)
     }
 {{/updateUseService}}
@@ -49,12 +148,19 @@ class {{serviceClass}}(
     @Transactional
     fun patch(id: {{idType}}, request: {{{patchRequestType}}}): {{{patchResponseType}}} {
         val existing = getById(id)
+{{#patchRequestMapperEnabled}}
+        val mappedRequest = patchRequestMapper.mapTo{{entityName}}(request)!!
+        {{entitySupportClass}}.mergeNonNullFields(mappedRequest, existing, "{{idName}}")
+{{/patchRequestMapperEnabled}}
+{{^patchRequestMapperEnabled}}
         {{entitySupportClass}}.mergeNonNullFields(request, existing, "{{idName}}")
+{{/patchRequestMapperEnabled}}
         return repository.save(existing)
     }
 {{/patchUseService}}
 
 {{#deleteUseService}}
+{{#deleteResponseIsVoid}}
     @Transactional
     fun deleteById(id: {{idType}}) {
         if (!repository.existsById(id)) {
@@ -62,17 +168,73 @@ class {{serviceClass}}(
         }
         repository.deleteById(id)
     }
+{{/deleteResponseIsVoid}}
+{{#deleteResponseIsId}}
+    @Transactional
+    fun deleteById(id: {{idType}}): {{{deleteResponseType}}} {
+        if (!repository.existsById(id)) {
+            throw ResponseStatusException(HttpStatus.NOT_FOUND, "{{entityName}} not found for id: $id")
+        }
+        repository.deleteById(id)
+        return id
+    }
+{{/deleteResponseIsId}}
 {{/deleteUseService}}
 
 {{#bulkDeleteUseService}}
+{{#bulkDeleteResponseIsVoid}}
     @Transactional
-    fun bulkDelete(ids: {{{bulkDeleteRequestType}}}) {
+    fun bulkDelete(ids: {{{bulkDeleteRequestType}}}{{#bulkDeleteAllowIncludeDeletedParam}}, includeDeleted: Boolean{{/bulkDeleteAllowIncludeDeletedParam}}) {
         ids.forEach { id ->
+{{#bulkDeleteAllowIncludeDeletedParam}}
+            if (includeDeleted || repository.existsById(id)) {
+{{/bulkDeleteAllowIncludeDeletedParam}}
+{{^bulkDeleteAllowIncludeDeletedParam}}
             if (repository.existsById(id)) {
+{{/bulkDeleteAllowIncludeDeletedParam}}
                 repository.deleteById(id)
             }
         }
     }
+{{/bulkDeleteResponseIsVoid}}
+{{#bulkDeleteResponseIsIdList}}
+    @Transactional
+    fun bulkDelete(ids: {{{bulkDeleteRequestType}}}{{#bulkDeleteAllowIncludeDeletedParam}}, includeDeleted: Boolean{{/bulkDeleteAllowIncludeDeletedParam}}): {{{bulkDeleteResponseType}}} {
+        val deleted = mutableListOf<{{idType}}>()
+        val failures = mutableListOf<{{idType}}>()
+        ids.forEach { id ->
+            try {
+{{#bulkDeleteAllowIncludeDeletedParam}}
+                if (includeDeleted || repository.existsById(id)) {
+{{/bulkDeleteAllowIncludeDeletedParam}}
+{{^bulkDeleteAllowIncludeDeletedParam}}
+                if (repository.existsById(id)) {
+{{/bulkDeleteAllowIncludeDeletedParam}}
+                    repository.deleteById(id)
+                    deleted.add(id)
+                } else {
+                    failures.add(id)
+{{#bulkDeleteStopOnFirstError}}
+                    throw ResponseStatusException(HttpStatus.NOT_FOUND, "{{entityName}} not found for id: $id")
+{{/bulkDeleteStopOnFirstError}}
+                }
+            } catch (ex: RuntimeException) {
+{{#bulkDeleteStopOnFirstError}}
+                throw ex
+{{/bulkDeleteStopOnFirstError}}
+{{#bulkDeleteContinueAndReportFailures}}
+                failures.add(id)
+{{/bulkDeleteContinueAndReportFailures}}
+            }
+        }
+{{#bulkDeleteContinueAndReportFailures}}
+        if (failures.isNotEmpty()) {
+            System.err.println("Bulk delete failed ids for {{entityName}}: $failures")
+        }
+{{/bulkDeleteContinueAndReportFailures}}
+        return deleted
+    }
+{{/bulkDeleteResponseIsIdList}}
 {{/bulkDeleteUseService}}
 
 {{#getUseService}}
@@ -83,15 +245,101 @@ class {{serviceClass}}(
 {{#listUseService}}
     fun search(queryParams: Map<String, String>, pageable: Pageable): {{{listResponseType}}} {
 {{#noSql}}
+{{#listResponseIsEntityList}}
+        return repository.findAll(pageable).content
+{{/listResponseIsEntityList}}
+{{#listResponseIsEntityPage}}
         return repository.findAll(pageable)
+{{/listResponseIsEntityPage}}
 {{/noSql}}
 {{^noSql}}
         val filters = {{querySupportClass}}.extractFilterParams(queryParams)
         if (filters.isEmpty()) {
+{{#listResponseIsEntityList}}
+            return repository.findAll(pageable).content
+{{/listResponseIsEntityList}}
+{{#listResponseIsEntityPage}}
             return repository.findAll(pageable)
+{{/listResponseIsEntityPage}}
         }
-        return repository.findAll({{filterSupportClass}}.buildSpecification(filters, {{entityName}}::class.java), pageable)
+{{#listResponseIsEntityList}}
+        return repository.findAll({{filterSupportClass}}.buildSpecification(queryParams, {{entityName}}::class.java), pageable).content
+{{/listResponseIsEntityList}}
+{{#listResponseIsEntityPage}}
+        return repository.findAll({{filterSupportClass}}.buildSpecification(queryParams, {{entityName}}::class.java), pageable)
+{{/listResponseIsEntityPage}}
 {{/noSql}}
     }
 {{/listUseService}}
+
+    private fun processBulkUpdateBatch(batch: List<{{entityName}}>): List<{{entityName}}> {
+        val saved = mutableListOf<{{entityName}}>()
+        batch.forEach { request ->
+            val id = extractId(request)
+            val existing = repository.findById(id)
+                .orElseThrow { ResponseStatusException(HttpStatus.NOT_FOUND, "{{entityName}} not found for id: $id") }
+{{#bulkUpdateModePatch}}
+            {{entitySupportClass}}.mergeNonNullFields(request, existing, "{{idName}}")
+            val candidate = existing
+{{/bulkUpdateModePatch}}
+{{#bulkUpdateModePut}}
+            {{entitySupportClass}}.replaceFields(request, existing, "{{idName}}")
+            val candidate = existing
+{{/bulkUpdateModePut}}
+            try {
+                saved.add(repository.save(candidate))
+            } catch (ex: OptimisticLockingFailureException) {
+{{#bulkUpdateOptimisticFailOnConflict}}
+                throw ResponseStatusException(HttpStatus.CONFLICT, "Optimistic locking conflict for {{entityName}} id: $id", ex)
+{{/bulkUpdateOptimisticFailOnConflict}}
+{{#bulkUpdateOptimisticSkipConflicts}}
+                System.err.println("Skipping optimistic locking conflict for {{entityName}} id: $id")
+{{/bulkUpdateOptimisticSkipConflicts}}
+            }
+        }
+        return saved
+    }
+
+    private fun validateBulkUpdateTargets(requests: List<{{entityName}}>) {
+        requests.forEach { request ->
+            val id = extractId(request)
+            if (!repository.existsById(id)) {
+                throw ResponseStatusException(HttpStatus.NOT_FOUND, "{{entityName}} not found for id: $id")
+            }
+        }
+    }
+
+    private fun dedupeById(requests: List<{{entityName}}>): List<{{entityName}}> {
+        val unique = linkedMapOf<{{idType}}, {{entityName}}>()
+        requests.forEach { request ->
+            val id = extractId(request)
+            if (!unique.containsKey(id)) {
+                unique[id] = request
+            }
+        }
+        return unique.values.toList()
+    }
+
+    private fun extractId(request: {{entityName}}): {{idType}} {
+        val id = request.{{idName}}
+        if (id == null) {
+            throw ResponseStatusException(HttpStatus.BAD_REQUEST, "{{idName}} is required for bulk update")
+        }
+        return id
+    }
+
+    private fun <T> partition(source: List<T>, requestedBatchSize: Int): List<List<T>> {
+        if (source.isEmpty()) {
+            return emptyList()
+        }
+        val batchSize = requestedBatchSize.coerceAtLeast(1)
+        val out = mutableListOf<List<T>>()
+        var index = 0
+        while (index < source.size) {
+            val end = (index + batchSize).coerceAtMost(source.size)
+            out.add(source.subList(index, end))
+            index = end
+        }
+        return out
+    }
 }

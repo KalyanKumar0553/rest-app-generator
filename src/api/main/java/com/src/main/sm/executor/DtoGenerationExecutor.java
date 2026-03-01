@@ -8,6 +8,8 @@ import org.springframework.stereotype.Component;
 
 import com.src.main.dto.StepResult;
 import com.src.main.sm.config.StepExecutor;
+import com.src.main.sm.executor.common.GenerationLanguage;
+import com.src.main.sm.executor.common.GenerationLanguageResolver;
 import com.src.main.sm.executor.dto.DtoGenerationService;
 import com.src.main.util.ProjectMetaDataConstants;
 
@@ -29,11 +31,15 @@ public class DtoGenerationExecutor implements StepExecutor {
 			String artifact = (String) data.getVariables().get(ProjectMetaDataConstants.ARTIFACT_ID);
 			Map<String, Object> yaml = (Map<String, Object>) data.getVariables().get(ProjectMetaDataConstants.YAML);
 
-			if (yaml == null) {
-				return StepResult.error("DTO_GENERATION", "YAML not found in extended state.");
-			}
+				if (yaml == null) {
+					return StepResult.error("DTO_GENERATION", "YAML not found in extended state.");
+				}
+				GenerationLanguage language = GenerationLanguageResolver.resolveFromYaml(yaml);
+				if (language == GenerationLanguage.NODE || language == GenerationLanguage.PYTHON) {
+					return StepResult.ok(Map.of("status", "Skipped for " + language.name()));
+				}
 
-			dtoGenerationService.generate(root, yaml, groupId, artifact);
+				dtoGenerationService.generate(root, yaml, groupId, artifact);
 			return StepResult.ok(Map.of("status", "Success"));
 		} catch (Exception ex) {
 			return StepResult.error("DTO_GENERATION", ex.getMessage());

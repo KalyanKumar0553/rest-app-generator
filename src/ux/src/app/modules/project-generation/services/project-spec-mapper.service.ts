@@ -69,8 +69,10 @@ export class ProjectSpecMapperService {
     };
 
     const mapperSpecs = this.mapMappers(project?.mappers);
-    if (mapperSpecs.length) {
-      spec.mappers = mapperSpecs;
+    const autoRequestMapperSpecs = this.mapAutoRequestMappers(project?.entities, project?.dataObjects);
+    const mergedMapperSpecs = this.mergeMapperSpecs(mapperSpecs, autoRequestMapperSpecs);
+    if (mergedMapperSpecs.length) {
+      spec.mappers = mergedMapperSpecs;
     }
 
     if (databaseCode !== 'NONE') {
@@ -336,6 +338,128 @@ export class ProjectSpecMapperService {
       .filter((mapper: any) => mapper.name && mapper.fromModel && mapper.toModel && mapper.mappings.length > 0);
   }
 
+  private mapAutoRequestMappers(entities: any, dataObjects: any): any[] {
+    const entityList = Array.isArray(entities) ? entities : [];
+    const dtoList = Array.isArray(dataObjects) ? dataObjects : [];
+    const dtoByName = new Map<string, any>();
+    dtoList.forEach((dto: any) => {
+      const name = trimmed(dto?.name);
+      if (name) {
+        dtoByName.set(name.toLowerCase(), dto);
+      }
+    });
+
+    const autoMappers: any[] = [];
+    const seen = new Set<string>();
+
+    entityList.forEach((entity: any) => {
+      const entityName = trimmed(entity?.name);
+      if (!entityName || !Boolean(entity?.addRestEndpoints) || !Boolean(entity?.restConfig?.mapToEntity)) {
+        return;
+      }
+
+      const restConfig = entity?.restConfig ?? {};
+      const requestConfig = restConfig?.requestResponse?.request ?? {};
+      const candidateDtos = [
+        this.extractDtoType(requestConfig?.create?.dtoName),
+        this.extractDtoType(requestConfig?.update?.dtoName),
+        this.extractDtoType(requestConfig?.patch?.dtoName),
+        this.extractDtoType(requestConfig?.list?.dtoName),
+        this.extractDtoType(requestConfig?.bulkInsertType),
+        this.extractDtoType(requestConfig?.bulkUpdateType)
+      ].filter(Boolean) as string[];
+
+      const uniqueCandidateDtos = Array.from(new Set(candidateDtos));
+      uniqueCandidateDtos.forEach((dtoName) => {
+        if (dtoName.toLowerCase() === entityName.toLowerCase()) {
+          return;
+        }
+        const dto = dtoByName.get(dtoName.toLowerCase());
+        if (!dto) {
+          return;
+        }
+        const mapperName = `${dtoName}RequestMapper`;
+        const key = `${mapperName.toLowerCase()}::${dtoName.toLowerCase()}::${entityName.toLowerCase()}`;
+        if (seen.has(key)) {
+          return;
+        }
+        seen.add(key);
+
+        autoMappers.push({
+          name: mapperName,
+          fromModel: dtoName,
+          toModel: entityName,
+          mappings: this.buildSameNameMappings(dto?.fields, entity?.fields)
+        });
+      });
+    });
+
+    return autoMappers;
+  }
+
+  private mergeMapperSpecs(manualMappers: any[], autoMappers: any[]): any[] {
+    const merged: any[] = [];
+    const seenNames = new Set<string>();
+
+    (Array.isArray(manualMappers) ? manualMappers : []).forEach((mapper) => {
+      const name = trimmed(mapper?.name);
+      if (!name) {
+        return;
+      }
+      seenNames.add(name.toLowerCase());
+      merged.push(mapper);
+    });
+
+    (Array.isArray(autoMappers) ? autoMappers : []).forEach((mapper) => {
+      const name = trimmed(mapper?.name);
+      if (!name || seenNames.has(name.toLowerCase())) {
+        return;
+      }
+      seenNames.add(name.toLowerCase());
+      merged.push(mapper);
+    });
+
+    return merged;
+  }
+
+  private extractDtoType(rawType: any): string {
+    const value = trimmed(rawType);
+    if (!value) {
+      return '';
+    }
+    if (value.startsWith('List<') && value.endsWith('>')) {
+      return trimmed(value.substring(5, value.length - 1));
+    }
+    return value;
+  }
+
+  private buildSameNameMappings(sourceFields: any, targetFields: any): Array<{ sourceField: string; targetField: string }> {
+    const sourceList = Array.isArray(sourceFields) ? sourceFields : [];
+    const targetList = Array.isArray(targetFields) ? targetFields : [];
+    const targetNamesByLower = new Map<string, string>();
+    targetList.forEach((field: any) => {
+      const name = trimmed(field?.name);
+      if (name) {
+        targetNamesByLower.set(name.toLowerCase(), name);
+      }
+    });
+
+    return sourceList
+      .map((field: any) => trimmed(field?.name))
+      .filter(Boolean)
+      .map((sourceName: string) => {
+        const targetName = targetNamesByLower.get(sourceName.toLowerCase());
+        if (!targetName) {
+          return null;
+        }
+        return {
+          sourceField: sourceName,
+          targetField: targetName
+        };
+      })
+      .filter(Boolean) as Array<{ sourceField: string; targetField: string }>;
+  }
+
   extractDependencies(dependenciesString: string, selectedDependencies: string[]): string[] {
     const fromString = String(dependenciesString ?? '')
       .split(',')
@@ -418,10 +542,11 @@ export class ProjectSpecMapperService {
         ? 'CUSTOM_WRAPPER'
         : 'RESPONSE_ENTITY';
     const perOperationDto = trimmed(restConfig?.requestResponse?.response?.endpointDtos?.[operationKey]);
+    const defaultCustomWrapperDto = this.getDefaultCustomWrapperDto(restConfig, operationKey);
     return {
       responseType,
       dtoName: responseType === 'CUSTOM_WRAPPER'
-        ? (perOperationDto || trimmed(restConfig?.requestResponse?.response?.dtoName))
+        ? (perOperationDto || trimmed(restConfig?.requestResponse?.response?.dtoName) || defaultCustomWrapperDto)
         : trimmed(restConfig?.requestResponse?.response?.dtoName),
       responseWrapper: restConfig?.requestResponse?.response?.responseWrapper === 'NONE'
         ? 'NONE'
@@ -489,25 +614,37 @@ export class ProjectSpecMapperService {
   }
 
   private buildOperationRequestConfig(operationKey: string, restConfig: any): any {
+    const mappedEntityName = trimmed(restConfig?.mappedEntityName);
+    const keyTypeFromSettings = this.resolveConfiguredKeyType(restConfig);
+    const normalizeRequestDtoName = (value: any): string => {
+      const candidate = trimmed(value);
+      if (candidate === 'Request' || candidate === 'UpdateRequest') {
+        return '';
+      }
+      return candidate;
+    };
     switch (operationKey) {
       case 'create':
         return {
           mode: restConfig?.requestResponse?.request?.create?.mode === 'NONE' ? 'NONE' : 'GENERATE_DTO',
-          dtoName: trimmed(restConfig?.requestResponse?.request?.create?.dtoName)
+          dtoName: normalizeRequestDtoName(restConfig?.requestResponse?.request?.create?.dtoName) || mappedEntityName
         };
       case 'update':
         return {
           mode: restConfig?.requestResponse?.request?.update?.mode === 'NONE' ? 'NONE' : 'GENERATE_DTO',
-          dtoName: trimmed(restConfig?.requestResponse?.request?.update?.dtoName)
+          dtoName: normalizeRequestDtoName(restConfig?.requestResponse?.request?.update?.dtoName) || mappedEntityName
         };
       case 'patch':
         return {
-          mode: restConfig?.requestResponse?.request?.patch?.mode === 'JSON_PATCH' ? 'JSON_PATCH' : 'JSON_MERGE_PATCH'
+          mode: 'GENERATE_DTO',
+          dtoName: normalizeRequestDtoName(restConfig?.requestResponse?.request?.patch?.dtoName)
+            || normalizeRequestDtoName(restConfig?.requestResponse?.request?.create?.dtoName)
+            || mappedEntityName
         };
       case 'list':
         return {
           mode: restConfig?.requestResponse?.request?.list?.mode === 'NONE' ? 'NONE' : 'GENERATE_DTO',
-          dtoName: trimmed(restConfig?.requestResponse?.request?.list?.dtoName),
+          dtoName: normalizeRequestDtoName(restConfig?.requestResponse?.request?.list?.dtoName) || mappedEntityName,
           pagination: {
             enabled: Boolean(restConfig?.pagination?.enabled ?? restConfig?.pagination),
             mode: restConfig?.pagination?.mode === 'CURSOR' ? 'CURSOR' : 'OFFSET',
@@ -524,16 +661,16 @@ export class ProjectSpecMapperService {
         };
       case 'get':
         return {
-          idType: trimmed(restConfig?.requestResponse?.request?.getByIdType)
+          idType: keyTypeFromSettings
         };
       case 'delete':
         return {
           mode: restConfig?.requestResponse?.request?.delete?.mode === 'NONE' ? 'NONE' : 'GENERATE_DTO',
           dtoName: trimmed(restConfig?.requestResponse?.request?.delete?.dtoName),
-          idType: trimmed(restConfig?.requestResponse?.request?.deleteByIdType)
+          idType: keyTypeFromSettings
         };
       case 'bulkInsert': {
-        const createDto = trimmed(restConfig?.requestResponse?.request?.create?.dtoName);
+        const createDto = normalizeRequestDtoName(restConfig?.requestResponse?.request?.create?.dtoName) || mappedEntityName;
         const derivedType = createDto ? `List<${createDto}>` : '';
         return {
           type: derivedType,
@@ -544,9 +681,8 @@ export class ProjectSpecMapperService {
         };
       }
       case 'bulkUpdate': {
-        const updateDto = trimmed(restConfig?.requestResponse?.request?.update?.dtoName);
-        const createDto = trimmed(restConfig?.requestResponse?.request?.create?.dtoName);
-        const derivedType = updateDto ? `List<${updateDto}>` : createDto ? `List<${createDto}>` : '';
+        const createDto = normalizeRequestDtoName(restConfig?.requestResponse?.request?.create?.dtoName) || mappedEntityName;
+        const derivedType = createDto ? `List<${createDto}>` : '';
         return {
           type: derivedType,
           batch: {
@@ -565,7 +701,7 @@ export class ProjectSpecMapperService {
       }
       case 'bulkDelete': {
         const deleteDto = trimmed(restConfig?.requestResponse?.request?.delete?.dtoName);
-        const deleteIdType = trimmed(restConfig?.requestResponse?.request?.deleteByIdType);
+        const deleteIdType = keyTypeFromSettings;
         const derivedType = deleteDto ? `List<${deleteDto}>` : deleteIdType ? `List<${deleteIdType}>` : '';
         return {
           type: derivedType,
@@ -583,6 +719,39 @@ export class ProjectSpecMapperService {
       default:
         return {};
     }
+  }
+
+  private getDefaultCustomWrapperDto(restConfig: any, operationKey: string): string {
+    const idType = this.resolveConfiguredKeyType(restConfig);
+    const entityName = trimmed(restConfig?.mappedEntityName) || trimmed(restConfig?.resourceName) || '';
+    switch (operationKey) {
+      case 'create':
+      case 'delete':
+        return idType;
+      case 'get':
+      case 'patch':
+      case 'update':
+        return entityName;
+      case 'list':
+      case 'bulkUpdate':
+        return entityName ? `List<${entityName}>` : '';
+      case 'bulkInsert':
+      case 'bulkDelete':
+        return `List<${idType}>`;
+      default:
+        return '';
+    }
+  }
+
+  private resolveConfiguredKeyType(restConfig: any): string {
+    const raw = trimmed(restConfig?.pathVariableType)?.toUpperCase();
+    if (raw === 'LONG') {
+      return 'Long';
+    }
+    if (raw === 'STRING') {
+      return 'String';
+    }
+    return 'UUID';
   }
 
   private mapModelField(field: any): any {

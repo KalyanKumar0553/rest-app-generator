@@ -97,7 +97,7 @@ export interface RestEndpointConfig {
       create: { mode: RequestDtoMode; dtoName: string; };
       delete: { mode: RequestDtoMode; dtoName: string; };
       update: { mode: RequestDtoMode; dtoName: string; };
-      patch: { mode: PatchRequestMode; };
+      patch: { mode: PatchRequestMode; dtoName: string; };
       getByIdType: string;
       deleteByIdType: string;
       bulkInsertType: string;
@@ -213,7 +213,7 @@ const DEFAULT_REST_ENDPOINT_CONFIG: RestEndpointConfig = {
       },
       create: {
         mode: 'GENERATE_DTO',
-        dtoName: 'Request'
+        dtoName: ''
       },
       delete: {
         mode: 'GENERATE_DTO',
@@ -221,10 +221,11 @@ const DEFAULT_REST_ENDPOINT_CONFIG: RestEndpointConfig = {
       },
       update: {
         mode: 'GENERATE_DTO',
-        dtoName: 'UpdateRequest'
+        dtoName: ''
       },
       patch: {
-        mode: 'JSON_MERGE_PATCH'
+        mode: 'JSON_MERGE_PATCH',
+        dtoName: ''
       },
       getByIdType: 'UUID',
       deleteByIdType: 'UUID',
@@ -309,6 +310,7 @@ export class RestConfigComponent implements OnChanges, AfterViewInit, OnDestroy 
   resourceNameDuplicate = false;
   basePathRequired = false;
   mapToEntityRequired = false;
+  showRequestResponseErrors = false;
   activeTab: 'basic' | 'endpoints' | 'request' | 'error' | 'docs' = 'basic';
   overflowTabs: Array<{ id: 'basic' | 'endpoints' | 'request' | 'error' | 'docs'; label: string; icon: string }> = [];
   readonly tabs: Array<{ id: 'basic' | 'endpoints' | 'request' | 'error' | 'docs'; label: string; icon: string }> = [
@@ -342,11 +344,13 @@ export class RestConfigComponent implements OnChanges, AfterViewInit, OnDestroy 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['config']) {
       this.draft = this.sanitizeConfig(this.config ?? DEFAULT_REST_ENDPOINT_CONFIG);
+      this.applyEntityAndKeyTypeDefaults();
       this.showResourceNameErrors = false;
       this.resourceNameRequired = false;
       this.resourceNameDuplicate = false;
       this.basePathRequired = false;
       this.mapToEntityRequired = false;
+      this.showRequestResponseErrors = false;
     }
     if ((changes['config'] || changes['existingRestConfigNames']) && this.showResourceNameErrors) {
       this.validateResourceNameUnique();
@@ -390,8 +394,11 @@ export class RestConfigComponent implements OnChanges, AfterViewInit, OnDestroy 
 
   saveConfig(): void {
     this.showResourceNameErrors = true;
-    if (!this.validateResourceNameUnique() || !this.validateBasePath() || !this.validateEntityMapping()) {
-      this.activeTab = 'basic';
+    this.showRequestResponseErrors = true;
+    const basicValid = this.validateResourceNameUnique() && this.validateBasePath() && this.validateEntityMapping();
+    const requestResponseValid = this.validateRequestResponseForUnmappedEntity();
+    if (!basicValid || !requestResponseValid) {
+      this.activeTab = basicValid ? 'request' : 'basic';
       this.scrollToActiveTab();
       this.focusFirstValidationError();
       return;
@@ -443,11 +450,48 @@ export class RestConfigComponent implements OnChanges, AfterViewInit, OnDestroy 
 
   private sanitizeConfig(config: RestEndpointConfig): RestEndpointConfig {
     const docResourceName = String(config?.resourceName ?? config?.mappedEntityName ?? '').trim();
+    const normalizedPathVariableType = this.normalizePathVariableType(config?.pathVariableType);
+    const keyType = normalizedPathVariableType === 'LONG' ? 'Long' : normalizedPathVariableType === 'STRING' ? 'String' : 'UUID';
+    const mapToEntity = Boolean(config?.mapToEntity);
+    const mappedEntityName = String(config?.mappedEntityName ?? '').trim();
+    const shouldApplyEntityDefaults = mapToEntity && Boolean(mappedEntityName);
+    const request = config?.requestResponse?.request;
+    const response = config?.requestResponse?.response;
+    const endpointDtos = response?.endpointDtos;
+
+    const requestCreateDto = String(request?.create?.dtoName ?? DEFAULT_REST_ENDPOINT_CONFIG.requestResponse.request.create.dtoName).trim();
+    const requestListDto = String(request?.list?.dtoName ?? DEFAULT_REST_ENDPOINT_CONFIG.requestResponse.request.list.dtoName).trim();
+    const requestPatchDto = String(request?.patch?.dtoName ?? DEFAULT_REST_ENDPOINT_CONFIG.requestResponse.request.patch.dtoName).trim();
+    const requestBulkInsertType = String(request?.bulkInsertType ?? DEFAULT_REST_ENDPOINT_CONFIG.requestResponse.request.bulkInsertType).trim();
+    const requestBulkUpdateType = String(request?.bulkUpdateType ?? DEFAULT_REST_ENDPOINT_CONFIG.requestResponse.request.bulkUpdateType).trim();
+    const requestBulkDeleteType = String(request?.bulkDeleteType ?? DEFAULT_REST_ENDPOINT_CONFIG.requestResponse.request.bulkDeleteType).trim();
+
+    const responseCreateDto = String(endpointDtos?.create ?? '').trim();
+    const responseListDto = String(endpointDtos?.list ?? '').trim();
+    const responseGetDto = String(endpointDtos?.get ?? '').trim();
+    const responseDeleteDto = String(endpointDtos?.delete ?? '').trim();
+    const responsePatchDto = String(endpointDtos?.patch ?? '').trim();
+    const responseBulkInsertDto = String(endpointDtos?.bulkInsert ?? '').trim();
+    const responseBulkDeleteDto = String(endpointDtos?.bulkDelete ?? '').trim();
+    const responseBulkUpdateDto = String(endpointDtos?.bulkUpdate ?? '').trim();
+    const isLegacyRequestDto = (value: string): boolean => {
+      const normalized = String(value ?? '').trim().toLowerCase();
+      return normalized === 'request' || normalized === 'createrequest' || normalized === 'updaterequest' || normalized === 'patchrequest';
+    };
+    const effectiveCreateDto = shouldApplyEntityDefaults && (isLegacyRequestDto(requestCreateDto) || !requestCreateDto)
+      ? mappedEntityName
+      : requestCreateDto;
+    const effectiveListDto = shouldApplyEntityDefaults && (isLegacyRequestDto(requestListDto) || !requestListDto)
+      ? mappedEntityName
+      : requestListDto;
+    const effectivePatchDto = shouldApplyEntityDefaults && (isLegacyRequestDto(requestPatchDto) || !requestPatchDto)
+      ? mappedEntityName
+      : requestPatchDto;
     return {
       resourceName: String(config?.resourceName ?? '').trim(),
       basePath: String(config?.basePath ?? '').trim(),
-      mapToEntity: Boolean(config?.mapToEntity),
-      mappedEntityName: String(config?.mappedEntityName ?? '').trim(),
+      mapToEntity,
+      mappedEntityName,
       methods: {
         list: Boolean(config?.methods?.list ?? DEFAULT_REST_ENDPOINT_CONFIG.methods.list),
         get: Boolean(config?.methods?.get ?? DEFAULT_REST_ENDPOINT_CONFIG.methods.get),
@@ -465,7 +509,7 @@ export class RestConfigComponent implements OnChanges, AfterViewInit, OnDestroy 
         headerName: String(config?.apiVersioning?.headerName ?? DEFAULT_REST_ENDPOINT_CONFIG.apiVersioning.headerName).trim(),
         defaultVersion: String(config?.apiVersioning?.defaultVersion ?? DEFAULT_REST_ENDPOINT_CONFIG.apiVersioning.defaultVersion).trim()
       },
-      pathVariableType: this.normalizePathVariableType(config?.pathVariableType),
+      pathVariableType: normalizedPathVariableType,
       deletion: {
         mode: config?.deletion?.mode === 'HARD' ? 'HARD' : 'SOFT',
         restoreEndpoint: Boolean(config?.deletion?.restoreEndpoint),
@@ -517,11 +561,11 @@ export class RestConfigComponent implements OnChanges, AfterViewInit, OnDestroy 
         request: {
           list: {
             mode: config?.requestResponse?.request?.list?.mode === 'NONE' ? 'NONE' : 'GENERATE_DTO',
-            dtoName: String(config?.requestResponse?.request?.list?.dtoName ?? DEFAULT_REST_ENDPOINT_CONFIG.requestResponse.request.list.dtoName).trim()
+            dtoName: effectiveListDto
           },
           create: {
             mode: config?.requestResponse?.request?.create?.mode === 'NONE' ? 'NONE' : 'GENERATE_DTO',
-            dtoName: String(config?.requestResponse?.request?.create?.dtoName ?? DEFAULT_REST_ENDPOINT_CONFIG.requestResponse.request.create.dtoName).trim()
+            dtoName: effectiveCreateDto
           },
           delete: {
             mode: config?.requestResponse?.request?.delete?.mode === 'NONE' ? 'NONE' : 'GENERATE_DTO',
@@ -532,13 +576,14 @@ export class RestConfigComponent implements OnChanges, AfterViewInit, OnDestroy 
             dtoName: String(config?.requestResponse?.request?.update?.dtoName ?? DEFAULT_REST_ENDPOINT_CONFIG.requestResponse.request.update.dtoName).trim()
           },
           patch: {
-            mode: config?.requestResponse?.request?.patch?.mode === 'JSON_PATCH' ? 'JSON_PATCH' : 'JSON_MERGE_PATCH'
+            mode: config?.requestResponse?.request?.patch?.mode === 'JSON_PATCH' ? 'JSON_PATCH' : 'JSON_MERGE_PATCH',
+            dtoName: effectivePatchDto
           },
-          getByIdType: String(config?.requestResponse?.request?.getByIdType ?? DEFAULT_REST_ENDPOINT_CONFIG.requestResponse.request.getByIdType).trim(),
-          deleteByIdType: String(config?.requestResponse?.request?.deleteByIdType ?? DEFAULT_REST_ENDPOINT_CONFIG.requestResponse.request.deleteByIdType).trim(),
-          bulkInsertType: String(config?.requestResponse?.request?.bulkInsertType ?? DEFAULT_REST_ENDPOINT_CONFIG.requestResponse.request.bulkInsertType).trim(),
-          bulkUpdateType: String(config?.requestResponse?.request?.bulkUpdateType ?? DEFAULT_REST_ENDPOINT_CONFIG.requestResponse.request.bulkUpdateType).trim(),
-          bulkDeleteType: String(config?.requestResponse?.request?.bulkDeleteType ?? DEFAULT_REST_ENDPOINT_CONFIG.requestResponse.request.bulkDeleteType).trim()
+          getByIdType: keyType,
+          deleteByIdType: keyType,
+          bulkInsertType: requestBulkInsertType || (shouldApplyEntityDefaults ? `List<${mappedEntityName}>` : ''),
+          bulkUpdateType: requestBulkUpdateType || (shouldApplyEntityDefaults ? `List<${mappedEntityName}>` : ''),
+          bulkDeleteType: requestBulkDeleteType || (shouldApplyEntityDefaults ? `List<${keyType}>` : '')
         },
         response: {
           responseType: config?.requestResponse?.response?.responseType === 'DTO_DIRECT'
@@ -548,15 +593,15 @@ export class RestConfigComponent implements OnChanges, AfterViewInit, OnDestroy 
               : 'RESPONSE_ENTITY',
           dtoName: String(config?.requestResponse?.response?.dtoName ?? '').trim(),
           endpointDtos: {
-            list: String(config?.requestResponse?.response?.endpointDtos?.list ?? '').trim(),
-            get: String(config?.requestResponse?.response?.endpointDtos?.get ?? '').trim(),
-            create: String(config?.requestResponse?.response?.endpointDtos?.create ?? '').trim(),
+            list: responseListDto || (shouldApplyEntityDefaults ? `List<${mappedEntityName}>` : ''),
+            get: responseGetDto || (shouldApplyEntityDefaults ? mappedEntityName : ''),
+            create: responseCreateDto || (shouldApplyEntityDefaults ? keyType : ''),
             update: String(config?.requestResponse?.response?.endpointDtos?.update ?? '').trim(),
-            patch: String(config?.requestResponse?.response?.endpointDtos?.patch ?? '').trim(),
-            delete: String(config?.requestResponse?.response?.endpointDtos?.delete ?? '').trim(),
-            bulkInsert: String(config?.requestResponse?.response?.endpointDtos?.bulkInsert ?? '').trim(),
-            bulkUpdate: String(config?.requestResponse?.response?.endpointDtos?.bulkUpdate ?? '').trim(),
-            bulkDelete: String(config?.requestResponse?.response?.endpointDtos?.bulkDelete ?? '').trim()
+            patch: responsePatchDto || (shouldApplyEntityDefaults ? mappedEntityName : ''),
+            delete: responseDeleteDto || (shouldApplyEntityDefaults ? keyType : ''),
+            bulkInsert: responseBulkInsertDto || (shouldApplyEntityDefaults ? `List<${keyType}>` : ''),
+            bulkUpdate: responseBulkUpdateDto || (shouldApplyEntityDefaults ? `List<${mappedEntityName}>` : ''),
+            bulkDelete: responseBulkDeleteDto || (shouldApplyEntityDefaults ? `List<${keyType}>` : '')
           },
           responseWrapper: config?.requestResponse?.response?.responseWrapper === 'NONE'
             ? 'NONE'
@@ -659,11 +704,49 @@ export class RestConfigComponent implements OnChanges, AfterViewInit, OnDestroy 
   }
 
   onEntityMappingChanged(): void {
+    this.applyEntityAndKeyTypeDefaults();
     if (!this.showResourceNameErrors) {
       this.mapToEntityRequired = false;
       return;
     }
     this.validateEntityMapping();
+  }
+
+  onPathVariableTypeChanged(): void {
+    this.applyEntityAndKeyTypeDefaults();
+  }
+
+  private applyEntityAndKeyTypeDefaults(): void {
+    const keyType = this.resolveConfiguredKeyType();
+    if (!this.draft?.requestResponse?.request) {
+      return;
+    }
+    this.draft.requestResponse.request.getByIdType = keyType;
+    this.draft.requestResponse.request.deleteByIdType = keyType;
+
+    const mappedEntityName = String(this.draft?.mappedEntityName ?? '').trim();
+    if (mappedEntityName) {
+      if (!String(this.draft.requestResponse.request.create?.dtoName ?? '').trim()) {
+        this.draft.requestResponse.request.create.dtoName = mappedEntityName;
+      }
+      if (!String(this.draft.requestResponse.request.list?.dtoName ?? '').trim()) {
+        this.draft.requestResponse.request.list.dtoName = mappedEntityName;
+      }
+      if (!String(this.draft.requestResponse.request.patch?.dtoName ?? '').trim()) {
+        this.draft.requestResponse.request.patch.dtoName = mappedEntityName;
+      }
+    }
+  }
+
+  private resolveConfiguredKeyType(): string {
+    const raw = String(this.draft?.pathVariableType ?? 'UUID').toUpperCase();
+    if (raw === 'LONG') {
+      return 'Long';
+    }
+    if (raw === 'STRING') {
+      return 'String';
+    }
+    return 'UUID';
   }
 
   private validateResourceNameUnique(): boolean {
@@ -693,6 +776,76 @@ export class RestConfigComponent implements OnChanges, AfterViewInit, OnDestroy 
     const basePath = String(this.draft?.basePath ?? '').trim();
     this.basePathRequired = !basePath;
     return !this.basePathRequired;
+  }
+
+  private validateRequestResponseForUnmappedEntity(): boolean {
+    if (Boolean(this.draft?.mapToEntity)) {
+      return true;
+    }
+
+    const request = this.draft?.requestResponse?.request;
+    const response = this.draft?.requestResponse?.response;
+    const methods = (this.draft?.methods ?? {}) as Record<string, unknown>;
+
+    if (!request || !response) {
+      return false;
+    }
+
+    const hasValue = (value: unknown): boolean => String(value ?? '').trim().length > 0;
+    const requiredRequestChecks: boolean[] = [];
+
+    if (Boolean(methods['create'])) {
+      requiredRequestChecks.push(hasValue(request?.create?.dtoName));
+    }
+    if (Boolean(methods['get'])) {
+      requiredRequestChecks.push(hasValue(request?.getByIdType));
+    }
+    if (Boolean(methods['list'])) {
+      requiredRequestChecks.push(hasValue(request?.list?.dtoName));
+    }
+    if (Boolean(methods['patch'])) {
+      requiredRequestChecks.push(hasValue(request?.patch?.dtoName));
+    }
+    if (Boolean(methods['delete'])) {
+      requiredRequestChecks.push(hasValue(request?.deleteByIdType));
+    }
+    const responseTypeValid = hasValue(response?.responseType);
+    if (!responseTypeValid) {
+      return false;
+    }
+
+    if (response?.responseType !== 'CUSTOM_WRAPPER') {
+      return requiredRequestChecks.every(Boolean);
+    }
+
+    const endpointDtos = (response?.endpointDtos ?? {}) as Record<string, unknown>;
+    const requiredResponseChecks: boolean[] = [];
+    if (Boolean(methods['create'])) {
+      requiredResponseChecks.push(hasValue(endpointDtos['create']));
+    }
+    if (Boolean(methods['get'])) {
+      requiredResponseChecks.push(hasValue(endpointDtos['get']));
+    }
+    if (Boolean(methods['list'])) {
+      requiredResponseChecks.push(hasValue(endpointDtos['list']));
+    }
+    if (Boolean(methods['patch'])) {
+      requiredResponseChecks.push(hasValue(endpointDtos['patch']));
+    }
+    if (Boolean(methods['delete'])) {
+      requiredResponseChecks.push(hasValue(endpointDtos['delete']));
+    }
+    if (Boolean(methods['bulkInsert'])) {
+      requiredResponseChecks.push(hasValue(endpointDtos['bulkInsert']));
+    }
+    if (Boolean(methods['bulkUpdate'])) {
+      requiredResponseChecks.push(hasValue(endpointDtos['bulkUpdate']));
+    }
+    if (Boolean(methods['bulkDelete'])) {
+      requiredResponseChecks.push(hasValue(endpointDtos['bulkDelete']));
+    }
+
+    return requiredRequestChecks.every(Boolean) && requiredResponseChecks.every(Boolean);
   }
 
   private focusFirstValidationError(): void {

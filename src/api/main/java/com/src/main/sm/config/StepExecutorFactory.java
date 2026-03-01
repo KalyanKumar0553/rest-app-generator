@@ -30,13 +30,13 @@ public class StepExecutorFactory {
 			 SwaggerGenerationExecutor swaggerGenerationExecutor,
 			 DockerGenerationExecutor dockerGenerationExecutor,
 			 RestGenerationExecutor restGenerationExecutor,
-			 CrudGenerationExecutor crudGenerationExecutor,
-			 ActuatorConfigurationExecutor actuatorConfigurationExecutor,
-			 ExceptionPackageGenerationExecutor exceptionPackageGenerationExecutor,
-			 MapperGenerationExecutor mapperGenerationExecutor
-			 ) {
-     registry.put(States.DTO_GENERATION, dtoGenerationExecutor);
-     registry.put(States.ENUM_GENERATION, enumGenerationExecutor);
+				 CrudGenerationExecutor crudGenerationExecutor,
+				 ActuatorConfigurationExecutor actuatorConfigurationExecutor,
+				 ExceptionPackageGenerationExecutor exceptionPackageGenerationExecutor,
+				 MapperGenerationExecutor mapperGenerationExecutor
+				 ) {
+	     registry.put(States.DTO_GENERATION, dtoGenerationExecutor);
+	     registry.put(States.ENUM_GENERATION, enumGenerationExecutor);
      registry.put(States.SCAFFOLD, scaffoldExecutor);
      registry.put(States.APPLICATION_FILES, appFileExecutor);
      registry.put(States.DOCKER_GENERATION, dockerGenerationExecutor);

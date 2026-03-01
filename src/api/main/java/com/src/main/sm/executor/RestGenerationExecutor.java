@@ -19,6 +19,7 @@ import com.src.main.dto.StepResult;
 import com.src.main.sm.config.StepExecutor;
 import com.src.main.sm.executor.common.GenerationLanguage;
 import com.src.main.sm.executor.common.GenerationLanguageResolver;
+import com.src.main.sm.executor.common.JavaNamingUtils;
 import com.src.main.sm.executor.rest.RestControllerGenerator;
 import com.src.main.sm.executor.rest.RestGenerationSupport;
 import com.src.main.sm.executor.rest.RestGenerationUnit;
@@ -85,7 +86,8 @@ public class RestGenerationExecutor implements StepExecutor {
 				String mappedBasePath = normalizeBasePath(restSpecBasePathByName.get(restSpecName));
 				validateControllerOnlyRestConfig(model, rawModel, mappedRestSpec, restSpecName != null);
 				Map<String, Object> runtimeConfig = buildRuntimeConfig(model, rawModel, mappedRestSpec, restSpecName != null);
-				RestGenerationUnit unit = RestGenerationSupport.buildUnit(model, basePackage, packageStructure, noSql, mappedBasePath, runtimeConfig);
+				RestGenerationUnit unit = RestGenerationSupport.buildUnit(model, basePackage, packageStructure, noSql,
+						language == GenerationLanguage.KOTLIN, mappedBasePath, runtimeConfig);
 				boolean hasServiceLayer = Boolean.TRUE.equals(runtimeConfig.get("hasServiceLayer"));
 				if (hasServiceLayer) {
 					repositoryGenerator.generate(root, unit, language);
@@ -213,7 +215,13 @@ public class RestGenerationExecutor implements StepExecutor {
 			return null;
 		}
 		path = path.startsWith("/") ? path : "/" + path;
+		if (!path.startsWith("/api/")) {
+			path = "/api" + path;
+		}
 		path = path.replaceAll("/+", "/");
+		if (path.endsWith("/") && path.length() > 1) {
+			path = path.substring(0, path.length() - 1);
+		}
 		return path;
 	}
 
@@ -309,21 +317,23 @@ public class RestGenerationExecutor implements StepExecutor {
 			Map<String, Object> restSpec,
 			boolean hasMappedRestSpec) {
 		Map<String, Object> runtime = new LinkedHashMap<>();
-		String entityType = StringUtils.firstNonBlank(model != null ? model.getName() : null, "Entity");
+		String entityType = JavaNamingUtils.toJavaTypeName(StringUtils.firstNonBlank(model != null ? model.getName() : null, "Entity"), "Entity");
 		String idType = resolveModelIdType(model);
+		String idName = resolveModelIdName(model);
 		Map<String, Object> methods = resolveMethods(restSpec, rawModel);
 		boolean hasServiceLayer = hasMappedRestSpec;
 		runtime.put("hasServiceLayer", hasServiceLayer);
+		runtime.put("idNamePascalCase", toPascalCase(idName));
 
-		configureOperation(runtime, methods, "list", "Page<" + entityType + ">", null, hasServiceLayer, entityType, idType);
+		configureOperation(runtime, methods, "list", "List<" + entityType + ">", null, hasServiceLayer, entityType, idType);
 		configureOperation(runtime, methods, "get", entityType, null, hasServiceLayer, entityType, idType);
-		configureOperation(runtime, methods, "create", entityType, entityType, hasServiceLayer, entityType, idType);
+		configureOperation(runtime, methods, "create", idType, entityType, hasServiceLayer, entityType, idType);
 		configureOperation(runtime, methods, "update", entityType, entityType, hasServiceLayer, entityType, idType);
 		configureOperation(runtime, methods, "patch", entityType, entityType, hasServiceLayer, entityType, idType);
-		configureOperation(runtime, methods, "delete", "Void", null, hasServiceLayer, entityType, idType);
-		configureOperation(runtime, methods, "bulkInsert", "List<" + entityType + ">", "List<" + entityType + ">", hasServiceLayer, entityType, idType);
+		configureOperation(runtime, methods, "delete", idType, null, hasServiceLayer, entityType, idType);
+		configureOperation(runtime, methods, "bulkInsert", "List<" + idType + ">", "List<" + entityType + ">", hasServiceLayer, entityType, idType);
 		configureOperation(runtime, methods, "bulkUpdate", "List<" + entityType + ">", "List<" + entityType + ">", hasServiceLayer, entityType, idType);
-		configureOperation(runtime, methods, "bulkDelete", "Void", "List<" + idType + ">", hasServiceLayer, entityType, idType);
+		configureOperation(runtime, methods, "bulkDelete", "List<" + idType + ">", "List<" + idType + ">", hasServiceLayer, entityType, idType);
 		runtime.put("usesAnyIdPathOperation", anyTrue(runtime, "getEnabled", "updateEnabled", "patchEnabled", "deleteEnabled"));
 		return runtime;
 	}
@@ -392,9 +402,164 @@ public class RestGenerationExecutor implements StepExecutor {
 
 		String responseType = resolveResponseType(key, response, defaultResponseType);
 		runtime.put(key + "ResponseType", responseType);
+		String responseMode = resolveControllerResponseMode(response);
+		boolean returnsResponseEntity = "RESPONSE_ENTITY".equals(responseMode);
+		runtime.put(key + "ReturnsResponseEntity", returnsResponseEntity);
+		runtime.put(key + "ControllerReturnType", returnsResponseEntity
+				? "ResponseEntity<" + responseType + ">"
+				: responseType);
+		applyMapperFlags(runtime, key, requestType, entityType, idType);
+		applyOperationTypeFlags(runtime, key, requestType, responseType, entityType, idType);
+		applyBatchOptions(runtime, key, entry);
 
 		boolean useService = hasServiceLayer && isServiceCompatible(key, requestType, responseType, entityType, idType);
 		runtime.put(key + "UseService", useService);
+	}
+
+	@SuppressWarnings("unchecked")
+	private static void applyBatchOptions(Map<String, Object> runtime, String key, Map<String, Object> entry) {
+		Map<String, Object> batch = entry != null && entry.get("batch") instanceof Map<?, ?> rawBatch
+				? (Map<String, Object>) rawBatch
+				: Collections.emptyMap();
+		switch (key) {
+		case "bulkInsert" -> {
+			int batchSize = readPositiveInt(batch.get("batchSize"), 1);
+			boolean asyncEnabled = readBoolean(batch.get("enableAsyncMode")) || readBoolean(batch.get("asyncProcessing"));
+			runtime.put("bulkInsertBatchSize", batchSize);
+			runtime.put("bulkInsertUseBatching", batchSize > 1);
+			runtime.put("bulkInsertAsyncEnabled", asyncEnabled);
+		}
+		case "bulkUpdate" -> {
+			int batchSize = readPositiveInt(batch.get("batchSize"), 1);
+			boolean asyncEnabled = readBoolean(batch.get("enableAsyncMode")) || readBoolean(batch.get("asyncProcessing"));
+			String updateMode = str(batch.get("updateMode"));
+			String validationStrategy = str(batch.get("validationStrategy"));
+			String optimisticLockHandling = str(batch.get("optimisticLockHandling"));
+
+			boolean patchMode = "PATCH".equalsIgnoreCase(StringUtils.firstNonBlank(updateMode, "PUT"));
+			boolean skipDuplicates = "SKIP_DUPLICATES".equalsIgnoreCase(StringUtils.firstNonBlank(validationStrategy, "VALIDATE_ALL_FIRST"));
+			boolean validateAllFirst = !skipDuplicates;
+			boolean skipConflicts = "SKIP_CONFLICTS".equalsIgnoreCase(StringUtils.firstNonBlank(optimisticLockHandling, "FAIL_ON_CONFLICT"));
+			boolean failOnConflict = !skipConflicts;
+
+			runtime.put("bulkUpdateBatchSize", batchSize);
+			runtime.put("bulkUpdateUseBatching", batchSize > 1);
+			runtime.put("bulkUpdateAsyncEnabled", asyncEnabled);
+			runtime.put("bulkUpdateModePatch", patchMode);
+			runtime.put("bulkUpdateModePut", !patchMode);
+			runtime.put("bulkUpdateValidationSkipDuplicates", skipDuplicates);
+			runtime.put("bulkUpdateValidationValidateAllFirst", validateAllFirst);
+			runtime.put("bulkUpdateOptimisticSkipConflicts", skipConflicts);
+			runtime.put("bulkUpdateOptimisticFailOnConflict", failOnConflict);
+		}
+		case "bulkDelete" -> {
+			int batchSize = readPositiveInt(batch.get("batchSize"), 1);
+			boolean asyncEnabled = readBoolean(batch.get("enableAsyncMode")) || readBoolean(batch.get("asyncProcessing"));
+			String failureStrategy = str(batch.get("failureStrategy"));
+			boolean continueOnFailure = "CONTINUE_AND_REPORT_FAILURES".equalsIgnoreCase(StringUtils.firstNonBlank(failureStrategy, "STOP_ON_FIRST_ERROR"));
+			boolean stopOnFirstError = !continueOnFailure;
+			boolean allowIncludeDeletedParam = readBoolean(batch.get("allowIncludeDeletedParam"));
+
+			runtime.put("bulkDeleteBatchSize", batchSize);
+			runtime.put("bulkDeleteUseBatching", batchSize > 1);
+			runtime.put("bulkDeleteAsyncEnabled", asyncEnabled);
+			runtime.put("bulkDeleteContinueAndReportFailures", continueOnFailure);
+			runtime.put("bulkDeleteStopOnFirstError", stopOnFirstError);
+			runtime.put("bulkDeleteAllowIncludeDeletedParam", allowIncludeDeletedParam);
+		}
+		default -> {
+		}
+		}
+	}
+
+	private static int readPositiveInt(Object raw, int defaultValue) {
+		if (raw == null) {
+			return defaultValue;
+		}
+		try {
+			int parsed = Integer.parseInt(String.valueOf(raw).trim());
+			return parsed > 0 ? parsed : defaultValue;
+		} catch (Exception ex) {
+			return defaultValue;
+		}
+	}
+
+	private static boolean readBoolean(Object raw) {
+		if (raw == null) {
+			return false;
+		}
+		if (raw instanceof Boolean bool) {
+			return bool;
+		}
+		String normalized = String.valueOf(raw).trim().toLowerCase(Locale.ROOT);
+		return "true".equals(normalized) || "1".equals(normalized) || "yes".equals(normalized) || "y".equals(normalized);
+	}
+
+	private static void applyMapperFlags(
+			Map<String, Object> runtime,
+			String key,
+			String requestType,
+			String entityType,
+			String idType) {
+		if (requestType == null) {
+			return;
+		}
+		switch (key) {
+		case "create", "update", "patch" -> {
+			boolean needsMapper = !entityType.equals(requestType) && !idType.equals(requestType);
+			runtime.put(key + "RequestMapperEnabled", needsMapper);
+			if (needsMapper) {
+				runtime.put(key + "RequestDtoType", requestType);
+				runtime.put(key + "RequestMapperClass", buildRequestMapperClass(requestType));
+			}
+		}
+		case "bulkInsert", "bulkUpdate" -> {
+			String elementType = extractListElementType(requestType);
+			boolean needsMapper = elementType != null && !entityType.equals(elementType) && !idType.equals(elementType);
+			runtime.put(key + "RequestMapperEnabled", needsMapper);
+			if (needsMapper) {
+				runtime.put(key + "RequestDtoElementType", elementType);
+				runtime.put(key + "RequestMapperClass", buildRequestMapperClass(elementType));
+			}
+		}
+		default -> {
+		}
+		}
+	}
+
+	private static void applyOperationTypeFlags(
+			Map<String, Object> runtime,
+			String key,
+			String requestType,
+			String responseType,
+			String entityType,
+			String idType) {
+		if ("list".equals(key)) {
+			runtime.put("listResponseIsEntityList", ("List<" + entityType + ">").equals(responseType));
+			runtime.put("listResponseIsEntityPage", ("Page<" + entityType + ">").equals(responseType));
+			return;
+		}
+		if ("create".equals(key)) {
+			runtime.put("createResponseIsId", idType.equals(responseType));
+			runtime.put("createResponseIsEntity", entityType.equals(responseType));
+			return;
+		}
+		if ("delete".equals(key)) {
+			runtime.put("deleteResponseIsId", idType.equals(responseType));
+			runtime.put("deleteResponseIsVoid", "Void".equals(responseType));
+			return;
+		}
+		if ("bulkInsert".equals(key)) {
+			runtime.put("bulkInsertRequestIsEntityList", ("List<" + entityType + ">").equals(requestType));
+			runtime.put("bulkInsertResponseIsIdList", ("List<" + idType + ">").equals(responseType));
+			runtime.put("bulkInsertResponseIsEntityList", ("List<" + entityType + ">").equals(responseType));
+			return;
+		}
+		if ("bulkDelete".equals(key)) {
+			runtime.put("bulkDeleteRequestIsIdList", ("List<" + idType + ">").equals(requestType));
+			runtime.put("bulkDeleteResponseIsIdList", ("List<" + idType + ">").equals(responseType));
+			runtime.put("bulkDeleteResponseIsVoid", "Void".equals(responseType));
+		}
 	}
 
 	private static boolean isOperationEnabled(Object entryRaw) {
@@ -409,56 +574,109 @@ public class RestGenerationExecutor implements StepExecutor {
 
 	private static String resolveRequestType(String key, Map<String, Object> request, String defaultType) {
 		if (request == null || request.isEmpty()) {
-			return decodeHtmlType(defaultType);
+			return JavaNamingUtils.toJavaTypeExpression(defaultType, "Request");
 		}
 		String explicitType = StringUtils.trimToNull(str(request.get("type")));
 		if (explicitType != null) {
-			return decodeHtmlType(explicitType);
+			return JavaNamingUtils.toJavaTypeExpression(explicitType, "Request");
 		}
 		String dtoName = StringUtils.trimToNull(str(request.get("dtoName")));
 		if (dtoName != null) {
 			if (key.startsWith("bulk") && !dtoName.startsWith("List<")) {
-				return decodeHtmlType("List<" + dtoName + ">");
+				return JavaNamingUtils.toJavaTypeExpression("List<" + dtoName + ">", "Request");
 			}
-			return decodeHtmlType(dtoName);
+			return JavaNamingUtils.toJavaTypeExpression(dtoName, "Request");
 		}
-		return decodeHtmlType(defaultType);
+		return JavaNamingUtils.toJavaTypeExpression(defaultType, "Request");
 	}
 
 	private static String resolveResponseType(String key, Map<String, Object> response, String defaultType) {
 		if (response == null || response.isEmpty()) {
-			return decodeHtmlType(defaultType);
+			return JavaNamingUtils.toJavaTypeExpression(defaultType, "Response");
 		}
 		String dtoName = StringUtils.trimToNull(str(response.get("dtoName")));
 		if (dtoName == null) {
-			return decodeHtmlType(defaultType);
+			return JavaNamingUtils.toJavaTypeExpression(defaultType, "Response");
 		}
 		if ("list".equals(key)) {
 			if (dtoName.startsWith("Page<") || dtoName.startsWith("List<")) {
-				return decodeHtmlType(dtoName);
+				return JavaNamingUtils.toJavaTypeExpression(dtoName, "Response");
 			}
-			return decodeHtmlType("Page<" + dtoName + ">");
+			return JavaNamingUtils.toJavaTypeExpression("List<" + dtoName + ">", "Response");
 		}
 		if (key.startsWith("bulk")) {
-			if ("bulkDelete".equals(key)) {
-				return "Void";
-			}
-			return decodeHtmlType(dtoName.startsWith("List<") ? dtoName : "List<" + dtoName + ">");
+			return JavaNamingUtils.toJavaTypeExpression(dtoName.startsWith("List<") ? dtoName : "List<" + dtoName + ">", "Response");
 		}
-		return decodeHtmlType(dtoName);
+		return JavaNamingUtils.toJavaTypeExpression(dtoName, "Response");
+	}
+
+	private static String resolveControllerResponseMode(Map<String, Object> response) {
+		if (response == null || response.isEmpty()) {
+			return "RESPONSE_ENTITY";
+		}
+		String raw = StringUtils.trimToNull(str(response.get("responseType")));
+		if (raw == null) {
+			return "RESPONSE_ENTITY";
+		}
+		String normalized = raw.trim().toUpperCase(Locale.ROOT);
+		if ("DTO_DIRECT".equals(normalized) || "CUSTOM_WRAPPER".equals(normalized)) {
+			return normalized;
+		}
+		return "RESPONSE_ENTITY";
 	}
 
 	private static boolean isServiceCompatible(String key, String requestType, String responseType, String entityType, String idType) {
 		return switch (key) {
-		case "list" -> ("Page<" + entityType + ">").equals(responseType);
+		case "list" -> ("List<" + entityType + ">").equals(responseType) || ("Page<" + entityType + ">").equals(responseType);
 		case "get" -> entityType.equals(responseType);
-		case "create", "update", "patch" -> entityType.equals(requestType) && entityType.equals(responseType);
-		case "delete" -> "Void".equals(responseType);
-		case "bulkInsert", "bulkUpdate" ->
-			("List<" + entityType + ">").equals(requestType) && ("List<" + entityType + ">").equals(responseType);
-		case "bulkDelete" -> ("List<" + idType + ">").equals(requestType) && "Void".equals(responseType);
+		case "create" -> isEntityOrMappableRequestType(requestType, entityType, idType) && (entityType.equals(responseType) || idType.equals(responseType));
+		case "update", "patch" -> isEntityOrMappableRequestType(requestType, entityType, idType) && entityType.equals(responseType);
+		case "delete" -> "Void".equals(responseType) || idType.equals(responseType);
+		case "bulkInsert", "bulkUpdate" -> isEntityOrMappableListRequestType(requestType, entityType, idType)
+				&& (("List<" + entityType + ">").equals(responseType) || ("List<" + idType + ">").equals(responseType));
+		case "bulkDelete" -> ("List<" + idType + ">").equals(requestType)
+				&& ("Void".equals(responseType) || ("List<" + idType + ">").equals(responseType));
 		default -> false;
 		};
+	}
+
+	private static boolean isEntityOrMappableRequestType(String requestType, String entityType, String idType) {
+		if (requestType == null || requestType.isBlank()) {
+			return false;
+		}
+		if (entityType.equals(requestType)) {
+			return true;
+		}
+		if (idType.equals(requestType)) {
+			return false;
+		}
+		return !requestType.contains("<") && !requestType.contains(">");
+	}
+
+	private static boolean isEntityOrMappableListRequestType(String requestType, String entityType, String idType) {
+		String elementType = extractListElementType(requestType);
+		if (elementType == null || elementType.isBlank()) {
+			return false;
+		}
+		if (entityType.equals(elementType)) {
+			return true;
+		}
+		return !idType.equals(elementType);
+	}
+
+	private static String extractListElementType(String requestType) {
+		if (requestType == null) {
+			return null;
+		}
+		String trimmed = requestType.trim();
+		if (!trimmed.startsWith("List<") || !trimmed.endsWith(">")) {
+			return null;
+		}
+		return trimmed.substring(5, trimmed.length() - 1).trim();
+	}
+
+	private static String buildRequestMapperClass(String sourceType) {
+		return JavaNamingUtils.toJavaTypeName(sourceType, "Request") + "RequestMapper";
 	}
 
 	private static String resolveModelIdType(ModelSpecDTO model) {
@@ -477,19 +695,21 @@ public class RestGenerationExecutor implements StepExecutor {
 		case "datetime", "localdatetime" -> "LocalDateTime";
 		case "offsetdatetime" -> "OffsetDateTime";
 		case "instant" -> "Instant";
-		default -> decodeHtmlType(raw);
+		default -> JavaNamingUtils.toJavaTypeExpression(raw, "Id");
 		};
 	}
 
-	private static String decodeHtmlType(String raw) {
-		if (raw == null) {
-			return null;
+	private static String resolveModelIdName(ModelSpecDTO model) {
+		String raw = model != null && model.getId() != null ? StringUtils.trimToNull(model.getId().getField()) : null;
+		return raw == null ? "id" : raw;
+	}
+
+	private static String toPascalCase(String value) {
+		if (value == null || value.isBlank()) {
+			return "Id";
 		}
-		return raw
-				.replace("&lt;", "<")
-				.replace("&gt;", ">")
-				.replace("&amp;", "&")
-				.trim();
+		String trimmed = value.trim();
+		return Character.toUpperCase(trimmed.charAt(0)) + trimmed.substring(1);
 	}
 
 	@SuppressWarnings("unchecked")

@@ -15,10 +15,18 @@ public final class GenerationLanguageResolver {
 		Object appRaw = yaml.get("app");
 		if (appRaw instanceof Map<?, ?> appMapRaw) {
 			Map<String, Object> appMap = (Map<String, Object>) appMapRaw;
+			Object language = appMap.get("language");
+			if (language != null) {
+				return fromGenerator(language.toString());
+			}
 			Object generator = appMap.get("generator");
 			if (generator != null) {
 				return fromGenerator(generator.toString());
 			}
+		}
+		Object language = yaml.get("language");
+		if (language != null) {
+			return fromGenerator(language.toString());
 		}
 		Object generator = yaml.get("generator");
 		if (generator != null) {
@@ -35,7 +43,12 @@ public final class GenerationLanguageResolver {
 		if ("kotlin".equals(normalized) || "kt".equals(normalized)) {
 			return GenerationLanguage.KOTLIN;
 		}
+		if ("node".equals(normalized) || "nodejs".equals(normalized) || "javascript".equals(normalized) || "js".equals(normalized)) {
+			return GenerationLanguage.NODE;
+		}
+		if ("python".equals(normalized) || "py".equals(normalized)) {
+			return GenerationLanguage.PYTHON;
+		}
 		return GenerationLanguage.JAVA;
 	}
 }
-

@@ -18,6 +18,7 @@ import com.src.main.sm.executor.common.BoilerplateStyle;
 import com.src.main.sm.executor.common.BoilerplateStyleResolver;
 import com.src.main.sm.executor.common.GenerationLanguage;
 import com.src.main.sm.executor.common.GenerationLanguageResolver;
+import com.src.main.sm.executor.common.JavaNamingUtils;
 import com.src.main.sm.executor.common.TemplatePathResolver;
 import com.src.main.sm.executor.TemplateEngine;
 import com.src.main.sm.executor.enumgen.EnumGenerationSupport;
@@ -121,7 +122,7 @@ public class DtoGenerationService {
 	private DtoGenerationUnit buildUnit(Map<String, Object> dto, Map<String, EnumSpecResolved> enumByName,
 			String enumPackage, BoilerplateStyle style) {
 		String sub = "request".equals(String.valueOf(dto.get("type"))) ? "request" : "response";
-		String name = String.valueOf(dto.get("name"));
+		String name = JavaNamingUtils.toJavaTypeName(String.valueOf(dto.get("name")), "Dto");
 		List<Map<String, Object>> fields = (List<Map<String, Object>>) dto.getOrDefault("fields", List.of());
 
 		List<Map<String, Object>> classSpecs = DtoGenerationSupport.normalizeClassConstraints(dto.get("classConstraints"));

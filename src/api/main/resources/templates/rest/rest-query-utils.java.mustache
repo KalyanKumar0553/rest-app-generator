@@ -13,15 +13,18 @@ public final class RestQueryUtils {
     private static final int DEFAULT_PAGE = 0;
     private static final int DEFAULT_SIZE = 20;
     private static final int MAX_SIZE = 200;
-    private static final Set<String> RESERVED_PARAMS = Set.of("page", "size", "sort");
+    private static final Set<String> RESERVED_PARAMS = Set.of("page", "size", "limit", "sort", "direction", "operation");
 
     private RestQueryUtils() {
     }
 
     public static Pageable resolvePageable(Map<String, String> queryParams, Set<String> allowedSortFields) {
         int page = parseInt(queryParams == null ? null : queryParams.get("page"), DEFAULT_PAGE, 0, Integer.MAX_VALUE);
-        int size = parseInt(queryParams == null ? null : queryParams.get("size"), DEFAULT_SIZE, 1, MAX_SIZE);
-        Sort sort = resolveSort(queryParams == null ? null : queryParams.get("sort"), allowedSortFields);
+        String sizeRaw = queryParams == null ? null : firstNonBlank(queryParams.get("limit"), queryParams.get("size"));
+        int size = parseInt(sizeRaw, DEFAULT_SIZE, 1, MAX_SIZE);
+        String sortField = queryParams == null ? null : queryParams.get("sort");
+        String direction = queryParams == null ? null : queryParams.get("direction");
+        Sort sort = resolveSort(sortField, direction, allowedSortFields);
         return PageRequest.of(page, size, sort);
     }
 
@@ -37,11 +40,11 @@ public final class RestQueryUtils {
         return filters;
     }
 
-    private static Sort resolveSort(String sortRaw, Set<String> allowedSortFields) {
-        if (sortRaw == null || sortRaw.isBlank()) {
+    private static Sort resolveSort(String sortFieldRaw, String directionRaw, Set<String> allowedSortFields) {
+        if (sortFieldRaw == null || sortFieldRaw.isBlank()) {
             return Sort.unsorted();
         }
-        String[] parts = sortRaw.split(",");
+        String[] parts = sortFieldRaw.split(",");
         String field = parts[0].trim();
         if (field.isBlank()) {
             return Sort.unsorted();
@@ -49,10 +52,18 @@ public final class RestQueryUtils {
         if (allowedSortFields != null && !allowedSortFields.isEmpty() && !allowedSortFields.contains(field)) {
             throw new IllegalArgumentException("Unsupported sort field: " + field);
         }
-        Sort.Direction direction = parts.length > 1 && "desc".equalsIgnoreCase(parts[1].trim())
+        String resolvedDirection = firstNonBlank(directionRaw, parts.length > 1 ? parts[1] : null);
+        Sort.Direction direction = "desc".equalsIgnoreCase(String.valueOf(resolvedDirection).trim())
                 ? Sort.Direction.DESC
                 : Sort.Direction.ASC;
         return Sort.by(direction, field);
+    }
+
+    private static String firstNonBlank(String first, String second) {
+        if (first != null && !first.isBlank()) {
+            return first;
+        }
+        return second;
     }
 
     private static int parseInt(String raw, int defaultValue, int min, int max) {

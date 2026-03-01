@@ -20,6 +20,18 @@ object RestEntityUtils {
         }
     }
 
+    fun <T> replaceFields(source: T, target: T, idField: String) {
+        collectFields(source!!::class.java).forEach { field ->
+            val modifiers = field.modifiers
+            if (Modifier.isStatic(modifiers) || Modifier.isFinal(modifiers) || field.name == idField) {
+                return@forEach
+            }
+            ReflectionUtils.makeAccessible(field)
+            val value = ReflectionUtils.getField(field, source)
+            ReflectionUtils.setField(field, target, value)
+        }
+    }
+
     private fun collectFields(type: Class<*>): List<Field> {
         val fields = mutableListOf<Field>()
         var current: Class<*>? = type

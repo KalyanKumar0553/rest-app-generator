@@ -26,6 +26,18 @@ public final class RestEntityUtils {
         }
     }
 
+    public static <T> void replaceFields(T source, T target, String idField) {
+        for (Field field : collectFields(source.getClass())) {
+            int modifiers = field.getModifiers();
+            if (Modifier.isStatic(modifiers) || Modifier.isFinal(modifiers) || field.getName().equals(idField)) {
+                continue;
+            }
+            ReflectionUtils.makeAccessible(field);
+            Object value = ReflectionUtils.getField(field, source);
+            ReflectionUtils.setField(field, target, value);
+        }
+    }
+
     private static List<Field> collectFields(Class<?> type) {
         List<Field> fields = new ArrayList<>();
         Class<?> current = type;

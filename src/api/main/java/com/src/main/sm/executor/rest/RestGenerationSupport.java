@@ -11,6 +11,7 @@ import com.src.main.common.util.CaseUtils;
 import com.src.main.common.util.StringUtils;
 import com.src.main.dto.FieldSpecDTO;
 import com.src.main.dto.ModelSpecDTO;
+import com.src.main.sm.executor.common.JavaNamingUtils;
 
 public final class RestGenerationSupport {
 
@@ -22,9 +23,10 @@ public final class RestGenerationSupport {
 			String basePackage,
 			String packageStructure,
 			boolean noSql,
+			boolean kotlinLanguage,
 			String requestBasePath,
 			Map<String, Object> runtimeConfig) {
-		String entityName = CaseUtils.toPascal(StringUtils.firstNonBlank(model.getName(), "Entity"));
+		String entityName = JavaNamingUtils.toJavaTypeName(StringUtils.firstNonBlank(model.getName(), "Entity"), "Entity");
 		String idName = StringUtils.firstNonBlank(model.getId() != null ? model.getId().getField() : null, "id");
 		JavaTypeRef idType = mapJavaType(model.getId() != null ? model.getId().getType() : null);
 
@@ -38,6 +40,7 @@ public final class RestGenerationSupport {
 		String servicePackage;
 		String controllerPackage;
 		String utilPackage;
+		String mapperPackage;
 
 		if (domainStructure) {
 			String domainRoot = basePackage + ".domain." + normalizedEntity;
@@ -46,17 +49,19 @@ public final class RestGenerationSupport {
 			servicePackage = domainRoot + ".service";
 			controllerPackage = domainRoot + ".controller";
 			utilPackage = basePackage + ".domain.util";
+			mapperPackage = basePackage + ".domain.mapper";
 		} else {
 			modelPackage = basePackage + ".model";
 			repositoryPackage = basePackage + ".repository";
 			servicePackage = basePackage + ".service";
 			controllerPackage = basePackage + ".controller";
 			utilPackage = basePackage + ".util";
+			mapperPackage = basePackage + ".mapper";
 		}
 
-		String allowedSortFieldsLiteral = resolveAllowedSortFieldsLiteral(model, idName);
+		String allowedSortFieldsLiteral = resolveAllowedSortFieldsLiteral(model, idName, kotlinLanguage);
 		return new RestGenerationUnit(entityName, idName, idType.simpleName(), idType.importName(), endpointPath, resolvedRequestBasePath,
-				modelPackage, repositoryPackage, servicePackage, controllerPackage, utilPackage, allowedSortFieldsLiteral, noSql, runtimeConfig);
+				modelPackage, repositoryPackage, servicePackage, controllerPackage, utilPackage, mapperPackage, allowedSortFieldsLiteral, noSql, runtimeConfig);
 	}
 
 	public static String resolveUtilPackage(String basePackage, String packageStructure) {
@@ -107,12 +112,13 @@ public final class RestGenerationSupport {
 	private static JavaTypeRef toJavaTypeRef(String normalized) {
 		if (normalized.contains(".")) {
 			String simple = normalized.substring(normalized.lastIndexOf('.') + 1);
-			return new JavaTypeRef(simple, normalized);
+			String safeSimple = JavaNamingUtils.toJavaTypeName(simple, "Id");
+			return new JavaTypeRef(safeSimple, normalized.substring(0, normalized.lastIndexOf('.') + 1) + safeSimple);
 		}
-		return new JavaTypeRef(normalized, null);
+		return new JavaTypeRef(JavaNamingUtils.toJavaTypeName(normalized, "Id"), null);
 	}
 
-	private static String resolveAllowedSortFieldsLiteral(ModelSpecDTO model, String idName) {
+	private static String resolveAllowedSortFieldsLiteral(ModelSpecDTO model, String idName, boolean kotlinLanguage) {
 		LinkedHashSet<String> allowed = new LinkedHashSet<>();
 		allowed.add(StringUtils.firstNonBlank(idName, "id"));
 
@@ -126,7 +132,7 @@ public final class RestGenerationSupport {
 		String joined = allowed.stream()
 				.map(field -> "\"" + field + "\"")
 				.collect(java.util.stream.Collectors.joining(", "));
-		return "Set.of(" + joined + ")";
+		return kotlinLanguage ? "setOf(" + joined + ")" : "Set.of(" + joined + ")";
 	}
 
 	private record JavaTypeRef(String simpleName, String importName) {

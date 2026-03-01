@@ -38,7 +38,8 @@
         [lockEntityMapping]="lockEntityMapping"
         (resourceNameChange)="onResourceNameChanged()"
         (basePathChange)="onBasePathChanged()"
-        (mappingChange)="onEntityMappingChanged()">
+        (mappingChange)="onEntityMappingChanged()"
+        (pathVariableTypeChange)="onPathVariableTypeChanged()">
       </app-rest-config-basic-settings>
     </ng-container>
 
@@ -49,6 +50,7 @@
     <ng-container *ngIf="activeTab === 'request'">
       <app-rest-config-request-response-config
         [draft]="draft"
+        [showRequiredErrors]="showRequestResponseErrors"
         [entityFieldTypeOptions]="entityFieldTypeOptions"
         [availableModels]="availableModels"
         [dtoObjects]="dtoObjects"

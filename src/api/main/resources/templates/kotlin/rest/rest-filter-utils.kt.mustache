@@ -6,24 +6,58 @@ import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.OffsetDateTime
+import java.util.Locale
 import java.util.UUID
 import org.springframework.data.jpa.domain.Specification
 import org.springframework.util.ReflectionUtils
 
 object RestFilterUtils {
+    private val reservedParams = setOf("page", "size", "limit", "sort", "direction", "operation")
 
     fun <T> buildSpecification(queryParams: Map<String, String>, entityType: Class<T>): Specification<T> {
         return Specification { root, query, criteriaBuilder ->
+            if (queryParams.isEmpty()) {
+                return@Specification criteriaBuilder.conjunction()
+            }
+            val operation = queryParams["operation"]?.trim()?.uppercase(Locale.ROOT).takeUnless { it.isNullOrBlank() } ?: "EQUALS"
             val predicates = mutableListOf<Predicate>()
             queryParams.forEach { (fieldName, rawValue) ->
-                if (rawValue.isBlank()) {
+                if (reservedParams.contains(fieldName) || rawValue.isBlank()) {
                     return@forEach
                 }
                 val fieldType = resolveFieldType(entityType, fieldName)
                 val converted = convertValue(rawValue, fieldType)
-                predicates.add(criteriaBuilder.equal(root.get<Any>(fieldName), converted))
+                predicates.add(resolvePredicate(criteriaBuilder, root.get<Any>(fieldName), fieldType, operation, converted, rawValue))
             }
             criteriaBuilder.and(*predicates.toTypedArray())
+        }
+    }
+
+    private fun resolvePredicate(
+        criteriaBuilder: jakarta.persistence.criteria.CriteriaBuilder,
+        path: jakarta.persistence.criteria.Path<Any>,
+        fieldType: Class<*>,
+        operation: String,
+        convertedValue: Any,
+        rawValue: String
+    ): Predicate {
+        return when (operation) {
+            "LIKE", "CONTAINS", "ILIKE" -> {
+                if (fieldType != String::class.java) {
+                    criteriaBuilder.equal(path, convertedValue)
+                } else {
+                    criteriaBuilder.like(criteriaBuilder.lower(path.`as`(String::class.java)), "%${rawValue.lowercase(Locale.ROOT)}%")
+                }
+            }
+            "IN" -> {
+                val inClause = criteriaBuilder.`in`(path)
+                rawValue.split(",")
+                    .map { it.trim() }
+                    .filter { it.isNotBlank() }
+                    .forEach { inClause.value(convertValue(it, fieldType)) }
+                inClause
+            }
+            else -> criteriaBuilder.equal(path, convertedValue)
         }
     }
 

@@ -8,8 +8,10 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
+import java.util.concurrent.CompletableFuture;
 
 {{#idTypeImport}}
 import {{idTypeImport}};
@@ -17,6 +19,21 @@ import {{idTypeImport}};
 import {{modelPackage}}.{{entityName}};
 import {{repositoryPackage}}.{{repositoryClass}};
 import {{supportPackage}}.{{entitySupportClass}};
+{{#createRequestMapperEnabled}}
+import {{mapperPackage}}.{{createRequestMapperClass}};
+{{/createRequestMapperEnabled}}
+{{#updateRequestMapperEnabled}}
+import {{mapperPackage}}.{{updateRequestMapperClass}};
+{{/updateRequestMapperEnabled}}
+{{#patchRequestMapperEnabled}}
+import {{mapperPackage}}.{{patchRequestMapperClass}};
+{{/patchRequestMapperEnabled}}
+{{#bulkInsertRequestMapperEnabled}}
+import {{mapperPackage}}.{{bulkInsertRequestMapperClass}};
+{{/bulkInsertRequestMapperEnabled}}
+{{#bulkUpdateRequestMapperEnabled}}
+import {{mapperPackage}}.{{bulkUpdateRequestMapperClass}};
+{{/bulkUpdateRequestMapperEnabled}}
 {{^noSql}}
 import {{supportPackage}}.{{filterSupportClass}};
 {{/noSql}}
@@ -27,29 +44,149 @@ import {{supportPackage}}.{{querySupportClass}};
 public class {{serviceClass}} {
 
     private final {{repositoryClass}} repository;
+{{#createRequestMapperEnabled}}
+    private final {{createRequestMapperClass}} createRequestMapper;
+{{/createRequestMapperEnabled}}
+{{#updateRequestMapperEnabled}}
+    private final {{updateRequestMapperClass}} updateRequestMapper;
+{{/updateRequestMapperEnabled}}
+{{#patchRequestMapperEnabled}}
+    private final {{patchRequestMapperClass}} patchRequestMapper;
+{{/patchRequestMapperEnabled}}
+{{#bulkInsertRequestMapperEnabled}}
+    private final {{bulkInsertRequestMapperClass}} bulkInsertRequestMapper;
+{{/bulkInsertRequestMapperEnabled}}
+{{#bulkUpdateRequestMapperEnabled}}
+    private final {{bulkUpdateRequestMapperClass}} bulkUpdateRequestMapper;
+{{/bulkUpdateRequestMapperEnabled}}
 
-    public {{serviceClass}}({{repositoryClass}} repository) {
+    public {{serviceClass}}({{repositoryClass}} repository{{#createRequestMapperEnabled}}, {{createRequestMapperClass}} createRequestMapper{{/createRequestMapperEnabled}}{{#updateRequestMapperEnabled}}, {{updateRequestMapperClass}} updateRequestMapper{{/updateRequestMapperEnabled}}{{#patchRequestMapperEnabled}}, {{patchRequestMapperClass}} patchRequestMapper{{/patchRequestMapperEnabled}}{{#bulkInsertRequestMapperEnabled}}, {{bulkInsertRequestMapperClass}} bulkInsertRequestMapper{{/bulkInsertRequestMapperEnabled}}{{#bulkUpdateRequestMapperEnabled}}, {{bulkUpdateRequestMapperClass}} bulkUpdateRequestMapper{{/bulkUpdateRequestMapperEnabled}}) {
         this.repository = repository;
+{{#createRequestMapperEnabled}}
+        this.createRequestMapper = createRequestMapper;
+{{/createRequestMapperEnabled}}
+{{#updateRequestMapperEnabled}}
+        this.updateRequestMapper = updateRequestMapper;
+{{/updateRequestMapperEnabled}}
+{{#patchRequestMapperEnabled}}
+        this.patchRequestMapper = patchRequestMapper;
+{{/patchRequestMapperEnabled}}
+{{#bulkInsertRequestMapperEnabled}}
+        this.bulkInsertRequestMapper = bulkInsertRequestMapper;
+{{/bulkInsertRequestMapperEnabled}}
+{{#bulkUpdateRequestMapperEnabled}}
+        this.bulkUpdateRequestMapper = bulkUpdateRequestMapper;
+{{/bulkUpdateRequestMapperEnabled}}
     }
 
 {{#createUseService}}
     @Transactional
     public {{{createResponseType}}} create({{{createRequestType}}} request) {
-        return repository.save(request);
+{{#createRequestMapperEnabled}}
+        {{entityName}} mappedRequest = createRequestMapper.mapTo{{entityName}}(request);
+{{/createRequestMapperEnabled}}
+{{^createRequestMapperEnabled}}
+        {{entityName}} mappedRequest = request;
+{{/createRequestMapperEnabled}}
+        {{entityName}} saved = repository.save(mappedRequest);
+{{#createResponseIsId}}
+        return saved.get{{idNamePascalCase}}();
+{{/createResponseIsId}}
+{{#createResponseIsEntity}}
+        return saved;
+{{/createResponseIsEntity}}
     }
 {{/createUseService}}
 
 {{#bulkInsertUseService}}
     @Transactional
     public {{{bulkInsertResponseType}}} saveAll({{{bulkInsertRequestType}}} requests) {
-        return repository.saveAll(requests);
+{{#bulkInsertRequestMapperEnabled}}
+        List<{{entityName}}> mappedRequests = new ArrayList<>();
+        for ({{bulkInsertRequestDtoElementType}} request : requests) {
+            mappedRequests.add(bulkInsertRequestMapper.mapTo{{entityName}}(request));
+        }
+{{/bulkInsertRequestMapperEnabled}}
+{{^bulkInsertRequestMapperEnabled}}
+        List<{{entityName}}> mappedRequests = requests;
+{{/bulkInsertRequestMapperEnabled}}
+        List<{{entityName}}> saved = new ArrayList<>();
+        List<List<{{entityName}}>> batches = partition(mappedRequests, {{bulkInsertBatchSize}});
+{{#bulkInsertAsyncEnabled}}
+        if (batches.size() > 1) {
+            List<CompletableFuture<List<{{entityName}}>>> futures = new ArrayList<>();
+            for (List<{{entityName}}> batch : batches) {
+                futures.add(CompletableFuture.supplyAsync(() -> repository.saveAll(batch)));
+            }
+            for (CompletableFuture<List<{{entityName}}>> future : futures) {
+                saved.addAll(future.join());
+            }
+        } else {
+            for (List<{{entityName}}> batch : batches) {
+                saved.addAll(repository.saveAll(batch));
+            }
+        }
+{{/bulkInsertAsyncEnabled}}
+{{^bulkInsertAsyncEnabled}}
+        for (List<{{entityName}}> batch : batches) {
+            saved.addAll(repository.saveAll(batch));
+        }
+{{/bulkInsertAsyncEnabled}}
+{{#bulkInsertResponseIsEntityList}}
+        return saved;
+{{/bulkInsertResponseIsEntityList}}
+{{#bulkInsertResponseIsIdList}}
+        List<{{idType}}> ids = new ArrayList<>();
+        for ({{entityName}} item : saved) {
+            ids.add(item.get{{idNamePascalCase}}());
+        }
+        return ids;
+{{/bulkInsertResponseIsIdList}}
     }
 {{/bulkInsertUseService}}
 
 {{#bulkUpdateUseService}}
     @Transactional
     public {{{bulkUpdateResponseType}}} bulkUpdate({{{bulkUpdateRequestType}}} requests) {
-        return repository.saveAll(requests);
+{{#bulkUpdateRequestMapperEnabled}}
+        List<{{entityName}}> mappedRequests = new ArrayList<>();
+        for ({{bulkUpdateRequestDtoElementType}} request : requests) {
+            mappedRequests.add(bulkUpdateRequestMapper.mapTo{{entityName}}(request));
+        }
+{{/bulkUpdateRequestMapperEnabled}}
+{{^bulkUpdateRequestMapperEnabled}}
+        List<{{entityName}}> mappedRequests = requests;
+{{/bulkUpdateRequestMapperEnabled}}
+{{#bulkUpdateValidationSkipDuplicates}}
+        mappedRequests = dedupeById(mappedRequests);
+{{/bulkUpdateValidationSkipDuplicates}}
+{{#bulkUpdateValidationValidateAllFirst}}
+        validateBulkUpdateTargets(mappedRequests);
+{{/bulkUpdateValidationValidateAllFirst}}
+
+        List<{{entityName}}> saved = new ArrayList<>();
+        List<List<{{entityName}}>> batches = partition(mappedRequests, {{bulkUpdateBatchSize}});
+{{#bulkUpdateAsyncEnabled}}
+        if (batches.size() > 1) {
+            List<CompletableFuture<List<{{entityName}}>>> futures = new ArrayList<>();
+            for (List<{{entityName}}> batch : batches) {
+                futures.add(CompletableFuture.supplyAsync(() -> processBulkUpdateBatch(batch)));
+            }
+            for (CompletableFuture<List<{{entityName}}>> future : futures) {
+                saved.addAll(future.join());
+            }
+        } else {
+            for (List<{{entityName}}> batch : batches) {
+                saved.addAll(processBulkUpdateBatch(batch));
+            }
+        }
+{{/bulkUpdateAsyncEnabled}}
+{{^bulkUpdateAsyncEnabled}}
+        for (List<{{entityName}}> batch : batches) {
+            saved.addAll(processBulkUpdateBatch(batch));
+        }
+{{/bulkUpdateAsyncEnabled}}
+        return saved;
     }
 {{/bulkUpdateUseService}}
 
@@ -57,7 +194,13 @@ public class {{serviceClass}} {
     @Transactional
     public {{{updateResponseType}}} update({{idType}} id, {{{updateRequestType}}} request) {
         {{entityName}} existing = getById(id);
+{{#updateRequestMapperEnabled}}
+        {{entityName}} mappedRequest = updateRequestMapper.mapTo{{entityName}}(request);
+        {{entitySupportClass}}.mergeNonNullFields(mappedRequest, existing, "{{idName}}");
+{{/updateRequestMapperEnabled}}
+{{^updateRequestMapperEnabled}}
         {{entitySupportClass}}.mergeNonNullFields(request, existing, "{{idName}}");
+{{/updateRequestMapperEnabled}}
         return repository.save(existing);
     }
 {{/updateUseService}}
@@ -66,29 +209,84 @@ public class {{serviceClass}} {
     @Transactional
     public {{{patchResponseType}}} patch({{idType}} id, {{{patchRequestType}}} request) {
         {{entityName}} existing = getById(id);
+{{#patchRequestMapperEnabled}}
+        {{entityName}} mappedRequest = patchRequestMapper.mapTo{{entityName}}(request);
+        {{entitySupportClass}}.mergeNonNullFields(mappedRequest, existing, "{{idName}}");
+{{/patchRequestMapperEnabled}}
+{{^patchRequestMapperEnabled}}
         {{entitySupportClass}}.mergeNonNullFields(request, existing, "{{idName}}");
+{{/patchRequestMapperEnabled}}
         return repository.save(existing);
     }
 {{/patchUseService}}
 
 {{#deleteUseService}}
     @Transactional
-    public void deleteById({{idType}} id) {
+    public {{{deleteResponseType}}} deleteById({{idType}} id) {
         if (!repository.existsById(id)) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "{{entityName}} not found for id: " + id);
         }
         repository.deleteById(id);
+{{#deleteResponseIsVoid}}
+        return null;
+{{/deleteResponseIsVoid}}
+{{#deleteResponseIsId}}
+        return id;
+{{/deleteResponseIsId}}
     }
 {{/deleteUseService}}
 
 {{#bulkDeleteUseService}}
     @Transactional
-    public void bulkDelete({{{bulkDeleteRequestType}}} ids) {
-        for ({{idType}} id : ids) {
-            if (repository.existsById(id)) {
-                repository.deleteById(id);
+    public {{{bulkDeleteResponseType}}} bulkDelete({{{bulkDeleteRequestType}}} ids{{#bulkDeleteAllowIncludeDeletedParam}}, boolean includeDeleted{{/bulkDeleteAllowIncludeDeletedParam}}) {
+{{#bulkDeleteResponseIsIdList}}
+        List<{{idType}}> deleted = new ArrayList<>();
+{{/bulkDeleteResponseIsIdList}}
+        List<{{idType}}> failures = new ArrayList<>();
+        List<List<{{idType}}>> batches = partition(ids, {{bulkDeleteBatchSize}});
+{{#bulkDeleteAsyncEnabled}}
+        if (batches.size() > 1) {
+            List<CompletableFuture<BulkDeleteResult>> futures = new ArrayList<>();
+            for (List<{{idType}}> batch : batches) {
+                futures.add(CompletableFuture.supplyAsync(() -> processBulkDeleteBatch(batch{{#bulkDeleteAllowIncludeDeletedParam}}, includeDeleted{{/bulkDeleteAllowIncludeDeletedParam}})));
+            }
+            for (CompletableFuture<BulkDeleteResult> future : futures) {
+                BulkDeleteResult result = future.join();
+{{#bulkDeleteResponseIsIdList}}
+                deleted.addAll(result.deletedIds());
+{{/bulkDeleteResponseIsIdList}}
+                failures.addAll(result.failedIds());
+            }
+        } else {
+            for (List<{{idType}}> batch : batches) {
+                BulkDeleteResult result = processBulkDeleteBatch(batch{{#bulkDeleteAllowIncludeDeletedParam}}, includeDeleted{{/bulkDeleteAllowIncludeDeletedParam}});
+{{#bulkDeleteResponseIsIdList}}
+                deleted.addAll(result.deletedIds());
+{{/bulkDeleteResponseIsIdList}}
+                failures.addAll(result.failedIds());
             }
         }
+{{/bulkDeleteAsyncEnabled}}
+{{^bulkDeleteAsyncEnabled}}
+        for (List<{{idType}}> batch : batches) {
+            BulkDeleteResult result = processBulkDeleteBatch(batch{{#bulkDeleteAllowIncludeDeletedParam}}, includeDeleted{{/bulkDeleteAllowIncludeDeletedParam}});
+{{#bulkDeleteResponseIsIdList}}
+            deleted.addAll(result.deletedIds());
+{{/bulkDeleteResponseIsIdList}}
+            failures.addAll(result.failedIds());
+        }
+{{/bulkDeleteAsyncEnabled}}
+{{#bulkDeleteContinueAndReportFailures}}
+        if (!failures.isEmpty()) {
+            System.err.println("Bulk delete failed ids for {{entityName}}: " + failures);
+        }
+{{/bulkDeleteContinueAndReportFailures}}
+{{#bulkDeleteResponseIsVoid}}
+        return null;
+{{/bulkDeleteResponseIsVoid}}
+{{#bulkDeleteResponseIsIdList}}
+        return deleted;
+{{/bulkDeleteResponseIsIdList}}
     }
 {{/bulkDeleteUseService}}
 
@@ -102,15 +300,132 @@ public class {{serviceClass}} {
 {{#listUseService}}
     public {{{listResponseType}}} search(Map<String, String> queryParams, Pageable pageable) {
 {{#noSql}}
+{{#listResponseIsEntityList}}
+        return repository.findAll(pageable).getContent();
+{{/listResponseIsEntityList}}
+{{#listResponseIsEntityPage}}
         return repository.findAll(pageable);
+{{/listResponseIsEntityPage}}
 {{/noSql}}
 {{^noSql}}
         Map<String, String> filters = {{querySupportClass}}.extractFilterParams(queryParams);
         if (filters.isEmpty()) {
+{{#listResponseIsEntityList}}
+            return repository.findAll(pageable).getContent();
+{{/listResponseIsEntityList}}
+{{#listResponseIsEntityPage}}
             return repository.findAll(pageable);
+{{/listResponseIsEntityPage}}
         }
-        return repository.findAll({{filterSupportClass}}.buildSpecification(filters, {{entityName}}.class), pageable);
+{{#listResponseIsEntityList}}
+        return repository.findAll({{filterSupportClass}}.buildSpecification(queryParams, {{entityName}}.class), pageable).getContent();
+{{/listResponseIsEntityList}}
+{{#listResponseIsEntityPage}}
+        return repository.findAll({{filterSupportClass}}.buildSpecification(queryParams, {{entityName}}.class), pageable);
+{{/listResponseIsEntityPage}}
 {{/noSql}}
     }
 {{/listUseService}}
+
+    private List<{{entityName}}> processBulkUpdateBatch(List<{{entityName}}> batch) {
+        List<{{entityName}}> saved = new ArrayList<>();
+        for ({{entityName}} request : batch) {
+            {{idType}} id = extractId(request);
+            {{entityName}} existing = repository.findById(id)
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "{{entityName}} not found for id: " + id));
+{{#bulkUpdateModePatch}}
+            {{entitySupportClass}}.mergeNonNullFields(request, existing, "{{idName}}");
+            {{entityName}} candidate = existing;
+{{/bulkUpdateModePatch}}
+{{#bulkUpdateModePut}}
+            {{entitySupportClass}}.replaceFields(request, existing, "{{idName}}");
+            {{entityName}} candidate = existing;
+{{/bulkUpdateModePut}}
+            try {
+                saved.add(repository.save(candidate));
+            } catch (OptimisticLockingFailureException ex) {
+{{#bulkUpdateOptimisticFailOnConflict}}
+                throw new ResponseStatusException(HttpStatus.CONFLICT,
+                        "Optimistic locking conflict for {{entityName}} id: " + id, ex);
+{{/bulkUpdateOptimisticFailOnConflict}}
+{{#bulkUpdateOptimisticSkipConflicts}}
+                System.err.println("Skipping optimistic locking conflict for {{entityName}} id: " + id);
+{{/bulkUpdateOptimisticSkipConflicts}}
+            }
+        }
+        return saved;
+    }
+
+    private void validateBulkUpdateTargets(List<{{entityName}}> requests) {
+        for ({{entityName}} request : requests) {
+            {{idType}} id = extractId(request);
+            if (!repository.existsById(id)) {
+                throw new ResponseStatusException(HttpStatus.NOT_FOUND, "{{entityName}} not found for id: " + id);
+            }
+        }
+    }
+
+    private List<{{entityName}}> dedupeById(List<{{entityName}}> requests) {
+        Map<{{idType}}, {{entityName}}> unique = new LinkedHashMap<>();
+        for ({{entityName}} request : requests) {
+            {{idType}} id = extractId(request);
+            unique.putIfAbsent(id, request);
+        }
+        return new ArrayList<>(unique.values());
+    }
+
+    private {{idType}} extractId({{entityName}} request) {
+        {{idType}} id = request.get{{idNamePascalCase}}();
+        if (id == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "{{idName}} is required for bulk update");
+        }
+        return id;
+    }
+
+    private BulkDeleteResult processBulkDeleteBatch(List<{{idType}}> ids{{#bulkDeleteAllowIncludeDeletedParam}}, boolean includeDeleted{{/bulkDeleteAllowIncludeDeletedParam}}) {
+        List<{{idType}}> deleted = new ArrayList<>();
+        List<{{idType}}> failed = new ArrayList<>();
+        for ({{idType}} id : ids) {
+            try {
+{{#bulkDeleteAllowIncludeDeletedParam}}
+                if (includeDeleted || repository.existsById(id)) {
+{{/bulkDeleteAllowIncludeDeletedParam}}
+{{^bulkDeleteAllowIncludeDeletedParam}}
+                if (repository.existsById(id)) {
+{{/bulkDeleteAllowIncludeDeletedParam}}
+                    repository.deleteById(id);
+                    deleted.add(id);
+                } else {
+                    failed.add(id);
+{{#bulkDeleteStopOnFirstError}}
+                    throw new ResponseStatusException(HttpStatus.NOT_FOUND, "{{entityName}} not found for id: " + id);
+{{/bulkDeleteStopOnFirstError}}
+                }
+            } catch (RuntimeException ex) {
+{{#bulkDeleteStopOnFirstError}}
+                throw ex;
+{{/bulkDeleteStopOnFirstError}}
+{{#bulkDeleteContinueAndReportFailures}}
+                failed.add(id);
+{{/bulkDeleteContinueAndReportFailures}}
+            }
+        }
+        return new BulkDeleteResult(deleted, failed);
+    }
+
+    private static <T> List<List<T>> partition(List<T> source, int requestedBatchSize) {
+        int batchSize = Math.max(1, requestedBatchSize);
+        if (source == null || source.isEmpty()) {
+            return List.of();
+        }
+        List<List<T>> batches = new ArrayList<>();
+        for (int index = 0; index < source.size(); index += batchSize) {
+            int end = Math.min(source.size(), index + batchSize);
+            batches.add(new ArrayList<>(source.subList(index, end)));
+        }
+        return batches;
+    }
+
+    private record BulkDeleteResult(List<{{idType}}> deletedIds, List<{{idType}}> failedIds) {
+    }
 }

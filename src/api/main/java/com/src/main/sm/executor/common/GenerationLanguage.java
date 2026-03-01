@@ -2,7 +2,9 @@ package com.src.main.sm.executor.common;
 
 public enum GenerationLanguage {
 	JAVA("java", "java"),
-	KOTLIN("kotlin", "kt");
+	KOTLIN("kotlin", "kt"),
+	NODE("node", "js"),
+	PYTHON("python", "py");
 
 	private final String templateFolder;
 	private final String fileExtension;
@@ -20,4 +22,3 @@ public enum GenerationLanguage {
 		return fileExtension;
 	}
 }
-

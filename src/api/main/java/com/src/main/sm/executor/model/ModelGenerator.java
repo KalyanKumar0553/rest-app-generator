@@ -45,6 +45,7 @@ import com.src.main.sm.executor.TemplateEngine;
 import com.src.main.sm.executor.common.BoilerplateStyle;
 import com.src.main.sm.executor.common.BoilerplateStyleResolver;
 import com.src.main.sm.executor.common.GenerationLanguage;
+import com.src.main.sm.executor.common.JavaNamingUtils;
 import com.src.main.sm.executor.common.TemplatePathResolver;
 import com.src.main.sm.executor.enumgen.EnumGenerationSupport;
 import com.src.main.sm.executor.enumgen.EnumSpecResolved;
@@ -112,7 +113,7 @@ public class ModelGenerator {
 				EnumGenerationSupport.resolveEnums(spec.getEnums()));
 		Map<String, String> modelPackageByType = new LinkedHashMap<>();
 		spec.getModels().forEach(m -> {
-			String className = CaseUtils.toPascal(m.getName());
+			String className = JavaNamingUtils.toJavaTypeName(m.getName(), "Entity");
 			modelPackageByType.put(className, resolveModelPackage(m, domainStructure));
 		});
 
@@ -185,7 +186,7 @@ public class ModelGenerator {
 			Map<String, String> modelPackageByType, Map<String, EnumSpecResolved> enumByName, String enumPackage,
 			BoilerplateStyle boilerplateStyle, boolean noSqlDatabase)
 			throws Exception {
-		String className = CaseUtils.toPascal(m.getName());
+		String className = JavaNamingUtils.toJavaTypeName(m.getName(), "Entity");
 		String tableName = StringUtils.firstNonBlank(m.getTableName(), CaseUtils.toSnake(m.getName()));
 		if (Boolean.TRUE.equals(root.getPluralizeTableNames())) {
 			tableName = pluralizeSnakeTableName(tableName);
@@ -670,7 +671,7 @@ public class ModelGenerator {
 			return directResolved;
 		}
 
-		String normalizedResolved = CaseUtils.toPascal(StringUtils.firstNonBlank(resolvedType, "").trim());
+		String normalizedResolved = JavaNamingUtils.toJavaTypeName(StringUtils.firstNonBlank(resolvedType, "").trim(), "Enum");
 		if (!normalizedResolved.isBlank()) {
 			EnumSpecResolved byResolvedPascal = enumByName.get(normalizedResolved);
 			if (byResolvedPascal != null) {
@@ -684,7 +685,7 @@ public class ModelGenerator {
 			if (byRawLeaf != null) {
 				return byRawLeaf;
 			}
-			String normalizedRawLeaf = CaseUtils.toPascal(rawLeafType);
+			String normalizedRawLeaf = JavaNamingUtils.toJavaTypeName(rawLeafType, "Enum");
 			if (!normalizedRawLeaf.isBlank()) {
 				return enumByName.get(normalizedRawLeaf);
 			}
@@ -722,7 +723,7 @@ public class ModelGenerator {
 		RelationBlock rb = new RelationBlock();
 		rb.setName(CaseUtils.toCamel(r.getName()));
 
-		String targetType = CaseUtils.toPascal(r.getTarget());
+		String targetType = JavaNamingUtils.toJavaTypeName(r.getTarget(), "Entity");
 		String targetModelPackage = modelPackageByType.get(targetType);
 		if (targetModelPackage != null && !targetModelPackage.equals(currentModelPackage)) {
 			imports.add(targetModelPackage + "." + targetType);
@@ -930,7 +931,7 @@ public class ModelGenerator {
 			String modelPkg = resolveModelPackage(model, domainStructure);
 			Path modelDir = projectRoot.resolve(PathUtils.srcPathFromPackage(modelPkg, language));
 			Files.createDirectories(modelDir);
-			String entityName = CaseUtils.toPascal(model.getName());
+				String entityName = JavaNamingUtils.toJavaTypeName(model.getName(), "Entity");
 			Map<String, Object> listenerCtx = new LinkedHashMap<>();
 			listenerCtx.put("packageName", modelPkg);
 			listenerCtx.put("entityName", entityName);

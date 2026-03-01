@@ -31,6 +31,16 @@ public class InitializrGradleGenerator {
 	private static final String SWAGGER_CORE_VERSION = "2.2.22";
 
 	public GradleFiles generateFiles(InitializrProjectModel model, List<MavenDependencyDTO> deps) {
+		return generateFiles(model, deps, null, null, isKotlinDsl(model.getGenerator()));
+	}
+
+	public GradleFiles generateFiles(InitializrProjectModel model, List<MavenDependencyDTO> deps, String packageName,
+			String mainClassName) {
+		return generateFiles(model, deps, packageName, mainClassName, isKotlinDsl(model.getGenerator()));
+	}
+
+	public GradleFiles generateFiles(InitializrProjectModel model, List<MavenDependencyDTO> deps, String packageName,
+			String mainClassName, boolean kotlinLanguage) {
 		Objects.requireNonNull(model, "model must not be null");
 		String groupId = model.getGroupId();
 		String artifact = model.getArtifactId();
@@ -38,29 +48,37 @@ public class InitializrGradleGenerator {
 		String appVer = model.getVersion();
 		String packaging = model.getPackaging();
 		String jdk = model.getJdkVersion();
-		boolean kotlin = isKotlinDsl(model.getGenerator());
-		String mainClassFqcn = groupId + "." + toPascal(artifact) + "Application" + (kotlin ? "Kt" : "");
+		boolean kotlinDsl = isKotlinDsl(model.getGenerator());
+		String basePackage = trimOrNull(packageName);
+		if (basePackage == null) {
+			basePackage = groupId;
+		}
+		String resolvedMainClass = trimOrNull(mainClassName);
+		if (resolvedMainClass == null) {
+			resolvedMainClass = toPascal(artifact) + "Application";
+		}
+		String mainClassFqcn = basePackage + "." + resolvedMainClass + (kotlinLanguage ? "Kt" : "");
 
-		GradleBuild build = createBaseBuild(groupId, artifact, bootVer, appVer, packaging, jdk);
+		GradleBuild build = createBaseBuild(groupId, artifact, bootVer, appVer, packaging, jdk, kotlinLanguage);
 		addModelDependencies(build, deps);
 		addStandardDependencies(build, packaging, model.isIncludeOpenapi(), hasJpaDependency(deps),
-				model.isIncludeLombok());
+				model.isIncludeLombok(), kotlinLanguage);
 
-		String buildContent = renderBuild(build, kotlin, jdk, mainClassFqcn);
-		String settingsContent = renderSettings(artifact, build, kotlin);
+		String buildContent = renderBuild(build, kotlinDsl, kotlinLanguage, jdk, mainClassFqcn);
+		String settingsContent = renderSettings(artifact, build, kotlinDsl);
 
-		String buildFileName = kotlin ? "build.gradle.kts" : "build.gradle";
-		String settingsFileName = kotlin ? "settings.gradle.kts" : "settings.gradle";
+		String buildFileName = kotlinDsl ? "build.gradle.kts" : "build.gradle";
+		String settingsFileName = kotlinDsl ? "settings.gradle.kts" : "settings.gradle";
 
 		return new GradleFiles(buildFileName, buildContent, settingsFileName, settingsContent);
 	}
 
 	public String generateGradle(InitializrProjectModel model, List<MavenDependencyDTO> deps) {
-		return generateFiles(model, deps).getBuildContent();
+		return generateFiles(model, deps, null, null, isKotlinDsl(model.getGenerator())).getBuildContent();
 	}
 
 	private GradleBuild createBaseBuild(String groupId, String artifactId, String bootVersion, String appVersion,
-			String packaging, String jdk) {
+			String packaging, String jdk, boolean kotlinLanguage) {
 
 		GradleBuild build = new GradleBuild();
 
@@ -73,6 +91,11 @@ public class InitializrGradleGenerator {
 		build.plugins().add("org.springframework.boot", plugin -> plugin.setVersion(bootVersion));
 		build.plugins().add("io.spring.dependency-management", plugin -> plugin.setVersion(ProjectMetaDataConstants.DEP_MGMT_PLUGIN_VERSION));
 		build.plugins().add("java");
+		if (kotlinLanguage) {
+			build.plugins().add("org.jetbrains.kotlin.jvm", plugin -> plugin.setVersion("1.9.25"));
+			build.plugins().add("org.jetbrains.kotlin.plugin.spring", plugin -> plugin.setVersion("1.9.25"));
+			build.plugins().add("org.jetbrains.kotlin.plugin.jpa", plugin -> plugin.setVersion("1.9.25"));
+		}
 		if (isWarPackaged(packaging)) {
 			build.plugins().add("war");
 		}
@@ -101,7 +124,11 @@ public class InitializrGradleGenerator {
 	}
 
 	private void addStandardDependencies(GradleBuild build, String packaging, boolean includeOpenApi, boolean includeJpa,
-			boolean includeLombok) {
+			boolean includeLombok, boolean kotlinLanguage) {
+		if (kotlinLanguage) {
+			build.dependencies().add("kotlin-reflect",
+					Dependency.withCoordinates("org.jetbrains.kotlin", "kotlin-reflect").scope(DependencyScope.COMPILE));
+		}
 		if (includeLombok) {
 			build.dependencies().add("lombok",
 					Dependency.withCoordinates("org.projectlombok", "lombok").scope(DependencyScope.COMPILE_ONLY));
@@ -138,7 +165,8 @@ public class InitializrGradleGenerator {
 		}
 	}
 
-	private String renderBuild(GradleBuild build, boolean kotlinDsl, String jdk, String mainClassFqcn) {
+	private String renderBuild(GradleBuild build, boolean kotlinDsl, boolean kotlinLanguage, String jdk,
+			String mainClassFqcn) {
 	    StringWriter out = new StringWriter();
 	    try (IndentingWriter iw = new IndentingWriter(out, s -> "    ")) {
 	        if (kotlinDsl) {
@@ -162,9 +190,12 @@ public class InitializrGradleGenerator {
 	        );
 	    }
 
-	    if (kotlinDsl) {
-	    	result = ensureKotlinGradlePlugins(result);
-	    	result = ensureKotlinBootMainClass(result, mainClassFqcn);
+	    if (kotlinLanguage) {
+	    	if (kotlinDsl) {
+	    		result = ensureKotlinBootMainClassKts(result, mainClassFqcn);
+	    	} else {
+	    		result = ensureKotlinBootMainClassGroovy(result, mainClassFqcn);
+	    	}
 	    }
 
 	    return result;
@@ -179,10 +210,23 @@ public class InitializrGradleGenerator {
         id("org.jetbrains.kotlin.plugin.spring") version "1.9.25"
         id("org.jetbrains.kotlin.plugin.jpa") version "1.9.25"
 """;
-		return gradleKts.replaceFirst("(?m)^\\s*id\\(\"java\"\\)\\s*$", kotlinPlugins + "    id(\"java\")");
+		String withPlugins = gradleKts.replaceFirst("(?m)^\\s*id\\(\"java\"\\)\\s*$",
+				kotlinPlugins + "    id(\"java\")");
+		if (!withPlugins.equals(gradleKts)) {
+			return withPlugins;
+		}
+		return gradleKts.replaceFirst("(?m)^\\s*java\\s*$", kotlinPlugins + "    java");
 	}
 
-	private String ensureKotlinBootMainClass(String gradleKts, String mainClassFqcn) {
+	private String ensureKotlinReflectDependencyKts(String gradleKts) {
+		if (gradleKts == null || gradleKts.isBlank() || gradleKts.contains("org.jetbrains.kotlin:kotlin-reflect")) {
+			return gradleKts;
+		}
+		return gradleKts.replaceFirst("(?ms)^\\s*dependencies\\s*\\{",
+				"dependencies {\n    implementation(\"org.jetbrains.kotlin:kotlin-reflect\")");
+	}
+
+	private String ensureKotlinBootMainClassKts(String gradleKts, String mainClassFqcn) {
 		if (gradleKts == null || gradleKts.isBlank() || mainClassFqcn == null || mainClassFqcn.isBlank()
 				|| gradleKts.contains("tasks.named<org.springframework.boot.gradle.tasks.bundling.BootJar>(\"bootJar\")")) {
 			return gradleKts;
@@ -191,6 +235,40 @@ public class InitializrGradleGenerator {
 
 tasks.named<org.springframework.boot.gradle.tasks.bundling.BootJar>("bootJar") {
     mainClass.set("%s")
+}
+""".formatted(mainClassFqcn);
+	}
+
+	private String ensureKotlinGradlePluginsGroovy(String gradleGroovy) {
+		if (gradleGroovy == null || gradleGroovy.isBlank() || gradleGroovy.contains("org.jetbrains.kotlin.jvm")) {
+			return gradleGroovy;
+		}
+		String kotlinPlugins = """
+    id 'org.jetbrains.kotlin.jvm' version '1.9.25'
+    id 'org.jetbrains.kotlin.plugin.spring' version '1.9.25'
+    id 'org.jetbrains.kotlin.plugin.jpa' version '1.9.25'
+""";
+		return gradleGroovy.replaceFirst("(?m)^\\s*id\\s+['\\\"]java['\\\"]\\s*$", kotlinPlugins + "    id 'java'");
+	}
+
+	private String ensureKotlinReflectDependencyGroovy(String gradleGroovy) {
+		if (gradleGroovy == null || gradleGroovy.isBlank()
+				|| gradleGroovy.contains("org.jetbrains.kotlin:kotlin-reflect")) {
+			return gradleGroovy;
+		}
+		return gradleGroovy.replaceFirst("(?ms)^\\s*dependencies\\s*\\{",
+				"dependencies {\n    implementation 'org.jetbrains.kotlin:kotlin-reflect'");
+	}
+
+	private String ensureKotlinBootMainClassGroovy(String gradleGroovy, String mainClassFqcn) {
+		if (gradleGroovy == null || gradleGroovy.isBlank() || mainClassFqcn == null || mainClassFqcn.isBlank()
+				|| gradleGroovy.contains("bootJar {")) {
+			return gradleGroovy;
+		}
+		return gradleGroovy + """
+
+bootJar {
+    mainClass = '%s'
 }
 """.formatted(mainClassFqcn);
 	}

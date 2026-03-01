@@ -64,9 +64,9 @@ public class StateMachineConfig extends EnumStateMachineConfigurerAdapter<States
 	@Override
 	public void configure(StateMachineTransitionConfigurer<States, Events> t) throws Exception {
 		t
-				// DTO → ENUM on success; DTO → ERROR on fail
-				.withExternal().source(States.DTO_GENERATION).target(States.ENUM_GENERATION).event(Events.DTO_DONE)
-				.and().withExternal().source(States.DTO_GENERATION).target(States.ERROR).event(Events.DTO_FAIL).and()
+					// DTO → ENUM on success; DTO → ERROR on fail
+					.withExternal().source(States.DTO_GENERATION).target(States.ENUM_GENERATION).event(Events.DTO_DONE)
+					.and().withExternal().source(States.DTO_GENERATION).target(States.ERROR).event(Events.DTO_FAIL).and()
 
 				// ENUM → MODEL on success; ENUM → ERROR on fail
 				.withExternal().source(States.ENUM_GENERATION).target(States.MODEL_GENERATION).event(Events.ENUM_DONE)
@@ -121,9 +121,9 @@ public class StateMachineConfig extends EnumStateMachineConfigurerAdapter<States
 				.withExternal().source(States.SCAFFOLD).target(States.DONE).event(Events.SCAFFOLD_DONE).and()
 				.withExternal().source(States.SCAFFOLD).target(States.ERROR).event(Events.SCAFFOLD_FAIL).and()
 
-				// Global FAIL shortcuts → ERROR
-				.withExternal().source(States.DTO_GENERATION).target(States.ERROR).event(Events.FAIL).and()
-				.withExternal().source(States.ENUM_GENERATION).target(States.ERROR).event(Events.FAIL).and()
+					// Global FAIL shortcuts → ERROR
+					.withExternal().source(States.DTO_GENERATION).target(States.ERROR).event(Events.FAIL).and()
+					.withExternal().source(States.ENUM_GENERATION).target(States.ERROR).event(Events.FAIL).and()
 				.withExternal().source(States.MODEL_GENERATION).target(States.ERROR).event(Events.FAIL).and()
 					.withExternal().source(States.SWAGGER_GENERATION).target(States.ERROR).event(Events.FAIL).and()
 					.withExternal().source(States.REST_GENERATION).target(States.ERROR).event(Events.FAIL).and()
@@ -165,6 +165,7 @@ public class StateMachineConfig extends EnumStateMachineConfigurerAdapter<States
 				ctx.getExtendedState().getVariables().put("error", ex.getMessage());
 				ctx.getStateMachine().sendEvent(MessageBuilder.withPayload(Events.FAIL).build());
 			}
-		};
-	}
+			};
+		}
+
 }
