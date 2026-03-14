@@ -19,7 +19,7 @@
       </mat-select>
     </mat-form-field>
 
-    <div class="form-group class-methods-section">
+    <div class="form-group class-methods-section" *ngIf="showClassMethodsSection">
       <h3 class="section-title">Configure Class Methods</h3>
       <app-searchable-multi-select
         [label]="'Class Methods'"

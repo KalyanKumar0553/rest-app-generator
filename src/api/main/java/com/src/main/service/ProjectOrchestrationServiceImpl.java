@@ -73,8 +73,7 @@ public class ProjectOrchestrationServiceImpl implements ProjectOrchestrationServ
 	@Override
 	@Transactional(readOnly = true)
 	public ProjectEntity getOwnedProject(UUID projectId, String ownerId) {
-		ProjectEntity project = projectRepository.findById(projectId)
-				.orElseThrow(() -> new IllegalArgumentException("Project not found: " + projectId));
+		ProjectEntity project = projectRepository.findById(projectId).orElseThrow(() -> new IllegalArgumentException("Project not found: " + projectId));
 		if (!ownerId.equals(project.getOwnerId())) {
 			throw new SecurityException("User not allowed to access this project");
 		}

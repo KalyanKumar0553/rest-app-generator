@@ -1,0 +1,29 @@
+<mat-accordion class="expansion-panels">
+  <app-java-project-settings-section
+    [projectSettings]="projectSettings"
+    [projectGroupError]="projectGroupError"
+    [projectNameError]="projectNameError"
+    (projectGroupChange)="projectGroupChange.emit()"
+    (projectNameChange)="projectNameChange.emit()">
+  </app-java-project-settings-section>
+
+  <app-java-database-settings-section
+    [databaseSettings]="databaseSettings"
+    [dbTypeOptions]="dbTypeOptions"
+    [filteredDatabaseOptions]="filteredDatabaseOptions"
+    [dbGenerationOptions]="dbGenerationOptions"
+    [showDbGeneration]="showDbGeneration"
+    [showPluralizeTableNames]="showPluralizeTableNames"
+    (databaseTypeChange)="databaseTypeChange.emit($event)"
+    (databaseSelectionChange)="databaseSelectionChange.emit($event)">
+  </app-java-database-settings-section>
+
+  <app-java-developer-preferences-section
+    [developerPreferences]="developerPreferences"
+    [javaVersionOptions]="javaVersionOptions"
+    (addProfile)="addProfile.emit()"
+    (removeProfile)="removeProfile.emit($event)"
+    (enableActuatorChange)="enableActuatorChange.emit($event)"
+    (configureApiChange)="configureApiChange.emit($event)">
+  </app-java-developer-preferences-section>
+</mat-accordion>

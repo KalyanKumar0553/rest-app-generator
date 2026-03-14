@@ -12,6 +12,7 @@ public class DtoGenerationUnit {
 	private final List<String> classAnnotations;
 	private final Set<String> imports;
 	private final Map<String, Object> messageModel;
+	private final boolean recordType;
 	private final boolean useLombok;
 	private final boolean generateToString;
 	private final boolean generateEquals;
@@ -21,7 +22,7 @@ public class DtoGenerationUnit {
 	private final boolean generateBuilder;
 
 	public DtoGenerationUnit(String subPackage, String name, List<Map<String, Object>> fieldModels,
-			List<String> classAnnotations, Set<String> imports, Map<String, Object> messageModel, boolean useLombok,
+			List<String> classAnnotations, Set<String> imports, Map<String, Object> messageModel, boolean recordType, boolean useLombok,
 			boolean generateToString, boolean generateEquals, boolean generateHashCode, boolean generateNoArgsConstructor,
 			boolean generateAllArgsConstructor, boolean generateBuilder) {
 		this.subPackage = subPackage;
@@ -30,6 +31,7 @@ public class DtoGenerationUnit {
 		this.classAnnotations = classAnnotations;
 		this.imports = imports;
 		this.messageModel = messageModel;
+		this.recordType = recordType;
 		this.useLombok = useLombok;
 		this.generateToString = generateToString;
 		this.generateEquals = generateEquals;
@@ -61,6 +63,10 @@ public class DtoGenerationUnit {
 
 	public Map<String, Object> getMessageModel() {
 		return messageModel;
+	}
+
+	public boolean isRecordType() {
+		return recordType;
 	}
 
 	public boolean isUseLombok() {

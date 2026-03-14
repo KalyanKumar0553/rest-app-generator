@@ -1,0 +1,42 @@
+<mat-expansion-panel>
+  <mat-expansion-panel-header>
+    <mat-panel-title>Database settings</mat-panel-title>
+  </mat-expansion-panel-header>
+
+  <div class="panel-content">
+    <mat-form-field appearance="fill" class="full-width">
+      <mat-label>Choose Database Type</mat-label>
+      <mat-select [(ngModel)]="databaseSettings.dbType" (ngModelChange)="databaseTypeChange.emit($event)">
+        <mat-option *ngFor="let option of dbTypeOptions" [value]="option">
+          {{ option === 'NONE' ? 'None' : option }}
+        </mat-option>
+      </mat-select>
+    </mat-form-field>
+
+    <mat-form-field appearance="fill" class="full-width" *ngIf="databaseSettings.dbType !== 'NONE'">
+      <mat-label>Database</mat-label>
+      <mat-select [(ngModel)]="databaseSettings.database" (ngModelChange)="databaseSelectionChange.emit($event)">
+        <mat-option *ngFor="let option of filteredDatabaseOptions" [value]="option.value">
+          {{ option.label }}
+        </mat-option>
+      </mat-select>
+    </mat-form-field>
+
+    <mat-form-field appearance="fill" class="full-width" *ngIf="showDbGeneration">
+      <mat-label>DB Generation</mat-label>
+      <mat-select [(ngModel)]="databaseSettings.dbGeneration">
+        <mat-option *ngFor="let option of dbGenerationOptions" [value]="option">
+          {{ option }}
+        </mat-option>
+      </mat-select>
+    </mat-form-field>
+
+    <div class="form-row" *ngIf="showPluralizeTableNames">
+      <mat-checkbox [(ngModel)]="databaseSettings.pluralizeTableNames">
+        Pluralize table names
+        <mat-icon class="inline-icon" matTooltip="Automatically pluralize table names"
+          (mousedown)="onHelpIconInteraction($event)" (click)="onHelpIconInteraction($event)">info</mat-icon>
+      </mat-checkbox>
+    </div>
+  </div>
+</mat-expansion-panel>

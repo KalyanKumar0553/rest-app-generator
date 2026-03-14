@@ -2,16 +2,19 @@ import { Component, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { BannerComponent } from '../banner/banner.component';
+import { StartProjectDialogComponent } from '../../start-project-dialog/start-project-dialog.component';
+import { resolveProjectGenerationRoute } from '../../../modules/project-generation/utils/project-generation-route.utils';
 
 @Component({
   selector: 'app-features',
   standalone: true,
-  imports: [CommonModule, BannerComponent],
+  imports: [CommonModule, BannerComponent, StartProjectDialogComponent],
   templateUrl: './features.component.html',
   styleUrls: ['./features.component.css']
 })
 export class FeaturesComponent implements OnInit, OnDestroy {
   currentIndex = 0;
+  showStartProjectDialog = false;
   private autoSlideTimer?: ReturnType<typeof setInterval>;
 
   features = [
@@ -74,7 +77,16 @@ export class FeaturesComponent implements OnInit, OnDestroy {
   }
 
   startProject(): void {
-    this.router.navigate(['/project-generation']);
+    this.showStartProjectDialog = true;
+  }
+
+  proceedToProject(language: 'java' | 'node'): void {
+    this.showStartProjectDialog = false;
+    this.router.navigate([resolveProjectGenerationRoute(language)]);
+  }
+
+  cancelStartProject(): void {
+    this.showStartProjectDialog = false;
   }
 
   onVisualImageError(event: Event): void {

@@ -25,6 +25,11 @@ export const routes: Routes = [
     loadChildren: () => import('./modules/project-generation/project-generation.routes').then(m => m.PROJECT_GENERATION_ROUTES)
   },
   {
+    path: 'project-generation-node',
+    loadComponent: () => import('./modules/project-generation/components/node-project-generation-dashboard/node-project-generation-dashboard.component')
+      .then(m => m.NodeProjectGenerationDashboardComponent)
+  },
+  {
     path: 'dashboard',
     redirectTo: 'user/dashboard',
     pathMatch: 'full'

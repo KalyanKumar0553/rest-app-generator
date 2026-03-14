@@ -2,6 +2,7 @@ import { environment } from '../../environments/environment';
 
 export const API_CONFIG = {
   BASE_URL: environment.baseUrl,
+  AUTH_BASE_URL: environment.authBaseUrl || environment.baseUrl,
   TIMEOUT: 30000,
   RETRY_ATTEMPTS: 3,
   RETRY_DELAY: 1000
@@ -16,7 +17,8 @@ export const API_ENDPOINTS = {
     SEND_OTP: '/api/auth/send-otp',
     VERIFY_OTP: '/api/auth/verify-otp',
     FORGOT_PASSWORD: '/api/auth/forgot-password',
-    RESET_PASSWORD_WITH_OTP: '/api/auth/reset-password-with-otp'
+    RESET_PASSWORD_WITH_OTP: '/api/auth/reset-password-with-otp',
+    GOOGLE_OAUTH_START: '/oauth2/authorization/google'
   },
   USER: {
     PROFILE: '/api/user/profile',

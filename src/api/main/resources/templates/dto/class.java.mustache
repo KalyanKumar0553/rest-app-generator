@@ -9,6 +9,18 @@ import jakarta.validation.constraints.*;
 {{#classAnnotations}}
 {{{.}}}
 {{/classAnnotations}}
+{{#useRecord}}
+public record {{dtoName}}(
+{{#fields}}
+  {{#annotations}}
+  {{{.}}}
+  {{/annotations}}
+  {{{javaType}}} {{name}}{{^isLast}},{{/isLast}}
+{{/fields}}
+) {
+}
+{{/useRecord}}
+{{^useRecord}}
 public class {{dtoName}} {
 
 {{#fields}}
@@ -116,3 +128,4 @@ public class {{dtoName}} {
   {{/generateHashCode}}
 {{/useLombok}}
 }
+{{/useRecord}}

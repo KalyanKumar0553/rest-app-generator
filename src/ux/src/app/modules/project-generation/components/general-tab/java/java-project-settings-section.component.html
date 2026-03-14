@@ -1,0 +1,43 @@
+<mat-expansion-panel [expanded]="true">
+  <mat-expansion-panel-header>
+    <mat-panel-title>Project settings</mat-panel-title>
+  </mat-expansion-panel-header>
+
+  <div class="panel-content">
+    <mat-form-field appearance="fill" class="full-width">
+      <mat-label>Project group *</mat-label>
+      <input
+        matInput
+        [(ngModel)]="projectSettings.projectGroup"
+        (ngModelChange)="projectGroupChange.emit()"
+        [placeholder]="appSettings.defaultProjectGroup">
+      <mat-error *ngIf="projectGroupError">{{ projectGroupError }}</mat-error>
+    </mat-form-field>
+
+    <mat-form-field appearance="fill" class="full-width">
+      <mat-label>Project name *</mat-label>
+      <input
+        matInput
+        [(ngModel)]="projectSettings.projectName"
+        (ngModelChange)="projectNameChange.emit()"
+        placeholder="my-app">
+      <mat-error *ngIf="projectNameError">{{ projectNameError }}</mat-error>
+    </mat-form-field>
+
+    <div class="form-row">
+      <label class="field-label">Build type</label>
+      <mat-radio-group [(ngModel)]="projectSettings.buildType" class="radio-group-horizontal build-type-group">
+        <mat-radio-button value="gradle">Gradle</mat-radio-button>
+        <mat-radio-button value="maven">Maven</mat-radio-button>
+      </mat-radio-group>
+    </div>
+
+    <div class="form-row">
+      <label class="field-label">Language</label>
+      <mat-radio-group [(ngModel)]="projectSettings.language" class="radio-group-horizontal language-group">
+        <mat-radio-button value="java">Java</mat-radio-button>
+        <mat-radio-button value="kotlin">Kotlin</mat-radio-button>
+      </mat-radio-group>
+    </div>
+  </div>
+</mat-expansion-panel>

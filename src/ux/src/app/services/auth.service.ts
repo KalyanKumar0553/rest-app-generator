@@ -185,6 +185,17 @@ export class AuthService {
     return this.localStorageService.getItem(STORAGE_KEYS.REFRESH_TOKEN);
   }
 
+  startGoogleLogin(): void {
+    if (typeof window === 'undefined') {
+      return;
+    }
+    window.location.href = `${API_CONFIG.AUTH_BASE_URL}${API_ENDPOINTS.AUTH.GOOGLE_OAUTH_START}`;
+  }
+
+  completeExternalAuth(response: AuthResponse): void {
+    this.handleAuthSuccess(response);
+  }
+
   private handleAuthSuccess(response: AuthResponse): void {
     if (response.accessToken) {
       this.localStorageService.setItem(STORAGE_KEYS.ACCESS_TOKEN, response.accessToken);

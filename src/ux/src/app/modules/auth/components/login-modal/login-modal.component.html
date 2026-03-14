@@ -13,108 +13,115 @@
   (passwordReset)="onPasswordResetSuccess()"
 ></app-update-password-modal>
 
-<div class="modal-overlay" (click)="closeModal()" *ngIf="!showOtpModal && !showUpdatePasswordModal">
-  <div class="modal-container" (click)="$event.stopPropagation()">
-    <button class="close-btn" (click)="closeModal()" aria-label="Close modal">
-      <i class="bi bi-x-lg"></i>
-    </button>
+<app-modal
+  *ngIf="!showOtpModal && !showUpdatePasswordModal"
+  [isOpen]="true"
+  [title]="modalTitle"
+  size="medium"
+  [showFooter]="false"
+  (close)="closeModal()"
+>
+  <div class="login-modal-content">
+    <p class="modal-description" *ngIf="isForgotPasswordMode">
+      Enter your email address and we'll send you a link to reset your password.
+      <a href="#" (click)="backToLogin(); $event.preventDefault()" class="link">Back to login</a>
+    </p>
 
-    <div class="modal-header">
-      <h2>{{ isForgotPasswordMode ? 'Reset Password' : (isSignupMode ? 'Create new account' : 'Log in') }}</h2>
-    </div>
+    <p class="modal-description" *ngIf="isSignupMode && !isForgotPasswordMode">
+      Creating an account is not required, but helps you organizing your projects.
+      Already have an account? <a href="#" (click)="toggleMode(); $event.preventDefault()" class="link">Log in</a>
+    </p>
 
-    <div class="modal-body">
-      <p class="modal-description" *ngIf="isForgotPasswordMode">
-        Enter your email address and we'll send you a link to reset your password.
-        <a href="#" (click)="backToLogin(); $event.preventDefault()" class="link">Back to login</a>
-      </p>
+    <p class="modal-description" *ngIf="!isSignupMode && !isForgotPasswordMode">
+      Welcome back! Don't have an account? <a href="#" (click)="toggleMode(); $event.preventDefault()" class="link">Create new account</a>
+    </p>
 
-      <p class="modal-description" *ngIf="isSignupMode && !isForgotPasswordMode">
-        Creating an account is not required, but helps you organizing your projects.
-        Already have an account? <a href="#" (click)="toggleMode(); $event.preventDefault()" class="link">Log in</a>
-      </p>
+    <form (ngSubmit)="onSubmit()">
+      <div class="form-group">
+        <label for="email">Your E-Mail</label>
+        <input
+          type="email"
+          id="email"
+          name="email"
+          [(ngModel)]="email"
+          (blur)="onEmailBlur()"
+          required
+          placeholder="Enter your email"
+          class="form-control"
+          [class.error]="emailError"
+          [disabled]="isLoading"
+        />
+        <span class="error-message" *ngIf="emailError">{{ emailError }}</span>
+      </div>
 
-      <p class="modal-description" *ngIf="!isSignupMode && !isForgotPasswordMode">
-        Welcome back! Don't have an account? <a href="#" (click)="toggleMode(); $event.preventDefault()" class="link">Create new account</a>
-      </p>
+      <div class="form-group" *ngIf="!isForgotPasswordMode">
+        <label for="password">Your Password</label>
+        <input
+          type="password"
+          id="password"
+          name="password"
+          [(ngModel)]="password"
+          (blur)="onPasswordBlur()"
+          required
+          placeholder="Enter your password"
+          class="form-control"
+          [class.error]="passwordError"
+          [disabled]="isLoading"
+        />
+        <span class="error-message" *ngIf="passwordError">{{ passwordError }}</span>
+      </div>
 
-      <form (ngSubmit)="onSubmit()">
-        <div class="form-group">
-          <label for="email">Your E-Mail</label>
+      <div class="forgot-password-link" *ngIf="!isSignupMode && !isForgotPasswordMode">
+        <a href="#" (click)="showForgotPassword(); $event.preventDefault()" class="link">Forgot password?</a>
+      </div>
+
+      <div class="checkbox-group" *ngIf="isSignupMode && !isForgotPasswordMode">
+        <label class="checkbox-label">
           <input
-            type="email"
-            id="email"
-            name="email"
-            [(ngModel)]="email"
-            (blur)="onEmailBlur()"
-            required
-            placeholder="Enter your email"
-            class="form-control"
-            [class.error]="emailError"
+            type="checkbox"
+            name="acceptTerms"
+            [(ngModel)]="acceptTerms"
             [disabled]="isLoading"
           />
-          <span class="error-message" *ngIf="emailError">{{ emailError }}</span>
-        </div>
+          <span>I confirm the <a href="#" (click)="navigateToTerms($event)" class="link">terms</a> and <a href="#" (click)="navigateToPrivacy($event)" class="link">privacy</a>.</span>
+        </label>
+      </div>
 
-        <div class="form-group" *ngIf="!isForgotPasswordMode">
-          <label for="password">Your Password</label>
+      <div class="checkbox-group" *ngIf="isSignupMode && !isForgotPasswordMode">
+        <label class="checkbox-label">
           <input
-            type="password"
-            id="password"
-            name="password"
-            [(ngModel)]="password"
-            (blur)="onPasswordBlur()"
-            required
-            placeholder="Enter your password"
-            class="form-control"
-            [class.error]="passwordError"
+            type="checkbox"
+            name="receiveUpdates"
+            [(ngModel)]="receiveUpdates"
             [disabled]="isLoading"
           />
-          <span class="error-message" *ngIf="passwordError">{{ passwordError }}</span>
-        </div>
+          <span>Yes, I would like to receive product updates once in a while.</span>
+        </label>
+      </div>
 
-        <div class="forgot-password-link" *ngIf="!isSignupMode && !isForgotPasswordMode">
-          <a href="#" (click)="showForgotPassword(); $event.preventDefault()" class="link">Forgot password?</a>
-        </div>
+      <button
+        type="submit"
+        class="btn-submit"
+        [disabled]="!isFormValid() || isLoading"
+      >
+        <span *ngIf="!isLoading">
+          {{ isForgotPasswordMode ? 'Send OTP' : (isSignupMode ? 'Create account' : 'Log in') }}
+        </span>
+        <span *ngIf="isLoading" class="loading-spinner">
+          <i class="bi bi-arrow-repeat spinner-icon"></i>
+          Sending...
+        </span>
+      </button>
+    </form>
 
-        <div class="checkbox-group" *ngIf="isSignupMode && !isForgotPasswordMode">
-          <label class="checkbox-label">
-            <input
-              type="checkbox"
-              name="acceptTerms"
-              [(ngModel)]="acceptTerms"
-              [disabled]="isLoading"
-            />
-            <span>I confirm the <a href="#" (click)="navigateToTerms($event)" class="link">terms</a> and <a href="#" (click)="navigateToPrivacy($event)" class="link">privacy</a>.</span>
-          </label>
-        </div>
-
-        <div class="checkbox-group" *ngIf="isSignupMode && !isForgotPasswordMode">
-          <label class="checkbox-label">
-            <input
-              type="checkbox"
-              name="receiveUpdates"
-              [(ngModel)]="receiveUpdates"
-              [disabled]="isLoading"
-            />
-            <span>Yes, I would like to receive product updates once in a while.</span>
-          </label>
-        </div>
-
-        <button
-          type="submit"
-          class="btn-submit"
-          [disabled]="!isFormValid() || isLoading"
-        >
-          <span *ngIf="!isLoading">
-            {{ isForgotPasswordMode ? 'Send OTP' : (isSignupMode ? 'Create account' : 'Log in') }}
-          </span>
-          <span *ngIf="isLoading" class="loading-spinner">
-            <i class="bi bi-arrow-repeat spinner-icon"></i>
-            Sending...
-          </span>
-        </button>
-      </form>
+    <div class="oauth-section" *ngIf="!isSignupMode && !isForgotPasswordMode">
+      <div class="oauth-divider" aria-hidden="true">
+        <span>or</span>
+      </div>
+      <button type="button" class="oauth-google-btn" (click)="startGoogleLogin()" [disabled]="isLoading">
+        <span class="oauth-google-btn__icon" aria-hidden="true">G</span>
+        <span class="oauth-google-btn__label">Sign in with Google</span>
+      </button>
     </div>
   </div>
-</div>
+</app-modal>

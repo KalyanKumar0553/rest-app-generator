@@ -123,219 +123,29 @@
       </div>
 
       <div class="scrollable-content">
+        <app-java-general-tab
+          [projectSettings]="projectSettings"
+          [databaseSettings]="databaseSettings"
+          [developerPreferences]="developerPreferences"
+          [projectGroupError]="projectGroupError"
+          [projectNameError]="projectNameError"
+          [dbTypeOptions]="dbTypeOptions"
+          [filteredDatabaseOptions]="filteredDatabaseOptions"
+          [dbGenerationOptions]="dbGenerationOptions"
+          [javaVersionOptions]="javaVersionOptions"
+          [showDbGeneration]="shouldShowDbGeneration()"
+          [showPluralizeTableNames]="shouldShowPluralizeTableNames()"
+          (projectGroupChange)="onProjectGroupChange()"
+          (projectNameChange)="onProjectNameChange()"
+          (databaseTypeChange)="onDatabaseTypeChange($event)"
+          (databaseSelectionChange)="onDatabaseSelectionChange($event)"
+          (addProfile)="onAddProfileClick()"
+          (removeProfile)="removeProfile($event)"
+          (enableActuatorChange)="onEnableActuatorChange($event)"
+          (configureApiChange)="onEnableConfigureApiChange($event)">
+        </app-java-general-tab>
+
         <mat-accordion class="expansion-panels">
-        <mat-expansion-panel [expanded]="true">
-          <mat-expansion-panel-header>
-            <mat-panel-title>
-              Project settings
-            </mat-panel-title>
-          </mat-expansion-panel-header>
-
-          <div class="panel-content">
-            <mat-form-field appearance="fill" class="full-width">
-              <mat-label>Project group *</mat-label>
-              <input
-                matInput
-                #projectGroupInput
-                [(ngModel)]="projectSettings.projectGroup"
-                (ngModelChange)="onProjectGroupChange()"
-                [placeholder]="appSettings.defaultProjectGroup">
-              <mat-error *ngIf="projectGroupError">{{ projectGroupError }}</mat-error>
-            </mat-form-field>
-
-            <mat-form-field appearance="fill" class="full-width">
-              <mat-label>Project name *</mat-label>
-              <input
-                matInput
-                #projectNameInput
-                [(ngModel)]="projectSettings.projectName"
-                (ngModelChange)="onProjectNameChange()"
-                placeholder="my-app">
-              <mat-error *ngIf="projectNameError">{{ projectNameError }}</mat-error>
-            </mat-form-field>
-
-            <div class="form-row">
-              <label class="field-label">Build type</label>
-              <mat-radio-group [(ngModel)]="projectSettings.buildType" class="radio-group-horizontal build-type-group">
-                <mat-radio-button value="gradle">Gradle</mat-radio-button>
-                <mat-radio-button value="maven">Maven</mat-radio-button>
-              </mat-radio-group>
-            </div>
-
-            <div class="form-row">
-              <label class="field-label">Language</label>
-              <mat-radio-group [(ngModel)]="projectSettings.language" class="radio-group-horizontal language-group">
-                <mat-radio-button value="java">Java</mat-radio-button>
-                <mat-radio-button value="kotlin">Kotlin</mat-radio-button>
-              </mat-radio-group>
-            </div>
-
-            <!--
-            <mat-form-field appearance="fill" class="full-width">
-              <mat-label>Frontend</mat-label>
-              <mat-select [(ngModel)]="projectSettings.frontend">
-                <mat-option *ngFor="let option of frontendOptions" [value]="option.toLowerCase()">
-                  {{ option }}
-                </mat-option>
-              </mat-select>
-              <mat-icon matSuffix matTooltip="Select a frontend framework for your project">info</mat-icon>
-            </mat-form-field>
-            -->
-          </div>
-        </mat-expansion-panel>
-
-        <mat-expansion-panel>
-          <mat-expansion-panel-header>
-            <mat-panel-title>
-              Database settings
-            </mat-panel-title>
-          </mat-expansion-panel-header>
-
-          <div class="panel-content">
-            <mat-form-field appearance="fill" class="full-width">
-              <mat-label>Choose Database Type</mat-label>
-              <mat-select [(ngModel)]="databaseSettings.dbType" (ngModelChange)="onDatabaseTypeChange($event)">
-                <mat-option *ngFor="let option of dbTypeOptions" [value]="option">
-                  {{ option === 'NONE' ? 'None' : option }}
-                </mat-option>
-              </mat-select>
-            </mat-form-field>
-
-            <mat-form-field appearance="fill" class="full-width" *ngIf="databaseSettings.dbType !== 'NONE'">
-              <mat-label>Database</mat-label>
-              <mat-select [(ngModel)]="databaseSettings.database" (ngModelChange)="onDatabaseSelectionChange($event)">
-                <mat-option *ngFor="let option of filteredDatabaseOptions" [value]="option.value">
-                  {{ option.label }}
-                </mat-option>
-              </mat-select>
-            </mat-form-field>
-
-            <mat-form-field appearance="fill" class="full-width" *ngIf="shouldShowDbGeneration()">
-              <mat-label>DB Generation</mat-label>
-              <mat-select [(ngModel)]="databaseSettings.dbGeneration">
-                <mat-option *ngFor="let option of dbGenerationOptions" [value]="option">
-                  {{ option }}
-                </mat-option>
-              </mat-select>
-            </mat-form-field>
-
-            <div class="form-row" *ngIf="shouldShowPluralizeTableNames()">
-              <mat-checkbox [(ngModel)]="databaseSettings.pluralizeTableNames">
-                Pluralize table names
-                <mat-icon class="inline-icon" matTooltip="Automatically pluralize table names"
-                  (mousedown)="onHelpIconInteraction($event)" (click)="onHelpIconInteraction($event)">info</mat-icon>
-              </mat-checkbox>
-            </div>
-          </div>
-        </mat-expansion-panel>
-
-        <mat-expansion-panel>
-          <mat-expansion-panel-header>
-            <mat-panel-title>
-              Developer preferences
-            </mat-panel-title>
-          </mat-expansion-panel-header>
-
-          <div class="panel-content">
-            <div class="form-row">
-              <div class="appl-format-row">
-                <label class="field-label">Appl. format</label>
-                <button type="button" mat-stroked-button class="profile-add-btn" (click)="onAddProfileClick()">
-                  <mat-icon>add</mat-icon>
-                  Add profile
-                </button>
-              </div>
-              <div class="appl-format-controls">
-                <mat-radio-group [(ngModel)]="developerPreferences.applFormat" class="radio-group-horizontal">
-                  <mat-radio-button value="yaml">Yaml</mat-radio-button>
-                  <mat-radio-button value="properties">Properties</mat-radio-button>
-                </mat-radio-group>
-              </div>
-            </div>
-
-            <div class="form-row" *ngIf="developerPreferences.profiles.length > 0">
-              <label class="field-label">Profiles</label>
-              <div class="profile-tags">
-                <div class="profile-tag" *ngFor="let profile of developerPreferences.profiles">
-                  <span>{{ profile }}</span>
-                  <button type="button" class="profile-tag-remove" (click)="removeProfile(profile)" aria-label="Remove profile">
-                    <mat-icon>close</mat-icon>
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            <div class="form-row">
-              <label class="field-label">Packages
-                <mat-icon class="inline-icon" matTooltip="Package organization structure"
-                  (mousedown)="onHelpIconInteraction($event)" (click)="onHelpIconInteraction($event)">info</mat-icon>
-              </label>
-              <mat-radio-group [(ngModel)]="developerPreferences.packages" class="radio-group-horizontal">
-                <mat-radio-button value="technical">Technical</mat-radio-button>
-                <mat-radio-button value="domain">Domain driven</mat-radio-button>
-              </mat-radio-group>
-            </div>
-
-            <div class="form-row">
-              <mat-checkbox [(ngModel)]="developerPreferences.enableOpenAPI">
-                Enable OpenAPI/Swagger UI
-                <mat-icon class="inline-icon" matTooltip="Generate OpenAPI documentation"
-                  (mousedown)="onHelpIconInteraction($event)" (click)="onHelpIconInteraction($event)">info</mat-icon>
-              </mat-checkbox>
-            </div>
-
-            <div class="form-row">
-              <mat-checkbox [(ngModel)]="developerPreferences.enableActuator" (ngModelChange)="onEnableActuatorChange($event)">
-                Configure Actuator
-                <mat-icon class="inline-icon" matTooltip="Include Spring Boot Actuator dependency"
-                  (mousedown)="onHelpIconInteraction($event)" (click)="onHelpIconInteraction($event)">info</mat-icon>
-              </mat-checkbox>
-            </div>
-
-            <div class="form-row">
-              <mat-checkbox [checked]="developerPreferences.configureApi" (change)="onEnableConfigureApiChange($event)">
-                Enable API Configuration Screen
-                <mat-icon class="inline-icon" matTooltip="Enable API controller configuration"
-                  (mousedown)="onHelpIconInteraction($event)" (click)="onHelpIconInteraction($event)">info</mat-icon>
-              </mat-checkbox>
-            </div>
-
-            <div class="form-row">
-              <mat-checkbox [(ngModel)]="developerPreferences.enableLombok">
-                Enable lombok
-                <mat-icon class="inline-icon" matTooltip="Include Lombok dependency as optional"
-                  (mousedown)="onHelpIconInteraction($event)" (click)="onHelpIconInteraction($event)">info</mat-icon>
-              </mat-checkbox>
-            </div>
-
-            <div class="form-row">
-              <mat-checkbox [(ngModel)]="developerPreferences.useDockerCompose">
-                Use Docker compose
-                <mat-icon class="inline-icon" matTooltip="Include Docker Compose configuration"
-                  (mousedown)="onHelpIconInteraction($event)" (click)="onHelpIconInteraction($event)">info</mat-icon>
-              </mat-checkbox>
-            </div>
-
-            <div class="form-row">
-              <label class="field-label">Java version</label>
-              <mat-radio-group [(ngModel)]="developerPreferences.javaVersion" class="radio-group-horizontal">
-                <mat-radio-button *ngFor="let version of javaVersionOptions" [value]="version">
-                  {{ version }}
-                </mat-radio-button>
-              </mat-radio-group>
-            </div>
-
-            <!-- <mat-form-field appearance="fill" class="full-width">
-              <mat-label>Deployment</mat-label>
-              <mat-select [(ngModel)]="developerPreferences.deployment">
-                <mat-option *ngFor="let option of deploymentOptions" [value]="option">
-                  {{ option }}
-                </mat-option>
-              </mat-select>
-            </mat-form-field> -->
-          </div>
-        </mat-expansion-panel>
-
         <mat-expansion-panel>
           <mat-expansion-panel-header>
             <mat-panel-title>
@@ -482,6 +292,7 @@
           [entities]="entities"
           [enums]="enums"
           [mappers]="mappers"
+          [javaVersion]="developerPreferences.javaVersion"
           [defaultTab]="'dataObjects'"
           (dataObjectsChange)="onDataObjectsChange($event)"
           (entitiesChange)="onEntitiesFromDataObjectsChange($event)"
@@ -519,6 +330,7 @@
           [entities]="entities"
           [enums]="enums"
           [mappers]="mappers"
+          [javaVersion]="developerPreferences.javaVersion"
           [defaultTab]="'mappers'"
           (dataObjectsChange)="onDataObjectsChange($event)"
           (entitiesChange)="onEntitiesFromDataObjectsChange($event)"
@@ -567,6 +379,7 @@
             [existingRestConfigNames]="isControllersSpecEditMode ? controllersEditModeExistingNames : configuredEntityRestSpecNames"
             [dtoObjects]="controllersDtoObjects"
             [enumTypes]="controllersEnumTypes"
+            [javaVersion]="developerPreferences.javaVersion"
             [softDeleteEnabled]="false"
             (save)="onControllersEditorSave($event)"
             (cancel)="onControllersEditorCancel()">

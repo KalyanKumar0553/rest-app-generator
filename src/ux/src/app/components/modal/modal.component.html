@@ -1,6 +1,6 @@
 <div class="modal-backdrop" *ngIf="isOpen" (click)="onBackdropClick($event)">
   <div class="modal-container" [ngClass]="'modal-' + size">
-    <div class="modal-header" *ngIf="title || customHeader">
+    <div class="modal-header" *ngIf="displayHeader && (title || customHeader)">
       <h2 class="modal-title" *ngIf="title">{{ title }}</h2>
       <ng-content select="[modal-header]"></ng-content>
       <button class="modal-close-btn" (click)="onClose()" aria-label="Close modal">

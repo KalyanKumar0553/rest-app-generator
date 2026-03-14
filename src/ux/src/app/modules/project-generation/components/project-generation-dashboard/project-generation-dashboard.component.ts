@@ -45,6 +45,7 @@ import {
 import { RestConfigComponent, RestEndpointConfig } from '../rest-config/rest-config.component';
 import { ENTITY_FIELD_TYPE_OPTIONS } from '../../constants/backend-field-types';
 import { VALIDATION_MESSAGES } from '../../constants/validation-messages';
+import { JavaGeneralTabComponent } from '../general-tab/java/java-general-tab.component';
 
 import {
   ProjectSettings,
@@ -107,6 +108,7 @@ import { toDatabaseCode, resolveDatabaseType, trimmed, toArtifactId, hasNumber }
     ProjectSpecComponent,
     ControllersSpecTableComponent,
     RestConfigComponent,
+    JavaGeneralTabComponent,
     SidenavComponent,
     InfoBannerComponent,
     LoadingOverlayComponent

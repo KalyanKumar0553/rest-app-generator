@@ -67,6 +67,7 @@ export class AddDataObjectComponent implements OnChanges {
   @Input() existingDataObjects: DataObject[] = [];
   @Input() availableModels: Array<{ name: string }> = [];
   @Input() enumTypes: string[] = [];
+  @Input() javaVersion = '21';
   @Output() save = new EventEmitter<DataObject>();
   @Output() cancel = new EventEmitter<void>();
 
@@ -140,10 +141,31 @@ export class AddDataObjectComponent implements OnChanges {
     return Array.from(new Set([...this.baseFieldTypes, ...enums, ...dtoNames, ...listDtoNames]));
   }
 
+  get showClassMethodsSection(): boolean {
+    return this.parseJavaMajorVersion(this.javaVersion) < 17;
+  }
+
   constructor(
     private validatorService: ValidatorService,
     private fieldFilterService: FieldFilterService
   ) {}
+
+  private parseJavaMajorVersion(rawVersion: string | null | undefined): number {
+    const version = String(rawVersion ?? '').trim();
+    if (!version) {
+      return 21;
+    }
+    if (version.startsWith('1.')) {
+      const legacyVersion = Number.parseInt(version.slice(2), 10);
+      return Number.isNaN(legacyVersion) ? 21 : legacyVersion;
+    }
+    const match = version.match(/^\d+/);
+    if (!match) {
+      return 21;
+    }
+    const majorVersion = Number.parseInt(match[0], 10);
+    return Number.isNaN(majorVersion) ? 21 : majorVersion;
+  }
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['isOpen']) {

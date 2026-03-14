@@ -1,0 +1,404 @@
+<app-confirmation-modal
+  *ngIf="showBackConfirmation"
+  [title]="backConfirmationConfig.title"
+  [message]="backConfirmationConfig.message"
+  [buttons]="backConfirmationConfig.buttons"
+  (confirm)="confirmBack()"
+  (cancel)="cancelBack()"
+></app-confirmation-modal>
+
+<app-confirmation-modal
+  *ngIf="showRecentProjectPrompt"
+  [title]="recentProjectPromptConfig.title"
+  [message]="recentProjectPromptConfig.message"
+  [buttons]="recentProjectPromptConfig.buttons"
+  (confirm)="confirmRecentProjectResume()"
+  (cancel)="cancelRecentProjectResume()"
+></app-confirmation-modal>
+
+<app-confirmation-modal
+  *ngIf="showEntitiesDeleteConfirmation"
+  [title]="entitiesDeleteConfirmationConfig.title"
+  [message]="entitiesDeleteConfirmationConfig.message"
+  [buttons]="entitiesDeleteConfirmationConfig.buttons"
+  (confirm)="confirmEntitiesDelete()"
+  (cancel)="cancelEntitiesDelete()"
+></app-confirmation-modal>
+
+<app-confirmation-modal
+  *ngIf="showRestSpecDeleteConfirmation"
+  [title]="restSpecDeleteConfirmationConfig.title"
+  [message]="restSpecDeleteConfirmationConfig.message"
+  [buttons]="restSpecDeleteConfirmationConfig.buttons"
+  (confirm)="confirmDeleteControllerRestSpec()"
+  (cancel)="cancelDeleteControllerRestSpec()"
+></app-confirmation-modal>
+
+<app-confirmation-modal
+  *ngIf="showConfigureApiDisableConfirmation"
+  [title]="configureApiDisableConfirmationConfig.title"
+  [message]="configureApiDisableConfirmationConfig.message"
+  [buttons]="configureApiDisableConfirmationConfig.buttons"
+  (confirm)="confirmDisableConfigureApi()"
+  (cancel)="cancelDisableConfigureApi()"
+></app-confirmation-modal>
+
+<app-confirmation-modal
+  *ngIf="showControllersConfigDiscardConfirmation"
+  [title]="controllersConfigDiscardConfirmationConfig.title"
+  [message]="controllersConfigDiscardConfirmationConfig.message"
+  [buttons]="controllersConfigDiscardConfirmationConfig.buttons"
+  (confirm)="confirmCancelControllersConfiguration()"
+  (cancel)="cancelCancelControllersConfiguration()"
+></app-confirmation-modal>
+
+<app-confirmation-modal
+  *ngIf="showGenerationCancelConfirmation"
+  [title]="generationCancelConfirmationConfig.title"
+  [message]="generationCancelConfirmationConfig.message"
+  [buttons]="generationCancelConfirmationConfig.buttons"
+  (confirm)="confirmCancelGenerationRequest()"
+  (cancel)="cancelCancelGenerationRequest()"
+></app-confirmation-modal>
+
+<app-loading-overlay
+  [visible]="isGeneratingFromDtoSave"
+  [title]="'Generating Project'"
+  [message]="'Saving configuration and generating project artifacts. Please wait.'"
+  [showCancel]="true"
+  (cancel)="onCancelGenerationRequested()">
+</app-loading-overlay>
+
+<div class="mobile-header">
+  <div class="container">
+    <div class="header-content">
+      <div class="logo" (click)="handleHome()">
+        <span class="logo-icon">&lt;/&gt;</span>
+        <span class="logo-text">{{ appSettings.appName }}</span>
+      </div>
+      <div class="spacer"></div>
+      <button class="menu-toggle" (click)="toggleSidebar()" aria-label="Toggle menu">
+        <i class="bi bi-list"></i>
+      </button>
+    </div>
+  </div>
+</div>
+
+<div class="sidebar-overlay" [class.show]="isSidebarOpen" (click)="closeSidebar()"></div>
+
+<div class="project-dashboard-container">
+  <aside class="sidebar" [class.open]="isSidebarOpen">
+    <div class="sidebar-header">
+      <div class="logo" (click)="handleHome()">
+        <span class="logo-icon">&lt;/&gt;</span>
+        <span class="logo-text">{{ appSettings.appName }}</span>
+      </div>
+    </div>
+
+    <app-sidenav
+      [navItems]="visibleNavItems"
+      [activeItem]="activeSection"
+      (itemClick)="navigateToSection($event)">
+    </app-sidenav>
+  </aside>
+
+  <main class="main-content">
+    <div class="content-body" *ngIf="activeSection === 'general'" id="general">
+      <div class="sticky-header">
+        <div class="top-actions">
+          <!-- <button class="back-btn-desktop" (click)="openYamlPreviewModal()" aria-label="Preview YAML spec" mat-stroked-button>
+            <i class="bi bi-eye"></i>
+          </button> -->
+          <button class="back-btn-desktop" (click)="handleHome()" aria-label="Go to home" mat-stroked-button>
+            <i class="bi bi-house-door"></i>
+            Home
+          </button>
+        </div>
+
+        <app-info-banner storageKey="general-info">
+          <span>
+            Define global project settings. Learn <a href="#" class="info-link" (click)="openDocumentation($event, 'general')">in the docs</a>.
+          </span>
+        </app-info-banner>
+      </div>
+
+      <div class="scrollable-content">
+        <app-node-general-tab
+          [projectSettings]="projectSettings"
+          [databaseSettings]="databaseSettings"
+          [developerPreferences]="developerPreferences"
+          [projectGroupError]="projectGroupError"
+          [projectNameError]="projectNameError"
+          [dbTypeOptions]="dbTypeOptions"
+          [filteredDatabaseOptions]="filteredDatabaseOptions"
+          (projectGroupChange)="onProjectGroupChange()"
+          (projectNameChange)="onProjectNameChange()"
+          (databaseTypeChange)="onDatabaseTypeChange($event)"
+          (databaseSelectionChange)="onDatabaseSelectionChange($event)"
+          (addProfile)="onAddProfileClick()"
+          (removeProfile)="removeProfile($event)"
+          (configureApiChange)="onEnableConfigureApiChange($event)">
+        </app-node-general-tab>
+      </div>
+
+      <div class="sticky-footer">
+        <div class="action-section">
+          <button mat-raised-button color="primary" type="button" (click)="handleGeneralPrimaryAction()" [disabled]="isLoading">
+            <mat-spinner *ngIf="isLoading" diameter="20" class="button-spinner"></mat-spinner>
+            <span *ngIf="!isLoading">{{ getGeneralPrimaryActionLabel() }}</span>
+            <span *ngIf="isLoading">Loading...</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="content-body" *ngIf="activeSection === 'entities'" id="entities">
+      <div class="sticky-header">
+        <div class="top-actions">
+          <!-- <button class="back-btn-desktop" (click)="openYamlPreviewModal()" aria-label="Preview YAML spec" mat-stroked-button>
+            <i class="bi bi-eye"></i>
+          </button> -->
+          <button class="back-btn-desktop" (click)="handleHome()" aria-label="Go to home" mat-stroked-button>
+            <i class="bi bi-house-door"></i>
+            Home
+          </button>
+        </div>
+      </div>
+
+      <div class="scrollable-content">
+        <app-node-entities
+          [entities]="entities"
+          [relations]="relations"
+          [enums]="enums"
+          [dataObjects]="dataObjects"
+          (entitiesChange)="onEntitiesChange($event)">
+        </app-node-entities>
+      </div>
+
+      <div class="sticky-footer">
+        <div class="action-section">
+          <button mat-raised-button color="primary" type="button" (click)="setupDataObjects()" [disabled]="isLoading">
+            <mat-spinner *ngIf="isLoading" diameter="20" class="button-spinner"></mat-spinner>
+            <span *ngIf="!isLoading">Setup Data Objects</span>
+            <span *ngIf="isLoading">Loading...</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="content-body" *ngIf="activeSection === 'data-objects'" id="data-objects">
+      <div class="sticky-header">
+        <div class="top-actions">
+          <!-- <button class="back-btn-desktop" (click)="openYamlPreviewModal()" aria-label="Preview YAML spec" mat-stroked-button>
+            <i class="bi bi-eye"></i>
+          </button> -->
+          <button class="back-btn-desktop" (click)="handleHome()" aria-label="Go to home" mat-stroked-button>
+            <i class="bi bi-house-door"></i>
+            Home
+          </button>
+        </div>
+      </div>
+
+      <div class="scrollable-content">
+        <app-node-data-objects
+          [dataObjects]="dataObjects"
+          [entities]="entities"
+          [enums]="enums"
+          [mappers]="mappers"
+          [javaVersion]="developerPreferences.javaVersion"
+          [defaultTab]="'dataObjects'"
+          (dataObjectsChange)="onDataObjectsChange($event)"
+          (entitiesChange)="onEntitiesFromDataObjectsChange($event)"
+          (enumsChange)="onEnumsChange($event)"
+          (mappersChange)="onMappersChange($event)"
+          (activeTabChange)="onDataObjectsActiveTabChange($event)">
+        </app-node-data-objects>
+      </div>
+
+      <div class="sticky-footer">
+        <div class="action-section">
+          <button mat-raised-button type="button" (click)="handleDataObjectsPrimaryAction()" [disabled]="isLoading || isGeneratingFromDtoSave">
+            {{ getDataObjectsPrimaryActionLabel() }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="content-body" *ngIf="activeSection === 'mappers'" id="mappers">
+      <div class="sticky-header">
+        <div class="top-actions">
+          <!-- <button class="back-btn-desktop" (click)="openYamlPreviewModal()" aria-label="Preview YAML spec" mat-stroked-button>
+            <i class="bi bi-eye"></i>
+          </button> -->
+          <button class="back-btn-desktop" (click)="handleHome()" aria-label="Go to home" mat-stroked-button>
+            <i class="bi bi-house-door"></i>
+            Home
+          </button>
+        </div>
+      </div>
+
+      <div class="scrollable-content">
+        <app-node-data-objects
+          [dataObjects]="dataObjects"
+          [entities]="entities"
+          [enums]="enums"
+          [mappers]="mappers"
+          [javaVersion]="developerPreferences.javaVersion"
+          [defaultTab]="'mappers'"
+          (dataObjectsChange)="onDataObjectsChange($event)"
+          (entitiesChange)="onEntitiesFromDataObjectsChange($event)"
+          (enumsChange)="onEnumsChange($event)"
+          (mappersChange)="onMappersChange($event)"
+          (activeTabChange)="onDataObjectsActiveTabChange($event)">
+        </app-node-data-objects>
+      </div>
+
+      <div class="sticky-footer">
+        <div class="action-section">
+          <button mat-raised-button type="button" (click)="handleMappersPrimaryAction()" [disabled]="isLoading || isGeneratingFromDtoSave">
+            {{ getMappersPrimaryActionLabel() }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="content-body" *ngIf="activeSection === 'controllers' && developerPreferences.configureApi" id="controllers">
+      <div class="sticky-header">
+        <div class="top-actions">
+          <!-- <button class="back-btn-desktop" (click)="openYamlPreviewModal()" aria-label="Preview YAML spec" mat-stroked-button>
+            <i class="bi bi-eye"></i>
+          </button> -->
+          <button class="back-btn-desktop" (click)="handleHome()" aria-label="Go to home" mat-stroked-button>
+            <i class="bi bi-house-door"></i>
+            Home
+          </button>
+        </div>
+
+        <app-info-banner storageKey="controllers-info">
+          <span>
+            Configure API controller behavior for your project. <a href="#" class="info-link" (click)="openDocumentation($event, 'controllers')">Explained here</a>.
+          </span>
+        </app-info-banner>
+      </div>
+
+      <div class="scrollable-content">
+        <ng-container *ngIf="showControllersConfigEditor; else controllersRestSpecTable">
+          <app-node-rest-config
+            #controllersRestConfigComponent
+            [config]="isControllersSpecEditMode ? controllersEditingSpecConfig : (isControllersSpecCreateMode ? null : controllersConfig)"
+            [entityFields]="controllersEntityFields"
+            [fieldTypeOptions]="controllersFieldTypeOptions"
+            [availableModels]="entities"
+            [existingRestConfigNames]="isControllersSpecEditMode ? controllersEditModeExistingNames : configuredEntityRestSpecNames"
+            [dtoObjects]="controllersDtoObjects"
+            [enumTypes]="controllersEnumTypes"
+            [javaVersion]="developerPreferences.javaVersion"
+            [softDeleteEnabled]="false"
+            (save)="onControllersEditorSave($event)"
+            (cancel)="onControllersEditorCancel()">
+          </app-node-rest-config>
+        </ng-container>
+
+        <ng-template #controllersRestSpecTable>
+          <app-node-controllers-spec-table
+            [rows]="controllerRestSpecRows"
+            (create)="startNewControllerRestSpec()"
+            (edit)="editControllerRestSpec($event)"
+            (delete)="requestDeleteControllerRestSpec($event)">
+          </app-node-controllers-spec-table>
+        </ng-template>
+      </div>
+
+      <div class="sticky-footer">
+        <div class="action-section">
+          <button
+            *ngIf="showControllersConfigEditor; else saveProjectCta"
+            mat-raised-button
+            type="button"
+            (click)="saveControllersConfiguration()"
+            [disabled]="isLoading || isGeneratingFromDtoSave">
+            Save Configuration
+          </button>
+          <button
+            *ngIf="showControllersConfigEditor"
+            mat-raised-button
+            class="controllers-cancel-btn"
+            type="button"
+            (click)="requestCancelControllersConfiguration()"
+            [disabled]="isLoading || isGeneratingFromDtoSave">
+            Cancel
+          </button>
+          <ng-template #saveProjectCta>
+            <button mat-raised-button type="button" (click)="saveProjectAndInvokeApi()" [disabled]="isLoading || isGeneratingFromDtoSave">
+              Save Project
+            </button>
+          </ng-template>
+        </div>
+      </div>
+    </div>
+
+    <div class="content-body" *ngIf="activeSection === 'explore'" id="explore">
+      <div class="sticky-header">
+        <div class="top-actions">
+          <!-- <button class="back-btn-desktop" (click)="openYamlPreviewModal()" aria-label="Preview YAML spec" mat-stroked-button>
+            <i class="bi bi-eye"></i>
+          </button> -->
+          <button class="back-btn-desktop" (click)="handleHome()" aria-label="Go to home" mat-stroked-button>
+            <i class="bi bi-house-door"></i>
+            Home
+          </button>
+        </div>
+      </div>
+
+      <div class="scrollable-content explore-content">
+        <div class="explore-empty-card" *ngIf="!exploreZipBlob">
+          <div class="explore-empty-header">
+            <h3>Project Explorer</h3>
+            <button
+              class="reload-btn"
+              type="button"
+              (click)="reloadExplore()"
+              [disabled]="isExploreSyncing"
+              aria-label="Reload project explorer"
+              mat-stroked-button>
+              <mat-icon [class.spinning]="isExploreSyncing">{{ isExploreSyncing ? 'sync' : 'refresh' }}</mat-icon>
+              <span>{{ isExploreSyncing ? 'Syncing...' : 'Reload' }}</span>
+            </button>
+          </div>
+          <p class="explore-empty-body">No synced zip available. Click reload to fetch the latest configured project.</p>
+        </div>
+        <app-node-project-view
+          *ngIf="exploreZipBlob"
+          [isOpen]="activeSection === 'explore'"
+          [isSyncing]="isExploreSyncing"
+          [zipBlob]="exploreZipBlob"
+          [zipFileName]="exploreZipFileName"
+          (reload)="reloadExplore()">
+        </app-node-project-view>
+      </div>
+    </div>
+  </main>
+</div>
+
+<app-modal
+  [isOpen]="showProfileModal"
+  [title]="'Add Profiles'"
+  [size]="'medium'"
+  [showFooter]="false"
+  (close)="closeProfileModal()">
+  <app-add-profile
+    [isOpen]="showProfileModal"
+    [profiles]="developerPreferences.profiles"
+    (save)="onProfilesSave($event)"
+    (cancel)="closeProfileModal()">
+  </app-add-profile>
+</app-modal>
+
+<app-modal
+  [isOpen]="showYamlPreviewModal"
+  [title]="'YAML Preview'"
+  [size]="'large'"
+  [showFooter]="false"
+  (close)="closeYamlPreviewModal()">
+  <app-node-project-spec [spec]="yamlPreviewContent"></app-node-project-spec>
+</app-modal>

@@ -37,10 +37,10 @@ public class StepExecutorFactory {
 				 ) {
 	     registry.put(States.DTO_GENERATION, dtoGenerationExecutor);
 	     registry.put(States.ENUM_GENERATION, enumGenerationExecutor);
-     registry.put(States.SCAFFOLD, scaffoldExecutor);
-     registry.put(States.APPLICATION_FILES, appFileExecutor);
-     registry.put(States.DOCKER_GENERATION, dockerGenerationExecutor);
-     registry.put(States.MODEL_GENERATION, modelExecutor);
+	     registry.put(States.SCAFFOLD, scaffoldExecutor);
+	     registry.put(States.APPLICATION_FILES, appFileExecutor);
+	     registry.put(States.DOCKER_GENERATION, dockerGenerationExecutor);
+	     registry.put(States.MODEL_GENERATION, modelExecutor);
 	     registry.put(States.SWAGGER_GENERATION, swaggerGenerationExecutor);
 	     registry.put(States.REST_GENERATION, restGenerationExecutor);
 	     registry.put(States.CRUD_GENERATION, crudGenerationExecutor);

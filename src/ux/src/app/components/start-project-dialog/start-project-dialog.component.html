@@ -1,0 +1,13 @@
+<app-modal [isOpen]="isOpen" [title]="'Choose Language'" [size]="'small'" [displayHeader]="false" (close)="onCancel()">
+  <mat-form-field appearance="fill" class="full-width">
+    <mat-label>Choose Programming Language</mat-label>
+    <mat-select [(ngModel)]="selectedLanguage">
+      <mat-option value="java">Java</mat-option>
+      <mat-option value="node">Node</mat-option>
+    </mat-select>
+  </mat-form-field>
+  <div modal-footer class="dialog-actions">
+    <button mat-stroked-button type="button" (click)="onCancel()">Cancel</button>
+    <button mat-raised-button color="primary" type="button" (click)="onProceed()">Proceed</button>
+  </div>
+</app-modal>

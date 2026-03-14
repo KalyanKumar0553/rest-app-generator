@@ -298,6 +298,7 @@ export class RestConfigComponent implements OnChanges, AfterViewInit, OnDestroy 
   @Input() availableModels: Array<{ name?: string }> = [];
   @Input() dtoObjects: Array<{ name?: string; dtoType?: 'request' | 'response'; fields?: unknown[] }> = [];
   @Input() enumTypes: string[] = [];
+  @Input() javaVersion = '21';
   @Input() softDeleteEnabled = false;
   @Input() lockEntityMapping = false;
   @Input() existingRestConfigNames: string[] = [];

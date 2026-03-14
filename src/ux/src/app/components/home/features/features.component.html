@@ -76,3 +76,9 @@
     </div>
   </div>
 </section>
+
+<app-start-project-dialog
+  [isOpen]="showStartProjectDialog"
+  (proceed)="proceedToProject($event)"
+  (cancel)="cancelStartProject()">
+</app-start-project-dialog>

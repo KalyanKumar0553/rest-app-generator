@@ -9,18 +9,19 @@ import { ComponentThemeService } from '../../../../services/component-theme.serv
 import { FormValidator, ValidationErrors, CommonValidationRules } from '../../../../validators/form-validator';
 import { OTPModalComponent } from '../otp-modal/otp-modal.component';
 import { UpdatePasswordModalComponent } from '../update-password-modal/update-password-modal.component';
+import { ModalComponent } from '../../../../components/modal/modal.component';
 
 @Component({
   selector: 'app-login-modal',
   standalone: true,
-  imports: [CommonModule, FormsModule, OTPModalComponent, UpdatePasswordModalComponent],
+  imports: [CommonModule, FormsModule, OTPModalComponent, UpdatePasswordModalComponent, ModalComponent],
   templateUrl: './login-modal.component.html',
   styleUrls: ['./login-modal.component.css']
 })
 export class LoginModalComponent {
   @Output() close = new EventEmitter<void>();
 
-  isSignupMode = true;
+  isSignupMode = false;
   isForgotPasswordMode = false;
   showOtpModal = false;
   showUpdatePasswordModal = false;
@@ -36,9 +37,15 @@ export class LoginModalComponent {
     private modalService: ModalService,
     private toastService: ToastService,
     private authService: AuthService,
-    // Injected to ensure theme variables are applied/persisted for this modal
     public themeService: ComponentThemeService
   ) {}
+
+  get modalTitle(): string {
+    if (this.isForgotPasswordMode) {
+      return 'Reset Password';
+    }
+    return this.isSignupMode ? 'Create new account' : 'Log in';
+  }
 
   get emailError(): string {
     return this.validationErrors['email'] || '';
@@ -181,7 +188,7 @@ export class LoginModalComponent {
     };
 
     this.authService.signup(signupData).subscribe({
-      next: (response) => {
+      next: () => {
         this.isLoading = false;
         this.toastService.success('Account created successfully! Please verify your email with the OTP sent to your inbox.');
         this.showOtpModal = true;
@@ -271,5 +278,10 @@ export class LoginModalComponent {
         this.toastService.error(errorMessage);
       }
     });
+  }
+
+  startGoogleLogin(): void {
+    this.closeModal();
+    this.authService.startGoogleLogin();
   }
 }

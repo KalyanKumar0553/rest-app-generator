@@ -35,7 +35,7 @@ export const DATABASE_OPTIONS: DatabaseOption[] = [
 
 export const DB_TYPE_OPTIONS: Array<'SQL' | 'NOSQL' | 'NONE'> = ['SQL', 'NOSQL', 'NONE'];
 export const DB_GENERATION_OPTIONS = ['Hibernate (update)', 'Hibernate (create)'];
-export const JAVA_VERSION_OPTIONS = ['17', '21'];
+export const JAVA_VERSION_OPTIONS = ['8', '11', '17', '21'];
 export const DEPLOYMENT_OPTIONS = ['None', 'Docker', 'Kubernetes', 'Cloud'];
 
 // ─── Default settings ─────────────────────────────────────────────────────────

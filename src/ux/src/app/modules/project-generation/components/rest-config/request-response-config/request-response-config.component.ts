@@ -51,6 +51,7 @@ export class RequestResponseConfigComponent implements OnChanges {
     includeHateoasLinks?: boolean;
     fields?: any[];
   }> = [];
+  @Input() javaVersion = '21';
   @Input() enumTypes: string[] = [];
 
   @ViewChild('dtoConfigComponent') dtoConfigComponent?: AddDataObjectComponent;

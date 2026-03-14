@@ -1,0 +1,13 @@
+package com.src.main.sm.config;
+
+public enum NodeState {
+	SCAFFOLD,
+	ENUM_GENERATION,
+	DTO_GENERATION,
+	MODEL_GENERATION,
+	REST_GENERATION,
+	APPLICATION_FILES,
+	DOCKER_GENERATION,
+	DONE,
+	ERROR
+}

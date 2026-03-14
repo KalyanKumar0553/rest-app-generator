@@ -92,6 +92,7 @@ export class DataObjectsComponent implements OnInit, OnChanges {
   @Input() entities: EntityModel[] = [];
   @Input() enums: EnumDefinition[] = [];
   @Input() mappers: MapperDefinition[] = [];
+  @Input() javaVersion = '21';
   @Input() defaultTab: 'dataObjects' | 'enums' | 'mappers' = 'dataObjects';
 
   @Output() dataObjectsChange = new EventEmitter<DataObject[]>();

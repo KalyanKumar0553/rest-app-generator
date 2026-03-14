@@ -52,6 +52,7 @@ public class DtoGenerationService {
 		String basePkg = resolveBasePackage(yaml, groupId, artifact);
 		BoilerplateStyle style = BoilerplateStyleResolver.resolveFromYaml(yaml, true);
 		GenerationLanguage language = GenerationLanguageResolver.resolveFromYaml(yaml);
+		boolean useJavaRecords = shouldUseJavaRecords(yaml, language);
 
 		List<Map<String, Object>> dtos = (List<Map<String, Object>>) yaml.getOrDefault("dtos", List.of());
 		if (dtos.isEmpty()) {
@@ -68,7 +69,7 @@ public class DtoGenerationService {
 
 		List<Map<String, Object>> dtosForMessages = new ArrayList<>();
 		try {
-			dtos.stream().map(dto -> buildUnit(dto, enumByName, enumPackage, style)).forEach(unit -> {
+			dtos.stream().map(dto -> buildUnit(dto, enumByName, enumPackage, style, language, useJavaRecords)).forEach(unit -> {
 				try {
 					writeDtoUnit(root, basePkg, unit, language);
 					dtosForMessages.add(unit.getMessageModel());
@@ -95,21 +96,23 @@ public class DtoGenerationService {
 	}
 
 	private void writeDtoUnit(Path root, String basePkg, DtoGenerationUnit unit, GenerationLanguage language) throws Exception {
+		boolean useJavaRecord = language == GenerationLanguage.JAVA && unit.isRecordType();
 		Map<String, Object> templateModel = new LinkedHashMap<>();
 		templateModel.put("basePkg", basePkg);
 		templateModel.put("sub", unit.getSubPackage());
 		templateModel.put("name", unit.getName());
 		templateModel.put("dtoName", unit.getName());
+		templateModel.put("useRecord", useJavaRecord);
 		templateModel.put("classAnnotations", unit.getClassAnnotations());
 		templateModel.put("fields", unit.getFieldModels());
-		templateModel.put("useLombok", unit.isUseLombok());
+		templateModel.put("useLombok", !useJavaRecord && unit.isUseLombok());
 		templateModel.put("hasFields", !unit.getFieldModels().isEmpty());
-		templateModel.put("generateNoArgsConstructor", !unit.isUseLombok() && unit.isGenerateNoArgsConstructor());
-		templateModel.put("generateAllArgsConstructor", !unit.isUseLombok() && unit.isGenerateAllArgsConstructor());
-		templateModel.put("generateBuilder", !unit.isUseLombok() && unit.isGenerateBuilder());
-		templateModel.put("generateToString", !unit.isUseLombok() && unit.isGenerateToString());
-		templateModel.put("generateEquals", !unit.isUseLombok() && unit.isGenerateEquals());
-		templateModel.put("generateHashCode", !unit.isUseLombok() && unit.isGenerateHashCode());
+		templateModel.put("generateNoArgsConstructor", !useJavaRecord && !unit.isUseLombok() && unit.isGenerateNoArgsConstructor());
+		templateModel.put("generateAllArgsConstructor", !useJavaRecord && !unit.isUseLombok() && unit.isGenerateAllArgsConstructor());
+		templateModel.put("generateBuilder", !useJavaRecord && !unit.isUseLombok() && unit.isGenerateBuilder());
+		templateModel.put("generateToString", !useJavaRecord && !unit.isUseLombok() && unit.isGenerateToString());
+		templateModel.put("generateEquals", !useJavaRecord && !unit.isUseLombok() && unit.isGenerateEquals());
+		templateModel.put("generateHashCode", !useJavaRecord && !unit.isUseLombok() && unit.isGenerateHashCode());
 		String dtoTemplate = language == GenerationLanguage.KOTLIN ? TPL_DTO_KOTLIN : TPL_DTO_JAVA;
 		String code = templateEngine.renderAny(TemplatePathResolver.candidates(language, "dto", dtoTemplate), templateModel);
 		code = DtoGenerationSupport.injectImportsAfterPackage(code, unit.getImports());
@@ -120,7 +123,7 @@ public class DtoGenerationService {
 
 	@SuppressWarnings("unchecked")
 	private DtoGenerationUnit buildUnit(Map<String, Object> dto, Map<String, EnumSpecResolved> enumByName,
-			String enumPackage, BoilerplateStyle style) {
+			String enumPackage, BoilerplateStyle style, GenerationLanguage language, boolean useJavaRecords) {
 		String sub = "request".equals(String.valueOf(dto.get("type"))) ? "request" : "response";
 		String name = JavaNamingUtils.toJavaTypeName(String.valueOf(dto.get("name")), "Dto");
 		List<Map<String, Object>> fields = (List<Map<String, Object>>) dto.getOrDefault("fields", List.of());
@@ -141,7 +144,11 @@ public class DtoGenerationService {
 				classMethods.noArgsConstructor(),
 				classMethods.allArgsConstructor(),
 				classMethods.builder());
-		DtoBoilerplateStrategyFactory.forStyle(style).apply(boilerplateContext);
+		if (language == GenerationLanguage.JAVA && useJavaRecords) {
+			boilerplateContext.setUseLombok(false);
+		} else {
+			DtoBoilerplateStrategyFactory.forStyle(style).apply(boilerplateContext);
+		}
 
 		classAnnotations.add("@JsonInclude(JsonInclude.Include.NON_NULL)");
 		DtoGenerationSupport.collectImportFromAnnotation("@com.fasterxml.jackson.annotation.JsonInclude", imports);
@@ -227,7 +234,9 @@ public class DtoGenerationService {
 		for (int i = 0; i < fieldModels.size(); i++) {
 			fieldModels.get(i).put("isLast", i == fieldModels.size() - 1);
 		}
-		if (!boilerplateContext.isUseLombok() && (classMethods.generateEquals() || classMethods.generateHashCode())) {
+		if (!(language == GenerationLanguage.JAVA && useJavaRecords)
+				&& !boilerplateContext.isUseLombok()
+				&& (classMethods.generateEquals() || classMethods.generateHashCode())) {
 			imports.add("java.util.Objects");
 		}
 
@@ -248,6 +257,7 @@ public class DtoGenerationService {
 				simplifiedClassAnnotations,
 				imports,
 				dtoMsg,
+				language == GenerationLanguage.JAVA && useJavaRecords,
 				boilerplateContext.isUseLombok(),
 				classMethods.generateToString(),
 				classMethods.generateEquals(),
@@ -255,6 +265,40 @@ public class DtoGenerationService {
 				classMethods.noArgsConstructor(),
 				classMethods.allArgsConstructor(),
 				classMethods.builder());
+	}
+
+	@SuppressWarnings("unchecked")
+	private boolean shouldUseJavaRecords(Map<String, Object> yaml, GenerationLanguage language) {
+		if (language != GenerationLanguage.JAVA || yaml == null) {
+			return false;
+		}
+		String rawVersion = DtoGenerationSupport.str(yaml.get("jdkVersion"));
+		if ((rawVersion == null || rawVersion.isBlank()) && yaml.get("app") instanceof Map<?, ?> appRaw) {
+			rawVersion = DtoGenerationSupport.str(((Map<String, Object>) appRaw).get("jdkVersion"));
+		}
+		return parseJavaMajorVersion(rawVersion) >= 17;
+	}
+
+	private int parseJavaMajorVersion(String rawVersion) {
+		if (rawVersion == null || rawVersion.isBlank()) {
+			return 21;
+		}
+		String version = rawVersion.trim();
+		if (version.startsWith("1.")) {
+			version = version.substring(2);
+		}
+		int end = 0;
+		while (end < version.length() && Character.isDigit(version.charAt(end))) {
+			end++;
+		}
+		if (end == 0) {
+			return 21;
+		}
+		try {
+			return Integer.parseInt(version.substring(0, end));
+		} catch (NumberFormatException ex) {
+			return 21;
+		}
 	}
 
 	@SuppressWarnings("unchecked")

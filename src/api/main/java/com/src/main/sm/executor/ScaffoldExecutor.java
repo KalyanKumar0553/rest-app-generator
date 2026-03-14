@@ -30,6 +30,7 @@ import com.src.main.util.InitializrGradleGenerator;
 import com.src.main.util.InitializrPomGenerator;
 import com.src.main.util.DatabaseDependencyCatalog;
 import com.src.main.util.ProjectMetaDataConstants;
+import com.src.main.util.SpringBootVersionResolver;
 import com.src.main.sm.executor.common.BoilerplateStyle;
 import com.src.main.sm.executor.common.BoilerplateStyleResolver;
 import com.src.main.sm.executor.common.GenerationLanguage;
@@ -75,8 +76,10 @@ public class ScaffoldExecutor implements StepExecutor {
 		final String version = strOr(data, ProjectMetaDataConstants.VERSION, ProjectMetaDataConstants.VERSION, ProjectMetaDataConstants.DEFAULT_VERSION);
 		final String name = strOr(data, ProjectMetaDataConstants.NAME, null, ProjectMetaDataConstants.DEFAULT_NAME);
 		final String description = strOr(data, ProjectMetaDataConstants.DESCRIPTION, null, ProjectMetaDataConstants.DEFAULT_DESCRIPTION);
-		final String bootVersion = strOr(data, ProjectMetaDataConstants.BOOT_VERSION, null, ProjectMetaDataConstants.DEFAULT_BOOT_VERSION);
 		final String jdkVersion = strOr(data, ProjectMetaDataConstants.JDK_VERSION, null, ProjectMetaDataConstants.DEFAULT_JDK);
+		final String bootVersion = SpringBootVersionResolver.resolveCompatibleVersion(
+				strOr(data, ProjectMetaDataConstants.BOOT_VERSION, null, ProjectMetaDataConstants.DEFAULT_BOOT_VERSION),
+				jdkVersion);
 		final String packaging = strOr(data, ProjectMetaDataConstants.PACKAGING, null, ProjectMetaDataConstants.DEFAULT_PACKAGING);
 		final String buildTool = strOr(data, ProjectMetaDataConstants.BUILD_TOOL, null, ProjectMetaDataConstants.DEFAULT_BUILD_TOOL);
 		final String generator = strOr(data, ProjectMetaDataConstants.GENERATOR, ProjectMetaDataConstants.GENERATOR, ProjectMetaDataConstants.DEFAULT_GRADLE_GENERATOR);

@@ -8,17 +8,20 @@ import { AuthService } from '../../services/auth.service';
 import { ModalService } from '../../services/modal.service';
 import { APP_SETTINGS } from '../../settings/app-settings';
 import { Theme, ThemeService } from '../../services/theme.service';
+import { StartProjectDialogComponent } from '../start-project-dialog/start-project-dialog.component';
+import { resolveProjectGenerationRoute } from '../../modules/project-generation/utils/project-generation-route.utils';
 
 @Component({
   selector: 'app-header',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, StartProjectDialogComponent],
   templateUrl: './header.component.html',
   styleUrls: ['./header.component.css']
 })
 export class HeaderComponent implements OnInit, OnDestroy {
   isMenuOpen = false;
   isDashboardRoute = false;
+  showStartProjectDialog = false;
   currentTheme: Theme = 'light';
   private themeSubscription?: Subscription;
   readonly appSettings = APP_SETTINGS;
@@ -46,7 +49,9 @@ export class HeaderComponent implements OnInit, OnDestroy {
   }
 
   private checkRoute(url: string): void {
-    this.isDashboardRoute = url.includes('/user/dashboard') || url.includes('/project-generation');
+    this.isDashboardRoute = url.includes('/user/dashboard')
+      || url.includes('/project-generation')
+      || url.includes('/project-generation-node');
   }
 
   navigateToHome(): void {
@@ -88,7 +93,16 @@ export class HeaderComponent implements OnInit, OnDestroy {
   handleStartProjectClick(event: Event): void {
     event.preventDefault();
     this.closeMenu();
-    this.router.navigate(['/project-generation']);
+    this.showStartProjectDialog = true;
+  }
+
+  proceedToProject(language: 'java' | 'node'): void {
+    this.showStartProjectDialog = false;
+    this.router.navigate([resolveProjectGenerationRoute(language)]);
+  }
+
+  cancelStartProject(): void {
+    this.showStartProjectDialog = false;
   }
 
   handleLearnClick(event: Event): void {

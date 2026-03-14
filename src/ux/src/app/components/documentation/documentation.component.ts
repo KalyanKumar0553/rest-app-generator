@@ -6,6 +6,8 @@ import { MatExpansionModule } from '@angular/material/expansion';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatSelectModule } from '@angular/material/select';
 import { Subscription } from 'rxjs';
+import { StartProjectDialogComponent } from '../start-project-dialog/start-project-dialog.component';
+import { resolveProjectGenerationRoute } from '../../modules/project-generation/utils/project-generation-route.utils';
 
 interface DocSection {
   key: string;
@@ -17,11 +19,12 @@ interface DocSection {
 @Component({
   selector: 'app-documentation',
   standalone: true,
-  imports: [CommonModule, FormsModule, MatFormFieldModule, MatSelectModule, MatExpansionModule],
+  imports: [CommonModule, FormsModule, MatFormFieldModule, MatSelectModule, MatExpansionModule, StartProjectDialogComponent],
   templateUrl: './documentation.component.html',
   styleUrls: ['./documentation.component.css']
 })
 export class DocumentationComponent implements OnInit, OnDestroy {
+  showStartProjectDialog = false;
   readonly sections: DocSection[] = [
     {
       key: 'general',
@@ -133,7 +136,16 @@ export class DocumentationComponent implements OnInit, OnDestroy {
   }
 
   startProject(): void {
-    this.router.navigate(['/project-generation']);
+    this.showStartProjectDialog = true;
+  }
+
+  proceedToProject(language: 'java' | 'node'): void {
+    this.showStartProjectDialog = false;
+    this.router.navigate([resolveProjectGenerationRoute(language)]);
+  }
+
+  cancelStartProject(): void {
+    this.showStartProjectDialog = false;
   }
 
   private resolveSectionKey(rawSection: string | null): string | null {
