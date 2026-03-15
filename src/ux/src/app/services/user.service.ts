@@ -1,9 +1,10 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { map, catchError } from 'rxjs/operators';
+import { map } from 'rxjs/operators';
 import { API_CONFIG, API_ENDPOINTS } from '../constants/api.constants';
 import { MockApiService } from './mock-api.service';
+import { AuthService } from './auth.service';
 
 export interface UserRoles {
   userId: string;
@@ -17,13 +18,21 @@ export interface UserRoles {
 export class UserService {
   constructor(
     private http: HttpClient,
-    private mockApiService: MockApiService
+    private mockApiService: MockApiService,
+    private authService: AuthService
   ) {}
 
   getUserRoles(): Observable<UserRoles> {
-    const url = `${API_CONFIG.BASE_URL}${API_ENDPOINTS.USER.PROFILE}/roles`;
+    const url = `${API_CONFIG.AUTH_BASE_URL}${API_ENDPOINTS.AUTH.ROLES}`;
     return this.mockApiService.get<any>(url, '/assets/mock/user-roles-response.json').pipe(
-      map((response: any) => response.data || response)
+      map((response: any) => {
+        const data = response.data || response;
+        return {
+          userId: this.authService.currentUserValue?.id || '',
+          roles: data.roles || [],
+          permissions: data.permissions || []
+        };
+      })
     );
   }
 

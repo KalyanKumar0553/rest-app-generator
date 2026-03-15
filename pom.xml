@@ -2,55 +2,30 @@
 	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
-	<groupId>com.src</groupId>
+
+	<parent>
+		<groupId>com.src</groupId>
+		<artifactId>rest-app-generator-parent</artifactId>
+		<version>1.0.3</version>
+		<relativePath>parent/pom.xml</relativePath>
+	</parent>
+
 	<artifactId>rest-app-generator</artifactId>
-	<version>1.0.3</version>
 	<name>rest-app-generator</name>
-	<repositories>
-		<repository>
-			<id>central</id>
-			<url>https://repo.maven.apache.org/maven2</url>
-		</repository>
-		<repository>
-			<id>azure-sdk</id>
-			<url>
-				https://pkgs.dev.azure.com/azure-sdk/public/_packaging/azure-sdk-for-java/maven/v1</url>
-		</repository>
-		<repository>
-			<id>github-swagger</id>
-			<url>https://maven.pkg.github.com/KalyanKumar0553/swagger</url>
-		</repository>
-		<repository>
-			<id>github-rest-app-generator</id>
-			<url>https://maven.pkg.github.com/KalyanKumar0553/rest-app-generator</url>
-		</repository>
-	</repositories>
-	<properties>
-		<java.version>17</java.version>
-		<spring-boot.version>3.3.4</spring-boot.version>
-		<mustache.version>0.9.10</mustache.version>
-		<lombok.version>1.18.38</lombok.version>
-		<platform-bom.version>1.0.2</platform-bom.version>
-	</properties>
-	<dependencyManagement>
-		<dependencies>
-			<dependency>
-				<groupId>org.springframework.boot</groupId>
-				<artifactId>spring-boot-dependencies</artifactId>
-				<version>${spring-boot.version}</version>
-				<type>pom</type>
-				<scope>import</scope>
-			</dependency>
-			<dependency>
-				<groupId>com.src</groupId>
-				<artifactId>platform-bom</artifactId>
-				<version>${platform-bom.version}</version>
-				<type>pom</type>
-				<scope>import</scope>
-			</dependency>
-		</dependencies>
-	</dependencyManagement>
+
 	<dependencies>
+		<dependency>
+			<groupId>com.src</groupId>
+			<artifactId>common</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>com.src</groupId>
+			<artifactId>communication</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>com.src</groupId>
+			<artifactId>auth</artifactId>
+		</dependency>
 		<dependency>
 			<groupId>com.src</groupId>
 			<artifactId>swagger</artifactId>
@@ -59,25 +34,11 @@
 					<groupId>com.src</groupId>
 					<artifactId>auth</artifactId>
 				</exclusion>
-				<exclusion>
-					<groupId>com.src</groupId>
-					<artifactId>common</artifactId>
-				</exclusion>
-				<exclusion>
-					<groupId>com.src</groupId>
-					<artifactId>communication</artifactId>
-				</exclusion>
 			</exclusions>
 		</dependency>
 		<dependency>
 			<groupId>io.spring.initializr</groupId>
 			<artifactId>initializr-generator-spring</artifactId>
-			<version>0.22.0</version>
-		</dependency>
-		<dependency>
-			<groupId>io.jsonwebtoken</groupId>
-			<artifactId>jjwt-api</artifactId>
-			<version>0.11.5</version>
 		</dependency>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
@@ -98,7 +59,6 @@
 		<dependency>
 			<groupId>org.springframework.statemachine</groupId>
 			<artifactId>spring-statemachine-starter</artifactId>
-			<version>3.2.1</version>
 		</dependency>
 		<dependency>
 			<groupId>org.yaml</groupId>
@@ -117,12 +77,10 @@
 		<dependency>
 			<groupId>org.flywaydb</groupId>
 			<artifactId>flyway-core</artifactId>
-			<version>10.17.0</version>
 		</dependency>
 		<dependency>
 			<groupId>org.flywaydb</groupId>
 			<artifactId>flyway-database-postgresql</artifactId>
-			<version>10.17.0</version> <!-- match core version -->
 		</dependency>
 		<dependency>
 			<groupId>org.projectlombok</groupId>
@@ -134,11 +92,9 @@
 			<groupId>com.fasterxml.jackson.datatype</groupId>
 			<artifactId>jackson-datatype-jsr310</artifactId>
 		</dependency>
-
 		<dependency>
 			<groupId>org.springdoc</groupId>
 			<artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
-			<version>2.6.0</version>
 		</dependency>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
@@ -148,18 +104,6 @@
 		<dependency>
 			<groupId>org.thymeleaf</groupId>
 			<artifactId>thymeleaf</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>io.jsonwebtoken</groupId>
-			<artifactId>jjwt-jackson</artifactId>
-			<version>0.11.5</version>
-			<scope>runtime</scope>
-		</dependency>
-		<dependency>
-			<groupId>io.jsonwebtoken</groupId>
-			<artifactId>jjwt-impl</artifactId>
-			<version>0.11.5</version>
-			<scope>runtime</scope>
 		</dependency>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
@@ -182,16 +126,8 @@
 			<artifactId>spring-boot-starter-security</artifactId>
 		</dependency>
 		<dependency>
-			<groupId>org.springframework.security</groupId>
-			<artifactId>spring-security-oauth2-client</artifactId>
-		</dependency>
-		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-oauth2-client</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>org.springframework.security</groupId>
-			<artifactId>spring-security-config</artifactId>
 		</dependency>
 		<dependency>
 			<groupId>com.github.ben-manes.caffeine</groupId>
@@ -200,84 +136,38 @@
 		<dependency>
 			<groupId>org.json</groupId>
 			<artifactId>json</artifactId>
-			<version>20240303</version>
 		</dependency>
 		<dependency>
 			<groupId>com.fasterxml.jackson.dataformat</groupId>
 			<artifactId>jackson-dataformat-yaml</artifactId>
-			<version>2.17.2</version>
-		</dependency>
-		<dependency>
-			<groupId>com.azure</groupId>
-			<artifactId>azure-communication-email</artifactId>
-			<version>1.0.0</version>
-		</dependency>
-		<dependency>
-			<groupId>com.google.auth</groupId>
-			<artifactId>google-auth-library-oauth2-http</artifactId>
-			<version>1.23.0</version>
-		</dependency>
-		<dependency>
-			<groupId>com.google.api-client</groupId>
-			<artifactId>google-api-client</artifactId>
-			<version>2.6.0</version>
-		</dependency>
-		<dependency>
-			<groupId>com.google.http-client</groupId>
-			<artifactId>google-http-client-jackson2</artifactId>
-			<version>1.43.3</version>
-		</dependency>
-		<dependency>
-			<groupId>com.nimbusds</groupId>
-			<artifactId>nimbus-jose-jwt</artifactId>
-			<version>9.37.3</version>
-		</dependency>
-		<dependency>
-			<groupId>com.azure</groupId>
-			<artifactId>azure-communication-common</artifactId>
-			<version>1.2.0</version>
-		</dependency>
-		<dependency>
-			<groupId>com.twilio.sdk</groupId>
-			<artifactId>twilio</artifactId>
-			<version>10.3.0</version>
-			<scope>compile</scope>
-		</dependency>
-		<dependency>
-			<groupId>com.github.eirslett</groupId>
-			<artifactId>frontend-maven-plugin</artifactId>
-			<version>1.12.1</version>
 		</dependency>
 		<dependency>
 			<groupId>org.apache.poi</groupId>
 			<artifactId>poi-ooxml</artifactId>
-			<version>5.2.2</version>
 		</dependency>
 	</dependencies>
+
 	<build>
-		<sourceDirectory>src/api/main/java</sourceDirectory>
-		<testSourceDirectory>src/api/test/java</testSourceDirectory>
+		<sourceDirectory>api/src/main/java</sourceDirectory>
+		<testSourceDirectory>api/src/test/java</testSourceDirectory>
 		<resources>
 			<resource>
-				<directory>src/api/main/resources</directory>
+				<directory>api/src/main/resources</directory>
 			</resource>
 		</resources>
 		<testResources>
 			<testResource>
-				<directory>src/api/test/resources</directory>
+				<directory>api/src/test/resources</directory>
 			</testResource>
 		</testResources>
 		<plugins>
 			<plugin>
 				<groupId>com.github.eirslett</groupId>
 				<artifactId>frontend-maven-plugin</artifactId>
-				<version>1.12.1</version>
 				<configuration>
 					<workingDirectory>src/ux</workingDirectory>
-					<installDirectory>src/ux</installDirectory>
-					<nodeVersion>
-						v21.7.3
-					</nodeVersion>
+					<installDirectory>_ux_plugin</installDirectory>
+					<nodeVersion>v21.7.3</nodeVersion>
 				</configuration>
 				<executions>
 					<execution>
@@ -317,7 +207,6 @@
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
-				<version>${spring-boot.version}</version>
 				<configuration>
 					<mainClass>com.src.main.RestAppGeneratorApplication</mainClass>
 				</configuration>
@@ -332,35 +221,19 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-compiler-plugin</artifactId>
-				<version>3.11.0</version>
-				<configuration>
-					<release>${java.version}</release>
-					<annotationProcessorPaths>
-						<path>
-							<groupId>org.projectlombok</groupId>
-							<artifactId>lombok</artifactId>
-							<version>${lombok.version}</version>
-						</path>
-					</annotationProcessorPaths>
-				</configuration>
 			</plugin>
 			<plugin>
 				<groupId>org.flywaydb</groupId>
 				<artifactId>flyway-maven-plugin</artifactId>
-				<version>10.17.0</version>
 				<configuration>
-					<url>${env.SPRING_DATASOURCE_URL}</url>
-					<user>${env.SPRING_DATASOURCE_USERNAME}</user>
-					<password>${env.SPRING_DATASOURCE_PASSWORD}</password>
 					<locations>
-						<location>filesystem:src/api/main/resources/rest-app-db/migration</location>
+						<location>filesystem:api/src/main/resources/rest-app-db/migration</location>
 					</locations>
-					<baselineOnMigrate>true</baselineOnMigrate>
-					<outOfOrder>true</outOfOrder>
 				</configuration>
 			</plugin>
 		</plugins>
 	</build>
+
 	<distributionManagement>
 		<repository>
 			<id>github-rest-app-generator</id>

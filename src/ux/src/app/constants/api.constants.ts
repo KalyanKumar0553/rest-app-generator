@@ -19,6 +19,7 @@ export const API_ENDPOINTS = {
     VERIFY_OTP: '/api/v1/auth/otp/verify',
     FORGOT_PASSWORD: '/api/v1/auth/password/forgot',
     RESET_PASSWORD_WITH_OTP: '/api/v1/auth/password/reset',
+    ROLES: '/api/v1/auth/roles',
     GOOGLE_OAUTH_START: '/oauth2/authorization/google'
   },
   USER: {

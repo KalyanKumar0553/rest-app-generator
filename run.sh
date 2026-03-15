@@ -19,5 +19,5 @@ if ! echo "$java_version" | grep -E -q '"17| 17'; then
   exit 1
 fi
 
-mvn -U -DskipTests clean install
+mvn -U -f parent/pom.xml -DskipTests clean install
 mvn -DskipTests spring-boot:run -Dspring-boot.run.jvmArguments='-Dspring.devtools.restart.enabled=false'
