@@ -29,12 +29,6 @@
 		<dependency>
 			<groupId>com.src</groupId>
 			<artifactId>swagger</artifactId>
-			<exclusions>
-				<exclusion>
-					<groupId>com.src</groupId>
-					<artifactId>auth</artifactId>
-				</exclusion>
-			</exclusions>
 		</dependency>
 		<dependency>
 			<groupId>io.spring.initializr</groupId>

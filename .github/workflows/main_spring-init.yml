@@ -18,22 +18,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Checkout swagger
-        uses: actions/checkout@v4
-        with:
-          repository: KalyanKumar0553/swagger
-          path: deps/swagger
-          token: ${{ secrets.DEPENDENCY_REPO_TOKEN }}
-
       - name: Set up Java version
         uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'microsoft'
-
-      - name: Install swagger
-        run: mvn -B -DskipTests install
-        working-directory: deps/swagger
 
       - name: Build with Maven
         run: mvn -B -f parent/pom.xml clean install

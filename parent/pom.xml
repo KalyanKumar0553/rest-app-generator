@@ -13,6 +13,7 @@
 		<module>../common</module>
 		<module>../communication</module>
 		<module>../auth</module>
+		<module>../swagger</module>
 		<module>..</module>
 	</modules>
 
@@ -24,10 +25,6 @@
 		<repository>
 			<id>azure-sdk</id>
 			<url>https://pkgs.dev.azure.com/azure-sdk/public/_packaging/azure-sdk-for-java/maven/v1</url>
-		</repository>
-		<repository>
-			<id>github-swagger</id>
-			<url>https://maven.pkg.github.com/KalyanKumar0553/swagger</url>
 		</repository>
 	</repositories>
 
@@ -74,7 +71,7 @@
 			<dependency>
 				<groupId>com.src</groupId>
 				<artifactId>swagger</artifactId>
-				<version>${swagger.version}</version>
+				<version>${project.version}</version>
 			</dependency>
 			<dependency>
 				<groupId>io.spring.initializr</groupId>
