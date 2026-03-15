@@ -1,0 +1,11 @@
+const mongoose = require('mongoose');
+const dbConf = require('../config/db.conf');
+
+async function connectMongo() {
+  if (!dbConf.mongoUri) {
+    return;
+  }
+  await mongoose.connect(dbConf.mongoUri);
+}
+
+module.exports = { connectMongo };

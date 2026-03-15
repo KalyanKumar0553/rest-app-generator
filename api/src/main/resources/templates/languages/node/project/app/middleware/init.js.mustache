@@ -1,0 +1,7 @@
+const appMiddleware = require('./App.middleware');
+const errorHandler = require('./ErrorHandler.middleware');
+
+module.exports = (app) => {
+  app.use(appMiddleware);
+  app.use(errorHandler);
+};

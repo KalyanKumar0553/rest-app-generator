@@ -1,0 +1,73 @@
+<div class="rest-config-shell">
+  <div class="tab-nav-wrap">
+    <div class="tab-row" role="tablist" aria-label="REST configuration tabs" #tabRow>
+      <button
+        *ngFor="let tab of tabs"
+        #tabBtn
+        type="button"
+        role="tab"
+        class="tab-btn"
+        [class.active]="activeTab === tab.id"
+        [attr.aria-selected]="activeTab === tab.id"
+        (click)="setActiveTab(tab.id)">
+        <mat-icon>{{ tab.icon }}</mat-icon>
+        <span>{{ tab.label }}</span>
+      </button>
+    </div>
+    <button
+      *ngIf="overflowTabs.length > 0"
+      type="button"
+      class="tab-overflow-btn"
+      aria-label="Show more tabs"
+      (click)="openOverflowTabs()">
+      <mat-icon>more_horiz</mat-icon>
+    </button>
+  </div>
+
+  <div class="tab-content" [@tabContent]="activeTab">
+    <ng-container *ngIf="activeTab === 'basic'">
+      <app-rest-config-basic-settings
+        [draft]="draft"
+        [softDeleteEnabled]="softDeleteEnabled"
+        [availableModels]="availableModels"
+        [showResourceNameErrors]="showResourceNameErrors"
+        [resourceNameRequired]="resourceNameRequired"
+        [resourceNameDuplicate]="resourceNameDuplicate"
+        [basePathRequired]="basePathRequired"
+        [mapToEntityRequired]="mapToEntityRequired"
+        [lockEntityMapping]="lockEntityMapping"
+        (resourceNameChange)="onResourceNameChanged()"
+        (basePathChange)="onBasePathChanged()"
+        (mappingChange)="onEntityMappingChanged()"
+        (pathVariableTypeChange)="onPathVariableTypeChanged()">
+      </app-rest-config-basic-settings>
+    </ng-container>
+
+    <ng-container *ngIf="activeTab === 'endpoints'">
+      <app-rest-config-endpoint-config [draft]="draft"></app-rest-config-endpoint-config>
+    </ng-container>
+
+    <ng-container *ngIf="activeTab === 'request'">
+      <app-rest-config-request-response-config
+        [draft]="draft"
+        [showRequiredErrors]="showRequestResponseErrors"
+        [entityFieldTypeOptions]="entityFieldTypeOptions"
+        [availableModels]="availableModels"
+        [dtoObjects]="dtoObjects"
+        [javaVersion]="javaVersion"
+        [enumTypes]="enumTypes">
+      </app-rest-config-request-response-config>
+    </ng-container>
+
+    <ng-container *ngIf="activeTab === 'docs'">
+      <app-rest-config-documentation-config [draft]="draft"></app-rest-config-documentation-config>
+    </ng-container>
+
+    <ng-container *ngIf="activeTab !== 'basic' && activeTab !== 'endpoints' && activeTab !== 'request' && activeTab !== 'docs'">
+      <section class="placeholder-block">
+        <mat-icon>construction</mat-icon>
+        <p>{{ activeTab | titlecase }} configuration is coming soon.</p>
+      </section>
+    </ng-container>
+  </div>
+</div>

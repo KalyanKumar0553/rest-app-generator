@@ -1,0 +1,39 @@
+<mat-expansion-panel [expanded]="true">
+  <mat-expansion-panel-header>
+    <mat-panel-title>General Settings</mat-panel-title>
+  </mat-expansion-panel-header>
+
+  <div class="panel-content">
+    <mat-form-field appearance="fill" class="full-width">
+      <mat-label>Project group *</mat-label>
+      <input
+        matInput
+        [(ngModel)]="projectSettings.projectGroup"
+        (ngModelChange)="projectGroupChange.emit()"
+        [placeholder]="appSettings.defaultProjectGroup">
+      <mat-error *ngIf="projectGroupError">{{ projectGroupError }}</mat-error>
+    </mat-form-field>
+
+    <mat-form-field appearance="fill" class="full-width">
+      <mat-label>Project name *</mat-label>
+      <input
+        matInput
+        [(ngModel)]="projectSettings.projectName"
+        (ngModelChange)="projectNameChange.emit()"
+        placeholder="my-node-app">
+      <mat-error *ngIf="projectNameError">{{ projectNameError }}</mat-error>
+    </mat-form-field>
+
+    <mat-form-field appearance="fill" class="full-width">
+      <mat-label>Package manager</mat-label>
+      <mat-select [(ngModel)]="projectSettings.packageManager">
+        <mat-option *ngFor="let option of packageManagerOptions" [value]="option">{{ option }}</mat-option>
+      </mat-select>
+    </mat-form-field>
+
+    <mat-form-field appearance="fill" class="full-width">
+      <mat-label>Server port</mat-label>
+      <input matInput type="number" min="1" max="65535" [(ngModel)]="projectSettings.serverPort">
+    </mat-form-field>
+  </div>
+</mat-expansion-panel>

@@ -1,0 +1,11 @@
+const { connectMongo } = require('./Mongo.database');
+const { connectRedis } = require('./Redis.database');
+
+(async () => {
+  try {
+    await connectMongo();
+    await connectRedis();
+  } catch (e) {
+    // Keep runtime booting even if local DB is unavailable.
+  }
+})();

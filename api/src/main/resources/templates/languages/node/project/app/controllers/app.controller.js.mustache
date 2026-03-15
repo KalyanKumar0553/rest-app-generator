@@ -1,0 +1,11 @@
+exports.index = (_req, res) => {
+  res.render('index', { title: '{{appName}}' });
+};
+
+exports.about = (_req, res) => {
+  res.render('about', { title: 'About' });
+};
+
+exports.contact = (_req, res) => {
+  res.render('contact', { title: 'Contact' });
+};

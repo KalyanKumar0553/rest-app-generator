@@ -1,0 +1,5 @@
+module.exports = {
+  name: process.env.APP_NAME || '{{appName}}',
+  env: process.env.NODE_ENV || 'development',
+  port: Number(process.env.PORT || 3000)
+};

@@ -1,0 +1,8 @@
+module.exports = (app) => {
+  app.use('/', require('./App.routes'));
+  app.use('/auth', require('./Auth.routes'));
+  app.use('/dashboard', require('./Dashboard.routes'));
+{{#entityRoutes}}
+  app.use('/{{routePath}}', require('./{{modelName}}.routes'));
+{{/entityRoutes}}
+};

@@ -1,0 +1,25 @@
+<mat-expansion-panel>
+  <mat-expansion-panel-header>
+    <mat-panel-title>Database Settings</mat-panel-title>
+  </mat-expansion-panel-header>
+
+  <div class="panel-content">
+    <mat-form-field appearance="fill" class="full-width">
+      <mat-label>Choose Database Type</mat-label>
+      <mat-select [(ngModel)]="databaseSettings.dbType" (ngModelChange)="databaseTypeChange.emit($event)">
+        <mat-option *ngFor="let option of dbTypeOptions" [value]="option">
+          {{ option === 'NONE' ? 'None' : option }}
+        </mat-option>
+      </mat-select>
+    </mat-form-field>
+
+    <mat-form-field appearance="fill" class="full-width" *ngIf="databaseSettings.dbType !== 'NONE'">
+      <mat-label>Database</mat-label>
+      <mat-select [(ngModel)]="databaseSettings.database" (ngModelChange)="databaseSelectionChange.emit($event)">
+        <mat-option *ngFor="let option of filteredDatabaseOptions" [value]="option.value">
+          {{ option.label }}
+        </mat-option>
+      </mat-select>
+    </mat-form-field>
+  </div>
+</mat-expansion-panel>

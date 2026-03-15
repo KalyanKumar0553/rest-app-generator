@@ -81,7 +81,8 @@ yarn-error.log*
 pnpm-debug.log*
 
 # Don’t commit local binaries
-node/
+/node/
+/_ux_plugin/
 *.exe
 *.dll
 *.so

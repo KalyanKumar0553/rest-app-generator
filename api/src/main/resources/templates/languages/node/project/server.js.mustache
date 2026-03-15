@@ -1,0 +1,22 @@
+const express = require('express');
+const path = require('path');
+
+require('./app/config/init');
+require('./app/database/init');
+
+const app = express();
+
+app.set('view engine', 'ejs');
+app.set('views', path.join(__dirname, 'app/views'));
+
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+app.use('/public', express.static(path.join(__dirname, 'public')));
+
+require('./app/middleware/init')(app);
+require('./app/routes/init')(app);
+
+const port = Number(process.env.PORT || 3000);
+app.listen(port, () => {
+  console.log(`{{appName}} started on port ${port}`);
+});

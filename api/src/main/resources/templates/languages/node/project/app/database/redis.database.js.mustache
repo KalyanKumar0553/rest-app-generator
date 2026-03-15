@@ -1,0 +1,14 @@
+const { createClient } = require('redis');
+const dbConf = require('../config/db.conf');
+
+async function connectRedis() {
+  if (!dbConf.redisUrl) {
+    return null;
+  }
+  const client = createClient({ url: dbConf.redisUrl });
+  client.on('error', () => {});
+  await client.connect();
+  return client;
+}
+
+module.exports = { connectRedis };
