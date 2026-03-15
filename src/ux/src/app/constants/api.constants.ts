@@ -10,14 +10,15 @@ export const API_CONFIG = {
 
 export const API_ENDPOINTS = {
   AUTH: {
-    SIGNUP: '/api/auth/signup',
-    LOGIN: '/api/auth/login',
-    LOGOUT: '/api/auth/logout',
-    REFRESH_TOKEN: '/api/auth/refresh-token',
-    SEND_OTP: '/api/auth/send-otp',
-    VERIFY_OTP: '/api/auth/verify-otp',
-    FORGOT_PASSWORD: '/api/auth/forgot-password',
-    RESET_PASSWORD_WITH_OTP: '/api/auth/reset-password-with-otp',
+    CAPTCHA: '/api/v1/auth/captcha',
+    SIGNUP: '/api/v1/auth/signup',
+    LOGIN: '/api/v1/auth/login',
+    LOGOUT: '/api/v1/auth/logout',
+    REFRESH_TOKEN: '/api/v1/auth/token/refresh',
+    SEND_OTP: '/api/v1/auth/otp/generate',
+    VERIFY_OTP: '/api/v1/auth/otp/verify',
+    FORGOT_PASSWORD: '/api/v1/auth/password/forgot',
+    RESET_PASSWORD_WITH_OTP: '/api/v1/auth/password/reset',
     GOOGLE_OAUTH_START: '/oauth2/authorization/google'
   },
   USER: {

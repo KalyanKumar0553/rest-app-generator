@@ -86,7 +86,7 @@
         <div class="project-card" *ngFor="let project of filteredProjects">
           <div class="project-header">
             <div class="project-meta">
-              <span class="project-status">{{ project.id }}</span>
+              <span class="project-status">{{ project.projectId || project.id }}</span>
               <span class="project-date">{{ formatDate(project.createdAt) }}</span>
             </div>
           </div>

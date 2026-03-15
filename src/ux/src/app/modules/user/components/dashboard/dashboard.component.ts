@@ -2,23 +2,20 @@ import { Component, OnInit, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
-import { LocalStorageService } from '../../../../services/local-storage.service';
-import { AuthService, UserData } from '../../../../services/auth.service';
+import { AuthService } from '../../../../services/auth.service';
 import { UserService, UserRoles } from '../../../../services/user.service';
+import { ProjectService, ProjectSummary } from '../../../../services/project.service';
 import { ToastService } from '../../../../services/toast.service';
-import { MockApiService } from '../../../../services/mock-api.service';
 import { ConfirmationModalComponent, ModalButton } from '../../../../components/confirmation-modal/confirmation-modal.component';
 import { SearchSortComponent, SearchConfig, SortOption, SearchSortEvent } from '../../../../components/search-sort/search-sort.component';
 import { SidenavComponent, NavItem } from '../../../../components/shared/sidenav/sidenav.component';
 import { APP_SETTINGS } from '../../../../settings/app-settings';
 
-export interface Project {
-  id: string;
+export interface Project extends ProjectSummary {
   name: string;
   description: string;
   createdAt: string;
   updatedAt: string;
-  status: string;
 }
 
 @Component({
@@ -77,11 +74,10 @@ export class DashboardComponent implements OnInit {
 
   constructor(
     private router: Router,
-    private localStorageService: LocalStorageService,
     private authService: AuthService,
     private userService: UserService,
+    private projectService: ProjectService,
     private toastService: ToastService,
-    private mockApiService: MockApiService
   ) {}
 
   @HostListener('window:pageshow', ['$event'])
@@ -186,10 +182,10 @@ export class DashboardComponent implements OnInit {
   loadProjects(): void {
     this.isLoadingProjects = true;
 
-    this.mockApiService.get<any>('', 'assets/mock/projects-response.json').subscribe({
+    this.projectService.getProjects().subscribe({
       next: (response) => {
         this.isLoadingProjects = false;
-        this.projects = response.data.projects || [];
+        this.projects = Array.isArray(response) ? response as Project[] : [];
         this.filteredProjects = [...this.projects];
       },
       error: () => {
@@ -242,7 +238,7 @@ export class DashboardComponent implements OnInit {
 
   openProject(project: Project): void {
     this.router.navigate(['/project-generation'], {
-      queryParams: { projectId: project.id }
+      queryParams: { projectId: project.projectId || project.id }
     });
   }
 

@@ -45,27 +45,32 @@ export class HttpRequestInterceptor implements HttpInterceptor {
       headers = headers.set('Content-Type', 'application/json');
     }
 
-    if (token && !this.isPublicEndpoint(request.url)) {
+    if (token && !this.isPublicEndpoint(request)) {
       headers = headers.set('Authorization', `Bearer ${token}`);
     }
 
     return request.clone({ headers });
   }
 
-  private isPublicEndpoint(url: string): boolean {
-    const publicEndpoints = [
-      '/api/auth/login',
-      '/api/auth/signup',
-      '/api/auth/forgot-password',
-      '/api/auth/send-otp',
-      '/api/auth/verify-otp',
-      '/api/auth/reset-password-with-otp',
-      '/api/projects',
-      '/api/project-view/generate-zip',
-      '/api/openapi/dependencies',
-      '/api/analytics/visits/home'
+  private isPublicEndpoint(request: HttpRequest<any>): boolean {
+    const url = request.url;
+    const method = request.method.toUpperCase();
+
+    const publicRoutes: Array<{ method: string; path: string }> = [
+      { method: 'GET', path: '/api/v1/auth/captcha' },
+      { method: 'POST', path: '/api/v1/auth/login' },
+      { method: 'POST', path: '/api/v1/auth/signup' },
+      { method: 'POST', path: '/api/v1/auth/password/forgot' },
+      { method: 'POST', path: '/api/v1/auth/otp/generate' },
+      { method: 'POST', path: '/api/v1/auth/otp/verify' },
+      { method: 'POST', path: '/api/v1/auth/password/reset' },
+      { method: 'POST', path: '/api/v1/auth/token/refresh' },
+      { method: 'POST', path: '/api/project-view/generate-zip' },
+      { method: 'GET', path: '/api/openapi/dependencies' },
+      { method: 'POST', path: '/api/analytics/visits/home' }
     ];
-    return publicEndpoints.some(endpoint => url.includes(endpoint));
+
+    return publicRoutes.some(route => method === route.method && url.includes(route.path));
   }
 
   private handleSuccessResponse(response: HttpResponse<any>): void {

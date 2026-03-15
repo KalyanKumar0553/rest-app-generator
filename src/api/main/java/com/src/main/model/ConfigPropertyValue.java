@@ -1,5 +1,7 @@
 package com.src.main.model;
 
+import com.src.main.config.AppDbTables;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -15,7 +17,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Entity
-@Table(name = "config_property_values")
+@Table(name = AppDbTables.CONFIG_PROPERTY_VALUES)
 @Data
 @AllArgsConstructor
 @NoArgsConstructor

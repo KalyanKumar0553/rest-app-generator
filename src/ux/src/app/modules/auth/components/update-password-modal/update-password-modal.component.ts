@@ -114,7 +114,7 @@ export class UpdatePasswordModalComponent {
     this.isLoading = true;
 
     this.authService.resetPasswordWithOTP({
-      email: this.email,
+      identifier: this.email,
       otp: this.otp,
       newPassword: this.newPassword
     }).subscribe({

@@ -2,7 +2,7 @@ import { Component, EventEmitter, Input, Output, OnInit, OnDestroy } from '@angu
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ToastService } from '../../../../services/toast.service';
-import { AuthService } from '../../../../services/auth.service';
+import { AuthService, CaptchaChallenge } from '../../../../services/auth.service';
 import { Router } from '@angular/router';
 import { ComponentThemeService } from '../../../../services/component-theme.service';
 
@@ -24,6 +24,11 @@ export class OTPModalComponent implements OnInit, OnDestroy {
   isLoading = false;
   timeLeft: number = 180;
   canResend: boolean = false;
+  isCaptchaLoading = false;
+  captchaId = '';
+  captchaText = '';
+  captchaImageUrl = '';
+  captchaError = '';
   private countdownInterval: any;
 
   constructor(
@@ -35,6 +40,7 @@ export class OTPModalComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.startCountdown();
+    this.loadCaptcha();
   }
 
   ngOnDestroy(): void {
@@ -72,7 +78,7 @@ export class OTPModalComponent implements OnInit, OnDestroy {
   }
 
   onOtpInput(): void {
-    this.otpValue = this.otpValue.replace(/[^a-zA-Z0-9]/g, '');
+    this.otpValue = this.otpValue.replace(/\D/g, '');
 
     if (this.otpValue.length > 6) {
       this.otpValue = this.otpValue.substring(0, 6);
@@ -94,12 +100,12 @@ export class OTPModalComponent implements OnInit, OnDestroy {
     }
 
     if (this.otpValue.length !== 6) {
-      this.otpError = 'OTP must be exactly 6 characters';
+      this.otpError = 'OTP must be exactly 6 digits';
       return false;
     }
 
-    if (!/^[a-zA-Z0-9]{6}$/.test(this.otpValue)) {
-      this.otpError = 'OTP must contain only alphanumeric characters';
+    if (!/^\d{6}$/.test(this.otpValue)) {
+      this.otpError = 'OTP must contain exactly 6 digits';
       return false;
     }
 
@@ -114,7 +120,7 @@ export class OTPModalComponent implements OnInit, OnDestroy {
     this.isLoading = true;
 
     this.authService.verifyOTP({
-      email: this.email,
+      identifier: this.email,
       otp: this.otpValue
     }).subscribe({
       next: (response: any) => {
@@ -140,7 +146,7 @@ export class OTPModalComponent implements OnInit, OnDestroy {
     }
 
     this.authService.login({
-      email: this.email,
+      identifier: this.email,
       password: this.password
     }).subscribe({
       next: (response: any) => {
@@ -165,25 +171,83 @@ export class OTPModalComponent implements OnInit, OnDestroy {
       return;
     }
 
+    if (!this.ensureCaptchaReady()) {
+      return;
+    }
+
     this.isLoading = true;
 
-    this.authService.sendOTP({ email: this.email }).subscribe({
+    this.authService.sendOTP({
+      identifier: this.email,
+      captchaId: this.captchaId,
+      captchaText: this.captchaText.trim()
+    }).subscribe({
       next: (response: any) => {
         this.isLoading = false;
         this.toastService.success('OTP has been resent to your email!');
         this.startCountdown();
         this.otpValue = '';
         this.otpError = '';
+        this.loadCaptcha();
       },
       error: (error) => {
         this.isLoading = false;
         const errorMessage = error.message || 'Failed to resend OTP. Please try again.';
         this.toastService.error(errorMessage);
+        this.loadCaptcha();
       }
     });
   }
 
+  onCaptchaInput(): void {
+    this.captchaError = '';
+  }
+
+  refreshCaptcha(): void {
+    if (!this.isCaptchaLoading) {
+      this.loadCaptcha();
+    }
+  }
+
   closeModal(): void {
     this.close.emit();
+  }
+
+  private loadCaptcha(): void {
+    this.isCaptchaLoading = true;
+    this.captchaError = '';
+    this.captchaText = '';
+
+    this.authService.getCaptcha().subscribe({
+      next: (captcha: CaptchaChallenge) => {
+        this.isCaptchaLoading = false;
+        this.captchaId = captcha.captchaId;
+        this.captchaImageUrl = this.toCaptchaImageUrl(captcha.imageBase64);
+      },
+      error: () => {
+        this.isCaptchaLoading = false;
+        this.captchaId = '';
+        this.captchaImageUrl = '';
+        this.captchaError = 'Failed to load captcha. Please refresh and try again.';
+      }
+    });
+  }
+
+  private ensureCaptchaReady(): boolean {
+    if (this.isCaptchaLoading || !this.captchaId) {
+      this.captchaError = 'Captcha is still loading. Please wait or refresh it.';
+      return false;
+    }
+
+    if (!this.captchaText.trim()) {
+      this.captchaError = 'Captcha is required to resend OTP.';
+      return false;
+    }
+
+    return true;
+  }
+
+  private toCaptchaImageUrl(imageBase64: string): string {
+    return imageBase64.startsWith('data:') ? imageBase64 : `data:image/png;base64,${imageBase64}`;
   }
 }

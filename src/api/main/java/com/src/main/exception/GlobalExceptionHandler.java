@@ -48,6 +48,14 @@ public class GlobalExceptionHandler {
     ex.printStackTrace();
     return ResponseEntity.status(ex.getStatus()).body(body);
   }
+
+  @ExceptionHandler(SecurityException.class)
+  public ResponseEntity<Map<String,Object>> onSecurity(SecurityException ex){
+    Map<String,Object> body = new HashMap<>();
+    body.put("errorCode", HttpStatus.FORBIDDEN.value());
+    body.put("errorMsg", ex.getMessage());
+    return ResponseEntity.status(HttpStatus.FORBIDDEN).body(body);
+  }
   
   @ExceptionHandler(Exception.class)
   public ResponseEntity<Map<String,Object>> onError(Exception ex){

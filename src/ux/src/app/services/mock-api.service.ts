@@ -37,17 +37,17 @@ export class MockApiService {
   }
 
   private shouldReturnError(url: string, body: any): boolean {
-    if (url.includes('/verify-otp')) {
+    if (url.includes('/otp/verify')) {
       return false;
     }
-    if (url.includes('/login') && body.email === 'invalid@example.com') {
+    if (url.includes('/login') && body.identifier === 'invalid@example.com') {
       return true;
     }
     return false;
   }
 
   private getErrorMessage(url: string, body: any): string {
-    if (url.includes('/verify-otp')) {
+    if (url.includes('/otp/verify')) {
       return 'Invalid OTP. Please try again.';
     }
     if (url.includes('/login')) {

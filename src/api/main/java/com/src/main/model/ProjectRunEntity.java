@@ -6,6 +6,7 @@ import java.util.UUID;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
+import com.src.main.config.AppDbTables;
 import com.src.main.util.ProjectRunStatus;
 import com.src.main.util.ProjectRunType;
 
@@ -25,7 +26,7 @@ import jakarta.persistence.Table;
 import lombok.Data;
 
 @Entity
-@Table(name = "project_runs", indexes = {
+@Table(name = AppDbTables.PROJECT_RUNS, indexes = {
 		@Index(name = "idx_runs_owner_type_created", columnList = "owner_id, type, created_at"),
 		@Index(name = "idx_runs_project", columnList = "project_id") })
 @Data

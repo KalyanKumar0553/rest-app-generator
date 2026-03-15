@@ -20,4 +20,4 @@ if ! echo "$java_version" | grep -E -q '"17| 17'; then
 fi
 
 mvn -U -DskipTests clean install
-mvn spring-boot:run
+mvn -DskipTests spring-boot:run -Dspring-boot.run.jvmArguments='-Dspring.devtools.restart.enabled=false'

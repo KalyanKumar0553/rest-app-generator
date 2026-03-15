@@ -10,33 +10,37 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.src.main.model.ProjectEntity;
 import com.src.main.model.ProjectRunEntity;
+import com.src.main.repository.ProjectContributorRepository;
 import com.src.main.repository.ProjectRepository;
 import com.src.main.repository.ProjectRunRepository;
 import com.src.main.util.AppConstants;
 import com.src.main.util.ProjectRunStatus;
 import com.src.main.util.ProjectRunType;
 
-import lombok.AllArgsConstructor;
-
 @Service
 public class ProjectOrchestrationServiceImpl implements ProjectOrchestrationService {
 
 	private final ProjectRepository projectRepository;
 	private final ProjectRunRepository projectRunRepository;
+	private final ProjectContributorRepository projectContributorRepository;
 
 	@Value("${app.project.max-generates-per-user-per-day:200}")
 	private int maxGeneratesPerUserPerDay;
 
 	private ZoneId zoneId = ZoneId.of("Asia/Kolkata");
 
-	public ProjectOrchestrationServiceImpl(ProjectRepository projectRepository,ProjectRunRepository projectRunRepository) {
+	public ProjectOrchestrationServiceImpl(ProjectRepository projectRepository, ProjectRunRepository projectRunRepository,
+			ProjectContributorRepository projectContributorRepository) {
 		this.projectRepository = projectRepository;
 		this.projectRunRepository = projectRunRepository;
+		this.projectContributorRepository = projectContributorRepository;
 	}
 
 	@Override
@@ -52,7 +56,7 @@ public class ProjectOrchestrationServiceImpl implements ProjectOrchestrationServ
 	public ProjectRunEntity updateSpecAndGenerate(UUID projectId, String ownerId, String yamlContent) {
 		ProjectEntity project = updateSpec(projectId, ownerId, yamlContent);
 
-		ProjectRunEntity latest = projectRunRepository.findTopByProjectIdAndTypeOrderByCreatedAtDesc(projectId,ProjectRunType.GENERATE_CODE);
+		ProjectRunEntity latest = projectRunRepository.findTopByProjectIdAndTypeOrderByCreatedAtDesc(projectId, ProjectRunType.GENERATE_CODE);
 		if (latest != null && latest.getStatus() == ProjectRunStatus.QUEUED) {
 			latest.setStatus(ProjectRunStatus.CANCELLED);
 		}
@@ -63,7 +67,7 @@ public class ProjectOrchestrationServiceImpl implements ProjectOrchestrationServ
 	@Transactional
 	public ProjectRunEntity generateCode(UUID projectId, String ownerId) {
 		ProjectEntity project = getOwnedProject(projectId, ownerId);
-		ProjectRunEntity latest = projectRunRepository.findTopByProjectIdAndTypeOrderByCreatedAtDesc(projectId,ProjectRunType.GENERATE_CODE);
+		ProjectRunEntity latest = projectRunRepository.findTopByProjectIdAndTypeOrderByCreatedAtDesc(projectId, ProjectRunType.GENERATE_CODE);
 		if (latest != null && (latest.getStatus() == ProjectRunStatus.QUEUED || latest.getStatus() == ProjectRunStatus.INPROGRESS)) {
 			return latest;
 		}
@@ -73,8 +77,11 @@ public class ProjectOrchestrationServiceImpl implements ProjectOrchestrationServ
 	@Override
 	@Transactional(readOnly = true)
 	public ProjectEntity getOwnedProject(UUID projectId, String ownerId) {
-		ProjectEntity project = projectRepository.findById(projectId).orElseThrow(() -> new IllegalArgumentException("Project not found: " + projectId));
-		if (!ownerId.equals(project.getOwnerId())) {
+		ProjectEntity project = projectRepository.findWithContributorsById(projectId)
+				.orElseThrow(() -> new IllegalArgumentException("Project not found: " + projectId));
+		if (!isAdmin()
+				&& !ownerId.equals(project.getOwnerId())
+				&& !projectContributorRepository.existsByProjectIdAndUserId(projectId, ownerId)) {
 			throw new SecurityException("User not allowed to access this project");
 		}
 		return project;
@@ -92,16 +99,14 @@ public class ProjectOrchestrationServiceImpl implements ProjectOrchestrationServ
 	public ProjectRunEntity getRun(UUID runId, String ownerId) {
 		ProjectRunEntity run = projectRunRepository.findById(runId)
 				.orElseThrow(() -> new IllegalArgumentException("Run not found: " + runId));
-		if (!ownerId.equals(run.getOwnerId())) {
-			throw new SecurityException("User not allowed to access this run");
-		}
+		getOwnedProject(run.getProject().getId(), ownerId);
 		return run;
 	}
 
 	@Transactional
 	protected ProjectRunEntity createGenerateRun(ProjectEntity project, String ownerId) {
 		enforceDailyLimit(ownerId);
-		long existingForProject = projectRunRepository.countByProjectIdAndType(project.getId(),ProjectRunType.GENERATE_CODE);
+		long existingForProject = projectRunRepository.countByProjectIdAndType(project.getId(), ProjectRunType.GENERATE_CODE);
 		ProjectRunEntity run = new ProjectRunEntity();
 		run.setProject(project);
 		run.setOwnerId(ownerId);
@@ -120,17 +125,26 @@ public class ProjectOrchestrationServiceImpl implements ProjectOrchestrationServ
 			throw new IllegalStateException("Daily generate limit reached (" + maxGeneratesPerUserPerDay + " per day)");
 		}
 	}
-	
+
 	@Override
 	public ResponseEntity<byte[]> download(UUID id) {
 		ProjectRunEntity p = projectRunRepository.findById(id)
 				.orElseThrow(() -> new java.util.NoSuchElementException("Project Run Not found"));
-		if (p.getZip() == null)
+		if (p.getZip() == null) {
 			return ResponseEntity.status(202).build();
+		}
 		return ResponseEntity.ok()
-				.header(HttpHeaders.CONTENT_DISPOSITION,
-						String.format(AppConstants.DISP_ATTACHMENT_FMT, p.getProject().getArtifact()))
-				.contentType(MediaType.APPLICATION_OCTET_STREAM).body(p.getZip());
+				.header(HttpHeaders.CONTENT_DISPOSITION, String.format(AppConstants.DISP_ATTACHMENT_FMT, p.getProject().getArtifact()))
+				.contentType(MediaType.APPLICATION_OCTET_STREAM)
+				.body(p.getZip());
 	}
 
+	private boolean isAdmin() {
+		Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+		if (authentication == null) {
+			return false;
+		}
+		return authentication.getAuthorities().stream()
+				.anyMatch(authority -> "ROLE_ADMIN".equals(authority.getAuthority()));
+	}
 }

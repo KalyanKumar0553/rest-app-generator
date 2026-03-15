@@ -1,6 +1,7 @@
 .login-modal-content {
   display: flex;
   flex-direction: column;
+  --auth-action-width: min(100%, 590px);
 }
 
 .modal-description {
@@ -33,7 +34,7 @@
   align-items: center;
   justify-content: center;
   gap: 20px;
-  width: 100%;
+  width: var(--auth-action-width);
   min-height: 72px;
   padding: 0 28px;
   border-radius: 999px;
@@ -43,6 +44,7 @@
   font-size: 18px;
   font-weight: 600;
   cursor: pointer;
+  align-self: center;
   transition: background-color 0.2s ease, border-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
 }
 
@@ -165,6 +167,63 @@ form {
   font-size: 14px;
 }
 
+.captcha-group {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.captcha-group__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.captcha-refresh {
+  border: none;
+  background: none;
+  color: var(--theme-link-color);
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 0;
+  text-decoration: underline;
+}
+
+.captcha-refresh:hover:not(:disabled) {
+  color: var(--theme-link-hover-color);
+}
+
+.captcha-refresh:disabled {
+  color: var(--theme-input-placeholder-color);
+  cursor: not-allowed;
+  text-decoration: none;
+}
+
+.captcha-preview {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 88px;
+  padding: 8px 12px;
+  border: 1px solid var(--theme-input-border-color);
+  border-radius: 10px;
+  background-color: var(--theme-input-bg);
+}
+
+.captcha-preview--empty {
+  color: var(--theme-neutral-text);
+  font-size: 14px;
+}
+
+.captcha-image {
+  display: block;
+  max-width: 100%;
+  width: 240px;
+  height: auto;
+}
+
 .loading-spinner {
   display: flex;
   align-items: center;
@@ -226,6 +285,15 @@ form {
   transition: all 0.2s ease;
   margin-top: 8px;
   width: fit-content;
+}
+
+.btn-submit--login {
+  width: var(--auth-action-width);
+  min-height: 72px;
+  border-radius: 999px;
+  align-self: center;
+  justify-content: center;
+  margin-top: 24px;
 }
 
 .btn-submit:hover:not(:disabled) {

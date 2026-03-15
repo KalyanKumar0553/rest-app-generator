@@ -1,5 +1,6 @@
 package com.src.main.dto;
 
+import java.time.OffsetDateTime;
 import java.util.UUID;
 
 import lombok.AllArgsConstructor;
@@ -13,4 +14,8 @@ public class ProjectSummaryDTO {
 	private String projectId;
 	private String artifact;
 	private UUID id;
+	private String name;
+	private String description;
+	private OffsetDateTime createdAt;
+	private OffsetDateTime updatedAt;
 }

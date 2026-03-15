@@ -1,5 +1,7 @@
 package com.src.main.model;
 
+import com.src.main.config.AppDbTables;
+
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -9,7 +11,7 @@ import java.util.LinkedHashSet;
 import java.util.Set;
 
 @Entity
-@Table(name = "config_property")
+@Table(name = AppDbTables.CONFIG_PROPERTIES)
 @Data
 @AllArgsConstructor
 @NoArgsConstructor

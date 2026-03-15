@@ -4,7 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { ModalService } from '../../../../services/modal.service';
 import { ToastService } from '../../../../services/toast.service';
-import { AuthService, SignupRequest, LoginRequest } from '../../../../services/auth.service';
+import { AuthService, SignupRequest, LoginRequest, CaptchaChallenge } from '../../../../services/auth.service';
 import { ComponentThemeService } from '../../../../services/component-theme.service';
 import { FormValidator, ValidationErrors, CommonValidationRules } from '../../../../validators/form-validator';
 import { OTPModalComponent } from '../otp-modal/otp-modal.component';
@@ -31,6 +31,11 @@ export class LoginModalComponent {
   receiveUpdates = false;
   validationErrors: ValidationErrors = {};
   isLoading = false;
+  isCaptchaLoading = false;
+  captchaId = '';
+  captchaText = '';
+  captchaImageUrl = '';
+  captchaError = '';
 
   constructor(
     private router: Router,
@@ -55,16 +60,24 @@ export class LoginModalComponent {
     return this.validationErrors['password'] || '';
   }
 
+  get requiresCaptcha(): boolean {
+    return this.isSignupMode || this.isForgotPasswordMode;
+  }
+
   toggleMode(): void {
     this.isSignupMode = !this.isSignupMode;
     this.isForgotPasswordMode = false;
     this.resetForm();
+    if (this.requiresCaptcha) {
+      this.loadCaptcha();
+    }
   }
 
   showForgotPassword(): void {
     this.isForgotPasswordMode = true;
     this.isSignupMode = false;
     this.resetForm();
+    this.loadCaptcha();
   }
 
   backToLogin(): void {
@@ -79,6 +92,7 @@ export class LoginModalComponent {
     this.acceptTerms = false;
     this.receiveUpdates = false;
     this.validationErrors = {};
+    this.clearCaptchaState();
     this.isLoading = false;
   }
 
@@ -131,9 +145,13 @@ export class LoginModalComponent {
     }
   }
 
+  onCaptchaInput(): void {
+    this.captchaError = '';
+  }
+
   isFormValid(): boolean {
     if (this.isForgotPasswordMode) {
-      return this.email && !this.emailError;
+      return !!this.email && !this.emailError && this.isCaptchaValid();
     }
     if (!this.email || !this.password) {
       return false;
@@ -141,7 +159,7 @@ export class LoginModalComponent {
     if (this.isSignupMode && !this.acceptTerms) {
       return false;
     }
-    return !this.emailError && !this.passwordError;
+    return !this.emailError && !this.passwordError && (!this.requiresCaptcha || this.isCaptchaValid());
   }
 
   navigateToTerms(event: Event): void {
@@ -178,11 +196,17 @@ export class LoginModalComponent {
   }
 
   handleSignup(): void {
+    if (!this.ensureCaptchaReady()) {
+      return;
+    }
+
     this.isLoading = true;
 
     const signupData: SignupRequest = {
-      email: this.email,
+      identifier: this.email,
       password: this.password,
+      captchaId: this.captchaId,
+      captchaText: this.captchaText.trim(),
       acceptTerms: this.acceptTerms,
       receiveUpdates: this.receiveUpdates
     };
@@ -195,6 +219,7 @@ export class LoginModalComponent {
       },
       error: (error) => {
         this.isLoading = false;
+        this.refreshCaptchaAfterFailure();
         const errorMessage = error?.error?.errorMsg ?? 'Failed to create account. Please try again.';
 
         if (errorMessage.toLowerCase().includes('already exists') || errorMessage.toLowerCase().includes('already registered')) {
@@ -240,7 +265,7 @@ export class LoginModalComponent {
     this.isLoading = true;
 
     const loginData: LoginRequest = {
-      email: this.email,
+      identifier: this.email,
       password: this.password
     };
 
@@ -262,9 +287,17 @@ export class LoginModalComponent {
   }
 
   handleForgotPassword(): void {
+    if (!this.ensureCaptchaReady()) {
+      return;
+    }
+
     this.isLoading = true;
 
-    this.authService.sendOTP({ email: this.email }).subscribe({
+    this.authService.forgotPassword({
+      identifier: this.email,
+      captchaId: this.captchaId,
+      captchaText: this.captchaText.trim()
+    }).subscribe({
       next: (response) => {
         this.isLoading = false;
         this.toastService.success(response.message || 'OTP has been sent to your email.');
@@ -274,6 +307,7 @@ export class LoginModalComponent {
       },
       error: (error) => {
         this.isLoading = false;
+        this.refreshCaptchaAfterFailure();
         const errorMessage = error.message || 'Failed to send OTP. Please try again.';
         this.toastService.error(errorMessage);
       }
@@ -283,5 +317,70 @@ export class LoginModalComponent {
   startGoogleLogin(): void {
     this.closeModal();
     this.authService.startGoogleLogin();
+  }
+
+  refreshCaptcha(): void {
+    if (!this.isCaptchaLoading) {
+      this.loadCaptcha();
+    }
+  }
+
+  private loadCaptcha(): void {
+    this.isCaptchaLoading = true;
+    this.captchaError = '';
+    this.captchaText = '';
+
+    this.authService.getCaptcha().subscribe({
+      next: (captcha: CaptchaChallenge) => {
+        this.isCaptchaLoading = false;
+        this.captchaId = captcha.captchaId;
+        this.captchaImageUrl = this.toCaptchaImageUrl(captcha.imageBase64);
+      },
+      error: () => {
+        this.isCaptchaLoading = false;
+        this.clearCaptchaState();
+        this.captchaError = 'Failed to load captcha. Please refresh and try again.';
+      }
+    });
+  }
+
+  private isCaptchaValid(): boolean {
+    return !this.isCaptchaLoading && !!this.captchaId && !!this.captchaText.trim();
+  }
+
+  private ensureCaptchaReady(): boolean {
+    if (!this.requiresCaptcha) {
+      return true;
+    }
+
+    if (this.isCaptchaLoading || !this.captchaId) {
+      this.captchaError = 'Captcha is still loading. Please wait or refresh it.';
+      return false;
+    }
+
+    if (!this.captchaText.trim()) {
+      this.captchaError = 'Captcha is required.';
+      return false;
+    }
+
+    return true;
+  }
+
+  private refreshCaptchaAfterFailure(): void {
+    if (this.requiresCaptcha) {
+      this.loadCaptcha();
+    }
+  }
+
+  private clearCaptchaState(): void {
+    this.captchaId = '';
+    this.captchaText = '';
+    this.captchaImageUrl = '';
+    this.captchaError = '';
+    this.isCaptchaLoading = false;
+  }
+
+  private toCaptchaImageUrl(imageBase64: string): string {
+    return imageBase64.startsWith('data:') ? imageBase64 : `data:image/png;base64,${imageBase64}`;
   }
 }

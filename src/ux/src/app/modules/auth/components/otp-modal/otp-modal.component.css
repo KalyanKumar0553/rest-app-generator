@@ -138,6 +138,42 @@
   font-weight: 500;
 }
 
+.captcha-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.captcha-refresh {
+  margin-left: 0;
+}
+
+.captcha-preview {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 88px;
+  margin-bottom: 12px;
+  padding: 8px 12px;
+  border: 1px solid var(--theme-input-border-color);
+  border-radius: 10px;
+  background-color: var(--theme-input-bg);
+}
+
+.captcha-preview--empty {
+  color: var(--theme-neutral-text);
+  font-size: 14px;
+}
+
+.captcha-image {
+  display: block;
+  max-width: 100%;
+  width: 240px;
+  height: auto;
+}
+
 .resend-section {
   margin-top: 16px;
   text-align: center;

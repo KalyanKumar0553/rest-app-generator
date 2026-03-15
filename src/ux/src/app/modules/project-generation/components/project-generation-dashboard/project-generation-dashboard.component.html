@@ -146,6 +146,46 @@
         </app-java-general-tab>
 
         <mat-accordion class="expansion-panels">
+        <mat-expansion-panel *ngIf="backendProjectId">
+          <mat-expansion-panel-header>
+            <mat-panel-title>
+              Project contributors
+            </mat-panel-title>
+          </mat-expansion-panel-header>
+
+          <div class="panel-content">
+            <div class="form-row" *ngIf="canManageContributors()">
+              <mat-form-field appearance="fill" class="full-width">
+                <mat-label>Contributor user id</mat-label>
+                <input
+                  matInput
+                  [(ngModel)]="contributorUserId"
+                  placeholder="Enter user id to grant access" />
+              </mat-form-field>
+              <button mat-raised-button color="primary" type="button" (click)="addContributor()" [disabled]="isContributorSaving">
+                Add contributor
+              </button>
+            </div>
+
+            <p *ngIf="!canManageContributors()">Only the project owner can add or remove contributors.</p>
+            <p *ngIf="projectContributors.length === 0">No contributors added yet.</p>
+
+            <div class="selected-dependencies" *ngIf="projectContributors.length > 0">
+              <div class="dependency-chip" *ngFor="let contributor of projectContributors">
+                <span>{{ contributor.userId }}</span>
+                <button *ngIf="canManageContributors()"
+                        type="button"
+                        class="remove-chip"
+                        (click)="removeContributor(contributor.userId)"
+                        [disabled]="isContributorSaving"
+                        aria-label="Remove contributor">
+                  <mat-icon>close</mat-icon>
+                </button>
+              </div>
+            </div>
+          </div>
+        </mat-expansion-panel>
+
         <mat-expansion-panel>
           <mat-expansion-panel-header>
             <mat-panel-title>

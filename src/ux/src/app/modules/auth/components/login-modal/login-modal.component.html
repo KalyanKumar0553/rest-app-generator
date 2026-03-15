@@ -23,7 +23,7 @@
 >
   <div class="login-modal-content">
     <p class="modal-description" *ngIf="isForgotPasswordMode">
-      Enter your email address and we'll send you a link to reset your password.
+      Enter your email address, solve the captcha, and we'll send you a verification code to reset your password.
       <a href="#" (click)="backToLogin(); $event.preventDefault()" class="link">Back to login</a>
     </p>
 
@@ -71,6 +71,44 @@
         <span class="error-message" *ngIf="passwordError">{{ passwordError }}</span>
       </div>
 
+      <div class="captcha-group" *ngIf="requiresCaptcha">
+        <div class="captcha-group__header">
+          <label for="captchaText">Captcha Verification</label>
+          <button
+            type="button"
+            class="captcha-refresh"
+            (click)="refreshCaptcha()"
+            [disabled]="isLoading || isCaptchaLoading"
+          >
+            {{ isCaptchaLoading ? 'Loading...' : 'Refresh captcha' }}
+          </button>
+        </div>
+
+        <div class="captcha-preview" *ngIf="captchaImageUrl; else captchaFallback">
+          <img [src]="captchaImageUrl" alt="Captcha challenge" class="captcha-image" />
+        </div>
+
+        <ng-template #captchaFallback>
+          <div class="captcha-preview captcha-preview--empty">
+            <span>{{ isCaptchaLoading ? 'Loading captcha...' : 'Captcha unavailable' }}</span>
+          </div>
+        </ng-template>
+
+        <input
+          type="text"
+          id="captchaText"
+          name="captchaText"
+          [(ngModel)]="captchaText"
+          (input)="onCaptchaInput()"
+          placeholder="Enter the characters shown above"
+          class="form-control"
+          [class.error]="captchaError"
+          [disabled]="isLoading || isCaptchaLoading"
+          autocomplete="off"
+        />
+        <span class="error-message" *ngIf="captchaError">{{ captchaError }}</span>
+      </div>
+
       <div class="forgot-password-link" *ngIf="!isSignupMode && !isForgotPasswordMode">
         <a href="#" (click)="showForgotPassword(); $event.preventDefault()" class="link">Forgot password?</a>
       </div>
@@ -102,7 +140,8 @@
       <button
         type="submit"
         class="btn-submit"
-        [disabled]="!isFormValid() || isLoading"
+        [class.btn-submit--login]="!isSignupMode && !isForgotPasswordMode"
+        [disabled]="!isFormValid() || isLoading || isCaptchaLoading"
       >
         <span *ngIf="!isLoading">
           {{ isForgotPasswordMode ? 'Send OTP' : (isSignupMode ? 'Create account' : 'Log in') }}

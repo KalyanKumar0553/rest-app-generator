@@ -17,18 +17,6 @@
 				https://pkgs.dev.azure.com/azure-sdk/public/_packaging/azure-sdk-for-java/maven/v1</url>
 		</repository>
 		<repository>
-			<id>github-auth</id>
-			<url>https://maven.pkg.github.com/KalyanKumar0553/auth</url>
-		</repository>
-		<repository>
-			<id>github-commons</id>
-			<url>https://maven.pkg.github.com/KalyanKumar0553/commons</url>
-		</repository>
-		<repository>
-			<id>github-communication</id>
-			<url>https://maven.pkg.github.com/KalyanKumar0553/communication</url>
-		</repository>
-		<repository>
 			<id>github-swagger</id>
 			<url>https://maven.pkg.github.com/KalyanKumar0553/swagger</url>
 		</repository>
@@ -65,20 +53,21 @@
 	<dependencies>
 		<dependency>
 			<groupId>com.src</groupId>
-			<artifactId>common</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>com.src</groupId>
-			<artifactId>communication</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>com.src</groupId>
-			<artifactId>auth</artifactId>
-			<version>1.1.27</version>
-		</dependency>
-		<dependency>
-			<groupId>com.src</groupId>
 			<artifactId>swagger</artifactId>
+			<exclusions>
+				<exclusion>
+					<groupId>com.src</groupId>
+					<artifactId>auth</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>com.src</groupId>
+					<artifactId>common</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>com.src</groupId>
+					<artifactId>communication</artifactId>
+				</exclusion>
+			</exclusions>
 		</dependency>
 		<dependency>
 			<groupId>io.spring.initializr</groupId>
@@ -167,6 +156,12 @@
 			<scope>runtime</scope>
 		</dependency>
 		<dependency>
+			<groupId>io.jsonwebtoken</groupId>
+			<artifactId>jjwt-impl</artifactId>
+			<version>0.11.5</version>
+			<scope>runtime</scope>
+		</dependency>
+		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-mail</artifactId>
 		</dependency>
@@ -216,6 +211,26 @@
 			<groupId>com.azure</groupId>
 			<artifactId>azure-communication-email</artifactId>
 			<version>1.0.0</version>
+		</dependency>
+		<dependency>
+			<groupId>com.google.auth</groupId>
+			<artifactId>google-auth-library-oauth2-http</artifactId>
+			<version>1.23.0</version>
+		</dependency>
+		<dependency>
+			<groupId>com.google.api-client</groupId>
+			<artifactId>google-api-client</artifactId>
+			<version>2.6.0</version>
+		</dependency>
+		<dependency>
+			<groupId>com.google.http-client</groupId>
+			<artifactId>google-http-client-jackson2</artifactId>
+			<version>1.43.3</version>
+		</dependency>
+		<dependency>
+			<groupId>com.nimbusds</groupId>
+			<artifactId>nimbus-jose-jwt</artifactId>
+			<version>9.37.3</version>
 		</dependency>
 		<dependency>
 			<groupId>com.azure</groupId>
@@ -338,7 +353,7 @@
 					<user>${env.SPRING_DATASOURCE_USERNAME}</user>
 					<password>${env.SPRING_DATASOURCE_PASSWORD}</password>
 					<locations>
-						<location>filesystem:src/api/main/resources/db/migration</location>
+						<location>filesystem:src/api/main/resources/rest-app-db/migration</location>
 					</locations>
 					<baselineOnMigrate>true</baselineOnMigrate>
 					<outOfOrder>true</outOfOrder>

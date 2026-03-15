@@ -26,6 +26,7 @@ import { ControllersSpecTableComponent } from '../controllers-spec-table/control
 import { AddProfileComponent } from '../add-profile/add-profile.component';
 import { SidenavComponent, NavItem } from '../../../../components/shared/sidenav/sidenav.component';
 import { AuthService } from '../../../../services/auth.service';
+import { ProjectContributor, ProjectService } from '../../../../services/project.service';
 import { ToastService } from '../../../../services/toast.service';
 import { HttpClient } from '@angular/common/http';
 import { API_CONFIG, API_ENDPOINTS } from '../../../../constants/api.constants';
@@ -117,6 +118,7 @@ import { toDatabaseCode, resolveDatabaseType, trimmed, toArtifactId, hasNumber }
   styleUrls: ['./project-generation-dashboard.component.css']
 })
 export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
+  private static readonly projectStorageResetKey = 'project_storage_reset_v20260314';
   private destroy$ = new Subject<void>();
   private readonly maxYamlSpecPayloadBytes = 2 * 1024 * 1024;
   readonly appSettings = APP_SETTINGS;
@@ -124,7 +126,7 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
   isSidebarOpen = false;
   isLoading = false;
   isLoggedIn = false;
-  projectId: number | null = null;
+  projectId: string | null = null;
   hasUnsavedChanges = false;
   activeSection = 'general';
 
@@ -156,6 +158,11 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
   isExploreSyncing = false;
   isGeneratingFromDtoSave = false;
   backendProjectId: string | null = null;
+  projectOwnerId: string | null = null;
+  projectCanManageContributors = false;
+  projectContributors: ProjectContributor[] = [];
+  contributorUserId = '';
+  isContributorSaving = false;
   private projectEventsSource: EventSource | null = null;
   private pendingGenerationYamlSpec: string | null = null;
   private generationCreateSubscription: Subscription | null = null;
@@ -216,6 +223,7 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
     private router: Router,
     private route: ActivatedRoute,
     private authService: AuthService,
+    private projectService: ProjectService,
     private toastService: ToastService,
     private http: HttpClient,
     private validatorService: ValidatorService,
@@ -263,14 +271,15 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
+    this.clearLegacyProjectStorageIfRequired();
     this.isLoggedIn = this.authService.isLoggedIn();
 
     this.route.queryParams
       .pipe(takeUntil(this.destroy$))
       .subscribe(params => {
         if (params['projectId']) {
-          this.projectId = +params['projectId'];
-          this.loadProject(this.projectId);
+          this.backendProjectId = String(params['projectId']).trim();
+          this.loadProject(this.backendProjectId);
           return;
         }
 
@@ -303,7 +312,7 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
 
   getProjectData() {
     return {
-      id: this.projectId || undefined,
+      id: this.backendProjectId || this.projectId || undefined,
       settings: this.projectSettings,
       database: this.databaseSettings,
       preferences: this.developerPreferences,
@@ -325,9 +334,20 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
     };
   }
 
-  async loadProject(projectId: number): Promise<void> {
+  async loadProject(projectId: string): Promise<void> {
     this.isLoading = true;
     try {
+      if (!this.isLoggedIn) {
+        this.toastService.error(`User doesn't have access.`);
+        this.navigateHome();
+        return;
+      }
+
+      const projectDetails = await firstValueFrom(this.projectService.getProject(projectId));
+      this.backendProjectId = projectDetails.projectId || projectId;
+      this.projectOwnerId = projectDetails.ownerId || null;
+      this.projectCanManageContributors = Boolean(projectDetails.canManageContributors);
+      this.projectContributors = projectDetails.contributors || [];
       const projectData = this.loadProjectFromStorage(projectId);
 
       if (projectData) {
@@ -370,6 +390,7 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
         this.dependencies = projectData.dependencies || '';
         this.toastService.success('Project loaded successfully');
       } else {
+        this.projectSettings.projectName = projectDetails.name || this.projectSettings.projectName;
         this.entities = [];
         this.dataObjects = [];
         this.relations = [];
@@ -381,18 +402,19 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
         this.syncActuatorStateStore();
       }
     } catch (error) {
-      this.toastService.error('Failed to load project');
+        this.toastService.error(`User doesn't have access.`);
+        this.navigateHome();
       console.error('Error loading project:', error);
     } finally {
       this.isLoading = false;
     }
   }
 
-  loadProjectFromStorage(projectId: number): any {
+  loadProjectFromStorage(projectId: string): any {
     const savedProjects = localStorage.getItem('projects');
     if (savedProjects) {
       const projects = JSON.parse(savedProjects);
-      return projects.find((p: any) => p.id === projectId);
+      return projects.find((p: any) => String(p.id) === String(projectId));
     }
     return null;
   }
@@ -402,15 +424,16 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
     const savedProjects = localStorage.getItem('projects');
     let projects = savedProjects ? JSON.parse(savedProjects) : [];
 
-    if (this.projectId) {
-      const index = projects.findIndex((p: any) => p.id === this.projectId);
+    const persistedProjectId = this.backendProjectId || this.projectId;
+    if (persistedProjectId) {
+      const index = projects.findIndex((p: any) => String(p.id) === String(persistedProjectId));
       if (index !== -1) {
-        projects[index] = projectData;
+        projects[index] = { ...projectData, id: persistedProjectId };
       } else {
-        projects.push(projectData);
+        projects.push({ ...projectData, id: persistedProjectId });
       }
     } else {
-      projectData.id = Date.now();
+      projectData.id = String(Date.now());
       this.projectId = projectData.id;
       projects.push(projectData);
     }
@@ -431,6 +454,63 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
       return;
     }
     this.generateAndDownloadProjectForGuest();
+  }
+
+  private clearLegacyProjectStorageIfRequired(): void {
+    const resetApplied = this.localStorageService.getItem(ProjectGenerationDashboardComponent.projectStorageResetKey);
+    if (resetApplied === 'true') {
+      return;
+    }
+    this.localStorageService.removeItem('projects');
+    this.localStorageService.removeItem('project_zip_cache_v1');
+    this.localStorageService.setItem(ProjectGenerationDashboardComponent.projectStorageResetKey, 'true');
+  }
+
+  canManageContributors(): boolean {
+    return Boolean(this.backendProjectId && this.projectCanManageContributors);
+  }
+
+  async addContributor(): Promise<void> {
+    const projectId = this.backendProjectId?.trim();
+    const userId = this.contributorUserId.trim();
+    if (!projectId) {
+      this.toastService.error('Save project first before managing contributors.');
+      return;
+    }
+    if (!userId) {
+      this.toastService.error('Enter a contributor user id.');
+      return;
+    }
+    this.isContributorSaving = true;
+    try {
+      this.projectContributors = await firstValueFrom(this.projectService.addProjectContributor(projectId, userId));
+      this.contributorUserId = '';
+      this.toastService.success('Contributor added successfully.');
+    } catch (error) {
+      this.toastService.error('Failed to add contributor.');
+      console.error('Error adding contributor:', error);
+    } finally {
+      this.isContributorSaving = false;
+    }
+  }
+
+  async removeContributor(userId: string): Promise<void> {
+    const projectId = this.backendProjectId?.trim();
+    if (!projectId) {
+      this.toastService.error('Save project first before managing contributors.');
+      return;
+    }
+    this.isContributorSaving = true;
+    try {
+      await firstValueFrom(this.projectService.removeProjectContributor(projectId, userId));
+      this.projectContributors = this.projectContributors.filter((contributor) => contributor.userId !== userId);
+      this.toastService.success('Contributor removed successfully.');
+    } catch (error) {
+      this.toastService.error('Failed to remove contributor.');
+      console.error('Error removing contributor:', error);
+    } finally {
+      this.isContributorSaving = false;
+    }
   }
 
   toggleSidebar(): void {
@@ -958,8 +1038,8 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
       return;
     }
 
-    this.projectId = recentProjectId;
-    this.loadProject(recentProjectId);
+    this.projectId = String(recentProjectId);
+    this.loadProject(String(recentProjectId));
   }
 
   cancelRecentProjectResume(): void {

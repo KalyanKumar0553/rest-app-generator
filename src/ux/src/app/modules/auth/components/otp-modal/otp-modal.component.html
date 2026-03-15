@@ -33,6 +33,44 @@
           <span class="error-message" *ngIf="otpError">{{ otpError }}</span>
         </div>
 
+        <div class="form-group">
+          <div class="captcha-header">
+            <label for="captchaText">Captcha for Resend</label>
+            <button
+              type="button"
+              class="link captcha-refresh"
+              (click)="refreshCaptcha()"
+              [disabled]="isLoading || isCaptchaLoading"
+            >
+              {{ isCaptchaLoading ? 'Loading...' : 'Refresh captcha' }}
+            </button>
+          </div>
+
+          <div class="captcha-preview" *ngIf="captchaImageUrl; else resendCaptchaFallback">
+            <img [src]="captchaImageUrl" alt="Captcha challenge" class="captcha-image" />
+          </div>
+
+          <ng-template #resendCaptchaFallback>
+            <div class="captcha-preview captcha-preview--empty">
+              <span>{{ isCaptchaLoading ? 'Loading captcha...' : 'Captcha unavailable' }}</span>
+            </div>
+          </ng-template>
+
+          <input
+            type="text"
+            id="captchaText"
+            name="captchaText"
+            [(ngModel)]="captchaText"
+            (input)="onCaptchaInput()"
+            placeholder="Enter captcha to resend OTP"
+            class="form-control"
+            [class.error]="captchaError"
+            [disabled]="isLoading || isCaptchaLoading"
+            autocomplete="off"
+          />
+          <span class="error-message" *ngIf="captchaError">{{ captchaError }}</span>
+        </div>
+
         <div class="resend-section">
           <p class="resend-text">
             Didn't receive the code?
