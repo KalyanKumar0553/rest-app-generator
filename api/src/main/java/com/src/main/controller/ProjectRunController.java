@@ -11,19 +11,23 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.src.main.dto.ProjectRunDetailsResponseDTO;
 import com.src.main.service.ProjectOrchestrationService;
+import com.src.main.service.ProjectUserIdentityService;
 
 @RestController
 @RequestMapping("/api/runs")
 public class ProjectRunController {
 
     private final ProjectOrchestrationService orchestrationService;
+    private final ProjectUserIdentityService projectUserIdentityService;
 
-    public ProjectRunController(ProjectOrchestrationService orchestrationService) {
+    public ProjectRunController(ProjectOrchestrationService orchestrationService,
+            ProjectUserIdentityService projectUserIdentityService) {
         this.orchestrationService = orchestrationService;
+        this.projectUserIdentityService = projectUserIdentityService;
     }
 
     private String currentUserId(Principal principal) {
-        return principal.getName();
+        return projectUserIdentityService.currentUserId(principal);
     }
 
     @GetMapping("/{runId}")

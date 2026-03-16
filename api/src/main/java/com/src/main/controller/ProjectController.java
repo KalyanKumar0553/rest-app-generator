@@ -29,6 +29,7 @@ import com.src.main.model.ProjectRunEntity;
 import com.src.main.service.ProjectEventStreamService;
 import com.src.main.service.ProjectOrchestrationService;
 import com.src.main.service.ProjectService;
+import com.src.main.service.ProjectUserIdentityService;
 import com.src.main.util.AppConstants;
 
 import lombok.AllArgsConstructor;
@@ -42,6 +43,7 @@ public class ProjectController {
 	private final ProjectService service;
 	private final ProjectOrchestrationService orchestrationService;
 	private final ProjectEventStreamService projectEventStreamService;
+	private final ProjectUserIdentityService projectUserIdentityService;
 
 	@PostMapping(consumes = { "text/yaml", "application/x-yaml", MediaType.TEXT_PLAIN_VALUE }, produces = MediaType.APPLICATION_JSON_VALUE)
 	public ProjectCreateResponseDTO create(@RequestBody String yamlText, Principal principal) {
@@ -79,7 +81,7 @@ public class ProjectController {
 	}
 
 	private String currentUserId(Principal principal) {
-		return principal.getName();
+		return projectUserIdentityService.currentUserId(principal);
 	}
 
 	@PutMapping("/{projectId}/spec")

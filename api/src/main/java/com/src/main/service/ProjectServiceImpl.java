@@ -42,6 +42,7 @@ public class ProjectServiceImpl implements ProjectService {
 	private final ProjectRepository repo;
 	private final ProjectRunRepository projectRunRepository;
 	private final ProjectContributorRepository projectContributorRepository;
+	private final ProjectUserIdentityService projectUserIdentityService;
 	private final Validator validator;
 
 	static class Input {
@@ -132,7 +133,8 @@ public class ProjectServiceImpl implements ProjectService {
 
 	@Override
 	public List<ProjectSummaryDTO> list(String userId) {
-		List<ProjectEntity> all = isAdmin() ? repo.findAll() : repo.findAccessibleProjects(userId);
+		ProjectUserIdentityService.ResolvedProjectUser currentUser = projectUserIdentityService.resolve(userId);
+		List<ProjectEntity> all = isAdmin() ? repo.findAll() : repo.findAccessibleProjectsByUserKeys(currentUser.keys());
 		List<ProjectSummaryDTO> out = new ArrayList<>();
 		for (ProjectEntity p : all) {
 			out.add(toSummary(p));
@@ -142,9 +144,10 @@ public class ProjectServiceImpl implements ProjectService {
 
 	@Override
 	public ProjectDetailsDTO getDetails(UUID projectId, String userId) {
-		ProjectEntity project = getAccessibleProject(projectId, userId);
+		ProjectUserIdentityService.ResolvedProjectUser currentUser = projectUserIdentityService.resolve(userId);
+		ProjectEntity project = getAccessibleProject(projectId, currentUser);
 		boolean admin = isAdmin();
-		boolean isOwner = userId.equals(project.getOwnerId());
+		boolean isOwner = currentUser.keys().contains(project.getOwnerId());
 		return new ProjectDetailsDTO(
 				project.getId().toString(),
 				project.getId(),
@@ -162,19 +165,20 @@ public class ProjectServiceImpl implements ProjectService {
 
 	@Override
 	public List<ProjectContributorDTO> getContributors(UUID projectId, String userId) {
-		getAccessibleProject(projectId, userId);
+		getAccessibleProject(projectId, projectUserIdentityService.resolve(userId));
 		return toContributorDtos(projectId);
 	}
 
 	@Override
 	@Transactional
 	public List<ProjectContributorDTO> addContributor(UUID projectId, String ownerId, ProjectContributorUpsertRequestDTO request) {
-		ProjectEntity project = getOwnedProject(projectId, ownerId);
+		ProjectUserIdentityService.ResolvedProjectUser currentUser = projectUserIdentityService.resolve(ownerId);
+		ProjectEntity project = getOwnedProject(projectId, currentUser);
 		String contributorUserId = request.getUserId() == null ? "" : request.getUserId().trim();
 		if (contributorUserId.isEmpty()) {
 			throw new IllegalArgumentException("userId is required");
 		}
-		if (ownerId.equals(contributorUserId)) {
+		if (currentUser.keys().contains(contributorUserId) || currentUser.userId().equals(contributorUserId)) {
 			throw new IllegalArgumentException("Project owner already has access");
 		}
 		if (!projectContributorRepository.existsByProjectIdAndUserId(projectId, contributorUserId)) {
@@ -183,13 +187,13 @@ public class ProjectServiceImpl implements ProjectService {
 			contributor.setUserId(contributorUserId);
 			projectContributorRepository.save(contributor);
 		}
-		return getContributors(projectId, ownerId);
+		return getContributors(projectId, currentUser.userId());
 	}
 
 	@Override
 	@Transactional
 	public void removeContributor(UUID projectId, String ownerId, String contributorUserId) {
-		getOwnedProject(projectId, ownerId);
+		getOwnedProject(projectId, projectUserIdentityService.resolve(ownerId));
 		String normalizedUserId = contributorUserId == null ? "" : contributorUserId.trim();
 		if (normalizedUserId.isEmpty()) {
 			throw new IllegalArgumentException("contributorUserId is required");
@@ -198,21 +202,43 @@ public class ProjectServiceImpl implements ProjectService {
 	}
 
 	public ProjectEntity getAccessibleProject(UUID projectId, String userId) {
+		return getAccessibleProject(projectId, projectUserIdentityService.resolve(userId));
+	}
+
+	private ProjectEntity getAccessibleProject(UUID projectId, ProjectUserIdentityService.ResolvedProjectUser currentUser) {
 		ProjectEntity project = repo.findWithContributorsById(projectId)
 				.orElseThrow(() -> new IllegalArgumentException("Project not found: " + projectId));
-		if (isAdmin() || userId.equals(project.getOwnerId()) || projectContributorRepository.existsByProjectIdAndUserId(projectId, userId)) {
+		reassignOwnerIfNeeded(project, currentUser);
+		if (isAdmin()
+				|| currentUser.keys().contains(project.getOwnerId())
+				|| projectContributorRepository.existsByProjectIdAndUserIdIn(projectId, currentUser.keys())) {
 			return project;
 		}
 		throw new SecurityException("User not allowed to access this project");
 	}
 
-	private ProjectEntity getOwnedProject(UUID projectId, String ownerId) {
+	private ProjectEntity getOwnedProject(UUID projectId, ProjectUserIdentityService.ResolvedProjectUser currentUser) {
 		ProjectEntity project = repo.findWithContributorsById(projectId)
 				.orElseThrow(() -> new IllegalArgumentException("Project not found: " + projectId));
-		if (!isAdmin() && !ownerId.equals(project.getOwnerId())) {
+		reassignOwnerIfNeeded(project, currentUser);
+		if (!isAdmin() && !currentUser.keys().contains(project.getOwnerId())) {
 			throw new SecurityException("Only the project owner can manage contributors");
 		}
 		return project;
+	}
+
+	private void reassignOwnerIfNeeded(ProjectEntity project, ProjectUserIdentityService.ResolvedProjectUser currentUser) {
+		if (project == null || project.getOwnerId() == null || currentUser == null) {
+			return;
+		}
+		if (!currentUser.keys().contains(project.getOwnerId())) {
+			return;
+		}
+		if (project.getOwnerId().equals(currentUser.userId())) {
+			return;
+		}
+		project.setOwnerId(currentUser.userId());
+		repo.save(project);
 	}
 
 	private boolean isAdmin() {

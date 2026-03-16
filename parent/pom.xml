@@ -13,6 +13,7 @@
 		<module>../common</module>
 		<module>../communication</module>
 		<module>../auth</module>
+		<module>../state-machine</module>
 		<module>../swagger</module>
 		<module>..</module>
 	</modules>
@@ -66,6 +67,11 @@
 			<dependency>
 				<groupId>com.src</groupId>
 				<artifactId>auth</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>com.src</groupId>
+				<artifactId>state-machine</artifactId>
 				<version>${project.version}</version>
 			</dependency>
 			<dependency>

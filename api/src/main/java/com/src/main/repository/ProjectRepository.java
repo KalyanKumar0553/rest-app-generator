@@ -1,5 +1,6 @@
 package com.src.main.repository;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -19,6 +20,15 @@ public interface ProjectRepository extends JpaRepository<ProjectEntity, UUID> {
 			order by p.updatedAt desc
 			""")
 	List<ProjectEntity> findAccessibleProjects(@Param("userId") String userId);
+
+	@Query("""
+			select distinct p
+			from ProjectEntity p
+			left join p.contributors c
+			where p.ownerId in :userKeys or c.userId in :userKeys
+			order by p.updatedAt desc
+			""")
+	List<ProjectEntity> findAccessibleProjectsByUserKeys(@Param("userKeys") Collection<String> userKeys);
 
 	@Query("""
 			select distinct p

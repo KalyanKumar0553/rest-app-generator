@@ -30,6 +30,7 @@ public class ProjectOrchestrationServiceImpl implements ProjectOrchestrationServ
 	private final ProjectRepository projectRepository;
 	private final ProjectRunRepository projectRunRepository;
 	private final ProjectContributorRepository projectContributorRepository;
+	private final ProjectUserIdentityService projectUserIdentityService;
 
 	@Value("${app.project.max-generates-per-user-per-day:200}")
 	private int maxGeneratesPerUserPerDay;
@@ -37,16 +38,20 @@ public class ProjectOrchestrationServiceImpl implements ProjectOrchestrationServ
 	private ZoneId zoneId = ZoneId.of("Asia/Kolkata");
 
 	public ProjectOrchestrationServiceImpl(ProjectRepository projectRepository, ProjectRunRepository projectRunRepository,
-			ProjectContributorRepository projectContributorRepository) {
+			ProjectContributorRepository projectContributorRepository,
+			ProjectUserIdentityService projectUserIdentityService) {
 		this.projectRepository = projectRepository;
 		this.projectRunRepository = projectRunRepository;
 		this.projectContributorRepository = projectContributorRepository;
+		this.projectUserIdentityService = projectUserIdentityService;
 	}
 
 	@Override
 	@Transactional
 	public ProjectEntity updateSpec(UUID projectId, String ownerId, String yamlContent) {
-		ProjectEntity project = getOwnedProject(projectId, ownerId);
+		ProjectUserIdentityService.ResolvedProjectUser currentUser = projectUserIdentityService.resolve(ownerId);
+		ProjectEntity project = getOwnedProject(projectId, currentUser.userId());
+		project.setOwnerId(currentUser.userId());
 		project.setYaml(yamlContent);
 		return project;
 	}
@@ -77,11 +82,13 @@ public class ProjectOrchestrationServiceImpl implements ProjectOrchestrationServ
 	@Override
 	@Transactional(readOnly = true)
 	public ProjectEntity getOwnedProject(UUID projectId, String ownerId) {
+		ProjectUserIdentityService.ResolvedProjectUser currentUser = projectUserIdentityService.resolve(ownerId);
 		ProjectEntity project = projectRepository.findWithContributorsById(projectId)
 				.orElseThrow(() -> new IllegalArgumentException("Project not found: " + projectId));
+		reassignOwnerIfNeeded(project, currentUser);
 		if (!isAdmin()
-				&& !ownerId.equals(project.getOwnerId())
-				&& !projectContributorRepository.existsByProjectIdAndUserId(projectId, ownerId)) {
+				&& !currentUser.keys().contains(project.getOwnerId())
+				&& !projectContributorRepository.existsByProjectIdAndUserIdIn(projectId, currentUser.keys())) {
 			throw new SecurityException("User not allowed to access this project");
 		}
 		return project;
@@ -105,15 +112,30 @@ public class ProjectOrchestrationServiceImpl implements ProjectOrchestrationServ
 
 	@Transactional
 	protected ProjectRunEntity createGenerateRun(ProjectEntity project, String ownerId) {
-		enforceDailyLimit(ownerId);
+		String canonicalUserId = projectUserIdentityService.resolve(ownerId).userId();
+		enforceDailyLimit(canonicalUserId);
 		long existingForProject = projectRunRepository.countByProjectIdAndType(project.getId(), ProjectRunType.GENERATE_CODE);
 		ProjectRunEntity run = new ProjectRunEntity();
 		run.setProject(project);
-		run.setOwnerId(ownerId);
+		run.setOwnerId(canonicalUserId);
 		run.setType(ProjectRunType.GENERATE_CODE);
 		run.setStatus(ProjectRunStatus.QUEUED);
 		run.setRunNumber((int) existingForProject + 1);
 		return projectRunRepository.save(run);
+	}
+
+	private void reassignOwnerIfNeeded(ProjectEntity project, ProjectUserIdentityService.ResolvedProjectUser currentUser) {
+		if (project == null || project.getOwnerId() == null || currentUser == null) {
+			return;
+		}
+		if (!currentUser.keys().contains(project.getOwnerId())) {
+			return;
+		}
+		if (project.getOwnerId().equals(currentUser.userId())) {
+			return;
+		}
+		project.setOwnerId(currentUser.userId());
+		projectRepository.save(project);
 	}
 
 	protected void enforceDailyLimit(String ownerId) {

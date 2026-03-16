@@ -28,6 +28,10 @@
 		</dependency>
 		<dependency>
 			<groupId>com.src</groupId>
+			<artifactId>state-machine</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>com.src</groupId>
 			<artifactId>swagger</artifactId>
 		</dependency>
 		<dependency>
