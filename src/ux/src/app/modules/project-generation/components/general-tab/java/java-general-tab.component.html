@@ -3,8 +3,10 @@
     [projectSettings]="projectSettings"
     [projectGroupError]="projectGroupError"
     [projectNameError]="projectNameError"
+    [projectDescriptionError]="projectDescriptionError"
     (projectGroupChange)="projectGroupChange.emit()"
-    (projectNameChange)="projectNameChange.emit()">
+    (projectNameChange)="projectNameChange.emit()"
+    (projectDescriptionChange)="projectDescriptionChange.emit()">
   </app-java-project-settings-section>
 
   <app-java-database-settings-section

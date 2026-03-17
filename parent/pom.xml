@@ -12,6 +12,7 @@
 	<modules>
 		<module>../common</module>
 		<module>../communication</module>
+		<module>../rbac</module>
 		<module>../auth</module>
 		<module>../state-machine</module>
 		<module>../swagger</module>
@@ -62,6 +63,11 @@
 			<dependency>
 				<groupId>com.src</groupId>
 				<artifactId>communication</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>com.src</groupId>
+				<artifactId>rbac</artifactId>
 				<version>${project.version}</version>
 			</dependency>
 			<dependency>
@@ -141,6 +147,7 @@
 					<version>3.11.0</version>
 					<configuration>
 						<release>${java.version}</release>
+						<parameters>true</parameters>
 						<annotationProcessorPaths>
 							<path>
 								<groupId>org.projectlombok</groupId>

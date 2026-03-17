@@ -69,12 +69,12 @@
   border-radius: 50%;
   background:
     conic-gradient(
-      from 210deg,
-      var(--color-primary) 0deg 55deg,
-      var(--warning-500) 55deg 135deg,
-      var(--success-500) 135deg 235deg,
-      var(--color-secondary, var(--theme-input-focus-border-color)) 235deg 360deg
-    );
+  from 180deg,
+    #4285F4 0deg 90deg,  /* Blue */
+    #34A853 90deg 180deg, /* Green */
+    #FBBC05 180deg 270deg, /* Yellow */
+    #EA4335 270deg 360deg  /* Red */
+  );
   color: var(--color-background-white);
   font-weight: 700;
   font-size: 28px;

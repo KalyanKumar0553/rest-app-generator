@@ -20,6 +20,7 @@ public class ProjectRunDetailsResponseDTO {
 	private ProjectRunType type;
 	private ProjectRunStatus status;
 	private int runNumber;
+	private boolean hasZip;
 	private String errorMessage;
 	private OffsetDateTime createdAt;
 	private OffsetDateTime updatedAt;

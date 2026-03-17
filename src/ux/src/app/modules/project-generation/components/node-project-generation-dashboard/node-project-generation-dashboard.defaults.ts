@@ -42,6 +42,7 @@ export const DEPLOYMENT_OPTIONS = ['None', 'Docker', 'Kubernetes', 'Cloud'];
 export const DEFAULT_PROJECT_SETTINGS = {
   projectGroup: APP_SETTINGS.defaultProjectGroup,
   projectName: 'my-app',
+  projectDescription: '',
   buildType: 'gradle' as const,
   language: 'node' as const,
   frontend: 'none',

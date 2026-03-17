@@ -8,16 +8,18 @@ public class AuthenticatedUserResponseDto {
 	private String name;
 	private String role;
 	private List<String> roles;
+	private List<String> permissions;
 	private String avatarUrl;
 
 	public AuthenticatedUserResponseDto() {}
 
-	public AuthenticatedUserResponseDto(String id, String email, String name, String role, List<String> roles, String avatarUrl) {
+	public AuthenticatedUserResponseDto(String id, String email, String name, String role, List<String> roles, List<String> permissions, String avatarUrl) {
 		this.id = id;
 		this.email = email;
 		this.name = name;
 		this.role = role;
 		this.roles = roles;
+		this.permissions = permissions;
 		this.avatarUrl = avatarUrl;
 	}
 
@@ -59,6 +61,14 @@ public class AuthenticatedUserResponseDto {
 
 	public void setRoles(List<String> roles) {
 		this.roles = roles;
+	}
+
+	public List<String> getPermissions() {
+		return permissions;
+	}
+
+	public void setPermissions(List<String> permissions) {
+		this.permissions = permissions;
 	}
 
 	public String getAvatarUrl() {

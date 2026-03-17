@@ -18,10 +18,12 @@ export class NodeProjectSettingsSectionComponent {
   @Input({ required: true }) projectSettings!: any;
   @Input() projectGroupError = '';
   @Input() projectNameError = '';
+  @Input() projectDescriptionError = '';
   @Input({ required: true }) packageManagerOptions!: string[];
 
   @Output() projectGroupChange = new EventEmitter<void>();
   @Output() projectNameChange = new EventEmitter<void>();
+  @Output() projectDescriptionChange = new EventEmitter<void>();
 
   readonly appSettings = APP_SETTINGS;
 }

@@ -47,7 +47,8 @@ public class ProjectWorkflowService {
 			run.setErrorMessage(ex.getMessage());
 			runRepository.saveAndFlush(run);
 			projectEventStreamService.publish(run.getProject().getId(), "generation",
-					Map.of("projectId", run.getProject().getId().toString(), "status", "ERROR",
+					Map.of("projectId", run.getProject().getId().toString(), "runId", run.getId().toString(), "status", "ERROR",
+							"hasZip", false,
 							"message", ex.getMessage() == null ? "Generation failed." : ex.getMessage()));
         }
 	}

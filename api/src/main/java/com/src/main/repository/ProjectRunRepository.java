@@ -36,6 +36,8 @@ public interface ProjectRunRepository extends JpaRepository<ProjectRunEntity, UU
 
 	List<ProjectRunEntity> findByProjectIdOrderByCreatedAtAsc(UUID projectId);
 
+	long deleteByProjectId(UUID projectId);
+
 	@Lock(LockModeType.PESSIMISTIC_WRITE)
 	@QueryHints(@QueryHint(name = "jakarta.persistence.lock.timeout", value = "0"))
 	@Query("SELECT r FROM ProjectRunEntity r WHERE r.status = :status AND r.type   = :type ORDER BY r.createdAt ASC")

@@ -4,9 +4,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
-import java.time.format.DateTimeFormatter;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -47,6 +45,7 @@ public class AuthService {
 	private final OtpSender otpSender;
 	private final CaptchaService captchaService;
 	private final RoleCatalogService roleCatalogService;
+	private final RbacService rbacService;
 
 	private final long accessTtl;
 	private final long refreshTtl;
@@ -68,6 +67,7 @@ public class AuthService {
 			OtpSender otpSender,
 			CaptchaService captchaService,
 			RoleCatalogService roleCatalogService,
+			RbacService rbacService,
 			@Value("${jwt.access.ttl.seconds:900}") long accessTtl,
 			@Value("${jwt.refresh.ttl.seconds:604800}") long refreshTtl,
 			@Value("${otp.ttl.seconds:300}") long otpTtl,
@@ -86,6 +86,7 @@ public class AuthService {
 		this.otpSender = otpSender;
 		this.captchaService = captchaService;
 		this.roleCatalogService = roleCatalogService;
+		this.rbacService = rbacService;
 		this.accessTtl = accessTtl;
 		this.refreshTtl = refreshTtl;
 		this.otpTtl = otpTtl;
@@ -316,16 +317,20 @@ public class AuthService {
 			if (!"swagger".equals(username) || !"swagger1234".equals(password)) {
 				throw new IllegalArgumentException("Invalid swagger credentials");
 			}
-			return jwtUtils.signAccess("swagger:" + username, List.of("ROLE_SWAGGER_ADMIN"), accessTtl);
+			return jwtUtils.signAccess("swagger:" + username, List.of("ROLE_SWAGGER_ADMIN"), List.of("swagger.password.manage"), accessTtl);
 		}
 		if (!CryptoUtils.verifyPassword(password, setting.getHash())) {
 			throw new IllegalArgumentException("Invalid swagger credentials");
 		}
-		return jwtUtils.signAccess("swagger:" + username, List.of("ROLE_SWAGGER_ADMIN"), accessTtl);
+		return jwtUtils.signAccess("swagger:" + username, List.of("ROLE_SWAGGER_ADMIN"), List.of("swagger.password.manage"), accessTtl);
 	}
 
 	public List<String> getUserRoles(String userId) {
-		return getUserRolesByUserId(userId);
+		return rbacService.getAccessProfile(userId).roles();
+	}
+
+	public List<String> getUserPermissions(String userId) {
+		return rbacService.getAccessProfile(userId).permissions();
 	}
 
 	private void generateOtpForUser(String identifier, OtpPurpose purpose) {
@@ -370,8 +375,10 @@ public class AuthService {
 	}
 
 	private TokenPairResponseDto issueTokens(String userId, String familyId) {
-		List<String> roles = getUserRolesByUserId(userId);
-		String access = jwtUtils.signAccess(userId, roles, accessTtl);
+		RbacService.AccessProfile accessProfile = rbacService.getAccessProfile(userId);
+		List<String> roles = accessProfile.roles();
+		List<String> permissions = accessProfile.permissions();
+		String access = jwtUtils.signAccess(userId, roles, permissions, accessTtl);
 		String refreshId = CryptoUtils.uuid();
 		String refresh = jwtUtils.signRefresh(userId, refreshId, refreshTtl);
 		
@@ -384,7 +391,7 @@ public class AuthService {
 		token.setRevoked(false);
 		refreshTokenRepository.save(token);
 
-		return new TokenPairResponseDto(access, refresh, buildAuthenticatedUser(userId, roles));
+		return new TokenPairResponseDto(access, refresh, buildAuthenticatedUser(userId, roles, permissions));
 	}
 
 	private void revokeUserRefreshTokens(String userId) {
@@ -408,15 +415,7 @@ public class AuthService {
 		return userRepository.findByIdentifier(id).orElseThrow(() -> new IllegalArgumentException("User not found"));
 	}
 
-	private List<String> getUserRolesByUserId(String userId) {
-		List<UserRole> assignments = userRoleRepository.findByUserId(userId);
-		if (!assignments.isEmpty()) {
-			return assignments.stream().map(UserRole::getRoleName).collect(Collectors.toList());
-		}
-		return List.of(roleCatalogService.getDefaultAuthRoleName());
-	}
-
-	private AuthenticatedUserResponseDto buildAuthenticatedUser(String userId, List<String> roles) {
+	private AuthenticatedUserResponseDto buildAuthenticatedUser(String userId, List<String> roles, List<String> permissions) {
 		User user = userRepository.findById(userId).orElseThrow(() -> new IllegalArgumentException("User not found"));
 		var profile = userProfileRepository.findById(userId).orElse(null);
 		String name = user.getIdentifier();
@@ -433,6 +432,6 @@ public class AuthService {
 		}
 
 		String primaryRole = roles.isEmpty() ? roleCatalogService.getDefaultAuthRoleName() : roles.get(0);
-		return new AuthenticatedUserResponseDto(user.getId(), user.getIdentifier(), name, primaryRole, roles, avatarUrl);
+		return new AuthenticatedUserResponseDto(user.getId(), user.getIdentifier(), name, primaryRole, roles, permissions, avatarUrl);
 	}
 }

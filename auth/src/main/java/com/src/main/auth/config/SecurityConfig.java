@@ -82,7 +82,7 @@ public class SecurityConfig {
 							"/api/v1/auth/token/refresh",
 							"/api/v1/auth/token/validate")
 							.permitAll();
-					auth.requestMatchers("/api/v1/admin/auth/**").permitAll();
+					auth.requestMatchers("/api/v1/admin/auth/login").permitAll();
 					applyDynamicProtectedRoutes(auth, authRouteAuthorizationService);
 					auth.anyRequest().authenticated();
 				});
@@ -104,7 +104,7 @@ public class SecurityConfig {
 			AntPathRequestMatcher matcher = route.httpMethod() == null
 					? new AntPathRequestMatcher(route.pathPattern())
 					: new AntPathRequestMatcher(route.pathPattern(), route.httpMethod());
-			auth.requestMatchers(matcher).hasAnyAuthority(route.roles().toArray(String[]::new));
+			auth.requestMatchers(matcher).hasAnyAuthority(route.authorities().toArray(String[]::new));
 		}
 	}
 }

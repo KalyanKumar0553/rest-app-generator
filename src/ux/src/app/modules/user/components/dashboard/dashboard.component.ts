@@ -10,6 +10,7 @@ import { ConfirmationModalComponent, ModalButton } from '../../../../components/
 import { SearchSortComponent, SearchConfig, SortOption, SearchSortEvent } from '../../../../components/search-sort/search-sort.component';
 import { SidenavComponent, NavItem } from '../../../../components/shared/sidenav/sidenav.component';
 import { APP_SETTINGS } from '../../../../settings/app-settings';
+import { LocalStorageService } from '../../../../services/local-storage.service';
 
 export interface Project extends ProjectSummary {
   name: string;
@@ -34,11 +35,14 @@ export class DashboardComponent implements OnInit {
   isLoadingRoles: boolean = false;
   showLogoutConfirmation: boolean = false;
   isLoggingOut: boolean = false;
+  showDeleteConfirmation: boolean = false;
+  isDeletingProject: boolean = false;
   isSidebarOpen: boolean = false;
   projects: Project[] = [];
   filteredProjects: Project[] = [];
   isLoadingProjects: boolean = false;
   activeSection: string = 'projects';
+  projectToDelete: Project | null = null;
 
   navItems: NavItem[] = [
     { icon: 'folder', label: 'Projects', value: 'projects' },
@@ -72,12 +76,25 @@ export class DashboardComponent implements OnInit {
     ]
   };
 
+  deleteModalConfig = {
+    title: 'Delete Project',
+    message: [
+      'Are you sure you want to permanently delete this project?',
+      'This will hard delete the project, project runs, and contributor records. This action cannot be undone.'
+    ],
+    buttons: [
+      { text: 'Cancel', type: 'cancel' as const, action: 'cancel' as const },
+      { text: 'Delete', type: 'danger' as const, action: 'confirm' as const }
+    ]
+  };
+
   constructor(
     private router: Router,
     private authService: AuthService,
     private userService: UserService,
     private projectService: ProjectService,
     private toastService: ToastService,
+    private localStorageService: LocalStorageService,
   ) {}
 
   @HostListener('window:pageshow', ['$event'])
@@ -158,6 +175,43 @@ export class DashboardComponent implements OnInit {
 
   cancelLogout(): void {
     this.showLogoutConfirmation = false;
+  }
+
+  promptDeleteProject(project: Project): void {
+    this.projectToDelete = project;
+    this.showDeleteConfirmation = true;
+  }
+
+  confirmDeleteProject(): void {
+    const projectId = this.projectToDelete?.projectId || this.projectToDelete?.id;
+    if (!projectId) {
+      this.showDeleteConfirmation = false;
+      this.projectToDelete = null;
+      this.toastService.error('Unable to delete project');
+      return;
+    }
+
+    this.isDeletingProject = true;
+    this.projectService.deleteProject(projectId).subscribe({
+      next: () => {
+        this.isDeletingProject = false;
+        this.showDeleteConfirmation = false;
+        this.projectToDelete = null;
+        this.toastService.success('Project deleted successfully');
+        this.loadProjects();
+      },
+      error: () => {
+        this.isDeletingProject = false;
+        this.showDeleteConfirmation = false;
+        this.projectToDelete = null;
+        this.toastService.error('Failed to delete project');
+      }
+    });
+  }
+
+  cancelDeleteProject(): void {
+    this.showDeleteConfirmation = false;
+    this.projectToDelete = null;
   }
 
   navigateToAccount(): void {
@@ -243,6 +297,8 @@ export class DashboardComponent implements OnInit {
   }
 
   createNewProject(): void {
+    this.localStorageService.removeItem('projects');
+    this.localStorageService.removeItem('project_zip_cache_v1');
     this.router.navigate(['/project-generation']);
   }
 }

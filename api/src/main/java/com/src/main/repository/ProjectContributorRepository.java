@@ -12,5 +12,6 @@ public interface ProjectContributorRepository extends JpaRepository<ProjectContr
 	boolean existsByProjectIdAndUserId(UUID projectId, String userId);
 	boolean existsByProjectIdAndUserIdIn(UUID projectId, Collection<String> userIds);
 	List<ProjectContributorEntity> findByProjectIdOrderByCreatedAtAsc(UUID projectId);
+	long deleteByProjectId(UUID projectId);
 	long deleteByProjectIdAndUserId(UUID projectId, String userId);
 }

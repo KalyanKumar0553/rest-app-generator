@@ -25,6 +25,7 @@ export class JavaGeneralTabComponent {
   @Input({ required: true }) developerPreferences!: any;
   @Input() projectGroupError = '';
   @Input() projectNameError = '';
+  @Input() projectDescriptionError = '';
   @Input({ required: true }) dbTypeOptions!: Array<'SQL' | 'NOSQL' | 'NONE'>;
   @Input({ required: true }) filteredDatabaseOptions!: Array<{ value: string; label: string; type: 'SQL' | 'NOSQL' }>;
   @Input({ required: true }) dbGenerationOptions!: string[];
@@ -34,6 +35,7 @@ export class JavaGeneralTabComponent {
 
   @Output() projectGroupChange = new EventEmitter<void>();
   @Output() projectNameChange = new EventEmitter<void>();
+  @Output() projectDescriptionChange = new EventEmitter<void>();
   @Output() databaseTypeChange = new EventEmitter<'SQL' | 'NOSQL' | 'NONE'>();
   @Output() databaseSelectionChange = new EventEmitter<string>();
   @Output() addProfile = new EventEmitter<void>();

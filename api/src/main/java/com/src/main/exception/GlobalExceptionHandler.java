@@ -6,6 +6,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -55,6 +56,14 @@ public class GlobalExceptionHandler {
     body.put("errorCode", HttpStatus.FORBIDDEN.value());
     body.put("errorMsg", ex.getMessage());
     return ResponseEntity.status(HttpStatus.FORBIDDEN).body(body);
+  }
+
+  @ExceptionHandler(NoResourceFoundException.class)
+  public ResponseEntity<Map<String,Object>> onNoResourceFound(NoResourceFoundException ex){
+    Map<String,Object> body = new HashMap<>();
+    body.put("errorCode", HttpStatus.NOT_FOUND.value());
+    body.put("errorMsg", ex.getMessage());
+    return ResponseEntity.status(HttpStatus.NOT_FOUND).body(body);
   }
   
   @ExceptionHandler(Exception.class)

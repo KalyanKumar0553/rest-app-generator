@@ -111,17 +111,12 @@
   flex-shrink: 0;
 }
 
-.content-header h1 {
-  font-size: 32px;
-  font-weight: 600;
-  color: var(--color-text-secondary);
-  margin: 0 0 24px 0;
-}
-
 .action-buttons {
   display: flex;
   gap: 16px;
+  margin-top: 16px;
   margin-bottom: 24px;
+  justify-content: flex-end;
 }
 
 .content-body {
@@ -193,7 +188,7 @@
 
 .projects-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
   gap: 24px;
   padding-bottom: 88px;
 }
@@ -211,26 +206,19 @@
   transform: translateY(-2px);
 }
 
-.project-header {
-  margin-bottom: 16px;
-}
-
-.project-meta {
+.project-title-row {
   display: flex;
   justify-content: space-between;
-  align-items: center;
-}
-
-.project-status {
-  font-size: 12px;
-  color: var(--color-text-muted);
-  font-weight: 600;
-  letter-spacing: 0.5px;
+  align-items: flex-start;
+  gap: 16px;
 }
 
 .project-date {
   font-size: 12px;
   color: var(--color-text-secondary);
+  white-space: nowrap;
+  flex-shrink: 0;
+  padding-top: 4px;
 }
 
 .project-title {
@@ -242,7 +230,13 @@
   font-size: 18px;
   font-weight: 600;
   color: var(--color-text-primary);
-  margin: 0 0 8px 0;
+  margin: 0;
+  min-width: 0;
+  flex: 1;
+}
+
+.project-title-row + .project-description {
+  margin-top: 8px;
 }
 
 .project-description {
@@ -250,10 +244,9 @@
   color: var(--color-text-muted);
   margin: 0;
   line-height: 1.5;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
   overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .project-actions {
@@ -417,10 +410,6 @@
     z-index: 50;
   }
 
-  .content-header h1 {
-    margin-bottom: 20px;
-  }
-
   .content-body {
     padding: 24px 16px 32px;
     padding-top: 0px;
@@ -432,11 +421,6 @@
 }
 
 @media (max-width: 768px) {
-  .content-header h1 {
-    font-size: 24px;
-    margin-bottom: 20px;
-  }
-
   .action-buttons {
     flex-direction: column;
   }
@@ -460,11 +444,6 @@
     padding: 20px 16px 0px;
   }
 
-  .content-header h1 {
-    font-size: 20px;
-    margin-bottom: 16px;
-  }
-
   .content-body {
     padding: 16px 16px 24px;
     padding-top: 0px;
@@ -476,5 +455,14 @@
 
   .project-card {
     padding: 20px;
+  }
+
+  .project-title-row {
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .project-date {
+    padding-top: 0;
   }
 }

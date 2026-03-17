@@ -21,6 +21,7 @@ public final class ProjectRunMapper {
                 entity.getType(),
                 entity.getStatus(),
                 entity.getRunNumber(),
+                entity.getZip() != null && entity.getZip().length > 0,
                 entity.getErrorMessage(),
                 entity.getCreatedAt(),
                 entity.getUpdatedAt()

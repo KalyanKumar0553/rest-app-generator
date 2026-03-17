@@ -3,7 +3,7 @@ package com.src.main.auth.model;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.src.main.auth.config.AuthDbTables;
+import com.src.main.auth.config.RbacDbTables;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -14,7 +14,7 @@ import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 
 @Entity
-@Table(name = AuthDbTables.ROLES)
+@Table(name = RbacDbTables.ROLES)
 public class Role {
 	@Id
 	@Column(name = "name", nullable = false)
@@ -26,6 +26,15 @@ public class Role {
 
 	@Column(name = "active", nullable = false)
 	private boolean active = true;
+
+	@Column(name = "display_name")
+	private String displayName;
+
+	@Column(name = "description")
+	private String description;
+
+	@Column(name = "system_role", nullable = false)
+	private boolean systemRole;
 
 	@OneToMany(mappedBy = "role")
 	private List<UserRole> users = new ArrayList<>();
@@ -52,5 +61,29 @@ public class Role {
 
 	public void setActive(boolean active) {
 		this.active = active;
+	}
+
+	public String getDisplayName() {
+		return displayName;
+	}
+
+	public void setDisplayName(String displayName) {
+		this.displayName = displayName;
+	}
+
+	public String getDescription() {
+		return description;
+	}
+
+	public void setDescription(String description) {
+		this.description = description;
+	}
+
+	public boolean isSystemRole() {
+		return systemRole;
+	}
+
+	public void setSystemRole(boolean systemRole) {
+		this.systemRole = systemRole;
 	}
 }

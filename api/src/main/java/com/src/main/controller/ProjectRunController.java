@@ -31,7 +31,7 @@ public class ProjectRunController {
     }
 
     @GetMapping("/{runId}")
-    public ResponseEntity<ProjectRunDetailsResponseDTO> getRun(@PathVariable UUID runId,
+    public ResponseEntity<ProjectRunDetailsResponseDTO> getRun(@PathVariable("runId") UUID runId,
             Principal principal) {
         String userId = currentUserId(principal);
         var run = orchestrationService.getRun(runId, userId);
@@ -43,6 +43,7 @@ public class ProjectRunController {
                 run.getType(),
                 run.getStatus(),
                 run.getRunNumber(),
+                run.getZip() != null && run.getZip().length > 0,
                 run.getErrorMessage(),
                 run.getCreatedAt(),
                 run.getUpdatedAt());
@@ -50,7 +51,7 @@ public class ProjectRunController {
     }
 
     @GetMapping("/project/{projectId}")
-    public ResponseEntity<java.util.List<ProjectRunDetailsResponseDTO>> getRunsForProject(@PathVariable UUID projectId,
+    public ResponseEntity<java.util.List<ProjectRunDetailsResponseDTO>> getRunsForProject(@PathVariable("projectId") UUID projectId,
             Principal principal) {
         String userId = currentUserId(principal);
         var runs = orchestrationService.getRunsForProject(projectId, userId);
@@ -63,6 +64,7 @@ public class ProjectRunController {
                         run.getType(),
                         run.getStatus(),
                         run.getRunNumber(),
+                        run.getZip() != null && run.getZip().length > 0,
                         run.getErrorMessage(),
                         run.getCreatedAt(),
                         run.getUpdatedAt()))

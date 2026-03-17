@@ -131,6 +131,9 @@ export class HttpRequestInterceptor implements HttpInterceptor {
     if (error.error?.message) {
       return error.error.message;
     }
+    if (error.error?.errorMsg) {
+      return error.error.errorMsg;
+    }
     if (error.error?.error) {
       return error.error.error;
     }

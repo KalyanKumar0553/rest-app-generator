@@ -18,9 +18,11 @@ export class JavaProjectSettingsSectionComponent {
   @Input({ required: true }) projectSettings!: any;
   @Input() projectGroupError = '';
   @Input() projectNameError = '';
+  @Input() projectDescriptionError = '';
 
   @Output() projectGroupChange = new EventEmitter<void>();
   @Output() projectNameChange = new EventEmitter<void>();
+  @Output() projectDescriptionChange = new EventEmitter<void>();
 
   readonly appSettings = APP_SETTINGS;
 }

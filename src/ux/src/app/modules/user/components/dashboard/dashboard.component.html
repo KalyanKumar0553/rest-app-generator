@@ -8,6 +8,16 @@
   (cancel)="cancelLogout()"
 ></app-confirmation-modal>
 
+<app-confirmation-modal
+  *ngIf="showDeleteConfirmation"
+  [title]="deleteModalConfig.title"
+  [message]="deleteModalConfig.message"
+  [buttons]="deleteModalConfig.buttons"
+  [isLoading]="isDeletingProject"
+  (confirm)="confirmDeleteProject()"
+  (cancel)="cancelDeleteProject()"
+></app-confirmation-modal>
+
 <div class="dashboard-container">
   <div class="mobile-header">
     <div class="container">
@@ -54,7 +64,6 @@
 
   <main class="main-content">
     <div class="content-header">
-      <h1>Project Overview</h1>
       <div class="action-buttons">
         <button class="btn btn-primary" (click)="createNewProject()">Create new project</button>
         <!-- <button class="btn btn-secondary">Link existing project</button> -->
@@ -84,20 +93,17 @@
 
       <div class="projects-grid" *ngIf="!isLoadingProjects && filteredProjects.length > 0">
         <div class="project-card" *ngFor="let project of filteredProjects">
-          <div class="project-header">
-            <div class="project-meta">
-              <span class="project-status">{{ project.projectId || project.id }}</span>
+          <div class="project-title">
+            <div class="project-title-row">
+              <h3>{{ project.name }}</h3>
               <span class="project-date">{{ formatDate(project.createdAt) }}</span>
             </div>
-          </div>
-          <div class="project-title">
-            <h3>{{ project.name }}</h3>
             <p class="project-description">{{ project.description }}</p>
           </div>
           <div class="project-actions">
             <button class="btn-open" (click)="openProject(project)">Open</button>
             <div class="action-icons">
-              <button class="icon-btn" aria-label="Archive">
+              <button class="icon-btn" type="button" aria-label="Delete project" (click)="promptDeleteProject(project)">
                 <i class="bi bi-archive"></i>
               </button>
               <button class="icon-btn" aria-label="Add">

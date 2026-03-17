@@ -56,27 +56,33 @@ public class ProjectController {
 	}
 
 	@GetMapping("/{projectId}")
-	public ProjectDetailsDTO get(@PathVariable UUID projectId, Principal principal) {
+	public ProjectDetailsDTO get(@PathVariable("projectId") UUID projectId, Principal principal) {
 		return service.getDetails(projectId, currentUserId(principal));
 	}
 
 	@GetMapping("/{projectId}/contributors")
-	public List<ProjectContributorDTO> getContributors(@PathVariable UUID projectId, Principal principal) {
+	public List<ProjectContributorDTO> getContributors(@PathVariable("projectId") UUID projectId, Principal principal) {
 		return service.getContributors(projectId, currentUserId(principal));
 	}
 
 	@PostMapping("/{projectId}/contributors")
-	public List<ProjectContributorDTO> addContributor(@PathVariable UUID projectId,
+	public List<ProjectContributorDTO> addContributor(@PathVariable("projectId") UUID projectId,
 			@jakarta.validation.Valid @RequestBody ProjectContributorUpsertRequestDTO request,
 			Principal principal) {
 		return service.addContributor(projectId, currentUserId(principal), request);
 	}
 
 	@DeleteMapping("/{projectId}/contributors")
-	public ResponseEntity<Void> removeContributor(@PathVariable UUID projectId,
+	public ResponseEntity<Void> removeContributor(@PathVariable("projectId") UUID projectId,
 			@RequestParam("userId") String contributorUserId,
 			Principal principal) {
 		service.removeContributor(projectId, currentUserId(principal), contributorUserId);
+		return ResponseEntity.noContent().build();
+	}
+
+	@DeleteMapping("/{projectId}")
+	public ResponseEntity<Void> deleteProject(@PathVariable("projectId") UUID projectId, Principal principal) {
+		service.deleteProject(projectId, currentUserId(principal));
 		return ResponseEntity.noContent().build();
 	}
 
@@ -85,14 +91,14 @@ public class ProjectController {
 	}
 
 	@PutMapping("/{projectId}/spec")
-	public ResponseEntity<Void> updateSpec(@PathVariable UUID projectId, @RequestBody String yaml, Principal principal) {
+	public ResponseEntity<Void> updateSpec(@PathVariable("projectId") UUID projectId, @RequestBody String yaml, Principal principal) {
 		String userId = currentUserId(principal);
 		orchestrationService.updateSpec(projectId, userId, yaml);
 		return ResponseEntity.ok().build();
 	}
 
 	@PostMapping("/{projectId}/save-and-generate")
-	public ResponseEntity<ProjectRunDetailsResponseDTO> saveAndGenerate(@PathVariable UUID projectId, @RequestBody String yaml,
+	public ResponseEntity<ProjectRunDetailsResponseDTO> saveAndGenerate(@PathVariable("projectId") UUID projectId, @RequestBody String yaml,
 			Principal principal) {
 		String userId = currentUserId(principal);
 		ProjectRunEntity run = orchestrationService.updateSpecAndGenerate(projectId, userId, yaml);
@@ -100,14 +106,14 @@ public class ProjectController {
 	}
 
 	@PostMapping("/{projectId}/generate")
-	public ResponseEntity<ProjectRunDetailsResponseDTO> generate(@PathVariable UUID projectId, Principal principal) {
+	public ResponseEntity<ProjectRunDetailsResponseDTO> generate(@PathVariable("projectId") UUID projectId, Principal principal) {
 		String userId = currentUserId(principal);
 		ProjectRunEntity run = orchestrationService.generateCode(projectId, userId);
 		return ResponseEntity.accepted().body(ProjectRunMapper.toDto(run));
 	}
 
 	@GetMapping(value = "/{projectId}/events", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-	public SseEmitter streamProjectEvents(@PathVariable UUID projectId, Principal principal) {
+	public SseEmitter streamProjectEvents(@PathVariable("projectId") UUID projectId, Principal principal) {
 		orchestrationService.getOwnedProject(projectId, currentUserId(principal));
 		return projectEventStreamService.subscribe(projectId);
 	}

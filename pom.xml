@@ -24,6 +24,10 @@
 		</dependency>
 		<dependency>
 			<groupId>com.src</groupId>
+			<artifactId>rbac</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>com.src</groupId>
 			<artifactId>auth</artifactId>
 		</dependency>
 		<dependency>
@@ -197,7 +201,7 @@
 						</goals>
 						<phase>generate-resources</phase>
 						<configuration>
-							<arguments>run build -- --configuration=spring-boot</arguments>
+							<arguments>run build:spring-boot</arguments>
 						</configuration>
 					</execution>
 				</executions>

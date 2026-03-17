@@ -20,11 +20,15 @@ public class JwtUtils {
 	}
 
 	public String signAccess(String userId, List<String> roles, long ttlSeconds) {
-		return signToken(new JwtClaims(userId, "access", null, roles), ttlSeconds);
+		return signAccess(userId, roles, List.of(), ttlSeconds);
+	}
+
+	public String signAccess(String userId, List<String> roles, List<String> permissions, long ttlSeconds) {
+		return signToken(new JwtClaims(userId, "access", null, roles, permissions), ttlSeconds);
 	}
 
 	public String signRefresh(String userId, String refreshId, long ttlSeconds) {
-		return signToken(new JwtClaims(userId, "refresh", refreshId, null), ttlSeconds);
+		return signToken(new JwtClaims(userId, "refresh", refreshId, null, null), ttlSeconds);
 	}
 
 	public JwtClaims parse(String token) {
@@ -33,7 +37,8 @@ public class JwtUtils {
 		String typ = (String) claims.get("typ");
 		String rid = (String) claims.get("rid");
 		List<String> roles = claims.get("roles", List.class);
-		JwtClaims parsed = new JwtClaims(sub, typ, rid, roles);
+		List<String> permissions = claims.get("permissions", List.class);
+		JwtClaims parsed = new JwtClaims(sub, typ, rid, roles, permissions);
 		parsed.setExpiration(claims.getExpiration());
 		return parsed;
 	}
@@ -61,6 +66,7 @@ public class JwtUtils {
 				.claim("typ", claims.getTyp())
 				.claim("rid", claims.getRid())
 				.claim("roles", claims.getRoles())
+				.claim("permissions", claims.getPermissions())
 				.signWith(Keys.hmacShaKeyFor(secret), SignatureAlgorithm.HS256)
 				.compact();
 	}

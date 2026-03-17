@@ -134,6 +134,10 @@ export function isValidProfileName(profile: string): boolean {
   return /^[a-z0-9._-]+$/.test(profile);
 }
 
+export function isValidProjectDescription(description: string): boolean {
+  return /^[A-Za-z0-9 .,-]*$/.test(description);
+}
+
 export function isNotNullConstraint(constraint: any): boolean {
   if (typeof constraint === 'string') {
     return constraint === 'NotNull';

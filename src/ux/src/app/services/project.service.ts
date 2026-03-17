@@ -57,4 +57,9 @@ export class ProjectService {
     const url = `${API_CONFIG.BASE_URL}${API_ENDPOINTS.PROJECT.GET(projectId)}/contributors?userId=${encodeURIComponent(userId)}`;
     return this.http.delete<void>(url);
   }
+
+  deleteProject(projectId: string): Observable<void> {
+    const url = `${API_CONFIG.BASE_URL}${API_ENDPOINTS.PROJECT.DELETE(projectId)}`;
+    return this.http.delete<void>(url);
+  }
 }

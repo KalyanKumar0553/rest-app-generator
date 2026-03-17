@@ -31,7 +31,7 @@ public class SwaggerController {
 	}
 
 	@PostMapping("/swagger/reset-password")
-	@PreAuthorize("hasAuthority('ROLE_SWAGGER_ADMIN')")
+	@PreAuthorize("hasAuthority('swagger.password.manage')")
 	public ResponseEntity<ApiResponseDto<Void>> updateSwaggerPassword(@RequestBody @Valid SwaggerPasswordRequestDto dto) {
 		authService.updateSwaggerPassword(dto.getUsername(), dto.getPassword());
 		return ResponseEntity.ok(ApiResponseDto.ok("Swagger password updated"));

@@ -1,4 +1,4 @@
-package com.src.main.controller;
+	package com.src.main.controller;
 
 import java.util.List;
 
@@ -40,7 +40,7 @@ public class ConfigMetadataController {
 	}
 	
 	@PostMapping("/reload")
-    @PreAuthorize("hasRole('CONFIG_ADMIN')")
+    @PreAuthorize("hasAuthority('config.reload')")
     public ResponseEntity<Void> reloadDefaults() {
 		configMetadataService.reloadDefaults();
         return ResponseEntity.noContent().build();

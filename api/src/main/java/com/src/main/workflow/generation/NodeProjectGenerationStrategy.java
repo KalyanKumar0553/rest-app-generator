@@ -2,7 +2,6 @@ package com.src.main.workflow.generation;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Base64;
 import java.util.List;
 import java.util.Map;
 
@@ -88,16 +87,19 @@ public class NodeProjectGenerationStrategy implements ProjectGenerationStrategy 
 			runRepository.saveAndFlush(run);
 			projectEventStreamService.publish(run.getProject().getId(), "generation", Map.of(
 					"projectId", run.getProject().getId().toString(),
+					"runId", run.getId().toString(),
 					"status", "SUCCESS",
 					"fileName", run.getProject().getArtifact() + ".zip",
-					"zipBase64", Base64.getEncoder().encodeToString(zipData)));
+					"hasZip", true));
 		} catch (Exception ex) {
 			run.setStatus(ProjectRunStatus.ERROR);
 			run.setErrorMessage(ex.getMessage());
 			runRepository.saveAndFlush(run);
 			projectEventStreamService.publish(run.getProject().getId(), "generation", Map.of(
 					"projectId", run.getProject().getId().toString(),
+					"runId", run.getId().toString(),
 					"status", "ERROR",
+					"hasZip", false,
 					"message", ex.getMessage() == null ? "Generation failed." : ex.getMessage()));
 			throw new GenericException(HttpStatus.INTERNAL_SERVER_ERROR, ex.getMessage());
 		} finally {

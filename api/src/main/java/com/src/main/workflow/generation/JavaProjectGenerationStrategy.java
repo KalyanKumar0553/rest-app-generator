@@ -3,7 +3,6 @@ package com.src.main.workflow.generation;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
-import java.util.Base64;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -166,9 +165,10 @@ public class JavaProjectGenerationStrategy implements ProjectGenerationStrategy 
 				runRepository.saveAndFlush(run);
 				projectEventStreamService.publish(run.getProject().getId(), "generation", Map.of(
 						"projectId", run.getProject().getId().toString(),
+						"runId", run.getId().toString(),
 						"status", "SUCCESS",
 						"fileName", run.getProject().getArtifact() + ".zip",
-						"zipBase64", Base64.getEncoder().encodeToString(zipData)));
+						"hasZip", true));
 			} catch (Exception ex) {
 				throw new GenericException(HttpStatus.INTERNAL_SERVER_ERROR, ex.getMessage());
 			} finally {
@@ -183,7 +183,9 @@ public class JavaProjectGenerationStrategy implements ProjectGenerationStrategy 
 			runRepository.saveAndFlush(run);
 			projectEventStreamService.publish(run.getProject().getId(), "generation", Map.of(
 					"projectId", run.getProject().getId().toString(),
+					"runId", run.getId().toString(),
 					"status", "ERROR",
+					"hasZip", false,
 					"message", run.getErrorMessage()));
 			projectArchiveService.deleteDirectoryQuietly(tempDir);
 		}

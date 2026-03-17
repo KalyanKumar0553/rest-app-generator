@@ -5,6 +5,7 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.Collections;
 import java.util.Date;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -51,9 +52,16 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 					String formatted = expiration.toInstant().atZone(ZoneId.systemDefault()).format(formatter);
 					response.setHeader("X-Token-Expires-At", formatted);
 				}
-				List<SimpleGrantedAuthority> authorities = claims.getRoles() == null
+				LinkedHashSet<String> authorityNames = new LinkedHashSet<>();
+				if (claims.getRoles() != null) {
+					authorityNames.addAll(claims.getRoles());
+				}
+				if (claims.getPermissions() != null) {
+					authorityNames.addAll(claims.getPermissions());
+				}
+				List<SimpleGrantedAuthority> authorities = authorityNames.isEmpty()
 						? Collections.emptyList()
-						: claims.getRoles().stream().map(SimpleGrantedAuthority::new).collect(Collectors.toList());
+						: authorityNames.stream().map(SimpleGrantedAuthority::new).collect(Collectors.toList());
 				UsernamePasswordAuthenticationToken auth =
 						new UsernamePasswordAuthenticationToken(claims.getSub(), token, authorities);
 				SecurityContextHolder.getContext().setAuthentication(auth);

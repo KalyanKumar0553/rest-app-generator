@@ -3,20 +3,17 @@ package com.src.main.auth.model;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 
-import com.src.main.auth.config.AuthDbTables;
+import com.src.main.auth.config.RbacDbTables;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 
 @Entity
-@Table(name = AuthDbTables.ROUTES)
+@Table(name = RbacDbTables.ROUTES)
 public class AuthRoute {
 	@Id
 	private UUID id;
@@ -27,8 +24,8 @@ public class AuthRoute {
 	@Column(name = "http_method", length = 10)
 	private String httpMethod;
 
-	@Column(name = "role_name", nullable = false, length = 100)
-	private String roleName;
+	@Column(name = "authority_name", length = 100)
+	private String authorityName;
 
 	@Column(name = "priority", nullable = false)
 	private int priority;
@@ -41,10 +38,6 @@ public class AuthRoute {
 
 	@Column(name = "updated_at", nullable = false)
 	private OffsetDateTime updatedAt;
-
-	@ManyToOne(fetch = FetchType.LAZY)
-	@JoinColumn(name = "role_name", referencedColumnName = "name", insertable = false, updatable = false)
-	private Role role;
 
 	@PrePersist
 	public void prePersist() {
@@ -89,12 +82,12 @@ public class AuthRoute {
 		this.httpMethod = httpMethod;
 	}
 
-	public String getRoleName() {
-		return roleName;
+	public String getAuthorityName() {
+		return authorityName;
 	}
 
-	public void setRoleName(String roleName) {
-		this.roleName = roleName;
+	public void setAuthorityName(String authorityName) {
+		this.authorityName = authorityName;
 	}
 
 	public int getPriority() {
@@ -127,9 +120,5 @@ public class AuthRoute {
 
 	public void setUpdatedAt(OffsetDateTime updatedAt) {
 		this.updatedAt = updatedAt;
-	}
-
-	public Role getRole() {
-		return role;
 	}
 }

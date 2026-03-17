@@ -8,22 +8,25 @@ public class JwtClaims {
 	private String typ;
 	private String rid;
 	private List<String> roles;
+	private List<String> permissions;
 	private Date expiration;
 
 	public JwtClaims() {}
 
-	public JwtClaims(String sub, String typ, String rid, List<String> roles) {
+	public JwtClaims(String sub, String typ, String rid, List<String> roles, List<String> permissions) {
 		this.sub = sub;
 		this.typ = typ;
 		this.rid = rid;
 		this.roles = roles;
+		this.permissions = permissions;
 	}
 
-	public JwtClaims(String sub, String typ, String rid, List<String> roles, Date expiration) {
+	public JwtClaims(String sub, String typ, String rid, List<String> roles, List<String> permissions, Date expiration) {
 		this.sub = sub;
 		this.typ = typ;
 		this.rid = rid;
 		this.roles = roles;
+		this.permissions = permissions;
 		this.expiration = expiration;
 	}
 
@@ -57,6 +60,14 @@ public class JwtClaims {
 
 	public void setRoles(List<String> roles) {
 		this.roles = roles;
+	}
+
+	public List<String> getPermissions() {
+		return permissions;
+	}
+
+	public void setPermissions(List<String> permissions) {
+		this.permissions = permissions;
 	}
 
 	public Date getExpiration() {

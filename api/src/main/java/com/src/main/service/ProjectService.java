@@ -21,4 +21,6 @@ public interface ProjectService {
 	List<ProjectContributorDTO> addContributor(UUID projectId, String ownerId, ProjectContributorUpsertRequestDTO request);
 
 	void removeContributor(UUID projectId, String ownerId, String contributorUserId);
+
+	void deleteProject(UUID projectId, String userId);
 }

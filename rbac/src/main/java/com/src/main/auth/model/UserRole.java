@@ -1,6 +1,6 @@
 package com.src.main.auth.model;
 
-import com.src.main.auth.config.AuthDbTables;
+import com.src.main.auth.config.RbacDbTables;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -10,7 +10,7 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 
 @Entity
-@Table(name = AuthDbTables.USER_ROLES)
+@Table(name = RbacDbTables.USER_ROLES)
 @IdClass(UserRoleId.class)
 public class UserRole {
 	@jakarta.persistence.Id
@@ -20,10 +20,6 @@ public class UserRole {
 	@jakarta.persistence.Id
 	@Column(name = "role_name", nullable = false)
 	private String roleName;
-
-	@ManyToOne
-	@JoinColumn(name = "user_id", referencedColumnName = "id", insertable = false, updatable = false)
-	private User user;
 
 	@ManyToOne
 	@JoinColumn(name = "role_name", referencedColumnName = "name", insertable = false, updatable = false)
@@ -43,10 +39,6 @@ public class UserRole {
 
 	public void setRoleName(String roleName) {
 		this.roleName = roleName;
-	}
-
-	public User getUser() {
-		return user;
 	}
 
 	public Role getRole() {

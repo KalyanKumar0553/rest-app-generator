@@ -123,9 +123,10 @@ public class AuthController {
 	}
 
 	@GetMapping("/roles")
-	@PreAuthorize("isAuthenticated()")
+	@PreAuthorize("hasAuthority('auth.roles.read')")
 	public ResponseEntity<ApiResponseDto<RolesResponseDto>> roles(org.springframework.security.core.Authentication auth) {
 		String userId = auth.getName();
-		return ResponseEntity.ok(ApiResponseDto.ok("OK", new RolesResponseDto(authService.getUserRoles(userId))));
+		return ResponseEntity.ok(ApiResponseDto.ok("OK",
+				new RolesResponseDto(authService.getUserRoles(userId), authService.getUserPermissions(userId))));
 	}
 }

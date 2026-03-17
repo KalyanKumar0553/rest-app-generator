@@ -1,6 +1,7 @@
 export interface ProjectSettings {
   projectGroup: string;
   projectName: string;
+  projectDescription: string;
   buildType: 'gradle' | 'maven';
   language: 'java' | 'kotlin';
   frontend: string;
@@ -33,10 +34,16 @@ export interface DeveloperPreferences {
 }
 
 export interface ProjectRunSummary {
-  id: string;
+  id?: string;
+  runId?: string;
   projectId: string;
+  ownerId?: string;
+  type?: string;
   status: string;
+  hasZip?: boolean;
+  errorMessage?: string;
   createdAt?: string;
+  updatedAt?: string;
   runNumber?: number;
 }
 

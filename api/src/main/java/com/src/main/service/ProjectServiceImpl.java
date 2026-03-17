@@ -8,11 +8,11 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 import org.springframework.http.HttpStatus;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
-import org.yaml.snakeyaml.Yaml;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
+import com.src.main.auth.service.RbacService;
 import com.src.main.dto.ProjectCreateResponseDTO;
 import com.src.main.dto.ProjectContributorDTO;
 import com.src.main.dto.ProjectContributorUpsertRequestDTO;
@@ -29,7 +29,6 @@ import com.src.main.util.ProjectMetaDataConstants;
 import com.src.main.util.ProjectRunStatus;
 import com.src.main.util.ProjectRunType;
 
-import jakarta.transaction.Transactional;
 import jakarta.validation.ConstraintViolationException;
 import jakarta.validation.Validator;
 import jakarta.validation.constraints.NotBlank;
@@ -43,6 +42,9 @@ public class ProjectServiceImpl implements ProjectService {
 	private final ProjectRunRepository projectRunRepository;
 	private final ProjectContributorRepository projectContributorRepository;
 	private final ProjectUserIdentityService projectUserIdentityService;
+	private final ProjectYamlService projectYamlService;
+	private final ProjectNameValidationService projectNameValidationService;
+	private final RbacService rbacService;
 	private final Validator validator;
 
 	static class Input {
@@ -62,34 +64,26 @@ public class ProjectServiceImpl implements ProjectService {
 	@Transactional
 	public ProjectCreateResponseDTO create(String yamlText, String ownerId) {
 		try {
+			if (!rbacService.currentUserHasPermission("project.create")) {
+				throw new SecurityException("User not allowed to create projects");
+			}
 			var violations = validator.validate(new Input(yamlText));
 			if (!violations.isEmpty()) {
 				throw new ConstraintViolationException(violations);
 			}
 
-			Map<String, Object> spec;
-			try {
-				spec = new Yaml().load(yamlText);
-				if (spec == null || !(spec instanceof Map)) {
-					throw new IllegalArgumentException("YAML must be a mapping at the root");
-				}
-			} catch (Exception e) {
-				throw new IllegalArgumentException("Invalid YAML: " + e.getMessage());
-			}
-			Map<String, Object> app = (Map<String, Object>) spec.get("app");
-			if (app == null) {
-				throw new IllegalArgumentException("Missing required 'app' section");
-			}
-			String artifact = String.valueOf(app.getOrDefault(ProjectMetaDataConstants.ARTIFACT_ID, ProjectMetaDataConstants.DEFAULT_ARTIFACT));
-			String groupId = String.valueOf(app.getOrDefault(ProjectMetaDataConstants.GROUP_ID, ProjectMetaDataConstants.DEFAULT_GROUP));
-			String version = String.valueOf(app.getOrDefault(ProjectMetaDataConstants.VERSION, ProjectMetaDataConstants.DEFAULT_VERSION));
-			String buildTool = String.valueOf(app.getOrDefault(ProjectMetaDataConstants.BUILD_TOOL, ProjectMetaDataConstants.DEFAULT_BUILD_TOOL));
-			String packaging = String.valueOf(app.getOrDefault(ProjectMetaDataConstants.PACKAGING, ProjectMetaDataConstants.DEFAULT_PACKAGING));
-			String generator = String.valueOf(app.getOrDefault(ProjectMetaDataConstants.GENERATOR, ProjectMetaDataConstants.DEFAULT_GRADLE_GENERATOR));
-			String name = String.valueOf(app.getOrDefault(ProjectMetaDataConstants.NAME, ProjectMetaDataConstants.DEFAULT_NAME));
-			String description = String.valueOf(app.getOrDefault(ProjectMetaDataConstants.DESCRIPTION, ProjectMetaDataConstants.DEFAULT_DESCRIPTION));
-			String springBootVersion = String.valueOf(app.getOrDefault(ProjectMetaDataConstants.SPRING_BOOT_VERSION, ProjectMetaDataConstants.DEFAULT_BOOT_VERSION));
-			String jdkVersion = String.valueOf(app.getOrDefault(ProjectMetaDataConstants.JDK_VERSION, ProjectMetaDataConstants.DEFAULT_JDK));
+			Map<String, Object> spec = projectYamlService.parseSpec(yamlText);
+			Map<String, Object> app = projectYamlService.getRequiredAppSection(spec);
+			String artifact = projectYamlService.getString(app, ProjectMetaDataConstants.ARTIFACT_ID, ProjectMetaDataConstants.DEFAULT_ARTIFACT);
+			String groupId = projectYamlService.getString(app, ProjectMetaDataConstants.GROUP_ID, ProjectMetaDataConstants.DEFAULT_GROUP);
+			String version = projectYamlService.getString(app, ProjectMetaDataConstants.VERSION, ProjectMetaDataConstants.DEFAULT_VERSION);
+			String buildTool = projectYamlService.getString(app, ProjectMetaDataConstants.BUILD_TOOL, ProjectMetaDataConstants.DEFAULT_BUILD_TOOL);
+			String packaging = projectYamlService.getString(app, ProjectMetaDataConstants.PACKAGING, ProjectMetaDataConstants.DEFAULT_PACKAGING);
+			String generator = projectYamlService.getString(app, ProjectMetaDataConstants.GENERATOR, ProjectMetaDataConstants.DEFAULT_GRADLE_GENERATOR);
+			String name = projectYamlService.getString(app, ProjectMetaDataConstants.NAME, ProjectMetaDataConstants.DEFAULT_NAME);
+			String description = projectYamlService.getString(app, ProjectMetaDataConstants.DESCRIPTION, ProjectMetaDataConstants.DEFAULT_DESCRIPTION);
+			String springBootVersion = projectYamlService.getString(app, ProjectMetaDataConstants.SPRING_BOOT_VERSION, ProjectMetaDataConstants.DEFAULT_BOOT_VERSION);
+			String jdkVersion = projectYamlService.getString(app, ProjectMetaDataConstants.JDK_VERSION, ProjectMetaDataConstants.DEFAULT_JDK);
 			if (artifact == null || artifact.isBlank()) {
 				throw new IllegalArgumentException("app.artifact must be provided");
 			}
@@ -99,6 +93,8 @@ public class ProjectServiceImpl implements ProjectService {
 			if (version == null || version.isBlank()) {
 				throw new IllegalArgumentException("app.version must be provided");
 			}
+			ProjectUserIdentityService.ResolvedProjectUser currentUser = projectUserIdentityService.resolve(ownerId);
+			projectNameValidationService.ensureUniqueProjectName(name, currentUser, null);
 			ProjectEntity p = new ProjectEntity();
 			p.setId(UUID.randomUUID());
 			p.setArtifact(artifact);
@@ -112,20 +108,24 @@ public class ProjectServiceImpl implements ProjectService {
 			p.setSpringBootVersion(springBootVersion);
 			p.setJdkVersion(jdkVersion);
 			p.setYaml(yamlText);
-			p.setOwnerId(ownerId);
+			p.setOwnerId(currentUser.userId());
 			p.setCreatedAt(OffsetDateTime.now());
 			p.setUpdatedAt(OffsetDateTime.now());
 			ProjectEntity savedProject = repo.saveAndFlush(p);
 
 			ProjectRunEntity run = new ProjectRunEntity();
 			run.setProject(savedProject);
-			run.setOwnerId(ownerId);
+			run.setOwnerId(currentUser.userId());
 			run.setType(ProjectRunType.GENERATE_CODE);
 			run.setStatus(ProjectRunStatus.QUEUED);
 			run.setRunNumber((int) projectRunRepository.countByProjectIdAndType(savedProject.getId(), ProjectRunType.GENERATE_CODE) + 1);
 			projectRunRepository.save(run);
 
 			return new ProjectCreateResponseDTO(savedProject.getId().toString(), ProjectRunStatus.QUEUED.name());
+		} catch (GenericException e) {
+			throw e;
+		} catch (IllegalArgumentException | ConstraintViolationException e) {
+			throw new GenericException(HttpStatus.BAD_REQUEST, e.getMessage());
 		} catch (Exception e) {
 			throw new GenericException(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage());
 		}
@@ -133,8 +133,11 @@ public class ProjectServiceImpl implements ProjectService {
 
 	@Override
 	public List<ProjectSummaryDTO> list(String userId) {
+		if (!rbacService.currentUserHasPermission("project.read")) {
+			throw new SecurityException("User not allowed to view projects");
+		}
 		ProjectUserIdentityService.ResolvedProjectUser currentUser = projectUserIdentityService.resolve(userId);
-		List<ProjectEntity> all = isAdmin() ? repo.findAll() : repo.findAccessibleProjectsByUserKeys(currentUser.keys());
+		List<ProjectEntity> all = canReadAllProjects() ? repo.findAll() : repo.findAccessibleProjectsByUserKeys(currentUser.keys());
 		List<ProjectSummaryDTO> out = new ArrayList<>();
 		for (ProjectEntity p : all) {
 			out.add(toSummary(p));
@@ -146,7 +149,7 @@ public class ProjectServiceImpl implements ProjectService {
 	public ProjectDetailsDTO getDetails(UUID projectId, String userId) {
 		ProjectUserIdentityService.ResolvedProjectUser currentUser = projectUserIdentityService.resolve(userId);
 		ProjectEntity project = getAccessibleProject(projectId, currentUser);
-		boolean admin = isAdmin();
+		boolean canManageAllContributors = canManageAllProjectContributors();
 		boolean isOwner = currentUser.keys().contains(project.getOwnerId());
 		return new ProjectDetailsDTO(
 				project.getId().toString(),
@@ -156,8 +159,8 @@ public class ProjectServiceImpl implements ProjectService {
 				project.getArtifact(),
 				project.getYaml(),
 				project.getOwnerId(),
-				!isOwner && !admin,
-				isOwner || admin,
+				!isOwner && !canManageAllContributors,
+				isOwner || canManageAllContributors,
 				toContributorDtos(project.getId()),
 				project.getCreatedAt(),
 				project.getUpdatedAt());
@@ -174,6 +177,9 @@ public class ProjectServiceImpl implements ProjectService {
 	public List<ProjectContributorDTO> addContributor(UUID projectId, String ownerId, ProjectContributorUpsertRequestDTO request) {
 		ProjectUserIdentityService.ResolvedProjectUser currentUser = projectUserIdentityService.resolve(ownerId);
 		ProjectEntity project = getOwnedProject(projectId, currentUser);
+		if (!rbacService.currentUserHasPermission("project.contributor.manage")) {
+			throw new SecurityException("User not allowed to manage contributors");
+		}
 		String contributorUserId = request.getUserId() == null ? "" : request.getUserId().trim();
 		if (contributorUserId.isEmpty()) {
 			throw new IllegalArgumentException("userId is required");
@@ -193,6 +199,9 @@ public class ProjectServiceImpl implements ProjectService {
 	@Override
 	@Transactional
 	public void removeContributor(UUID projectId, String ownerId, String contributorUserId) {
+		if (!rbacService.currentUserHasPermission("project.contributor.manage")) {
+			throw new SecurityException("User not allowed to manage contributors");
+		}
 		getOwnedProject(projectId, projectUserIdentityService.resolve(ownerId));
 		String normalizedUserId = contributorUserId == null ? "" : contributorUserId.trim();
 		if (normalizedUserId.isEmpty()) {
@@ -201,15 +210,35 @@ public class ProjectServiceImpl implements ProjectService {
 		projectContributorRepository.deleteByProjectIdAndUserId(projectId, normalizedUserId);
 	}
 
+	@Override
+	@Transactional(propagation = Propagation.REQUIRED, rollbackFor = Exception.class)
+	public void deleteProject(UUID projectId, String userId) {
+		try {
+			ProjectUserIdentityService.ResolvedProjectUser currentUser = projectUserIdentityService.resolve(userId);
+			ProjectEntity project = getProjectForDelete(projectId, currentUser);
+			projectRunRepository.deleteByProjectId(projectId);
+			projectContributorRepository.deleteByProjectId(projectId);
+			repo.delete(project);
+			repo.flush();
+		} catch (GenericException | IllegalArgumentException | SecurityException e) {
+			throw e;
+		} catch (Exception e) {
+			throw new GenericException(HttpStatus.INTERNAL_SERVER_ERROR, "Failed to delete project");
+		}
+	}
+
 	public ProjectEntity getAccessibleProject(UUID projectId, String userId) {
 		return getAccessibleProject(projectId, projectUserIdentityService.resolve(userId));
 	}
 
 	private ProjectEntity getAccessibleProject(UUID projectId, ProjectUserIdentityService.ResolvedProjectUser currentUser) {
+		if (!rbacService.currentUserHasPermission("project.read")) {
+			throw new SecurityException("User not allowed to access projects");
+		}
 		ProjectEntity project = repo.findWithContributorsById(projectId)
 				.orElseThrow(() -> new IllegalArgumentException("Project not found: " + projectId));
 		reassignOwnerIfNeeded(project, currentUser);
-		if (isAdmin()
+		if (canReadAllProjects()
 				|| currentUser.keys().contains(project.getOwnerId())
 				|| projectContributorRepository.existsByProjectIdAndUserIdIn(projectId, currentUser.keys())) {
 			return project;
@@ -221,8 +250,24 @@ public class ProjectServiceImpl implements ProjectService {
 		ProjectEntity project = repo.findWithContributorsById(projectId)
 				.orElseThrow(() -> new IllegalArgumentException("Project not found: " + projectId));
 		reassignOwnerIfNeeded(project, currentUser);
-		if (!isAdmin() && !currentUser.keys().contains(project.getOwnerId())) {
+		if (!canManageAllProjectContributors() && !currentUser.keys().contains(project.getOwnerId())) {
 			throw new SecurityException("Only the project owner can manage contributors");
+		}
+		return project;
+	}
+
+	private ProjectEntity getProjectForDelete(UUID projectId, ProjectUserIdentityService.ResolvedProjectUser currentUser) {
+		ProjectEntity project = repo.findWithContributorsById(projectId)
+				.orElseThrow(() -> new IllegalArgumentException("Project not found: " + projectId));
+		reassignOwnerIfNeeded(project, currentUser);
+		if (canDeleteAllProjects()) {
+			return project;
+		}
+		if (!rbacService.currentUserHasPermission("project.delete")) {
+			throw new SecurityException("User not allowed to delete projects");
+		}
+		if (!currentUser.keys().contains(project.getOwnerId())) {
+			throw new SecurityException("Only the project owner can delete this project");
 		}
 		return project;
 	}
@@ -241,13 +286,16 @@ public class ProjectServiceImpl implements ProjectService {
 		repo.save(project);
 	}
 
-	private boolean isAdmin() {
-		Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-		if (authentication == null) {
-			return false;
-		}
-		return authentication.getAuthorities().stream()
-				.anyMatch(authority -> "ROLE_ADMIN".equals(authority.getAuthority()));
+	private boolean canReadAllProjects() {
+		return rbacService.currentUserHasPermission("project.read.all");
+	}
+
+	private boolean canManageAllProjectContributors() {
+		return rbacService.currentUserHasPermission("project.contributor.manage.all");
+	}
+
+	private boolean canDeleteAllProjects() {
+		return rbacService.currentUserHasPermission("project.delete.all");
 	}
 
 	private List<ProjectContributorDTO> toContributorDtos(UUID projectId) {

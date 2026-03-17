@@ -31,7 +31,7 @@ export const API_ENDPOINTS = {
     CREATE: '/api/projects',
     GET: (id: string) => `/api/projects/${id}`,
     UPDATE: (id: string) => `/api/projects/${id}/update`,
-    DELETE: (id: string) => `/api/projects/${id}/delete`
+    DELETE: (id: string) => `/api/projects/${id}`
   },
   RUN: {
     LIST_BY_PROJECT: (projectId: string) => `/api/runs/project/${projectId}`,

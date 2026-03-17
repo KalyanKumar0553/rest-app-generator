@@ -73,7 +73,7 @@ import {
   RECENT_PROJECT_PROMPT_CONFIG
 } from './node-project-generation-dashboard.defaults';
 import { ProjectSpecMapperService } from '../../services/project-spec-mapper.service';
-import { toDatabaseCode, resolveDatabaseType, trimmed, toArtifactId, hasNumber } from '../../utils/project-generation.utils';
+import { toDatabaseCode, resolveDatabaseType, trimmed, toArtifactId, hasNumber, isValidProjectDescription } from '../../utils/project-generation.utils';
 
 @Component({
   selector: 'app-node-project-generation-dashboard',
@@ -160,6 +160,7 @@ export class NodeProjectGenerationDashboardComponent implements OnInit, OnDestro
   private generationGuestSubscription: Subscription | null = null;
   exploreZipBlob: Blob | null = null;
   exploreZipFileName = 'project.zip';
+  exploreRuns: ProjectRunSummary[] = [];
 
   backConfirmationConfig = BACK_CONFIRMATION_CONFIG;
   entitiesDeleteConfirmationConfig: { title: string; message: string; buttons: ModalButton[] } = { ...ENTITIES_DELETE_CONFIRMATION_CONFIG };
@@ -192,6 +193,7 @@ export class NodeProjectGenerationDashboardComponent implements OnInit, OnDestro
   availableDependencies: string[] = [];
   projectGroupError = '';
   projectNameError = '';
+  projectDescriptionError = '';
   @ViewChild('projectGroupInput') projectGroupInput?: ElementRef<HTMLInputElement>;
   @ViewChild('projectNameInput') projectNameInput?: ElementRef<HTMLInputElement>;
 
@@ -230,7 +232,7 @@ export class NodeProjectGenerationDashboardComponent implements OnInit, OnDestro
       navItems.splice(insertIndex, 0, this.controllersNavItem);
     }
 
-    const shouldShowExplore = !this.isGeneratingFromDtoSave && !this.isExploreSyncing && this.hasCachedZipForCurrentProject();
+    const shouldShowExplore = !this.isGeneratingFromDtoSave && !this.isExploreSyncing && this.canAccessExplore();
     if (!shouldShowExplore) {
       const exploreIndex = navItems.findIndex((item) => item.value === 'explore');
       if (exploreIndex >= 0) {
@@ -333,6 +335,8 @@ export class NodeProjectGenerationDashboardComponent implements OnInit, OnDestro
         this.mappers = Array.isArray(projectData.mappers) ? projectData.mappers : [];
         this.projectSettings = projectData.settings || this.projectSettings;
         this.projectSettings.language = 'node';
+        this.projectSettings.projectName = projectDetails.name || this.projectSettings.projectName;
+        this.projectSettings.projectDescription = projectDetails.description || this.projectSettings.projectDescription;
         this.databaseSettings = projectData.database || this.databaseSettings;
         this.databaseSettings.dbType = resolveDatabaseType(this.databaseSettings.dbType, this.databaseSettings.database);
         this.databaseSettings.database = toDatabaseCode(this.databaseSettings.database);
@@ -357,6 +361,7 @@ export class NodeProjectGenerationDashboardComponent implements OnInit, OnDestro
         this.toastService.success('Project loaded successfully');
       } else {
         this.projectSettings.projectName = projectDetails.name || this.projectSettings.projectName;
+        this.projectSettings.projectDescription = projectDetails.description || this.projectSettings.projectDescription;
         this.entities = [];
         this.dataObjects = [];
         this.relations = [];
@@ -531,13 +536,13 @@ export class NodeProjectGenerationDashboardComponent implements OnInit, OnDestro
       return;
     }
 
-    if (!this.isLoggedIn) {
-      this.generateExploreZipWithoutProjectId(previousSection);
+    const yamlSpec = this.buildCurrentProjectYaml();
+    if (!this.isLoggedIn && this.useCachedZipIfAvailable(yamlSpec, true)) {
       return;
     }
 
-    const yamlSpec = this.buildCurrentProjectYaml();
-    if (this.useCachedZipIfAvailable(yamlSpec, true)) {
+    if (!this.isLoggedIn) {
+      this.generateExploreZipWithoutProjectId(previousSection);
       return;
     }
 
@@ -548,6 +553,7 @@ export class NodeProjectGenerationDashboardComponent implements OnInit, OnDestro
       return;
     }
 
+    this.activeSection = 'explore';
     this.isExploreSyncing = true;
     const runsUrl = `${API_CONFIG.BASE_URL}${API_ENDPOINTS.RUN.LIST_BY_PROJECT(projectId)}`;
 
@@ -557,32 +563,28 @@ export class NodeProjectGenerationDashboardComponent implements OnInit, OnDestro
       }))
       .subscribe({
         next: async (runs) => {
-          const latestRun = this.getLatestRun(runs);
-          if (!latestRun) {
-            this.toastService.error('No generation run found for this project.');
-            this.activeSection = previousSection;
-            return;
+          this.exploreRuns = this.sortExploreRuns(runs);
+          this.exploreZipBlob = null;
+          this.exploreZipFileName = `${toArtifactId(this.projectSettings.projectName || projectId)}.zip`;
+
+          const downloadableRun = this.getLatestDownloadableRun(runs);
+          if (downloadableRun) {
+            const runId = this.getRunIdentifier(downloadableRun);
+            if (!runId) {
+              return;
+            }
+            try {
+              await this.downloadAndPrepareExploreZip(runId, projectId, yamlSpec);
+              return;
+            } catch {
+              this.toastService.error('Failed to load the saved project zip.');
+            }
           }
 
-          const status = String(latestRun.status ?? '').toUpperCase();
-          if (status === 'QUEUED' || status === 'INPROGRESS') {
-            this.toastService.error('Request in progress. Please wait.');
-            this.activeSection = previousSection;
-            return;
-          }
-
-          if (status !== 'SUCCESS' && status !== 'DONE') {
-            this.toastService.error(`Latest generation status is ${status || 'unknown'}.`);
-            this.activeSection = previousSection;
-            return;
-          }
-
-          try {
-            await this.downloadAndPrepareExploreZip(latestRun.id, projectId, yamlSpec);
-            this.activeSection = 'explore';
-          } catch {
-            this.toastService.error('Failed to download generated zip.');
-            this.activeSection = previousSection;
+          const latestRun = this.getLatestRun(this.exploreRuns);
+          const latestStatus = String(latestRun?.status ?? '').toUpperCase();
+          if (latestStatus === 'QUEUED' || latestStatus === 'INPROGRESS') {
+            this.connectProjectEvents(projectId);
           }
         },
         error: () => {
@@ -626,9 +628,9 @@ export class NodeProjectGenerationDashboardComponent implements OnInit, OnDestro
           this.toastService.success('Project generation started. Waiting for zip...');
           this.connectProjectEvents(projectId);
         },
-        error: () => {
+        error: (error) => {
           this.pendingGenerationYamlSpec = null;
-          this.toastService.error('Failed to save and start project generation.');
+          this.toastService.error(this.getProjectSaveErrorMessage(error));
           this.generationCreateSubscription = null;
         }
       });
@@ -709,6 +711,14 @@ export class NodeProjectGenerationDashboardComponent implements OnInit, OnDestro
     });
   }
 
+  private getProjectSaveErrorMessage(error: any): string {
+    const message = typeof error?.message === 'string' ? error.message.trim() : '';
+    if (message.toLowerCase().includes('project name already exists')) {
+      return 'Project name already exists. Choose a different project name';
+    }
+    return 'Failed to save and start project generation.';
+  }
+
   private connectProjectEvents(projectId: string): void {
     this.closeProjectEventsSource();
 
@@ -723,18 +733,14 @@ export class NodeProjectGenerationDashboardComponent implements OnInit, OnDestro
       }
 
       const status = String(payload.status ?? '').toUpperCase();
-      if (status === 'SUCCESS' && payload.zipBase64) {
-        const fileName = typeof payload.fileName === 'string' && payload.fileName.trim()
-          ? payload.fileName.trim()
-          : 'project.zip';
-        const yamlForCache = this.pendingGenerationYamlSpec || this.buildCurrentProjectYaml();
-        this.downloadZipFile(payload.zipBase64, fileName, yamlForCache);
-        this.toastService.success('Project zip is ready.');
+      if (status === 'SUCCESS' && Boolean(payload.hasZip)) {
         this.closeProjectEventsSource();
+        void this.handleGeneratedZipEvent(projectId, payload);
       } else if (status === 'ERROR') {
         const message = typeof payload.message === 'string' && payload.message.trim()
           ? payload.message.trim()
           : 'Project generation failed.';
+        this.refreshExploreRunHistory();
         this.toastService.error(message);
         this.closeProjectEventsSource();
       }
@@ -754,6 +760,24 @@ export class NodeProjectGenerationDashboardComponent implements OnInit, OnDestro
       return JSON.parse(raw);
     } catch {
       return null;
+    }
+  }
+
+  private async handleGeneratedZipEvent(projectId: string, payload: any): Promise<void> {
+    const yamlForCache = this.pendingGenerationYamlSpec || this.buildCurrentProjectYaml();
+    const runId = String(payload?.runId ?? '').trim();
+
+    try {
+      if (runId) {
+        await this.downloadAndPrepareExploreZip(runId, projectId, yamlForCache);
+      } else {
+        await this.refreshExploreRunHistoryAndLoadZip(projectId, yamlForCache);
+      }
+      this.refreshExploreRunHistory();
+      this.activeSection = 'explore';
+      this.toastService.success('Project zip is ready.');
+    } catch {
+      this.toastService.error('Failed to load the generated project zip.');
     }
   }
 
@@ -789,20 +813,11 @@ export class NodeProjectGenerationDashboardComponent implements OnInit, OnDestro
   }
 
   private getLatestRun(runs: ProjectRunSummary[] | null | undefined): ProjectRunSummary | null {
-    if (!Array.isArray(runs) || runs.length === 0) {
+    const sortedRuns = this.sortExploreRuns(runs);
+    if (sortedRuns.length === 0) {
       return null;
     }
-
-    const sorted = [...runs].sort((left, right) => {
-      const leftDate = new Date(left.createdAt ?? '').getTime();
-      const rightDate = new Date(right.createdAt ?? '').getTime();
-      if (leftDate === rightDate) {
-        return (Number(right.runNumber) || 0) - (Number(left.runNumber) || 0);
-      }
-      return rightDate - leftDate;
-    });
-
-    return sorted[0] ?? null;
+    return sortedRuns[0] ?? null;
   }
 
   private async downloadAndPrepareExploreZip(runId: string, projectId: string, yamlSpec: string): Promise<void> {
@@ -815,6 +830,18 @@ export class NodeProjectGenerationDashboardComponent implements OnInit, OnDestro
     this.exploreZipBlob = new Blob([zipData], { type: 'application/zip' });
     this.exploreZipFileName = `${toArtifactId(this.projectSettings.projectName || projectId)}.zip`;
     this.cacheZipFromArrayBuffer(yamlSpec, zipData, this.exploreZipFileName);
+  }
+
+  private async refreshExploreRunHistoryAndLoadZip(projectId: string, yamlSpec: string): Promise<void> {
+    const runsUrl = `${API_CONFIG.BASE_URL}${API_ENDPOINTS.RUN.LIST_BY_PROJECT(projectId)}`;
+    const runs = await firstValueFrom(this.http.get<ProjectRunSummary[]>(runsUrl));
+    this.exploreRuns = this.sortExploreRuns(runs);
+    const downloadableRun = this.getLatestDownloadableRun(runs);
+    const runId = this.getRunIdentifier(downloadableRun);
+    if (!runId) {
+      throw new Error('Generated zip is not available yet.');
+    }
+    await this.downloadAndPrepareExploreZip(runId, projectId, yamlSpec);
   }
 
   private generateExploreZipWithoutProjectId(previousSection: string): void {
@@ -932,13 +959,78 @@ export class NodeProjectGenerationDashboardComponent implements OnInit, OnDestro
     return Boolean(cacheEntry?.zipBase64);
   }
 
+  private canAccessExplore(): boolean {
+    return this.hasCachedZipForCurrentProject() || (this.isLoggedIn && Boolean(trimmed(this.backendProjectId)));
+  }
+
   private clearLocalZipDataBeforeGeneration(): void {
     this.localStorageService.clearProjectZipCache(this.getZipCacheKey());
     this.exploreZipBlob = null;
     this.exploreZipFileName = 'project.zip';
+    this.exploreRuns = [];
     if (this.activeSection === 'explore') {
       this.activeSection = 'general';
     }
+  }
+
+  private sortExploreRuns(runs: ProjectRunSummary[] | null | undefined): ProjectRunSummary[] {
+    if (!Array.isArray(runs)) {
+      return [];
+    }
+    return [...runs].sort((left, right) => {
+      const leftDate = new Date(left.updatedAt ?? left.createdAt ?? '').getTime();
+      const rightDate = new Date(right.updatedAt ?? right.createdAt ?? '').getTime();
+      if (leftDate === rightDate) {
+        return (Number(right.runNumber) || 0) - (Number(left.runNumber) || 0);
+      }
+      return rightDate - leftDate;
+    });
+  }
+
+  private getRunIdentifier(run: ProjectRunSummary | null | undefined): string {
+    return String(run?.runId ?? run?.id ?? '').trim();
+  }
+
+  private getLatestDownloadableRun(runs: ProjectRunSummary[] | null | undefined): ProjectRunSummary | null {
+    return this.sortExploreRuns(runs).find((run) => Boolean(run?.hasZip && this.getRunIdentifier(run))) ?? null;
+  }
+
+  private refreshExploreRunHistory(): void {
+    const projectId = trimmed(this.backendProjectId);
+    if (!projectId || !this.isLoggedIn) {
+      return;
+    }
+
+    const runsUrl = `${API_CONFIG.BASE_URL}${API_ENDPOINTS.RUN.LIST_BY_PROJECT(projectId)}`;
+    this.http.get<ProjectRunSummary[]>(runsUrl).subscribe({
+      next: (runs) => {
+        this.exploreRuns = this.sortExploreRuns(runs);
+      },
+      error: () => {
+        console.error('Failed to refresh project run history.');
+      }
+    });
+  }
+
+  getExploreRunStatusClass(status: string | null | undefined): string {
+    switch (String(status ?? '').toUpperCase()) {
+      case 'SUCCESS':
+      case 'DONE':
+        return 'explore-status-badge-success';
+      case 'ERROR':
+      case 'FAILED':
+      case 'CANCELLED':
+        return 'explore-status-badge-error';
+      case 'INPROGRESS':
+      case 'QUEUED':
+        return 'explore-status-badge-progress';
+      default:
+        return 'explore-status-badge-neutral';
+    }
+  }
+
+  trackExploreRun(_index: number, run: ProjectRunSummary): string {
+    return this.getRunIdentifier(run) || `${run.runNumber ?? _index}`;
   }
 
   private base64ToUint8Array(base64Payload: string): Uint8Array {
@@ -1074,6 +1166,12 @@ export class NodeProjectGenerationDashboardComponent implements OnInit, OnDestro
   onProjectNameChange(): void {
     if (this.projectNameError) {
       this.projectNameError = '';
+    }
+  }
+
+  onProjectDescriptionChange(): void {
+    if (this.projectDescriptionError) {
+      this.projectDescriptionError = '';
     }
   }
 
@@ -1793,8 +1891,10 @@ export class NodeProjectGenerationDashboardComponent implements OnInit, OnDestro
 
   private validateProjectNaming(): boolean {
     const projectName = trimmed(this.projectSettings.projectName);
+    const projectDescription = trimmed(this.projectSettings.projectDescription);
     this.projectGroupError = '';
     this.projectNameError = '';
+    this.projectDescriptionError = '';
 
     if (!projectName) {
       this.projectNameError = VALIDATION_MESSAGES.projectNameRequired;
@@ -1830,9 +1930,16 @@ export class NodeProjectGenerationDashboardComponent implements OnInit, OnDestro
 
     if (!valid) {
       this.focusProjectNamingErrorField();
+      return false;
     }
 
-    return valid;
+    if (projectDescription && !isValidProjectDescription(projectDescription)) {
+      this.projectDescriptionError = VALIDATION_MESSAGES.projectDescriptionInvalid;
+      this.focusProjectNamingErrorField();
+      return false;
+    }
+
+    return true;
   }
 
   private focusProjectNamingErrorField(): void {

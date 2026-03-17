@@ -10,11 +10,10 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.src.main.auth.service.RbacService;
 import com.src.main.model.ProjectEntity;
 import com.src.main.model.ProjectRunEntity;
 import com.src.main.repository.ProjectContributorRepository;
@@ -31,6 +30,9 @@ public class ProjectOrchestrationServiceImpl implements ProjectOrchestrationServ
 	private final ProjectRunRepository projectRunRepository;
 	private final ProjectContributorRepository projectContributorRepository;
 	private final ProjectUserIdentityService projectUserIdentityService;
+	private final ProjectYamlService projectYamlService;
+	private final ProjectNameValidationService projectNameValidationService;
+	private final RbacService rbacService;
 
 	@Value("${app.project.max-generates-per-user-per-day:200}")
 	private int maxGeneratesPerUserPerDay;
@@ -39,19 +41,35 @@ public class ProjectOrchestrationServiceImpl implements ProjectOrchestrationServ
 
 	public ProjectOrchestrationServiceImpl(ProjectRepository projectRepository, ProjectRunRepository projectRunRepository,
 			ProjectContributorRepository projectContributorRepository,
-			ProjectUserIdentityService projectUserIdentityService) {
+			ProjectUserIdentityService projectUserIdentityService,
+			ProjectYamlService projectYamlService,
+			ProjectNameValidationService projectNameValidationService,
+			RbacService rbacService) {
 		this.projectRepository = projectRepository;
 		this.projectRunRepository = projectRunRepository;
 		this.projectContributorRepository = projectContributorRepository;
 		this.projectUserIdentityService = projectUserIdentityService;
+		this.projectYamlService = projectYamlService;
+		this.projectNameValidationService = projectNameValidationService;
+		this.rbacService = rbacService;
 	}
 
 	@Override
 	@Transactional
 	public ProjectEntity updateSpec(UUID projectId, String ownerId, String yamlContent) {
+		if (!rbacService.currentUserHasPermission("project.update")) {
+			throw new SecurityException("User not allowed to update projects");
+		}
 		ProjectUserIdentityService.ResolvedProjectUser currentUser = projectUserIdentityService.resolve(ownerId);
-		ProjectEntity project = getOwnedProject(projectId, currentUser.userId());
+		ProjectEntity project = getEditableProject(projectId, currentUser.userId());
+		String updatedProjectName = projectYamlService.extractProjectName(yamlContent);
+		String currentProjectName = project.getName() == null ? "" : project.getName().trim();
+		String normalizedUpdatedProjectName = updatedProjectName == null ? "" : updatedProjectName.trim();
+		if (!currentProjectName.equalsIgnoreCase(normalizedUpdatedProjectName)) {
+			projectNameValidationService.ensureUniqueProjectName(updatedProjectName, currentUser, projectId);
+		}
 		project.setOwnerId(currentUser.userId());
+		project.setName(updatedProjectName);
 		project.setYaml(yamlContent);
 		return project;
 	}
@@ -71,7 +89,10 @@ public class ProjectOrchestrationServiceImpl implements ProjectOrchestrationServ
 	@Override
 	@Transactional
 	public ProjectRunEntity generateCode(UUID projectId, String ownerId) {
-		ProjectEntity project = getOwnedProject(projectId, ownerId);
+		if (!rbacService.currentUserHasPermission("project.generate")) {
+			throw new SecurityException("User not allowed to generate projects");
+		}
+		ProjectEntity project = getEditableProject(projectId, ownerId);
 		ProjectRunEntity latest = projectRunRepository.findTopByProjectIdAndTypeOrderByCreatedAtDesc(projectId, ProjectRunType.GENERATE_CODE);
 		if (latest != null && (latest.getStatus() == ProjectRunStatus.QUEUED || latest.getStatus() == ProjectRunStatus.INPROGRESS)) {
 			return latest;
@@ -82,14 +103,31 @@ public class ProjectOrchestrationServiceImpl implements ProjectOrchestrationServ
 	@Override
 	@Transactional(readOnly = true)
 	public ProjectEntity getOwnedProject(UUID projectId, String ownerId) {
+		if (!rbacService.currentUserHasPermission("project.read")) {
+			throw new SecurityException("User not allowed to access projects");
+		}
 		ProjectUserIdentityService.ResolvedProjectUser currentUser = projectUserIdentityService.resolve(ownerId);
 		ProjectEntity project = projectRepository.findWithContributorsById(projectId)
 				.orElseThrow(() -> new IllegalArgumentException("Project not found: " + projectId));
 		reassignOwnerIfNeeded(project, currentUser);
-		if (!isAdmin()
+		if (!canReadAllProjects()
 				&& !currentUser.keys().contains(project.getOwnerId())
 				&& !projectContributorRepository.existsByProjectIdAndUserIdIn(projectId, currentUser.keys())) {
 			throw new SecurityException("User not allowed to access this project");
+		}
+		return project;
+	}
+
+	@Transactional(readOnly = true)
+	protected ProjectEntity getEditableProject(UUID projectId, String ownerId) {
+		ProjectUserIdentityService.ResolvedProjectUser currentUser = projectUserIdentityService.resolve(ownerId);
+		ProjectEntity project = projectRepository.findWithContributorsById(projectId)
+				.orElseThrow(() -> new IllegalArgumentException("Project not found: " + projectId));
+		reassignOwnerIfNeeded(project, currentUser);
+		if (!canUpdateAllProjects()
+				&& !currentUser.keys().contains(project.getOwnerId())
+				&& !projectContributorRepository.existsByProjectIdAndUserIdIn(projectId, currentUser.keys())) {
+			throw new SecurityException("User not allowed to modify this project");
 		}
 		return project;
 	}
@@ -161,12 +199,11 @@ public class ProjectOrchestrationServiceImpl implements ProjectOrchestrationServ
 				.body(p.getZip());
 	}
 
-	private boolean isAdmin() {
-		Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-		if (authentication == null) {
-			return false;
-		}
-		return authentication.getAuthorities().stream()
-				.anyMatch(authority -> "ROLE_ADMIN".equals(authority.getAuthority()));
+	private boolean canReadAllProjects() {
+		return rbacService.currentUserHasPermission("project.read.all");
+	}
+
+	private boolean canUpdateAllProjects() {
+		return rbacService.currentUserHasPermission("project.update.all");
 	}
 }

@@ -37,4 +37,15 @@ public interface ProjectRepository extends JpaRepository<ProjectEntity, UUID> {
 			where p.id = :projectId
 			""")
 	Optional<ProjectEntity> findWithContributorsById(@Param("projectId") UUID projectId);
+
+	@Query("""
+			select (count(p) > 0)
+			from ProjectEntity p
+			where p.ownerId in :ownerKeys
+			  and lower(trim(p.name)) = lower(trim(:projectName))
+			  and (:excludedProjectId is null or p.id <> :excludedProjectId)
+			""")
+	boolean existsByOwnerIdInAndNameIgnoreCase(@Param("ownerKeys") Collection<String> ownerKeys,
+			@Param("projectName") String projectName,
+			@Param("excludedProjectId") UUID excludedProjectId);
 }

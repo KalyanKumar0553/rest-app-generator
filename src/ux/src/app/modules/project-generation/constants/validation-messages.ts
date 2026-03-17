@@ -3,6 +3,7 @@ export const VALIDATION_MESSAGES = {
   projectGroupInvalid: 'Project group must be a valid Maven groupId (lowercase dot-separated segments).',
   projectNameRequired: 'Project name is required.',
   projectNameInvalidFolder: 'Project name must contain only letters, numbers, dots, underscores, or hyphens.',
+  projectDescriptionInvalid: 'Project description must contain only letters, numbers, spaces, commas, periods, or hyphens.',
   artifactIdInvalid: 'Project name generates an invalid artifact id.',
   constraintInvalid: 'Please complete all constraint values before saving.',
   atLeastOneProperty: 'At least one property is required to save a data object.',
@@ -16,4 +17,3 @@ export const VALIDATION_MESSAGES = {
   allRowsMapped: 'All mapping rows must be mapped.',
   baseEndpointRequired: 'Base endpoint is required.'
 } as const;
-

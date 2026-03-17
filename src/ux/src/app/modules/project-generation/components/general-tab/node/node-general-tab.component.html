@@ -3,9 +3,11 @@
     [projectSettings]="projectSettings"
     [projectGroupError]="projectGroupError"
     [projectNameError]="projectNameError"
+    [projectDescriptionError]="projectDescriptionError"
     [packageManagerOptions]="packageManagerOptions"
     (projectGroupChange)="projectGroupChange.emit()"
-    (projectNameChange)="projectNameChange.emit()">
+    (projectNameChange)="projectNameChange.emit()"
+    (projectDescriptionChange)="projectDescriptionChange.emit()">
   </app-node-project-settings-section>
 
   <app-node-database-settings-section

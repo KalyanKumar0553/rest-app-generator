@@ -129,6 +129,7 @@
           [developerPreferences]="developerPreferences"
           [projectGroupError]="projectGroupError"
           [projectNameError]="projectNameError"
+          [projectDescriptionError]="projectDescriptionError"
           [dbTypeOptions]="dbTypeOptions"
           [filteredDatabaseOptions]="filteredDatabaseOptions"
           [dbGenerationOptions]="dbGenerationOptions"
@@ -137,6 +138,7 @@
           [showPluralizeTableNames]="shouldShowPluralizeTableNames()"
           (projectGroupChange)="onProjectGroupChange()"
           (projectNameChange)="onProjectNameChange()"
+          (projectDescriptionChange)="onProjectDescriptionChange()"
           (databaseTypeChange)="onDatabaseTypeChange($event)"
           (databaseSelectionChange)="onDatabaseSelectionChange($event)"
           (addProfile)="onAddProfileClick()"
@@ -480,7 +482,11 @@
       <div class="scrollable-content explore-content">
         <div class="explore-empty-card" *ngIf="!exploreZipBlob">
           <div class="explore-empty-header">
-            <h3>Project Explorer</h3>
+            <div class="explore-heading-block">
+              <span class="explore-eyebrow">Project Explorer</span>
+              <h3>{{ projectSettings.projectName || 'Untitled project' }}</h3>
+              <p class="explore-empty-body" *ngIf="projectSettings.projectDescription">{{ projectSettings.projectDescription }}</p>
+            </div>
             <button
               class="reload-btn"
               type="button"
@@ -492,7 +498,31 @@
               <span>{{ isExploreSyncing ? 'Syncing...' : 'Reload' }}</span>
             </button>
           </div>
-          <p class="explore-empty-body">No synced zip available. Click reload to fetch the latest configured project.</p>
+          <div class="explore-meta-strip">
+            <span class="explore-meta-pill">{{ backendProjectId ? 'Saved project' : 'Local preview' }}</span>
+            <span class="explore-meta-pill" *ngIf="projectSettings.projectGroup">{{ projectSettings.projectGroup }}</span>
+            <span class="explore-meta-pill" *ngIf="exploreRuns.length">{{ exploreRuns.length }} event{{ exploreRuns.length === 1 ? '' : 's' }}</span>
+          </div>
+          <div class="explore-status-section" *ngIf="exploreRuns.length; else noExploreRuns">
+            <div class="explore-status-list">
+              <article class="explore-status-item" *ngFor="let run of exploreRuns; trackBy: trackExploreRun">
+                <div class="explore-status-topline">
+                  <span class="explore-status-badge" [ngClass]="getExploreRunStatusClass(run.status)">
+                    {{ run.status || 'UNKNOWN' }}
+                  </span>
+                  <span class="explore-status-run-label">Run {{ run.runNumber || '—' }}</span>
+                  <span class="explore-status-time">{{ (run.updatedAt || run.createdAt) | date:'medium' }}</span>
+                </div>
+                <p class="explore-status-body" *ngIf="run.errorMessage">{{ run.errorMessage }}</p>
+                <p class="explore-status-body" *ngIf="!run.errorMessage">
+                  {{ run.hasZip ? 'Generated zip is available for this run.' : 'Waiting for a generated zip from this run.' }}
+                </p>
+              </article>
+            </div>
+          </div>
+          <ng-template #noExploreRuns>
+            <p class="explore-empty-body">No generated zip is saved for this project yet. Recent generation activity will appear here once runs start.</p>
+          </ng-template>
         </div>
         <app-project-view
           *ngIf="exploreZipBlob"
