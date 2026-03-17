@@ -50,6 +50,11 @@ public class ProjectRunController {
         return ResponseEntity.ok(dto);
     }
 
+    @GetMapping("/{runId}/download")
+    public ResponseEntity<byte[]> downloadRun(@PathVariable("runId") UUID runId, Principal principal) {
+        return orchestrationService.download(runId, currentUserId(principal));
+    }
+
     @GetMapping("/project/{projectId}")
     public ResponseEntity<java.util.List<ProjectRunDetailsResponseDTO>> getRunsForProject(@PathVariable("projectId") UUID projectId,
             Principal principal) {

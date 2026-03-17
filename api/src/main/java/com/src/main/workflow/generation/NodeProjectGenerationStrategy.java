@@ -2,6 +2,7 @@ package com.src.main.workflow.generation;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
 
@@ -61,7 +62,7 @@ public class NodeProjectGenerationStrategy implements ProjectGenerationStrategy 
 			tempDir = Files.createTempDirectory("project_view_node_");
 			DefaultExtendedState state = new DefaultExtendedState();
 			populatePreviewVariables(state.getVariables(), tempDir, yaml, app);
-			runWorkflow(state);
+			runWorkflow(null, state);
 			return projectArchiveService.zipDirectory(tempDir);
 		} catch (GenericException ex) {
 			throw ex;
@@ -79,7 +80,7 @@ public class NodeProjectGenerationStrategy implements ProjectGenerationStrategy 
 			tempDir = Files.createTempDirectory("node_gen_");
 			DefaultExtendedState state = new DefaultExtendedState();
 			populateProjectVariables(state.getVariables(), tempDir, project, yaml);
-			runWorkflow(state);
+			runWorkflow(run, state);
 			byte[] zipData = projectArchiveService.zipDirectory(tempDir);
 			run.setZip(zipData);
 			run.setStatus(ProjectRunStatus.SUCCESS);
@@ -107,12 +108,15 @@ public class NodeProjectGenerationStrategy implements ProjectGenerationStrategy 
 		}
 	}
 
-	private void runWorkflow(DefaultExtendedState state) {
+	private void runWorkflow(ProjectRunEntity run, DefaultExtendedState state) {
 		for (NodeState nodeState : WORKFLOW) {
+			publishStage(run, nodeState, "INPROGRESS", null);
 			var result = executeStep(nodeState, state);
 			if (!result.isSuccess()) {
+				publishStage(run, nodeState, "ERROR", result.getMessage());
 				throw new GenericException(HttpStatus.INTERNAL_SERVER_ERROR, result.getMessage());
 			}
+			publishStage(run, nodeState, "DONE", result.getMessage());
 			if (result.getDetails() != null) {
 				state.getVariables().putAll(result.getDetails());
 			}
@@ -125,6 +129,19 @@ public class NodeProjectGenerationStrategy implements ProjectGenerationStrategy 
 		} catch (Exception ex) {
 			throw new GenericException(HttpStatus.INTERNAL_SERVER_ERROR, ex.getMessage());
 		}
+	}
+
+	private void publishStage(ProjectRunEntity run, NodeState nodeState, String status, String message) {
+		if (run == null || run.getProject() == null || nodeState == null) {
+			return;
+		}
+		projectEventStreamService.publish(run.getProject().getId(), "stage", Map.of(
+				"projectId", run.getProject().getId().toString(),
+				"runId", run.getId().toString(),
+				"stage", nodeState.name(),
+				"status", status,
+				"message", message == null ? "" : message,
+				"timestamp", OffsetDateTime.now().toString()));
 	}
 
 	private void populatePreviewVariables(Map<Object, Object> variables, Path tempDir, Map<String, Object> yaml, Map<String, Object> app) {

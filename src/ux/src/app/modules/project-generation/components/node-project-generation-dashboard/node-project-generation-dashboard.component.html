@@ -416,10 +416,20 @@
           <div class="explore-meta-strip">
             <span class="explore-meta-pill">{{ backendProjectId ? 'Saved project' : 'Local preview' }}</span>
             <span class="explore-meta-pill" *ngIf="projectSettings.projectGroup">{{ projectSettings.projectGroup }}</span>
-            <span class="explore-meta-pill" *ngIf="exploreRuns.length">{{ exploreRuns.length }} event{{ exploreRuns.length === 1 ? '' : 's' }}</span>
+            <span class="explore-meta-pill" *ngIf="getExploreEventCount()">{{ getExploreEventCount() }} event{{ getExploreEventCount() === 1 ? '' : 's' }}</span>
           </div>
-          <div class="explore-status-section" *ngIf="exploreRuns.length; else noExploreRuns">
+          <div class="explore-status-section" *ngIf="exploreStageEvents.length || exploreRuns.length; else noExploreRuns">
             <div class="explore-status-list">
+              <article class="explore-status-item" *ngFor="let event of exploreStageEvents; trackBy: trackExploreStageEvent">
+                <div class="explore-status-topline">
+                  <span class="explore-status-badge" [ngClass]="getExploreRunStatusClass(event.status)">
+                    {{ event.status || 'UNKNOWN' }}
+                  </span>
+                  <span class="explore-status-run-label">{{ formatExploreStageLabel(event.stage) }}</span>
+                  <span class="explore-status-time" *ngIf="event.timestamp">{{ event.timestamp | date:'medium' }}</span>
+                </div>
+                <p class="explore-status-body" *ngIf="event.message">{{ event.message }}</p>
+              </article>
               <article class="explore-status-item" *ngFor="let run of exploreRuns; trackBy: trackExploreRun">
                 <div class="explore-status-topline">
                   <span class="explore-status-badge" [ngClass]="getExploreRunStatusClass(run.status)">

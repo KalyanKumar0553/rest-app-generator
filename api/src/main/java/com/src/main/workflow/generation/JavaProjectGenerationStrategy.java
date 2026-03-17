@@ -2,6 +2,7 @@ package com.src.main.workflow.generation;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.OffsetDateTime;
 import java.time.Duration;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
@@ -110,6 +111,7 @@ public class JavaProjectGenerationStrategy implements ProjectGenerationStrategy 
 					if (to == null) {
 						return;
 					}
+					publishStageTransition(run, from == null ? null : from.getId(), to.getId());
 					handleTerminalState(run, tempDir, to.getId() == States.DONE, to.getId() == States.ERROR);
 				}
 			});
@@ -188,6 +190,28 @@ public class JavaProjectGenerationStrategy implements ProjectGenerationStrategy 
 					"hasZip", false,
 					"message", run.getErrorMessage()));
 			projectArchiveService.deleteDirectoryQuietly(tempDir);
+		}
+	}
+
+	private void publishStageTransition(ProjectRunEntity run, States from, States to) {
+		if (run == null || run.getProject() == null || to == null) {
+			return;
+		}
+		if (from != null && from != States.DONE && from != States.ERROR && from != to) {
+			projectEventStreamService.publish(run.getProject().getId(), "stage", Map.of(
+					"projectId", run.getProject().getId().toString(),
+					"runId", run.getId().toString(),
+					"stage", from.name(),
+					"status", to == States.ERROR ? "ERROR" : "DONE",
+					"timestamp", OffsetDateTime.now().toString()));
+		}
+		if (to != States.DONE && to != States.ERROR) {
+			projectEventStreamService.publish(run.getProject().getId(), "stage", Map.of(
+					"projectId", run.getProject().getId().toString(),
+					"runId", run.getId().toString(),
+					"stage", to.name(),
+					"status", "INPROGRESS",
+					"timestamp", OffsetDateTime.now().toString()));
 		}
 	}
 }

@@ -22,5 +22,5 @@ public interface ProjectOrchestrationService {
 
 	ProjectRunEntity getRun(UUID runId, String ownerId);
 	
-	ResponseEntity<byte[]> download(UUID id);
+	ResponseEntity<byte[]> download(UUID id, String ownerId);
 }

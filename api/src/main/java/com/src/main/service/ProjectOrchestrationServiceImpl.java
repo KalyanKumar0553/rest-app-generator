@@ -187,9 +187,10 @@ public class ProjectOrchestrationServiceImpl implements ProjectOrchestrationServ
 	}
 
 	@Override
-	public ResponseEntity<byte[]> download(UUID id) {
+	public ResponseEntity<byte[]> download(UUID id, String ownerId) {
 		ProjectRunEntity p = projectRunRepository.findById(id)
 				.orElseThrow(() -> new java.util.NoSuchElementException("Project Run Not found"));
+		getOwnedProject(p.getProject().getId(), ownerId);
 		if (p.getZip() == null) {
 			return ResponseEntity.status(202).build();
 		}

@@ -47,6 +47,13 @@ export interface ProjectRunSummary {
   runNumber?: number;
 }
 
+export interface ProjectGenerationStageEvent {
+  stage: string;
+  status: string;
+  message?: string;
+  timestamp?: string;
+}
+
 export interface ControllerRestSpecRow {
   key: string;
   name: string;

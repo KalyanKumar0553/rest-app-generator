@@ -47,6 +47,7 @@ import {
   DatabaseSettings,
   DatabaseOption,
   DeveloperPreferences,
+  ProjectGenerationStageEvent,
   ProjectRunSummary,
   ControllerRestSpecRow
 } from './node-project-generation-dashboard.models';
@@ -161,6 +162,7 @@ export class NodeProjectGenerationDashboardComponent implements OnInit, OnDestro
   exploreZipBlob: Blob | null = null;
   exploreZipFileName = 'project.zip';
   exploreRuns: ProjectRunSummary[] = [];
+  exploreStageEvents: ProjectGenerationStageEvent[] = [];
 
   backConfirmationConfig = BACK_CONFIRMATION_CONFIG;
   entitiesDeleteConfirmationConfig: { title: string; message: string; buttons: ModalButton[] } = { ...ENTITIES_DELETE_CONFIRMATION_CONFIG };
@@ -564,6 +566,7 @@ export class NodeProjectGenerationDashboardComponent implements OnInit, OnDestro
       .subscribe({
         next: async (runs) => {
           this.exploreRuns = this.sortExploreRuns(runs);
+          this.exploreStageEvents = [];
           this.exploreZipBlob = null;
           this.exploreZipFileName = `${toArtifactId(this.projectSettings.projectName || projectId)}.zip`;
 
@@ -726,6 +729,14 @@ export class NodeProjectGenerationDashboardComponent implements OnInit, OnDestro
     const source = new EventSource(url, { withCredentials: true });
     this.projectEventsSource = source;
 
+    source.addEventListener('stage', (event: MessageEvent) => {
+      const payload = this.parseJsonPayload(event.data);
+      if (!payload) {
+        return;
+      }
+      this.upsertExploreStageEvent(payload);
+    });
+
     source.addEventListener('generation', (event: MessageEvent) => {
       const payload = this.parseJsonPayload(event.data);
       if (!payload) {
@@ -761,6 +772,29 @@ export class NodeProjectGenerationDashboardComponent implements OnInit, OnDestro
     } catch {
       return null;
     }
+  }
+
+  private upsertExploreStageEvent(payload: any): void {
+    const stage = String(payload?.stage ?? '').trim();
+    if (!stage) {
+      return;
+    }
+
+    const nextEvent: ProjectGenerationStageEvent = {
+      stage,
+      status: String(payload?.status ?? 'UNKNOWN').trim() || 'UNKNOWN',
+      message: typeof payload?.message === 'string' ? payload.message.trim() : '',
+      timestamp: typeof payload?.timestamp === 'string' ? payload.timestamp : undefined
+    };
+
+    const existingIndex = this.exploreStageEvents.findIndex((event) => event.stage === stage);
+    if (existingIndex >= 0) {
+      this.exploreStageEvents[existingIndex] = nextEvent;
+      this.exploreStageEvents = [...this.exploreStageEvents];
+      return;
+    }
+
+    this.exploreStageEvents = [...this.exploreStageEvents, nextEvent];
   }
 
   private async handleGeneratedZipEvent(projectId: string, payload: any): Promise<void> {
@@ -968,6 +1002,7 @@ export class NodeProjectGenerationDashboardComponent implements OnInit, OnDestro
     this.exploreZipBlob = null;
     this.exploreZipFileName = 'project.zip';
     this.exploreRuns = [];
+    this.exploreStageEvents = [];
     if (this.activeSection === 'explore') {
       this.activeSection = 'general';
     }
@@ -1029,8 +1064,29 @@ export class NodeProjectGenerationDashboardComponent implements OnInit, OnDestro
     }
   }
 
+  getExploreEventCount(): number {
+    return this.exploreStageEvents.length || this.exploreRuns.length;
+  }
+
+  formatExploreStageLabel(stage: string | null | undefined): string {
+    const normalized = String(stage ?? '').trim();
+    if (!normalized) {
+      return 'Unknown stage';
+    }
+    return normalized
+      .toLowerCase()
+      .split('_')
+      .filter(Boolean)
+      .map((segment) => segment.charAt(0).toUpperCase() + segment.slice(1))
+      .join(' ');
+  }
+
   trackExploreRun(_index: number, run: ProjectRunSummary): string {
     return this.getRunIdentifier(run) || `${run.runNumber ?? _index}`;
+  }
+
+  trackExploreStageEvent(_index: number, event: ProjectGenerationStageEvent): string {
+    return event.stage;
   }
 
   private base64ToUint8Array(base64Payload: string): Uint8Array {
