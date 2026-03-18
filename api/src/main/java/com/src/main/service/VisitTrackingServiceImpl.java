@@ -6,9 +6,11 @@ import java.security.NoSuchAlgorithmException;
 import java.time.OffsetDateTime;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.src.main.model.UniqueVisitEntity;
 import com.src.main.repository.UniqueVisitRepository;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -32,7 +34,29 @@ public class VisitTrackingServiceImpl implements VisitTrackingService {
         }
 
         String ipHash = hashIp(clientIp);
-        uniqueVisitRepository.upsertVisit(ipHash, OffsetDateTime.now());
+        OffsetDateTime now = OffsetDateTime.now();
+        UniqueVisitEntity visit = uniqueVisitRepository.findByIpHash(ipHash)
+                .orElseGet(() -> createVisit(ipHash, now));
+        visit.setLastSeenAt(now);
+        visit.setHitCount(visit.getHitCount() + 1);
+        try {
+            uniqueVisitRepository.save(visit);
+        } catch (DataIntegrityViolationException ex) {
+            UniqueVisitEntity existing = uniqueVisitRepository.findByIpHash(ipHash)
+                    .orElseThrow(() -> ex);
+            existing.setLastSeenAt(now);
+            existing.setHitCount(existing.getHitCount() + 1);
+            uniqueVisitRepository.save(existing);
+        }
+    }
+
+    private UniqueVisitEntity createVisit(String ipHash, OffsetDateTime now) {
+        UniqueVisitEntity visit = new UniqueVisitEntity();
+        visit.setIpHash(ipHash);
+        visit.setFirstSeenAt(now);
+        visit.setLastSeenAt(now);
+        visit.setHitCount(0);
+        return visit;
     }
 
     private String resolveClientIp(HttpServletRequest request) {

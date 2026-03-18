@@ -12,6 +12,7 @@ import org.springframework.data.jpa.repository.QueryHints;
 import org.springframework.data.repository.query.Param;
 
 import com.src.main.model.ProjectRunEntity;
+import com.src.main.repository.query.ProjectRunQueries;
 import com.src.main.util.ProjectRunStatus;
 import com.src.main.util.ProjectRunType;
 
@@ -22,7 +23,7 @@ public interface ProjectRunRepository extends JpaRepository<ProjectRunEntity, UU
 
 	long countByProjectIdAndType(UUID projectId, ProjectRunType type);
 
-	@Query("select count(r) from ProjectRunEntity r where r.ownerId = :ownerId and r.type = :type and r.createdAt >= :from and r.createdAt < :to")
+	@Query(ProjectRunQueries.COUNT_USER_RUNS_IN_PERIOD)
 	long countUserRunsInPeriod(String ownerId, ProjectRunType type, OffsetDateTime from, OffsetDateTime to);
 
 	@Lock(LockModeType.PESSIMISTIC_WRITE)
@@ -32,15 +33,19 @@ public interface ProjectRunRepository extends JpaRepository<ProjectRunEntity, UU
 
 	ProjectRunEntity findTopByProjectIdAndTypeOrderByCreatedAtDesc(UUID projectId, ProjectRunType type);
 
+	@Query(ProjectRunQueries.FIND_BY_ID_WITH_PROJECT)
+	java.util.Optional<ProjectRunEntity> findByIdWithProject(@Param("runId") UUID runId);
+
 	List<ProjectRunEntity> findByStatusAndUpdatedAtBefore(ProjectRunStatus status, OffsetDateTime before);
 
-	List<ProjectRunEntity> findByProjectIdOrderByCreatedAtAsc(UUID projectId);
+	@Query(ProjectRunQueries.FIND_BY_PROJECT_ID_ORDER_BY_CREATED_AT_ASC)
+	List<ProjectRunEntity> findByProjectIdOrderByCreatedAtAsc(@Param("projectId") UUID projectId);
 
 	long deleteByProjectId(UUID projectId);
 
 	@Lock(LockModeType.PESSIMISTIC_WRITE)
 	@QueryHints(@QueryHint(name = "jakarta.persistence.lock.timeout", value = "0"))
-	@Query("SELECT r FROM ProjectRunEntity r WHERE r.status = :status AND r.type   = :type ORDER BY r.createdAt ASC")
+	@Query(ProjectRunQueries.FIND_NEXT_BATCH_FOR_PROCESSING)
 	List<ProjectRunEntity> findNextBatchForProcessing(@Param("status") ProjectRunStatus status,
 			@Param("type") ProjectRunType type, Pageable pageable);
 

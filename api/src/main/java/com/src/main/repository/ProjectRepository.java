@@ -10,41 +10,22 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import com.src.main.model.ProjectEntity;
+import com.src.main.repository.query.ProjectQueries;
 
 public interface ProjectRepository extends JpaRepository<ProjectEntity, UUID> {
-	@Query("""
-			select distinct p
-			from ProjectEntity p
-			left join p.contributors c
-			where p.ownerId = :userId or c.userId = :userId
-			order by p.updatedAt desc
-			""")
+	@Query(ProjectQueries.FIND_ACCESSIBLE_PROJECTS)
 	List<ProjectEntity> findAccessibleProjects(@Param("userId") String userId);
 
-	@Query("""
-			select distinct p
-			from ProjectEntity p
-			left join p.contributors c
-			where p.ownerId in :userKeys or c.userId in :userKeys
-			order by p.updatedAt desc
-			""")
+	@Query(ProjectQueries.FIND_ACCESSIBLE_PROJECTS_BY_USER_KEYS)
 	List<ProjectEntity> findAccessibleProjectsByUserKeys(@Param("userKeys") Collection<String> userKeys);
 
-	@Query("""
-			select distinct p
-			from ProjectEntity p
-			left join fetch p.contributors c
-			where p.id = :projectId
-			""")
+	@Query(ProjectQueries.FIND_WITH_CONTRIBUTORS_BY_ID)
 	Optional<ProjectEntity> findWithContributorsById(@Param("projectId") UUID projectId);
 
-	@Query("""
-			select (count(p) > 0)
-			from ProjectEntity p
-			where p.ownerId in :ownerKeys
-			  and lower(trim(p.name)) = lower(trim(:projectName))
-			  and (:excludedProjectId is null or p.id <> :excludedProjectId)
-			""")
+	@Query(ProjectQueries.FIND_ALL_WITH_CONTRIBUTORS)
+	List<ProjectEntity> findAllWithContributors();
+
+	@Query(ProjectQueries.EXISTS_BY_OWNER_ID_IN_AND_NAME_IGNORE_CASE)
 	boolean existsByOwnerIdInAndNameIgnoreCase(@Param("ownerKeys") Collection<String> ownerKeys,
 			@Param("projectName") String projectName,
 			@Param("excludedProjectId") UUID excludedProjectId);

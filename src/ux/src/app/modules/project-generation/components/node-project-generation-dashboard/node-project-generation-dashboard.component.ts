@@ -539,7 +539,10 @@ export class NodeProjectGenerationDashboardComponent implements OnInit, OnDestro
     }
 
     const yamlSpec = this.buildCurrentProjectYaml();
-    if (!this.isLoggedIn && this.useCachedZipIfAvailable(yamlSpec, true)) {
+    if (this.useCachedZipIfAvailable(yamlSpec, true)) {
+      if (this.isLoggedIn) {
+        this.refreshExploreRunHistory();
+      }
       return;
     }
 
@@ -920,6 +923,13 @@ export class NodeProjectGenerationDashboardComponent implements OnInit, OnDestro
 
   reloadExplore(): void {
     this.handleExploreTab(this.activeSection);
+  }
+
+  getExploreSyncMessage(): string {
+    if (this.isGeneratingFromDtoSave) {
+      return 'Generating project artifacts and preparing the explorer...';
+    }
+    return 'Loading saved project artifacts for explorer...';
   }
 
   private useCachedZipIfAvailable(yamlSpec: string, switchToExplore: boolean): boolean {

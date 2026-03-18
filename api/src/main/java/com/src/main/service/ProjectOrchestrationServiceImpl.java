@@ -142,7 +142,7 @@ public class ProjectOrchestrationServiceImpl implements ProjectOrchestrationServ
 	@Override
 	@Transactional(readOnly = true)
 	public ProjectRunEntity getRun(UUID runId, String ownerId) {
-		ProjectRunEntity run = projectRunRepository.findById(runId)
+		ProjectRunEntity run = projectRunRepository.findByIdWithProject(runId)
 				.orElseThrow(() -> new IllegalArgumentException("Run not found: " + runId));
 		getOwnedProject(run.getProject().getId(), ownerId);
 		return run;
@@ -188,7 +188,7 @@ public class ProjectOrchestrationServiceImpl implements ProjectOrchestrationServ
 
 	@Override
 	public ResponseEntity<byte[]> download(UUID id, String ownerId) {
-		ProjectRunEntity p = projectRunRepository.findById(id)
+		ProjectRunEntity p = projectRunRepository.findByIdWithProject(id)
 				.orElseThrow(() -> new java.util.NoSuchElementException("Project Run Not found"));
 		getOwnedProject(p.getProject().getId(), ownerId);
 		if (p.getZip() == null) {

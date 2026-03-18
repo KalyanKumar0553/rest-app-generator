@@ -2,6 +2,7 @@ package com.src.main.service;
 
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -132,17 +133,72 @@ public class ProjectServiceImpl implements ProjectService {
 	}
 
 	@Override
+	@Transactional
 	public List<ProjectSummaryDTO> list(String userId) {
 		if (!rbacService.currentUserHasPermission("project.read")) {
 			throw new SecurityException("User not allowed to view projects");
 		}
 		ProjectUserIdentityService.ResolvedProjectUser currentUser = projectUserIdentityService.resolve(userId);
-		List<ProjectEntity> all = canReadAllProjects() ? repo.findAll() : repo.findAccessibleProjectsByUserKeys(currentUser.keys());
+		List<ProjectEntity> all = canReadAllProjects()
+				? repo.findAll()
+				: findAccessibleProjectsForList(currentUser);
 		List<ProjectSummaryDTO> out = new ArrayList<>();
 		for (ProjectEntity p : all) {
 			out.add(toSummary(p));
 		}
 		return out;
+	}
+
+	private List<ProjectEntity> findAccessibleProjectsForList(ProjectUserIdentityService.ResolvedProjectUser currentUser) {
+		List<ProjectEntity> accessible = repo.findAccessibleProjectsByUserKeys(currentUser.keys());
+		if (!accessible.isEmpty()) {
+			return accessible;
+		}
+
+		List<ProjectEntity> allProjects = repo.findAllWithContributors();
+		List<ProjectEntity> matchedProjects = new ArrayList<>();
+		for (ProjectEntity project : allProjects) {
+			boolean ownerMatch = matchesUserKey(project.getOwnerId(), currentUser.keys());
+			boolean contributorMatch = normalizeContributorAliases(project, currentUser);
+			if (!ownerMatch && !contributorMatch) {
+				continue;
+			}
+			if (ownerMatch && !currentUser.userId().equals(project.getOwnerId())) {
+				project.setOwnerId(currentUser.userId());
+				repo.save(project);
+			}
+			matchedProjects.add(project);
+		}
+
+		matchedProjects.sort(Comparator.comparing(ProjectEntity::getUpdatedAt,
+				Comparator.nullsLast(Comparator.reverseOrder())));
+		return matchedProjects;
+	}
+
+	private boolean normalizeContributorAliases(ProjectEntity project, ProjectUserIdentityService.ResolvedProjectUser currentUser) {
+		if (project == null || project.getContributors() == null || project.getContributors().isEmpty()) {
+			return false;
+		}
+		boolean matched = false;
+		for (ProjectContributorEntity contributor : project.getContributors()) {
+			if (!matchesUserKey(contributor.getUserId(), currentUser.keys())) {
+				continue;
+			}
+			matched = true;
+			if (!currentUser.userId().equals(contributor.getUserId())) {
+				contributor.setUserId(currentUser.userId());
+				projectContributorRepository.save(contributor);
+			}
+		}
+		return matched;
+	}
+
+	private boolean matchesUserKey(String candidate, java.util.Set<String> keys) {
+		if (candidate == null || candidate.isBlank() || keys == null || keys.isEmpty()) {
+			return false;
+		}
+		String normalizedCandidate = candidate.trim();
+		return keys.stream().anyMatch(key -> key != null && normalizedCandidate.equalsIgnoreCase(key.trim()));
 	}
 
 	@Override

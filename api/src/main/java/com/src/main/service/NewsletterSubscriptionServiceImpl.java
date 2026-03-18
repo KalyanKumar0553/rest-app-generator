@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.regex.Pattern;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -41,17 +42,26 @@ public class NewsletterSubscriptionServiceImpl implements NewsletterSubscription
         String emailHash = dataEncryptionService.hashForLookup(normalizedEmail);
         String encryptedEmail = dataEncryptionService.encrypt(normalizedEmail);
         OffsetDateTime now = OffsetDateTime.now();
-        int inserted = newsletterSubscriptionRepository.insertIgnoreDuplicate(encryptedEmail, emailHash, now);
-        if (inserted == 0) {
-            // Backward compatibility for legacy plain-text rows created before encryption rollout.
-            var legacyRows = newsletterSubscriptionRepository.findLegacyByEmail(normalizedEmail);
-            for (NewsletterSubscriptionEntity row : legacyRows) {
-                if (row.getId() != null && row.getEmailHash() == null && !newsletterSubscriptionRepository.existsByEmailHash(emailHash)) {
-                    newsletterSubscriptionRepository.setEmailHash(row.getId(), emailHash);
-                }
+        boolean inserted = false;
+        if (!newsletterSubscriptionRepository.existsByEmailHash(emailHash)) {
+            NewsletterSubscriptionEntity subscription = new NewsletterSubscriptionEntity();
+            subscription.setEmail(encryptedEmail);
+            subscription.setEmailHash(emailHash);
+            subscription.setSubscribedAt(now);
+            subscription.setWelcomeEmailSent(false);
+            subscription.setSendingInProgress(false);
+            subscription.setSendAttemptCount(0);
+            try {
+                newsletterSubscriptionRepository.save(subscription);
+                inserted = true;
+            } catch (DataIntegrityViolationException ex) {
+                log.debug("Newsletter subscription already exists for hash={}", emailHash);
             }
         }
-        return inserted > 0;
+        if (!inserted) {
+            backfillLegacyEmailHash(normalizedEmail, emailHash);
+        }
+        return inserted;
     }
 
     @Override
@@ -100,6 +110,15 @@ public class NewsletterSubscriptionServiceImpl implements NewsletterSubscription
     @Transactional
     protected void markFailed(Long id, String error) {
         newsletterSubscriptionRepository.markFailed(id, error);
+    }
+
+    private void backfillLegacyEmailHash(String normalizedEmail, String emailHash) {
+        var legacyRows = newsletterSubscriptionRepository.findLegacyByEmail(normalizedEmail);
+        for (NewsletterSubscriptionEntity row : legacyRows) {
+            if (row.getId() != null && row.getEmailHash() == null && !newsletterSubscriptionRepository.existsByEmailHash(emailHash)) {
+                newsletterSubscriptionRepository.setEmailHash(row.getId(), emailHash);
+            }
+        }
     }
 
     private String normalizeEmail(String email) {

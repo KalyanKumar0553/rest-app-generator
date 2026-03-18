@@ -34,7 +34,13 @@ public class InitializrGeneratorConfig {
 	
 	@Bean
 	CaffeineCacheManager cacheManager(CacheProperties cacheProperties) {
-		CaffeineCacheManager mgr = new CaffeineCacheManager("depLookup");
+		CaffeineCacheManager mgr = new CaffeineCacheManager(
+				"depLookup",
+				"dependencyCatalog",
+				"configMetadataAll",
+				"configMetadataByCategory",
+				"rbacAccessProfile",
+				"rbacCatalog");
         mgr.setCaffeine(Caffeine.newBuilder()
                 .maximumSize(5000)
                 .expireAfterWrite(Duration.ofHours(12)));

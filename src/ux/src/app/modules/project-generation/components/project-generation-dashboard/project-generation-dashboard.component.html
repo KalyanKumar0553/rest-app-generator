@@ -480,6 +480,13 @@
       </div>
 
       <div class="scrollable-content explore-content">
+        <div class="explore-loading-card" *ngIf="isExploreSyncing">
+          <mat-spinner diameter="34"></mat-spinner>
+          <div class="explore-loading-copy">
+            <h4>Preparing explorer</h4>
+            <p>{{ getExploreSyncMessage() }}</p>
+          </div>
+        </div>
         <div class="explore-empty-card" *ngIf="!exploreZipBlob">
           <div class="explore-empty-header">
             <div class="explore-heading-block">

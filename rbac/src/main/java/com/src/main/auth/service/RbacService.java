@@ -8,6 +8,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -59,6 +62,7 @@ public class RbacService {
 	}
 
 	@Transactional(readOnly = true)
+	@Cacheable(cacheNames = "rbacAccessProfile", key = "#userId", sync = true)
 	public AccessProfile getAccessProfile(String userId) {
 		List<String> roles = roleRepository.findActiveRoleNamesByUserId(userId);
 		if (roles.isEmpty()) {
@@ -123,6 +127,7 @@ public class RbacService {
 	}
 
 	@Transactional(readOnly = true)
+	@Cacheable(cacheNames = "rbacCatalog", sync = true)
 	public RbacCatalogResponseDto getCatalog() {
 		List<RoleResponseDto> roles = getAssignableRoles();
 		List<PermissionResponseDto> permissions = permissionRepository.findByActiveTrueOrderByCategoryAscDisplayNameAsc().stream()
@@ -132,6 +137,10 @@ public class RbacService {
 	}
 
 	@Transactional
+	@Caching(evict = {
+			@CacheEvict(cacheNames = "rbacCatalog", allEntries = true),
+			@CacheEvict(cacheNames = "rbacAccessProfile", allEntries = true)
+	})
 	public RoleResponseDto createRole(RoleUpsertRequestDto request) {
 		String roleName = normalizeRoleName(request.getName());
 		if (roleRepository.existsById(roleName)) {
@@ -150,6 +159,10 @@ public class RbacService {
 	}
 
 	@Transactional
+	@Caching(evict = {
+			@CacheEvict(cacheNames = "rbacCatalog", allEntries = true),
+			@CacheEvict(cacheNames = "rbacAccessProfile", allEntries = true)
+	})
 	public RoleResponseDto updateRole(String roleName, RoleUpdateRequestDto request) {
 		String normalizedRoleName = normalizeRoleName(roleName);
 		Role role = roleRepository.findById(normalizedRoleName)
@@ -177,6 +190,10 @@ public class RbacService {
 	}
 
 	@Transactional
+	@Caching(evict = {
+			@CacheEvict(cacheNames = "rbacCatalog", allEntries = true),
+			@CacheEvict(cacheNames = "rbacAccessProfile", key = "#userId")
+	})
 	public List<String> assignRolesToUser(String userId, List<String> roleNames) {
 		if (!userExists(userId)) {
 			throw new IllegalArgumentException("User not found: " + userId);

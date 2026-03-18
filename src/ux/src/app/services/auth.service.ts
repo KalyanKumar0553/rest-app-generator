@@ -236,11 +236,15 @@ export class AuthService {
     this.localStorageService.removeItem(STORAGE_KEYS.ACCESS_TOKEN);
     this.localStorageService.removeItem(STORAGE_KEYS.REFRESH_TOKEN);
     this.localStorageService.removeItem(STORAGE_KEYS.USER_DATA);
+    this.localStorageService.removeItem('projects');
+    this.localStorageService.removeItem('project_zip_cache_v1');
 
     if (typeof window !== 'undefined' && window.localStorage) {
       window.localStorage.removeItem('access_token');
       window.localStorage.removeItem('refresh_token');
       window.localStorage.removeItem('user_data');
+      window.localStorage.removeItem('projects');
+      window.localStorage.removeItem('project_zip_cache_v1');
     }
 
     this.currentUserSubject.next(null);
@@ -274,6 +278,8 @@ export class AuthService {
     this.localStorageService.removeItem(STORAGE_KEYS.ACCESS_TOKEN);
     this.localStorageService.removeItem(STORAGE_KEYS.REFRESH_TOKEN);
     this.localStorageService.removeItem(STORAGE_KEYS.USER_DATA);
+    this.localStorageService.removeItem('projects');
+    this.localStorageService.removeItem('project_zip_cache_v1');
     this.currentUserSubject.next(null);
     this.isAuthenticatedSubject.next(false);
   }

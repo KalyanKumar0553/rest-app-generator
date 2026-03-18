@@ -137,4 +137,9 @@
   --theme-neutral-bg: var(--color-background-muted);
 
   --theme-plain-text: var(--color-text-inverse);
+
+  --theme-oauth-google-blue: #4285f4;
+  --theme-oauth-google-green: #34a853;
+  --theme-oauth-google-yellow: #fbbc05;
+  --theme-oauth-google-red: #ea4335;
 }

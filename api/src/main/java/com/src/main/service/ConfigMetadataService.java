@@ -7,6 +7,9 @@ import java.util.stream.Collectors;
 
 import javax.sql.DataSource;
 
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
 import org.springframework.jdbc.datasource.init.ResourceDatabasePopulator;
@@ -30,6 +33,10 @@ public class ConfigMetadataService {
 	private final DataSource dataSource;
 
 	@Transactional
+	@Caching(evict = {
+			@CacheEvict(cacheNames = "configMetadataAll", allEntries = true),
+			@CacheEvict(cacheNames = "configMetadataByCategory", allEntries = true)
+	})
 	public ConfigPropertyResponseDTO saveOrUpdateProperty(ConfigPropertySaveRequestDTO request) {
 
 		ConfigProperty property = configPropertyRepository
@@ -47,11 +54,13 @@ public class ConfigMetadataService {
 	}
 
 	@Transactional(readOnly = true)
+	@Cacheable(cacheNames = "configMetadataAll", sync = true)
 	public List<ConfigPropertyResponseDTO> getAllProperties() {
 		return configPropertyRepository.findAll().stream().map(this::toResponseDTO).collect(Collectors.toList());
 	}
 
 	@Transactional(readOnly = true)
+	@Cacheable(cacheNames = "configMetadataByCategory", key = "#category == null ? '__all__' : #category.trim().toLowerCase()", sync = true)
 	public List<ConfigPropertyResponseDTO> getPropertiesByCategory(String category) {
 		if (category == null || category.isBlank()) {
 			return getAllProperties();
@@ -95,6 +104,10 @@ public class ConfigMetadataService {
 	}
 	
 	@Transactional
+	@Caching(evict = {
+			@CacheEvict(cacheNames = "configMetadataAll", allEntries = true),
+			@CacheEvict(cacheNames = "configMetadataByCategory", allEntries = true)
+	})
     public void reloadDefaults() {
         configPropertyRepository.deleteAllInBatch();
         Resource resource = new ClassPathResource("db/data/default-config-data.sql");

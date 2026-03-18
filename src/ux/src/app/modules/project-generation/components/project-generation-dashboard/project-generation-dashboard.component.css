@@ -511,6 +511,35 @@
   padding-bottom: 16px;
 }
 
+.explore-loading-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 18px 20px;
+  margin-bottom: 16px;
+  border-radius: 16px;
+  border: 1px solid var(--color-border-light);
+  background: color-mix(in srgb, var(--color-background-secondary) 70%, var(--color-background-white));
+  box-shadow: var(--shadow-sm);
+}
+
+.explore-loading-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.explore-loading-copy h4 {
+  margin: 0;
+  font-size: 16px;
+  color: var(--color-text-primary);
+}
+
+.explore-loading-copy p {
+  margin: 0;
+  color: var(--color-text-secondary);
+}
+
 .explore-heading-block {
   display: flex;
   flex-direction: column;
