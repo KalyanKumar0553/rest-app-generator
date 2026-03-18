@@ -27,6 +27,7 @@ import { AddProfileComponent } from '../add-profile/add-profile.component';
 import { SidenavComponent, NavItem } from '../../../../components/shared/sidenav/sidenav.component';
 import { AuthService } from '../../../../services/auth.service';
 import { ProjectContributor, ProjectService } from '../../../../services/project.service';
+import type { ProjectDetails } from '../../../../services/project.service';
 import { ToastService } from '../../../../services/toast.service';
 import { HttpClient } from '@angular/common/http';
 import { API_CONFIG, API_ENDPOINTS } from '../../../../constants/api.constants';
@@ -352,6 +353,7 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
       this.projectOwnerId = projectDetails.ownerId || null;
       this.projectCanManageContributors = Boolean(projectDetails.canManageContributors);
       this.projectContributors = projectDetails.contributors || [];
+      this.hydrateExploreStateFromProjectDetails(projectDetails);
       const projectData = this.loadProjectFromStorage(projectId);
 
       if (projectData) {
@@ -973,6 +975,14 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
     return 'Loading saved project artifacts for explorer...';
   }
 
+  getExploreEmptyMessage(): string {
+    const latestStatus = String(this.exploreRuns[0]?.status ?? '').toUpperCase();
+    if (latestStatus === 'QUEUED' || latestStatus === 'INPROGRESS') {
+      return 'Project generation in progress. The generated zip will appear here once the current run completes.';
+    }
+    return 'No generated zip is saved for this project yet. Recent generation activity will appear here once runs start.';
+  }
+
   private useCachedZipIfAvailable(yamlSpec: string, switchToExplore: boolean): boolean {
     const cacheKey = this.getZipCacheKey();
     const cachedEntry = this.localStorageService.getProjectZipCache(cacheKey);
@@ -1029,6 +1039,36 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
       fileName: fileName || 'project.zip',
       updatedAt: Date.now()
     });
+  }
+
+  private hydrateExploreStateFromProjectDetails(projectDetails: ProjectDetails): void {
+    const projectId = trimmed(projectDetails.projectId || String(projectDetails.id || ''));
+    const projectYaml = typeof projectDetails.yaml === 'string' ? projectDetails.yaml : '';
+    this.exploreStageEvents = [];
+    this.exploreRuns = [];
+
+    if (projectDetails.latestRunStatus) {
+      this.exploreRuns = [{
+        runId: projectDetails.latestRunId,
+        id: projectDetails.latestRunId,
+        projectId: projectId || this.backendProjectId || '',
+        status: projectDetails.latestRunStatus,
+        hasZip: Boolean(projectDetails.latestRunHasZip),
+        runNumber: projectDetails.latestRunNumber
+      }];
+    }
+
+    if (!projectDetails.latestRunHasZip || !projectDetails.latestRunZipBase64) {
+      this.exploreZipBlob = null;
+      this.exploreZipFileName = projectDetails.latestRunZipFileName || 'project.zip';
+      return;
+    }
+
+    this.downloadZipFile(
+      projectDetails.latestRunZipBase64,
+      projectDetails.latestRunZipFileName || 'project.zip',
+      projectYaml
+    );
   }
 
   private getZipCacheKey(): string {

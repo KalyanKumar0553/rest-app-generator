@@ -22,6 +22,12 @@ public class ProjectDetailsDTO {
 	private boolean contributorAccess;
 	private boolean canManageContributors;
 	private List<ProjectContributorDTO> contributors;
+	private UUID latestRunId;
+	private String latestRunStatus;
+	private Integer latestRunNumber;
+	private boolean latestRunHasZip;
+	private String latestRunZipBase64;
+	private String latestRunZipFileName;
 	private OffsetDateTime createdAt;
 	private OffsetDateTime updatedAt;
 }

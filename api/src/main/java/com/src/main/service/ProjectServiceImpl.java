@@ -1,5 +1,6 @@
 package com.src.main.service;
 
+import java.util.Base64;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -207,6 +208,16 @@ public class ProjectServiceImpl implements ProjectService {
 		ProjectEntity project = getAccessibleProject(projectId, currentUser);
 		boolean canManageAllContributors = canManageAllProjectContributors();
 		boolean isOwner = currentUser.keys().contains(project.getOwnerId());
+		List<ProjectRunEntity> runs = projectRunRepository.findByProjectIdOrderByCreatedAtAsc(project.getId());
+		ProjectRunEntity latestRun = runs.isEmpty() ? null : runs.get(runs.size() - 1);
+		ProjectRunEntity latestRunWithZip = null;
+		for (int i = runs.size() - 1; i >= 0; i--) {
+			ProjectRunEntity candidate = runs.get(i);
+			if (candidate != null && candidate.getZip() != null && candidate.getZip().length > 0) {
+				latestRunWithZip = candidate;
+				break;
+			}
+		}
 		return new ProjectDetailsDTO(
 				project.getId().toString(),
 				project.getId(),
@@ -218,8 +229,28 @@ public class ProjectServiceImpl implements ProjectService {
 				!isOwner && !canManageAllContributors,
 				isOwner || canManageAllContributors,
 				toContributorDtos(project.getId()),
+				latestRun == null ? null : latestRun.getId(),
+				latestRun == null || latestRun.getStatus() == null ? null : latestRun.getStatus().name(),
+				latestRun == null ? null : latestRun.getRunNumber(),
+				latestRunWithZip != null,
+				encodeZipBase64(latestRunWithZip),
+				buildZipFileName(project),
 				project.getCreatedAt(),
 				project.getUpdatedAt());
+	}
+
+	private String encodeZipBase64(ProjectRunEntity run) {
+		if (run == null || run.getZip() == null || run.getZip().length == 0) {
+			return null;
+		}
+		return Base64.getEncoder().encodeToString(run.getZip());
+	}
+
+	private String buildZipFileName(ProjectEntity project) {
+		if (project == null || project.getArtifact() == null || project.getArtifact().isBlank()) {
+			return "project.zip";
+		}
+		return project.getArtifact().trim() + ".zip";
 	}
 
 	@Override

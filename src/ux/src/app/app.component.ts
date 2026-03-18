@@ -10,11 +10,13 @@ import { HttpClientModule } from '@angular/common/http';
 import { AuthService } from './services/auth.service';
 import { InprogressComponent } from './components/inprogress/inprogress.component';
 import { ThemeService } from './services/theme.service';
+import { LoadingOverlayComponent } from './components/shared/loading-overlay/loading-overlay.component';
+import { RequestLoadingService } from './services/request-loading.service';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [CommonModule, IonApp, RouterOutlet, HeaderComponent, FooterComponent, ToastComponent, HttpClientModule, InprogressComponent],
+  imports: [CommonModule, IonApp, RouterOutlet, HeaderComponent, FooterComponent, ToastComponent, HttpClientModule, InprogressComponent, LoadingOverlayComponent],
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.css']
 })
@@ -27,7 +29,8 @@ export class AppComponent implements OnInit {
   constructor(
     private router: Router,
     private authService: AuthService,
-    private themeService: ThemeService
+    private themeService: ThemeService,
+    public requestLoadingService: RequestLoadingService
   ) {
     // Handle navigation loading state and scroll to top
     this.router.events.pipe(

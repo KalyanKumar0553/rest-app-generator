@@ -538,7 +538,7 @@
             </div>
           </div>
           <ng-template #noExploreRuns>
-            <p class="explore-empty-body">No generated zip is saved for this project yet. Recent generation activity will appear here once runs start.</p>
+            <p class="explore-empty-body">{{ getExploreEmptyMessage() }}</p>
           </ng-template>
         </div>
         <app-project-view

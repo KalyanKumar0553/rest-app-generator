@@ -25,6 +25,12 @@ export interface ProjectDetails extends ProjectSummary {
   contributorAccess?: boolean;
   canManageContributors?: boolean;
   contributors?: ProjectContributor[];
+  latestRunId?: string;
+  latestRunStatus?: string;
+  latestRunNumber?: number;
+  latestRunHasZip?: boolean;
+  latestRunZipBase64?: string;
+  latestRunZipFileName?: string;
 }
 
 @Injectable({

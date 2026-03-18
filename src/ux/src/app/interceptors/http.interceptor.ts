@@ -1,22 +1,29 @@
 import { Injectable } from '@angular/core';
 import { HttpInterceptor, HttpRequest, HttpHandler, HttpEvent, HttpResponse, HttpErrorResponse } from '@angular/common/http';
 import { Observable, throwError, timer } from 'rxjs';
-import { catchError, map, retry, tap, timeout } from 'rxjs/operators';
+import { catchError, finalize, map, retry, tap, timeout } from 'rxjs/operators';
 import { Router } from '@angular/router';
 import { API_CONFIG, HTTP_STATUS, ERROR_MESSAGES, STORAGE_KEYS } from '../constants/api.constants';
 import { LocalStorageService } from '../services/local-storage.service';
 import { ToastService } from '../services/toast.service';
+import { RequestLoadingService } from '../services/request-loading.service';
 
 @Injectable()
 export class HttpRequestInterceptor implements HttpInterceptor {
   constructor(
     private router: Router,
     private localStorageService: LocalStorageService,
-    private toastService: ToastService
+    private toastService: ToastService,
+    private requestLoadingService: RequestLoadingService
   ) {}
 
   intercept(request: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {
     const modifiedRequest = this.addHeaders(request);
+    const shouldTrackLoading = this.shouldTrackLoading(request);
+
+    if (shouldTrackLoading) {
+      this.requestLoadingService.begin();
+    }
 
     return next.handle(modifiedRequest).pipe(
       timeout(API_CONFIG.TIMEOUT),
@@ -27,6 +34,11 @@ export class HttpRequestInterceptor implements HttpInterceptor {
       }),
       catchError((error: HttpErrorResponse) => {
         return this.handleErrorResponse(error, request, next);
+      }),
+      finalize(() => {
+        if (shouldTrackLoading) {
+          this.requestLoadingService.end();
+        }
       })
     );
   }
@@ -71,6 +83,11 @@ export class HttpRequestInterceptor implements HttpInterceptor {
     ];
 
     return publicRoutes.some(route => method === route.method && url.includes(route.path));
+  }
+
+  private shouldTrackLoading(request: HttpRequest<any>): boolean {
+    const url = request.url || '';
+    return url.includes('/api/');
   }
 
   private handleSuccessResponse(response: HttpResponse<any>): void {
