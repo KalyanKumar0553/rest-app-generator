@@ -18,8 +18,8 @@
     <app-toast></app-toast>
     <app-loading-overlay
       [visible]="!isNavigating && (requestLoadingService.visible$ | async) === true"
-      title="Loading page"
-      message="Please wait while BootRid finishes loading the current page."
+      title="Request in progress"
+      message="Request in progress."
     ></app-loading-overlay>
   </div>
 </ion-app>

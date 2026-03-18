@@ -421,11 +421,11 @@ export class NodeProjectGenerationDashboardComponent implements OnInit, OnDestro
       this.activeSection = 'general';
       return;
     }
-    this.saveProject();
     if (this.isLoggedIn) {
       this.generateAndDownloadProjectFromBackend();
       return;
     }
+    this.saveProject();
     this.generateAndDownloadProjectForGuest();
   }
 
@@ -633,6 +633,7 @@ export class NodeProjectGenerationDashboardComponent implements OnInit, OnDestro
           }
 
           this.backendProjectId = projectId;
+          this.saveProject();
           this.toastService.success('Project generation started. Waiting for zip...');
           this.connectProjectEvents(projectId);
         },
@@ -925,13 +926,6 @@ export class NodeProjectGenerationDashboardComponent implements OnInit, OnDestro
 
   reloadExplore(): void {
     this.handleExploreTab(this.activeSection);
-  }
-
-  getExploreSyncMessage(): string {
-    if (this.isGeneratingFromDtoSave) {
-      return 'Generating project artifacts and preparing the explorer...';
-    }
-    return 'Loading saved project artifacts for explorer...';
   }
 
   getExploreEmptyMessage(): string {

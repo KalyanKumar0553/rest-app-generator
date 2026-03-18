@@ -302,7 +302,7 @@ form {
 
 .btn-submit--login {
   width: var(--auth-action-width);
-  min-height: 72px;
+  min-height: 32px;
   border-radius: 999px;
   align-self: center;
   justify-content: center;
