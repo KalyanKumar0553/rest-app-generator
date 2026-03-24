@@ -16,7 +16,7 @@ import com.src.main.sm.executor.common.GenerationLanguage;
 import com.src.main.sm.executor.common.GenerationLanguageResolver;
 import com.src.main.util.ProjectMetaDataConstants;
 
-@Component
+@Component("pythonGenerationExecutor")
 public class PythonGenerationExecutor implements StepExecutor {
 
 	private static final String PY_TEMPLATE_BASE = "templates/languages/python/project/";
@@ -45,6 +45,11 @@ public class PythonGenerationExecutor implements StepExecutor {
 			String appName = "generated-python-app";
 			if (yaml != null && yaml.get("app") instanceof Map<?, ?> appRaw) {
 				appName = String.valueOf(((Map<String, Object>) appRaw).getOrDefault("name", appName));
+			} else if (yaml != null && yaml.get("core") instanceof Map<?, ?> coreRaw) {
+				Object coreAppRaw = ((Map<String, Object>) coreRaw).get("app");
+				if (coreAppRaw instanceof Map<?, ?> appRaw) {
+					appName = String.valueOf(((Map<String, Object>) appRaw).getOrDefault("name", appName));
+				}
 			}
 
 			Files.createDirectories(root.resolve("app"));

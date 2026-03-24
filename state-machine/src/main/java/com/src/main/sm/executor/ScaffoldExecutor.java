@@ -5,6 +5,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
@@ -15,6 +16,9 @@ import java.util.Set;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
+import org.springframework.core.io.support.ResourcePatternResolver;
 import org.springframework.statemachine.ExtendedState;
 import org.springframework.stereotype.Component;
 
@@ -30,16 +34,18 @@ import com.src.main.util.InitializrGradleGenerator;
 import com.src.main.util.InitializrPomGenerator;
 import com.src.main.util.DatabaseDependencyCatalog;
 import com.src.main.util.ProjectMetaDataConstants;
+import com.src.main.util.ShippableModuleSupport;
 import com.src.main.util.SpringBootVersionResolver;
 import com.src.main.sm.executor.common.BoilerplateStyle;
 import com.src.main.sm.executor.common.BoilerplateStyleResolver;
 import com.src.main.sm.executor.common.GenerationLanguage;
 import com.src.main.sm.executor.common.GenerationLanguageResolver;
 import com.src.main.sm.executor.common.JavaNamingUtils;
+import com.src.main.sm.executor.common.LayeredSpecSupport;
 import com.src.main.sm.executor.common.TemplatePathResolver;
 import com.src.main.util.PathUtils;
 
-@Component
+@Component("scaffoldExecutor")
 public class ScaffoldExecutor implements StepExecutor {
 
 	private static final Logger log = LoggerFactory.getLogger(ScaffoldExecutor.class);
@@ -55,6 +61,7 @@ public class ScaffoldExecutor implements StepExecutor {
 	private final InitializrPomGenerator pomGenerator;
 	private final InitializrGradleGenerator gradleGenerator;
 	private final TemplateEngine tpl;
+	private final ResourcePatternResolver resourceResolver = new PathMatchingResourcePatternResolver();
 
 	private GradleWrapperInstaller gradleWrapperInstaller;
 
@@ -93,14 +100,23 @@ public class ScaffoldExecutor implements StepExecutor {
 		final GenerationLanguage language = GenerationLanguageResolver.resolveFromYaml(yaml);
 			final boolean openapi = resolveOpenApiEnabled(data, yaml) && hasRestEndpointEntities(yaml);
 			final boolean includeLombok = resolveLombokEnabled(yaml);
-			final String databaseCode = resolveDatabaseCode(yaml);
+		final String databaseCode = resolveDatabaseCode(yaml);
 			final List<String> depReq = resolveDependenciesFromYaml(yaml);
+		final List<String> selectedShippedModules = depReq.stream()
+				.filter(ShippableModuleSupport::isVisibleModule)
+				.toList();
+		final List<String> expandedShippedModules = ShippableModuleSupport.expandSelectedModules(selectedShippedModules);
+		final List<String> externalModuleDependencies = depReq.stream()
+				.filter(dep -> !ShippableModuleSupport.isShippableModule(dep))
+				.toList();
 
 
 		createMinimalLayout(root, packageName, buildTool, language);
-			List<MavenDependencyDTO> resolvedDeps = dependencyResolver.resolveForMaven(depReq, bootVersion, openapi);
+			List<MavenDependencyDTO> resolvedDeps = dependencyResolver.resolveForMaven(externalModuleDependencies, bootVersion, openapi);
 			List<MavenDependencyDTO> deps = new ArrayList<>(resolvedDeps == null ? List.of() : resolvedDeps);
+			mergeDependencies(deps, ShippableModuleSupport.resolveExternalDependencies(selectedShippedModules));
 			enrichDependenciesWithDatabase(deps, databaseCode);
+		copyShippedModules(root, expandedShippedModules);
 
 		InitializrProjectModel model = new InitializrProjectModel(groupId, artifactId, version, name, description,
 				packaging, generator, jdkVersion, bootVersion, openapi, includeLombok, angular);
@@ -111,14 +127,17 @@ public class ScaffoldExecutor implements StepExecutor {
 		if ("gradle".equalsIgnoreCase(buildTool)) {
 			InitializrGradleGenerator.GradleFiles files = gradleGenerator.generateFiles(model, deps, packageName,
 					mainClassName, language == GenerationLanguage.KOTLIN);
-			Files.writeString(root.resolve(files.getBuildFileName()), files.getBuildContent(), UTF_8);
+			String buildContent = addGradleShippedModuleConfiguration(files.getBuildContent(), files.getBuildFileName(),
+					expandedShippedModules);
+			Files.writeString(root.resolve(files.getBuildFileName()), buildContent, UTF_8);
 			Files.writeString(root.resolve(files.getSettingsFileName()), files.getSettingsContent(), UTF_8);
 			gradleWrapperInstaller.installWrapper(root, GradleVersionResolver.forBoot(model.getBootVersion()));
 		} else {
 			String pom = pomGenerator.generatePom(model, deps);
+			pom = addMavenShippedModuleConfiguration(pom, expandedShippedModules);
 			Files.writeString(root.resolve("pom.xml"), pom, UTF_8);
 		}
-		writeMainClass(root, packageName, mainClassName, language);
+		writeMainClass(root, packageName, mainClassName, language, expandedShippedModules);
 		writeResources(root, name, yaml);
 		writeDocsAndGitignore(root, name);
 		Map<String,Object> result = new HashMap<>();
@@ -171,28 +190,11 @@ public class ScaffoldExecutor implements StepExecutor {
 		if (explicit != null) {
 			return parseBoolean(explicit, false);
 		}
-		if (yaml != null) {
-			Object raw = yaml.get("enableOpenapi");
-			if (raw == null && yaml.get("app") instanceof Map<?, ?> appRaw) {
-				raw = ((Map<String, Object>) appRaw).get("enableOpenapi");
-			}
-			if (raw != null) {
-				return parseBoolean(raw, false);
-			}
-		}
-		return false;
+		return LayeredSpecSupport.resolveOpenApiEnabled(yaml, false);
 	}
 
-	@SuppressWarnings("unchecked")
 	private static boolean resolveActuatorEnabled(Map<String, Object> yaml) {
-		if (yaml == null) {
-			return false;
-		}
-		Object raw = yaml.get("enableActuator");
-		if (raw == null && yaml.get("app") instanceof Map<?, ?> appRaw) {
-			raw = ((Map<String, Object>) appRaw).get("enableActuator");
-		}
-		return parseBoolean(raw, false);
+		return LayeredSpecSupport.resolveActuatorEnabled(yaml, false);
 	}
 
 	private static boolean parseBoolean(Object value, boolean defaultValue) {
@@ -288,16 +290,8 @@ public class ScaffoldExecutor implements StepExecutor {
 		return merged;
 	}
 
-	@SuppressWarnings("unchecked")
 	private static List<String> extractDependenciesFromYaml(Map<String, Object> yaml) {
-		if (yaml == null) {
-			return List.of();
-		}
-		Object depsRaw = yaml.get("dependencies");
-		if (!(depsRaw instanceof List<?> rawList)) {
-			return List.of();
-		}
-		return rawList.stream()
+		return LayeredSpecSupport.resolveDependencies(yaml).stream()
 				.filter(Objects::nonNull)
 				.map(String::valueOf)
 				.map(String::trim)
@@ -403,15 +397,11 @@ public class ScaffoldExecutor implements StepExecutor {
 				});
 	}
 
-	@SuppressWarnings("unchecked")
 	private static boolean isNoSqlDatabase(Map<String, Object> yaml) {
 		if (yaml == null) {
 			return false;
 		}
-		Object dbTypeRaw = yaml.get("dbType");
-		if (dbTypeRaw == null && yaml.get("app") instanceof Map<?, ?> appRaw) {
-			dbTypeRaw = ((Map<String, Object>) appRaw).get("dbType");
-		}
+		Object dbTypeRaw = LayeredSpecSupport.resolveDatabaseType(yaml);
 		if (dbTypeRaw != null && "NOSQL".equalsIgnoreCase(String.valueOf(dbTypeRaw).trim())) {
 			return true;
 		}
@@ -419,23 +409,8 @@ public class ScaffoldExecutor implements StepExecutor {
 		return dbCode != null && "MONGODB".equalsIgnoreCase(dbCode.trim());
 	}
 
-	@SuppressWarnings("unchecked")
 	private static String resolveDatabaseCode(Map<String, Object> yaml) {
-		if (yaml == null) {
-			return null;
-		}
-		Object db = yaml.get("database");
-		if (db != null) {
-			return String.valueOf(db);
-		}
-		Object appRaw = yaml.get("app");
-		if (appRaw instanceof Map<?, ?> appMap) {
-			Object appDb = ((Map<String, Object>) appMap).get("database");
-			if (appDb != null) {
-				return String.valueOf(appDb);
-			}
-		}
-		return null;
+		return LayeredSpecSupport.resolveDatabaseCode(yaml);
 	}
 
 	private static void enrichDependenciesWithDatabase(List<MavenDependencyDTO> deps, String databaseCode) {
@@ -452,6 +427,16 @@ public class ScaffoldExecutor implements StepExecutor {
 		});
 	}
 
+	private static void mergeDependencies(List<MavenDependencyDTO> target, List<MavenDependencyDTO> additions) {
+		if (target == null || additions == null || additions.isEmpty()) {
+			return;
+		}
+		LinkedHashSet<MavenDependencyDTO> merged = new LinkedHashSet<>(target);
+		merged.addAll(additions);
+		target.clear();
+		target.addAll(merged);
+	}
+
 	private static void createMinimalLayout(Path root, String packageName, String buildTool, GenerationLanguage language) throws Exception {
 		Path mainSource = root.resolve(PathUtils.srcPathFromPackage(packageName, language));
 		Path mainRes = root.resolve("src/main/resources");
@@ -461,14 +446,133 @@ public class ScaffoldExecutor implements StepExecutor {
 		Files.createDirectories(testSource);
 	}
 
-	private void writeMainClass(Path root, String packageName, String mainClassName, GenerationLanguage language) throws Exception {
+	private void writeMainClass(Path root, String packageName, String mainClassName, GenerationLanguage language,
+			List<String> shippedModules) throws Exception {
 		Path target = root.resolve(PathUtils.srcPathFromPackage(packageName, language))
 				.resolve(mainClassName + "." + language.fileExtension());
 		String mainTemplate = language == GenerationLanguage.KOTLIN ? TPL_MAIN_KOTLIN : TPL_MAIN_JAVA;
 		String rendered = tpl.renderAny(TemplatePathResolver.candidates(language, "project", mainTemplate),
-				Map.of("basePkg", packageName, "mainClass", mainClassName));
+				Map.of("basePkg", packageName,
+						"mainClass", mainClassName,
+						"includeShippedModuleScanning", ShippableModuleSupport.requiresModuleScanning(shippedModules),
+						"moduleBasePackage", ShippableModuleSupport.MODULE_BASE_PACKAGE));
 
 		Files.writeString(target, rendered, UTF_8);
+	}
+
+	private void copyShippedModules(Path root, List<String> shippedModules) throws Exception {
+		for (String moduleId : shippedModules) {
+			Resource[] resources = resourceResolver.getResources(
+					ResourcePatternResolver.CLASSPATH_ALL_URL_PREFIX + ShippableModuleSupport.resourceSearchPattern(moduleId));
+			String prefix = ShippableModuleSupport.resourcePrefix(moduleId) + "/";
+			for (Resource resource : resources) {
+				if (!resource.exists() || !resource.isReadable()) {
+					continue;
+				}
+				String externalForm = resource.getURL().toExternalForm();
+				int prefixIndex = externalForm.indexOf(prefix);
+				if (prefixIndex < 0) {
+					continue;
+				}
+				String relativePath = externalForm.substring(prefixIndex + prefix.length());
+				if (relativePath.isBlank() || relativePath.endsWith("/")) {
+					continue;
+				}
+				Path target = root.resolve("modules").resolve(moduleId).resolve(relativePath);
+				Files.createDirectories(target.getParent());
+				try (InputStream input = resource.getInputStream()) {
+					Files.copy(input, target, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+				}
+			}
+		}
+	}
+
+	private static String addMavenShippedModuleConfiguration(String pom, List<String> shippedModules) {
+		if (pom == null || pom.isBlank() || shippedModules == null || shippedModules.isEmpty()) {
+			return pom;
+		}
+		String sourceEntries = shippedModules.stream()
+				.map(moduleId -> "                                <source>modules/" + moduleId + "/src/main/java</source>\n")
+				.collect(java.util.stream.Collectors.joining());
+		String resourceEntries = shippedModules.stream()
+				.map(moduleId -> """
+                                <resource>
+                                    <directory>modules/%s/src/main/resources</directory>
+                                </resource>
+""".formatted(moduleId))
+				.collect(java.util.stream.Collectors.joining());
+		String plugin = """
+			<plugin>
+				<groupId>org.codehaus.mojo</groupId>
+				<artifactId>build-helper-maven-plugin</artifactId>
+				<version>3.6.0</version>
+				<executions>
+					<execution>
+						<id>add-shipped-module-sources</id>
+						<phase>generate-sources</phase>
+						<goals>
+							<goal>add-source</goal>
+						</goals>
+						<configuration>
+							<sources>
+%s							</sources>
+						</configuration>
+					</execution>
+					<execution>
+						<id>add-shipped-module-resources</id>
+						<phase>generate-resources</phase>
+						<goals>
+							<goal>add-resource</goal>
+						</goals>
+						<configuration>
+							<resources>
+%s							</resources>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+""".formatted(sourceEntries, resourceEntries);
+		return pom.replace("</plugins>", plugin + "\n    </plugins>");
+	}
+
+	private static String addGradleShippedModuleConfiguration(String buildFile, String buildFileName,
+			List<String> shippedModules) {
+		if (buildFile == null || buildFile.isBlank() || shippedModules == null || shippedModules.isEmpty()) {
+			return buildFile;
+		}
+		boolean kotlinDsl = buildFileName != null && buildFileName.endsWith(".kts");
+		String javaDirs = shippedModules.stream()
+				.map(moduleId -> (kotlinDsl ? "\"" : "'") + "modules/" + moduleId + "/src/main/java"
+						+ (kotlinDsl ? "\"" : "'"))
+				.collect(java.util.stream.Collectors.joining(", "));
+		String resourceDirs = shippedModules.stream()
+				.map(moduleId -> (kotlinDsl ? "\"" : "'") + "modules/" + moduleId + "/src/main/resources"
+						+ (kotlinDsl ? "\"" : "'"))
+				.collect(java.util.stream.Collectors.joining(", "));
+		String block = kotlinDsl
+				? """
+
+sourceSets {
+    main {
+        java.srcDirs("src/main/java", %s)
+        resources.srcDirs("src/main/resources", %s)
+    }
+}
+""".formatted(javaDirs, resourceDirs)
+				: """
+
+sourceSets {
+    main {
+        java {
+            srcDirs += [%s]
+        }
+        resources {
+            srcDirs += [%s]
+        }
+    }
+}
+""".formatted(javaDirs, resourceDirs);
+		return buildFile + block;
 	}
 
 	private void writeResources(Path root, String appName, Map<String, Object> yaml) throws Exception {
@@ -584,8 +688,8 @@ public class ScaffoldExecutor implements StepExecutor {
 				return;
 			}
 
-			String basePackage = StringUtils.firstNonBlank(str(yaml.get("basePackage")), ProjectMetaDataConstants.DEFAULT_GROUP);
-			String packageStructure = StringUtils.firstNonBlank(str(yaml.get("packages")), "technical");
+			String basePackage = StringUtils.firstNonBlank(LayeredSpecSupport.resolveBasePackage(yaml, null), ProjectMetaDataConstants.DEFAULT_GROUP);
+			String packageStructure = StringUtils.firstNonBlank(LayeredSpecSupport.resolvePackageStructure(yaml, null), "technical");
 			String configPackage = "domain".equalsIgnoreCase(packageStructure)
 					? basePackage + ".domain.config"
 					: basePackage + ".config";

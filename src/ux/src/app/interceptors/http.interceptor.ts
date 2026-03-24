@@ -71,6 +71,7 @@ export class HttpRequestInterceptor implements HttpInterceptor {
     const publicRoutes: Array<{ method: string; path: string }> = [
       { method: 'GET', path: '/api/v1/auth/captcha' },
       { method: 'POST', path: '/api/v1/auth/login' },
+      { method: 'GET', path: '/api/v1/auth/providers' },
       { method: 'POST', path: '/api/v1/auth/signup' },
       { method: 'POST', path: '/api/v1/auth/password/forgot' },
       { method: 'POST', path: '/api/v1/auth/otp/generate' },
@@ -87,7 +88,20 @@ export class HttpRequestInterceptor implements HttpInterceptor {
 
   private shouldTrackLoading(request: HttpRequest<any>): boolean {
     const url = request.url || '';
-    return url.includes('/api/');
+    if (!url.includes('/api/')) {
+      return false;
+    }
+
+    const nonBlockingPaths = [
+      '/api/analytics/visits/home'
+    ];
+
+    const isPresenceHeartbeat = url.includes('/api/projects/') && url.includes('/collaboration/presence/');
+    if (isPresenceHeartbeat) {
+      return false;
+    }
+
+    return !nonBlockingPaths.some(path => url.includes(path));
   }
 
   private handleSuccessResponse(response: HttpResponse<any>): void {
@@ -123,7 +137,7 @@ export class HttpRequestInterceptor implements HttpInterceptor {
           break;
         case HTTP_STATUS.BAD_REQUEST:
         case HTTP_STATUS.UNPROCESSABLE_ENTITY:
-          errorMessage = error.error?.message || ERROR_MESSAGES.VALIDATION_ERROR;
+          errorMessage = this.getServerErrorMessage(error) || ERROR_MESSAGES.VALIDATION_ERROR;
           break;
         case HTTP_STATUS.INTERNAL_SERVER_ERROR:
         case HTTP_STATUS.SERVICE_UNAVAILABLE:

@@ -30,6 +30,9 @@ public class User {
 	@Column(name = "identifier", nullable = false, unique = true)
 	private String identifier;
 
+	@Column(name = "identifier_hash", length = 64)
+	private String identifierHash;
+
 	@Enumerated(EnumType.STRING)
 	@JdbcTypeCode(SqlTypes.NAMED_ENUM)
 	@Column(name = "identifier_type", nullable = false, columnDefinition = "identifier_type")
@@ -93,6 +96,14 @@ public class User {
 
 	public void setIdentifier(String identifier) {
 		this.identifier = identifier;
+	}
+
+	public String getIdentifierHash() {
+		return identifierHash;
+	}
+
+	public void setIdentifierHash(String identifierHash) {
+		this.identifierHash = identifierHash;
 	}
 
 	public IdentifierType getIdentifierType() {

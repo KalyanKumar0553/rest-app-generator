@@ -14,12 +14,13 @@ import com.src.main.dto.StepResult;
 import com.src.main.sm.config.StepExecutor;
 import com.src.main.sm.executor.common.GenerationLanguage;
 import com.src.main.sm.executor.common.GenerationLanguageResolver;
+import com.src.main.sm.executor.common.LayeredSpecSupport;
 import com.src.main.sm.executor.enumgen.EnumGenerationService;
 import com.src.main.sm.executor.enumgen.EnumGenerationSupport;
 import com.src.main.sm.executor.enumgen.EnumSpecResolved;
 import com.src.main.util.ProjectMetaDataConstants;
 
-@Component
+@Component("enumGenerationExecutor")
 public class EnumGenerationExecutor implements StepExecutor {
 
 	private final EnumGenerationService enumGenerationService;
@@ -45,9 +46,9 @@ public class EnumGenerationExecutor implements StepExecutor {
 				return StepResult.ok(Map.of("status", "Success", "enumGenerated", false, "enumCount", 0));
 			}
 
-			String basePackage = StringUtils.firstNonBlank(str(yaml.get("basePackage")), spec.getBasePackage(),
+			String basePackage = StringUtils.firstNonBlank(LayeredSpecSupport.resolveBasePackage(yaml, null), spec.getBasePackage(),
 					(String) data.getVariables().get(ProjectMetaDataConstants.GROUP_ID), ProjectMetaDataConstants.DEFAULT_GROUP);
-			String packageStructure = StringUtils.firstNonBlank(str(yaml.get("packages")), spec.getPackages(), "technical");
+			String packageStructure = StringUtils.firstNonBlank(LayeredSpecSupport.resolvePackageStructure(yaml, null), spec.getPackages(), "technical");
 			String enumPackage = EnumGenerationSupport.resolveEnumPackage(basePackage, packageStructure);
 			GenerationLanguage language = GenerationLanguageResolver.resolveFromYaml(yaml);
 

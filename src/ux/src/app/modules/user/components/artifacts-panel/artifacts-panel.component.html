@@ -1,0 +1,171 @@
+<app-loading-overlay
+  [visible]="isLoading || isSaving || isSnapshotting || isPublishing"
+  [title]="isPublishing ? 'Publishing artifact' : isSnapshotting ? 'Creating snapshot' : isSaving ? 'Saving artifact' : 'Loading artifacts'"
+  [message]="isPublishing
+    ? 'Please wait while the artifact version is published.'
+    : isSnapshotting
+      ? 'Creating a versioned snapshot for this artifact.'
+      : isSaving
+        ? 'Saving artifact metadata and configuration.'
+        : 'Loading artifact registry and configuration data.'">
+</app-loading-overlay>
+
+<section class="artifacts-shell">
+  <header class="page-header">
+    <div>
+      <p class="eyebrow">Super Admin</p>
+      <h1>Artifacts</h1>
+      <p class="subtitle">Create and configure app artifacts, enable business packs, and publish versioned snapshots.</p>
+    </div>
+    <button type="button" class="primary-btn" (click)="startNewArtifact()" [disabled]="!canManageArtifacts()">New App</button>
+  </header>
+
+  <div class="access-state" *ngIf="!canReadArtifacts()">
+    <h2>Access required</h2>
+    <p>Your account does not have permission to view the artifact registry.</p>
+  </div>
+
+  <div class="artifacts-layout" *ngIf="canReadArtifacts()">
+    <aside class="registry-panel">
+      <div class="panel-header">
+        <h2>App Registry</h2>
+        <span class="badge">{{ artifacts.length }}</span>
+      </div>
+
+      <div class="registry-empty" *ngIf="!artifacts.length && !isLoading">
+        <p>No app artifacts created yet.</p>
+      </div>
+
+      <button
+        type="button"
+        class="registry-item"
+        *ngFor="let artifact of artifacts"
+        [class.active]="artifact.id === selectedArtifactId"
+        (click)="selectArtifact(artifact.id)">
+        <div class="registry-item-top">
+          <strong>{{ artifact.name }}</strong>
+          <span class="status-chip">{{ artifact.status }}</span>
+        </div>
+        <p>{{ artifact.code }}</p>
+        <div class="registry-meta">
+          <span>{{ artifact.enabledPacks.join(', ') || 'No packs' }}</span>
+          <span>{{ artifact.publishedVersion || 'Unpublished' }}</span>
+        </div>
+      </button>
+    </aside>
+
+    <section class="editor-panel">
+      <div class="editor-header">
+        <div>
+          <h2>{{ form.id ? 'Edit App Artifact' : 'Create App Artifact' }}</h2>
+          <p>Define the app shell, select domain packs, and store the initial platform configuration.</p>
+        </div>
+        <div class="editor-actions">
+          <button type="button" class="ghost-btn" (click)="loadArtifacts(form.id)" [disabled]="isLoading">Refresh</button>
+          <button type="button" class="primary-btn" (click)="saveArtifact()" [disabled]="!canManageArtifacts()">Save</button>
+        </div>
+      </div>
+
+      <div class="editor-grid">
+        <label class="field">
+          <span>App Name</span>
+          <input [(ngModel)]="form.name" placeholder="Commerce Operations Suite" />
+        </label>
+
+        <label class="field">
+          <span>Code</span>
+          <input [(ngModel)]="form.code" placeholder="commerce-ops" />
+        </label>
+
+        <label class="field field-full">
+          <span>Description</span>
+          <textarea [(ngModel)]="form.description" rows="3" placeholder="Versioned application artifact for business suite configuration."></textarea>
+        </label>
+
+        <label class="field">
+          <span>Status</span>
+          <select [(ngModel)]="form.status">
+            <option *ngFor="let status of statusOptions" [value]="status">{{ status }}</option>
+          </select>
+        </label>
+
+        <label class="field">
+          <span>Generator</span>
+          <select [(ngModel)]="form.generatorLanguage">
+            <option *ngFor="let generator of generatorOptions" [value]="generator">{{ generator }}</option>
+          </select>
+        </label>
+
+        <label class="field">
+          <span>Build Tool</span>
+          <select [(ngModel)]="form.buildTool">
+            <option *ngFor="let buildTool of buildToolOptions" [value]="buildTool">{{ buildTool }}</option>
+          </select>
+        </label>
+      </div>
+
+      <section class="packs-panel">
+        <div class="panel-header">
+          <h3>Business Packs</h3>
+          <p>Enable bounded contexts inside the single app artifact. Shipping and inventory depend on order.</p>
+        </div>
+        <div class="packs-grid">
+          <label class="pack-card" *ngFor="let option of packOptions">
+            <div class="pack-card-top">
+              <input
+                type="checkbox"
+                [checked]="form.enabledPacks.includes(option.key)"
+                (change)="togglePack(option.key, $any($event.target).checked)"
+                [disabled]="!canManageArtifacts()" />
+              <span>{{ option.label }}</span>
+            </div>
+            <p>{{ option.description }}</p>
+          </label>
+        </div>
+      </section>
+
+      <section class="config-panel">
+        <div class="panel-header">
+          <h3>Configuration JSON</h3>
+          <p>Use this as the initial app-definition document. The backend normalizes module enablement on save.</p>
+        </div>
+        <textarea class="config-editor" [(ngModel)]="form.configJson" rows="18"></textarea>
+      </section>
+
+      <section class="version-panel" *ngIf="form.id">
+        <div class="panel-header">
+          <div>
+            <h3>Versions</h3>
+            <p>Create named snapshots and publish a selected version.</p>
+          </div>
+          <div class="version-actions">
+            <input [(ngModel)]="versionCodeInput" placeholder="v20260325123000" />
+            <button type="button" class="ghost-btn" (click)="createVersionSnapshot()" [disabled]="!canManageArtifacts()">Save Snapshot</button>
+            <button type="button" class="primary-btn" (click)="publishArtifact()" [disabled]="!canPublishArtifacts()">Publish</button>
+          </div>
+        </div>
+
+        <div class="version-empty" *ngIf="!versions.length && !isLoadingVersions">
+          <p>No snapshots saved yet.</p>
+        </div>
+
+        <div class="version-table" *ngIf="versions.length">
+          <div class="version-row version-header">
+            <span>Version</span>
+            <span>Status</span>
+            <span>Created</span>
+            <span>Action</span>
+          </div>
+          <div class="version-row" *ngFor="let version of versions">
+            <span>{{ version.versionCode }}</span>
+            <span>{{ version.published ? 'Published' : 'Snapshot' }}</span>
+            <span>{{ formatDate(version.createdAt) }}</span>
+            <button type="button" class="link-btn" (click)="publishArtifact(version.versionCode)" [disabled]="!canPublishArtifacts() || version.published">
+              {{ version.published ? 'Live' : 'Publish' }}
+            </button>
+          </div>
+        </div>
+      </section>
+    </section>
+  </div>
+</section>

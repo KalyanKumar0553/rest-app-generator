@@ -15,6 +15,8 @@ import { APP_SETTINGS } from '../../../../../settings/app-settings';
   styleUrls: ['./general-tab-section.component.css']
 })
 export class NodeProjectSettingsSectionComponent {
+  @Input() runtimeLabel = 'Node';
+  @Input() showPackageManager = true;
   @Input({ required: true }) projectSettings!: any;
   @Input() projectGroupError = '';
   @Input() projectNameError = '';

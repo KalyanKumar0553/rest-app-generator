@@ -43,16 +43,6 @@
   white-space: nowrap;
 }
 
-.loading-message {
-  margin: 0;
-  color: var(--theme-neutral-text);
-  font-size: 15px;
-  line-height: 1.25;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
 :host ::ng-deep .loading-panel .mat-mdc-progress-bar {
   width: min(520px, 100%);
   align-self: center;

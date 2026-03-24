@@ -44,7 +44,10 @@ public class SecurityConfig {
 			ObjectProvider<ClientRegistrationRepository> clientRegistrationRepositoryProvider,
 			Oauth2AuthenticationSuccessHandler oauth2AuthenticationSuccessHandler,
 			Oauth2AuthenticationFailureHandler oauth2AuthenticationFailureHandler) throws Exception {
-		boolean oauthEnabled = clientRegistrationRepositoryProvider.getIfAvailable() != null;
+		ClientRegistrationRepository clientRegistrationRepository = clientRegistrationRepositoryProvider.getIfAvailable();
+		boolean oauthEnabled = clientRegistrationRepository != null
+				&& (clientRegistrationRepository.findByRegistrationId("google") != null
+						|| clientRegistrationRepository.findByRegistrationId("keycloak") != null);
 		http.csrf(csrf -> csrf.disable())
 				.sessionManagement(sm -> sm.sessionCreationPolicy(org.springframework.security.config.http.SessionCreationPolicy.IF_REQUIRED))
 				.authorizeHttpRequests(auth -> {

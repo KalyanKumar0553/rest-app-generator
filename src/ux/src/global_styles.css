@@ -228,6 +228,268 @@ select:focus {
   }
 }
 
+/* Dashboard shared UI blocks */
+app-dashboard .section-intro {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+app-dashboard .section-title {
+  margin: 0;
+  font-size: 30px;
+  color: var(--color-text-primary);
+}
+
+app-dashboard .section-subtitle {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+app-dashboard .panel-card {
+  background-color: var(--color-background-white);
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: var(--shadow-sm);
+  margin-bottom: 24px;
+}
+
+app-dashboard .panel-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+app-dashboard .panel-header h2 {
+  margin: 0 0 8px 0;
+  color: var(--color-text-primary);
+  font-size: 22px;
+}
+
+app-dashboard .panel-header p {
+  margin: 0;
+  color: var(--color-text-secondary);
+  line-height: 1.5;
+}
+
+app-dashboard .panel-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+app-dashboard .field-label {
+  display: inline-flex;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  margin-bottom: 8px;
+}
+
+app-dashboard .idea-textarea,
+app-dashboard .text-input {
+  width: 100%;
+  border: 1px solid var(--color-border);
+  background-color: var(--color-background);
+  color: var(--color-text-primary);
+  border-radius: 14px;
+  padding: 14px 16px;
+  font: inherit;
+  resize: vertical;
+  box-sizing: border-box;
+}
+
+app-dashboard .idea-textarea {
+  min-height: 220px;
+  line-height: 1.6;
+}
+
+app-dashboard .idea-textarea:focus,
+app-dashboard .text-input:focus {
+  outline: 2px solid var(--theme-primary-btn-bg);
+  outline-offset: 1px;
+}
+
+app-dashboard .compact-empty-state {
+  padding: 32px 16px;
+}
+
+app-dashboard .dashboard-table {
+  width: 100%;
+  background-color: transparent;
+}
+
+app-dashboard .dashboard-table .mat-mdc-header-row,
+app-dashboard .dashboard-table .mat-mdc-row {
+  background-color: transparent;
+}
+
+app-dashboard .dashboard-table .mat-mdc-header-cell {
+  color: var(--color-text-secondary);
+  font-weight: 700;
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  border-bottom-color: var(--color-border);
+}
+
+app-dashboard .dashboard-table .mat-mdc-cell {
+  color: var(--color-text-primary);
+  border-bottom-color: var(--color-border);
+}
+
+app-dashboard .status-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 96px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  background-color: var(--theme-neutral-bg);
+  color: var(--color-text-secondary);
+}
+
+app-dashboard .status-badge[data-status='COMPLETED'],
+app-dashboard .status-badge[data-status='ENABLED'] {
+  background-color: var(--theme-success-bg);
+  color: var(--theme-success-text);
+}
+
+app-dashboard .status-badge[data-status='IN_PROGRESS'] {
+  background-color: var(--theme-info-bg);
+  color: var(--theme-info-text);
+}
+
+app-dashboard .status-badge[data-status='FAILED'],
+app-dashboard .status-badge[data-status='DISABLED'] {
+  background-color: var(--theme-danger-bg);
+  color: var(--theme-danger-text);
+}
+
+app-dashboard .status-badge[data-status='PENDING'] {
+  background-color: var(--theme-warning-bg);
+  color: var(--theme-warning-text);
+}
+
+app-dashboard .ai-job-summary {
+  margin-top: 16px;
+}
+
+app-dashboard .stream-preview {
+  margin-top: 20px;
+}
+
+app-dashboard .stream-preview-content {
+  margin: 0;
+  padding: 16px;
+  border-radius: 14px;
+  background-color: var(--color-background);
+  border: 1px solid var(--color-border);
+  color: var(--color-text-primary);
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 280px;
+  overflow: auto;
+}
+
+app-dashboard .summary-error {
+  color: var(--theme-danger-text);
+  margin: 0;
+}
+
+app-dashboard .summary-success {
+  color: var(--theme-success-text);
+  margin: 0;
+}
+
+app-dashboard .rule-form-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  align-items: end;
+}
+
+app-dashboard .form-field {
+  display: flex;
+  flex-direction: column;
+}
+
+app-dashboard .checkbox-field {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--color-text-primary);
+  font-weight: 500;
+  min-height: 48px;
+}
+
+app-dashboard .table-actions {
+  display: inline-flex;
+  gap: 8px;
+}
+
+app-dashboard .table-action-btn {
+  border: 1px solid var(--color-border);
+  background-color: var(--color-background);
+  color: var(--color-text-primary);
+  border-radius: 999px;
+  padding: 8px 14px;
+  cursor: pointer;
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+app-dashboard .table-action-btn:hover {
+  background-color: var(--theme-neutral-bg);
+}
+
+app-dashboard .table-action-btn.danger {
+  color: var(--theme-danger-text);
+}
+
+app-dashboard .profile-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+}
+
+app-dashboard .profile-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  color: var(--color-text-primary);
+}
+
+@media (max-width: 1024px) {
+  app-dashboard .section-title {
+    font-size: 24px;
+  }
+
+  app-dashboard .rule-form-grid,
+  app-dashboard .profile-grid {
+    grid-template-columns: 1fr;
+  }
+
+  app-dashboard .panel-header {
+    flex-direction: column;
+  }
+
+  app-dashboard .panel-actions {
+    justify-content: stretch;
+    flex-direction: column;
+  }
+
+  app-dashboard .panel-actions .btn {
+    width: 100%;
+  }
+}
+
 /* High Contrast Mode Support */
 @media (prefers-contrast: high) {
   .btn-primary {

@@ -13,5 +13,8 @@ import lombok.NoArgsConstructor;
 public class ProjectContributorDTO {
 	private UUID id;
 	private String userId;
+	private boolean canEditDraft;
+	private boolean canGenerate;
+	private boolean canManageCollaboration;
 	private OffsetDateTime createdAt;
 }

@@ -20,6 +20,7 @@ import com.src.main.sm.config.StepExecutor;
 import com.src.main.sm.executor.common.GenerationLanguage;
 import com.src.main.sm.executor.common.GenerationLanguageResolver;
 import com.src.main.sm.executor.common.JavaNamingUtils;
+import com.src.main.sm.executor.common.LayeredSpecSupport;
 import com.src.main.sm.executor.rest.RestControllerGenerator;
 import com.src.main.sm.executor.rest.RestGenerationSupport;
 import com.src.main.sm.executor.rest.RestGenerationUnit;
@@ -28,7 +29,7 @@ import com.src.main.sm.executor.rest.RestSharedSupportGenerator;
 import com.src.main.sm.executor.rest.RestServiceGenerator;
 import com.src.main.util.ProjectMetaDataConstants;
 
-@Component
+@Component("restGenerationExecutor")
 public class RestGenerationExecutor implements StepExecutor {
 
 	private final RestControllerGenerator controllerGenerator;
@@ -62,10 +63,10 @@ public class RestGenerationExecutor implements StepExecutor {
 			}
 			List<Map<String, Object>> rawModels = resolveRawModels(yaml);
 
-			String basePackage = StringUtils.firstNonBlank(str(yaml.get("basePackage")),
+			String basePackage = StringUtils.firstNonBlank(LayeredSpecSupport.resolveBasePackage(yaml, null),
 					(String) data.getVariables().get(ProjectMetaDataConstants.GROUP_ID),
 					ProjectMetaDataConstants.DEFAULT_GROUP);
-			String packageStructure = StringUtils.firstNonBlank(str(yaml.get("packages")), spec.getPackages(), "technical");
+			String packageStructure = StringUtils.firstNonBlank(LayeredSpecSupport.resolvePackageStructure(yaml, null), spec.getPackages(), "technical");
 			GenerationLanguage language = GenerationLanguageResolver.resolveFromYaml(yaml);
 			boolean noSql = isNoSqlDatabase(yaml);
 			Map<String, Map<String, Object>> restSpecByName = resolveRestSpecByName(yaml);
@@ -717,17 +718,11 @@ public class RestGenerationExecutor implements StepExecutor {
 		if (yaml == null) {
 			return false;
 		}
-		Object dbTypeRaw = yaml.get("dbType");
-		if (dbTypeRaw == null && yaml.get("app") instanceof Map<?, ?> appRaw) {
-			dbTypeRaw = ((Map<String, Object>) appRaw).get("dbType");
-		}
+		Object dbTypeRaw = LayeredSpecSupport.resolveDatabaseType(yaml);
 		if (dbTypeRaw != null && "NOSQL".equalsIgnoreCase(String.valueOf(dbTypeRaw).trim())) {
 			return true;
 		}
-		Object databaseRaw = yaml.get("database");
-		if (databaseRaw == null && yaml.get("app") instanceof Map<?, ?> appRaw) {
-			databaseRaw = ((Map<String, Object>) appRaw).get("database");
-		}
+		Object databaseRaw = LayeredSpecSupport.resolveDatabaseCode(yaml);
 		return databaseRaw != null && "MONGODB".equalsIgnoreCase(String.valueOf(databaseRaw).trim());
 	}
 }

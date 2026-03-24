@@ -117,10 +117,15 @@ public class InitializrGradleGenerator {
 		}
 		deps.stream()
 				.filter(Objects::nonNull)
-				.map(md -> new String[] { trimOrNull(md.groupId()), trimOrNull(md.artifactId()), md.scope() })
-				.filter(parts -> parts[0] != null && parts[1] != null)
-				.forEach(parts -> build.dependencies().add(parts[0] + ":" + parts[1],
-						Dependency.withCoordinates(parts[0], parts[1]).scope(toScope(parts[2]))));
+				.filter(md -> trimOrNull(md.groupId()) != null && trimOrNull(md.artifactId()) != null)
+				.forEach(parts -> {
+					Dependency.Builder builder = Dependency.withCoordinates(parts.groupId(), parts.artifactId())
+							.scope(toScope(parts.scope()));
+					if (trimOrNull(parts.version()) != null) {
+						builder.version(VersionReference.ofValue(parts.version()));
+					}
+					build.dependencies().add(parts.groupId() + ":" + parts.artifactId(), builder);
+				});
 	}
 
 	private void addStandardDependencies(GradleBuild build, String packaging, boolean includeOpenApi, boolean includeJpa,

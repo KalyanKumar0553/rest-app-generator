@@ -40,7 +40,11 @@ public class InitializrGeneratorConfig {
 				"configMetadataAll",
 				"configMetadataByCategory",
 				"rbacAccessProfile",
-				"rbacCatalog");
+				"rbacCatalog",
+				"subscriptionPlanByCode",
+				"subscriptionFeatureByCode",
+				"activeSubscriptionByTenant",
+				"entitlementsByTenant");
         mgr.setCaffeine(Caffeine.newBuilder()
                 .maximumSize(5000)
                 .expireAfterWrite(Duration.ofHours(12)));

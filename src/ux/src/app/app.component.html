@@ -2,24 +2,27 @@
   <div class="app-container">
     <app-header class="app-header-fixed" *ngIf="!isNavigating"></app-header>
     <main class="main-content-scrollable" [class.no-margins]="isDashboardRoute" [class.no-padding]="isProjectGenerationRoute">
-      <ng-container *ngIf="isNavigating; else appContent">
-        <app-inprogress
-          mode="loading"
-          loadingTitle="Loading your workspace"
-          loadingMessage="Building your next view..."
-          loadingHint="BootRid is getting everything ready."
-        ></app-inprogress>
-      </ng-container>
-      <ng-template #appContent>
-        <router-outlet></router-outlet>
-      </ng-template>
+      <router-outlet></router-outlet>
     </main>
     <app-footer class="app-footer-fixed" *ngIf="!isNavigating"></app-footer>
     <app-toast></app-toast>
     <app-loading-overlay
-      [visible]="!isNavigating && (requestLoadingService.visible$ | async) === true"
-      title="Request in progress"
-      message="Request in progress."
+      [visible]="(oauthProgressService.state$ | async)?.visible === true"
+      [title]="(oauthProgressService.state$ | async)?.title || 'Request in progress'"
+      [message]="(oauthProgressService.state$ | async)?.message || 'Request in progress.'"
     ></app-loading-overlay>
+    <app-loading-overlay
+      [visible]="((oauthProgressService.state$ | async)?.visible !== true) && (isNavigating || (requestLoadingService.visible$ | async) === true)"
+      title="Request in progress"
+      message=""
+    ></app-loading-overlay>
+    <app-confirmation-modal
+      *ngIf="showSessionWarning"
+      title="Session Expiry Warning"
+      [message]="sessionWarningMessages"
+      [buttons]="sessionWarningButtons"
+      (confirm)="extendSession()"
+      (cancel)="logoutFromSessionWarning()"
+    ></app-confirmation-modal>
   </div>
 </ion-app>

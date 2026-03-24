@@ -17,6 +17,17 @@
 - Apply this rule across all UX files (components, shared styles, modal styling, graph styling, etc.).
 - Keep theming reusable and consistent across screens.
 
+### Request Loading UX (Mandatory)
+- Use `LoadingOverlayComponent` for request-in-progress/loading-blocker experiences across the application.
+- Do not use `InprogressComponent` for request/loading states.
+- Reserve `InprogressComponent` only for dedicated informational/work-in-progress pages, not API/request progress.
+
+### Root Cause First (Mandatory)
+- Do not apply band-aid or speculative fixes just to mask a problem.
+- Fix issues only after identifying a defensible root cause from code, runtime behavior, logs, or reproducible evidence.
+- If the root cause is not yet found, do not ship a workaround as if it were the fix.
+- In that case, clearly inform the user that the root cause has not been confirmed yet, summarize what was checked, and state the next targeted debugging step.
+
 ### Confirmation Toggle State (Mandatory)
 - For any destructive checkbox toggle that needs confirmation, do not let UI commit unchecked state before user confirms.
 - With Angular Material checkbox, prefer `(change)` and pass full `MatCheckboxChange` event.

@@ -28,6 +28,10 @@
 		</dependency>
 		<dependency>
 			<groupId>com.src</groupId>
+			<artifactId>subscription</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>com.src</groupId>
 			<artifactId>auth</artifactId>
 		</dependency>
 		<dependency>
@@ -132,6 +136,10 @@
 			<artifactId>spring-boot-starter-oauth2-client</artifactId>
 		</dependency>
 		<dependency>
+			<groupId>org.springframework.ai</groupId>
+			<artifactId>spring-ai-starter-model-openai</artifactId>
+		</dependency>
+		<dependency>
 			<groupId>com.github.ben-manes.caffeine</groupId>
 			<artifactId>caffeine</artifactId>
 		</dependency>
@@ -146,6 +154,11 @@
 		<dependency>
 			<groupId>org.apache.poi</groupId>
 			<artifactId>poi-ooxml</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-test</artifactId>
+			<scope>test</scope>
 		</dependency>
 	</dependencies>
 
@@ -230,6 +243,7 @@
 				<configuration>
 					<locations>
 						<location>filesystem:api/src/main/resources/rest-app-db/migration</location>
+						<location>filesystem:subscription/src/main/resources/rest-app-db/migration</location>
 					</locations>
 				</configuration>
 			</plugin>

@@ -51,7 +51,8 @@ export class HeaderComponent implements OnInit, OnDestroy {
   private checkRoute(url: string): void {
     this.isDashboardRoute = url.includes('/user/dashboard')
       || url.includes('/project-generation')
-      || url.includes('/project-generation-node');
+      || url.includes('/project-generation-node')
+      || url.includes('/project-generation-python');
   }
 
   navigateToHome(): void {
@@ -96,7 +97,7 @@ export class HeaderComponent implements OnInit, OnDestroy {
     this.showStartProjectDialog = true;
   }
 
-  proceedToProject(language: 'java' | 'node'): void {
+  proceedToProject(language: 'java' | 'node' | 'python'): void {
     this.showStartProjectDialog = false;
     this.router.navigate([resolveProjectGenerationRoute(language)]);
   }

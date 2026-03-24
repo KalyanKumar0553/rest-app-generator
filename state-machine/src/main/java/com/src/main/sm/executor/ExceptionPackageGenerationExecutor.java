@@ -15,11 +15,12 @@ import com.src.main.sm.executor.common.BoilerplateStyle;
 import com.src.main.sm.executor.common.BoilerplateStyleResolver;
 import com.src.main.sm.executor.common.GenerationLanguage;
 import com.src.main.sm.executor.common.GenerationLanguageResolver;
+import com.src.main.sm.executor.common.LayeredSpecSupport;
 import com.src.main.sm.executor.exceptiongen.ExceptionPackageGenerationService;
 import com.src.main.sm.executor.exceptiongen.ExceptionPackageGenerationSupport;
 import com.src.main.util.ProjectMetaDataConstants;
 
-@Component
+@Component("exceptionPackageGenerationExecutor")
 public class ExceptionPackageGenerationExecutor implements StepExecutor {
 
 	private final ExceptionPackageGenerationService exceptionPackageGenerationService;
@@ -45,11 +46,11 @@ public class ExceptionPackageGenerationExecutor implements StepExecutor {
 
 			AppSpecDTO spec = mapper.convertValue(yaml, AppSpecDTO.class);
 			String basePackage = StringUtils.firstNonBlank(
-					str(yaml.get("basePackage")),
+					LayeredSpecSupport.resolveBasePackage(yaml, null),
 					spec.getBasePackage(),
 					(String) data.getVariables().get(ProjectMetaDataConstants.GROUP_ID),
 					ProjectMetaDataConstants.DEFAULT_GROUP);
-			String packageStructure = StringUtils.firstNonBlank(str(yaml.get("packages")), spec.getPackages(), "technical");
+			String packageStructure = StringUtils.firstNonBlank(LayeredSpecSupport.resolvePackageStructure(yaml, null), spec.getPackages(), "technical");
 			String exceptionPackage = ExceptionPackageGenerationSupport.resolveExceptionPackage(basePackage, packageStructure);
 			boolean useLombok = BoilerplateStyleResolver.resolveFromYaml(yaml, true) == BoilerplateStyle.LOMBOK;
 			GenerationLanguage language = GenerationLanguageResolver.resolveFromYaml(yaml);

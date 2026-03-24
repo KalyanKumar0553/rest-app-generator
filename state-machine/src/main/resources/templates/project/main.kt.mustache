@@ -1,9 +1,22 @@
 package {{basePkg}}
 
+{{#includeShippedModuleScanning}}
+import org.springframework.boot.autoconfigure.domain.EntityScan
+{{/includeShippedModuleScanning}}
 import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.boot.runApplication
+{{#includeShippedModuleScanning}}
+import org.springframework.data.jpa.repository.config.EnableJpaRepositories
+{{/includeShippedModuleScanning}}
 
+{{#includeShippedModuleScanning}}
+@SpringBootApplication(scanBasePackages = ["{{basePkg}}", "{{moduleBasePackage}}"])
+@EntityScan(basePackages = ["{{basePkg}}", "{{moduleBasePackage}}"])
+@EnableJpaRepositories(basePackages = ["{{basePkg}}", "{{moduleBasePackage}}"])
+{{/includeShippedModuleScanning}}
+{{^includeShippedModuleScanning}}
 @SpringBootApplication
+{{/includeShippedModuleScanning}}
 class {{mainClass}}
 
 fun main(args: Array<String>) {

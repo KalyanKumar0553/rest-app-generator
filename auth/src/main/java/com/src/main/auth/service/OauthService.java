@@ -39,6 +39,7 @@ public class OauthService {
 	private final UserRoleRepository userRoleRepository;
 	private final UserProfileRepository userProfileRepository;
 	private final RoleCatalogService roleCatalogService;
+	private final IdentifierLookupHashService identifierLookupHashService;
 	private final String googleClientId;
 	private final String appleClientId;
 
@@ -47,12 +48,14 @@ public class OauthService {
 			UserRoleRepository userRoleRepository,
 			UserProfileRepository userProfileRepository,
 			RoleCatalogService roleCatalogService,
+			IdentifierLookupHashService identifierLookupHashService,
 			@Value("${oauth.google.client-id:}") String googleClientId,
 			@Value("${oauth.apple.client-id:}") String appleClientId) {
 		this.userRepository = userRepository;
 		this.userRoleRepository = userRoleRepository;
 		this.userProfileRepository = userProfileRepository;
 		this.roleCatalogService = roleCatalogService;
+		this.identifierLookupHashService = identifierLookupHashService;
 		this.googleClientId = googleClientId;
 		this.appleClientId = appleClientId;
 	}
@@ -85,9 +88,16 @@ public class OauthService {
 	}
 
 	public OauthPrincipal extractGooglePrincipal(Map<String, Object> attributes) {
+		return extractOauthPrincipal(attributes);
+	}
+
+	public OauthPrincipal extractOauthPrincipal(Map<String, Object> attributes) {
 		String email = stringClaim(attributes.get("email"));
 		if (email == null || email.isBlank()) {
-			throw new IllegalArgumentException("Email not present in Google profile");
+			email = stringClaim(attributes.get("preferred_username"));
+		}
+		if (email == null || email.isBlank()) {
+			throw new IllegalArgumentException("Email not present in OAuth profile");
 		}
 		String givenName = stringClaim(attributes.get("given_name"));
 		String familyName = stringClaim(attributes.get("family_name"));
@@ -124,18 +134,23 @@ public class OauthService {
 
 	public String upsertOauthUser(OauthPrincipal principal) {
 		String identifier = principal.email().trim().toLowerCase();
-		User existing = userRepository.findByIdentifier(identifier).orElse(null);
+		String identifierHash = identifierLookupHashService.hash(identifier);
+		User existing = userRepository.findFirstByIdentifierHashOrIdentifier(identifierHash, identifier).orElse(null);
 		if (existing != null) {
+			if (existing.getIdentifierHash() == null || existing.getIdentifierHash().isBlank()) {
+				existing.setIdentifierHash(identifierHash);
+			}
 			if (existing.getStatus() != UserStatus.ACTIVE) {
 				existing.setStatus(UserStatus.ACTIVE);
-				userRepository.save(existing);
 			}
+			userRepository.save(existing);
 			upsertUserProfile(existing.getId(), principal);
 			return existing.getId();
 		}
 
 		User user = new User();
 		user.setIdentifier(identifier);
+		user.setIdentifierHash(identifierHash);
 		user.setIdentifierType(IdentifierType.EMAIL);
 		user.setPasswordHash(CryptoUtils.hashPassword("oauth-" + CryptoUtils.uuid()));
 		user.setStatus(UserStatus.ACTIVE);

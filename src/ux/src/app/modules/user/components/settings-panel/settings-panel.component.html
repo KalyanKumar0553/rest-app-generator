@@ -1,0 +1,97 @@
+<section class="dashboard-panel">
+  <div class="content-header">
+    <div class="section-intro">
+      <h1 class="section-title">Settings</h1>
+      <p class="section-subtitle">Configure admin-only platform rules for encrypted and searchable database columns.</p>
+    </div>
+  </div>
+
+  <div class="content-body">
+    <section class="panel-card" *ngIf="canManageEncryptionRules(); else noSettingsAccess">
+      <div class="panel-header">
+        <div>
+          <h2>Data Encryption Rules</h2>
+          <p>Define which tables and columns should be encrypted, and add hash-shadow columns for searchable fields.</p>
+        </div>
+      </div>
+
+      <div class="rule-form-grid">
+        <div class="form-field">
+          <label class="field-label" for="ruleTableName">Table name</label>
+          <input id="ruleTableName" class="text-input" [(ngModel)]="encryptionRuleForm.tableName" placeholder="users" />
+        </div>
+        <div class="form-field">
+          <label class="field-label" for="ruleColumnName">Column name</label>
+          <input id="ruleColumnName" class="text-input" [(ngModel)]="encryptionRuleForm.columnName" placeholder="identifier" />
+        </div>
+        <div class="form-field">
+          <label class="field-label" for="ruleHashShadowColumn">Hash-shadow column</label>
+          <input id="ruleHashShadowColumn" class="text-input" [(ngModel)]="encryptionRuleForm.hashShadowColumn" placeholder="identifier_hash" />
+        </div>
+        <label class="checkbox-field">
+          <input type="checkbox" [(ngModel)]="encryptionRuleForm.enabled" />
+          <span>Enabled</span>
+        </label>
+      </div>
+
+      <div class="panel-actions">
+        <button class="btn btn-secondary" type="button" (click)="resetEncryptionRuleForm()">Reset</button>
+        <button class="btn btn-primary" type="button" (click)="saveEncryptionRule()" [disabled]="isSavingEncryptionRule || !canEditEncryptionRules()">
+          {{ isSavingEncryptionRule ? 'Saving...' : (encryptionRuleForm.id ? 'Update Rule' : 'Create Rule') }}
+        </button>
+      </div>
+
+      <div *ngIf="!isLoadingEncryptionRules && encryptionRules.length === 0" class="empty-state compact-empty-state">
+        <p>No encryption rules configured yet.</p>
+      </div>
+
+      <table mat-table [dataSource]="encryptionRules" class="dashboard-table" *ngIf="!isLoadingEncryptionRules && encryptionRules.length > 0">
+        <ng-container matColumnDef="tableName">
+          <th mat-header-cell *matHeaderCellDef>Table</th>
+          <td mat-cell *matCellDef="let rule">{{ rule.tableName }}</td>
+        </ng-container>
+
+        <ng-container matColumnDef="columnName">
+          <th mat-header-cell *matHeaderCellDef>Column</th>
+          <td mat-cell *matCellDef="let rule">{{ rule.columnName || 'All string columns' }}</td>
+        </ng-container>
+
+        <ng-container matColumnDef="hashShadowColumn">
+          <th mat-header-cell *matHeaderCellDef>Hash shadow</th>
+          <td mat-cell *matCellDef="let rule">{{ rule.hashShadowColumn || '-' }}</td>
+        </ng-container>
+
+        <ng-container matColumnDef="enabled">
+          <th mat-header-cell *matHeaderCellDef>Enabled</th>
+          <td mat-cell *matCellDef="let rule">
+            <span class="status-badge" [attr.data-status]="rule.enabled ? 'ENABLED' : 'DISABLED'">{{ rule.enabled ? 'ENABLED' : 'DISABLED' }}</span>
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="updatedAt">
+          <th mat-header-cell *matHeaderCellDef>Updated</th>
+          <td mat-cell *matCellDef="let rule">{{ rule.updatedAt ? formatDate(rule.updatedAt) : '-' }}</td>
+        </ng-container>
+
+        <ng-container matColumnDef="actions">
+          <th mat-header-cell *matHeaderCellDef>Actions</th>
+          <td mat-cell *matCellDef="let rule">
+            <div class="table-actions">
+              <button class="table-action-btn" type="button" (click)="editEncryptionRule(rule)" [disabled]="!canEditEncryptionRules()">Edit</button>
+              <button class="table-action-btn danger" type="button" (click)="deleteEncryptionRule(rule)" [disabled]="!canEditEncryptionRules()">Delete</button>
+            </div>
+          </td>
+        </ng-container>
+
+        <tr mat-header-row *matHeaderRowDef="encryptionRuleColumns"></tr>
+        <tr mat-row *matRowDef="let row; columns: encryptionRuleColumns;"></tr>
+      </table>
+    </section>
+
+    <ng-template #noSettingsAccess>
+      <div class="empty-state">
+        <p>You do not have access to platform encryption settings.</p>
+      </div>
+    </ng-template>
+  </div>
+</section>

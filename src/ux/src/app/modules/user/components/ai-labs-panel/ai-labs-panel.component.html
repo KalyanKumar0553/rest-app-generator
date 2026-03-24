@@ -1,0 +1,73 @@
+<section class="dashboard-panel">
+  <div class="content-header">
+    <div class="section-intro">
+      <h1 class="section-title">AI Labs</h1>
+      <p class="section-subtitle">Turn a product idea into a saved project draft using AI-assisted project planning.</p>
+    </div>
+  </div>
+
+  <div class="content-body">
+    <section class="panel-card ai-labs-panel">
+      <label class="field-label" for="aiPrompt">Idea brief</label>
+      <textarea
+        id="aiPrompt"
+        class="idea-textarea"
+        [(ngModel)]="aiPrompt"
+        rows="10"
+        placeholder="Place your idea to generate the project."
+      ></textarea>
+      <div class="panel-actions">
+        <button class="btn btn-primary" (click)="startAiProjectGeneration()" [disabled]="isStartingAiJob">
+          {{ isStartingAiJob ? 'Starting...' : 'Generate Project' }}
+        </button>
+      </div>
+    </section>
+
+    <section class="panel-card" *ngIf="aiJob">
+      <div class="panel-header">
+        <div>
+          <h2>Backend Progress</h2>
+          <p>Track each backend stage while AI Labs builds and saves the project.</p>
+        </div>
+        <span class="status-badge" [attr.data-status]="aiJob.status">{{ aiJob.status }}</span>
+      </div>
+
+      <table mat-table [dataSource]="aiJob.steps" class="dashboard-table">
+        <ng-container matColumnDef="label">
+          <th mat-header-cell *matHeaderCellDef>Stage</th>
+          <td mat-cell *matCellDef="let step">{{ step.label }}</td>
+        </ng-container>
+
+        <ng-container matColumnDef="status">
+          <th mat-header-cell *matHeaderCellDef>Status</th>
+          <td mat-cell *matCellDef="let step">
+            <span class="status-badge" [attr.data-status]="step.status">{{ step.status }}</span>
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="message">
+          <th mat-header-cell *matHeaderCellDef>Message</th>
+          <td mat-cell *matCellDef="let step">{{ step.message || 'Waiting to start.' }}</td>
+        </ng-container>
+
+        <ng-container matColumnDef="updatedAt">
+          <th mat-header-cell *matHeaderCellDef>Updated</th>
+          <td mat-cell *matCellDef="let step">{{ step.updatedAt ? formatDate(step.updatedAt) : '-' }}</td>
+        </ng-container>
+
+        <tr mat-header-row *matHeaderRowDef="aiJobColumns"></tr>
+        <tr mat-row *matRowDef="let row; columns: aiJobColumns;"></tr>
+      </table>
+
+      <div class="stream-preview" *ngIf="aiJob.streamPreview">
+        <span class="field-label">Live AI output</span>
+        <pre class="stream-preview-content">{{ aiJob.streamPreview }}</pre>
+      </div>
+
+      <div class="ai-job-summary" *ngIf="aiJob.errorMessage || aiJob.projectId">
+        <p *ngIf="aiJob.errorMessage" class="summary-error">{{ aiJob.errorMessage }}</p>
+        <p *ngIf="aiJob.projectId" class="summary-success">Project created. Opening the editor now.</p>
+      </div>
+    </section>
+  </div>
+</section>

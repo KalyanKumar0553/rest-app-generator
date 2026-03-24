@@ -1,15 +1,16 @@
-import { Component, EventEmitter, Output } from '@angular/core';
+import { Component, EventEmitter, Output, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { ModalService } from '../../../../services/modal.service';
 import { ToastService } from '../../../../services/toast.service';
-import { AuthService, SignupRequest, LoginRequest, CaptchaChallenge } from '../../../../services/auth.service';
+import { AuthService, SignupRequest, LoginRequest, CaptchaChallenge, AuthProvidersResponse } from '../../../../services/auth.service';
 import { ComponentThemeService } from '../../../../services/component-theme.service';
 import { FormValidator, ValidationErrors, CommonValidationRules } from '../../../../validators/form-validator';
 import { OTPModalComponent } from '../otp-modal/otp-modal.component';
 import { UpdatePasswordModalComponent } from '../update-password-modal/update-password-modal.component';
 import { ModalComponent } from '../../../../components/modal/modal.component';
+import { OauthProgressService } from '../../../../services/oauth-progress.service';
 
 @Component({
   selector: 'app-login-modal',
@@ -18,7 +19,7 @@ import { ModalComponent } from '../../../../components/modal/modal.component';
   templateUrl: './login-modal.component.html',
   styleUrls: ['./login-modal.component.css']
 })
-export class LoginModalComponent {
+export class LoginModalComponent implements OnInit {
   @Output() close = new EventEmitter<void>();
 
   isSignupMode = false;
@@ -36,14 +37,36 @@ export class LoginModalComponent {
   captchaText = '';
   captchaImageUrl = '';
   captchaError = '';
+  authProviders: AuthProvidersResponse = {
+    googleEnabled: true,
+    keycloakEnabled: false
+  };
 
   constructor(
     private router: Router,
     private modalService: ModalService,
     private toastService: ToastService,
     private authService: AuthService,
+    private oauthProgressService: OauthProgressService,
     public themeService: ComponentThemeService
   ) {}
+
+  ngOnInit(): void {
+    this.authService.getAuthProviders().subscribe({
+      next: (providers) => {
+        this.authProviders = {
+          googleEnabled: Boolean(providers?.googleEnabled),
+          keycloakEnabled: Boolean(providers?.keycloakEnabled)
+        };
+      },
+      error: () => {
+        this.authProviders = {
+          googleEnabled: true,
+          keycloakEnabled: false
+        };
+      }
+    });
+  }
 
   get modalTitle(): string {
     if (this.isForgotPasswordMode) {
@@ -315,8 +338,31 @@ export class LoginModalComponent {
   }
 
   startGoogleLogin(): void {
-    this.closeModal();
-    this.authService.startGoogleLogin();
+    if (this.isLoading) {
+      return;
+    }
+
+    this.isLoading = true;
+    this.oauthProgressService.show('Redirecting to Google', '');
+    this.close.emit();
+
+    setTimeout(() => {
+      this.authService.startGoogleLogin();
+    }, 50);
+  }
+
+  startKeycloakLogin(): void {
+    if (this.isLoading) {
+      return;
+    }
+
+    this.isLoading = true;
+    this.oauthProgressService.show('Redirecting to Keycloak', '');
+    this.close.emit();
+
+    setTimeout(() => {
+      this.authService.startKeycloakLogin();
+    }, 50);
   }
 
   refreshCaptcha(): void {

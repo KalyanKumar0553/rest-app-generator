@@ -32,6 +32,9 @@ public class UserProfile {
 	@Column(name = "avatar_url")
 	private String avatarUrl;
 
+	@Column(name = "time_zone_id", length = 100)
+	private String timeZoneId;
+
 	@Column(name = "created_at", nullable = false, updatable = false)
 	private Instant createdAt;
 
@@ -92,5 +95,13 @@ public class UserProfile {
 
 	public void setAvatarUrl(String avatarUrl) {
 		this.avatarUrl = avatarUrl;
+	}
+
+	public String getTimeZoneId() {
+		return timeZoneId;
+	}
+
+	public void setTimeZoneId(String timeZoneId) {
+		this.timeZoneId = timeZoneId;
 	}
 }

@@ -1,5 +1,7 @@
 <mat-accordion class="expansion-panels">
   <app-node-project-settings-section
+    [runtimeLabel]="runtimeLabel"
+    [showPackageManager]="showPackageManager"
     [projectSettings]="projectSettings"
     [projectGroupError]="projectGroupError"
     [projectNameError]="projectNameError"
@@ -19,9 +21,93 @@
   </app-node-database-settings-section>
 
   <app-node-developer-preferences-section
+    [runtimeLabel]="runtimeLabel"
+    [apiFrameworkLabel]="apiFrameworkLabel"
     [developerPreferences]="developerPreferences"
     (addProfile)="addProfile.emit()"
     (removeProfile)="removeProfile.emit($event)"
     (configureApiChange)="configureApiChange.emit($event)">
   </app-node-developer-preferences-section>
+
+  <mat-expansion-panel *ngIf="backendProjectId">
+    <mat-expansion-panel-header>
+      <mat-panel-title>
+        Project contributors
+      </mat-panel-title>
+    </mat-expansion-panel-header>
+
+    <div class="panel-content">
+      <div class="form-row" *ngIf="canManageContributors">
+        <mat-form-field appearance="fill" class="full-width">
+          <mat-label>Contributor user id</mat-label>
+          <input
+            matInput
+            [ngModel]="contributorUserId"
+            (ngModelChange)="onContributorUserIdChange($event)"
+            placeholder="Enter user id to grant access" />
+        </mat-form-field>
+        <button mat-raised-button color="primary" type="button" (click)="addContributor.emit()" [disabled]="isContributorSaving">
+          Add contributor
+        </button>
+      </div>
+
+      <p *ngIf="!canManageContributors">Only the project owner can add or remove contributors.</p>
+      <p *ngIf="projectContributors.length === 0">No contributors added yet.</p>
+
+      <div class="selected-dependencies" *ngIf="projectContributors.length > 0">
+        <div class="dependency-chip" *ngFor="let contributor of projectContributors">
+          <span>{{ contributor.userId }}</span>
+          <button *ngIf="canManageContributors"
+                  type="button"
+                  class="remove-chip"
+                  (click)="removeContributor.emit(contributor.userId)"
+                  [disabled]="isContributorSaving"
+                  aria-label="Remove contributor">
+            <mat-icon>close</mat-icon>
+          </button>
+        </div>
+      </div>
+    </div>
+  </mat-expansion-panel>
+
+  <mat-expansion-panel>
+    <mat-expansion-panel-header>
+      <mat-panel-title>
+        Further dependencies
+      </mat-panel-title>
+    </mat-expansion-panel-header>
+
+    <div class="panel-content">
+      <div class="form-row">
+        <label class="field-label">Dependencies
+          <mat-icon class="inline-icon" [matTooltip]="dependencyTooltipMessage">info</mat-icon>
+        </label>
+      </div>
+
+      <mat-form-field appearance="fill" class="full-width">
+        <input
+          matInput
+          [matAutocomplete]="auto"
+          [ngModel]="dependencyInput"
+          (ngModelChange)="onDependencyInputChange($event)"
+          placeholder="Type to search dependencies"
+        />
+        <mat-icon matSuffix>search</mat-icon>
+        <mat-autocomplete #auto="matAutocomplete" (optionSelected)="dependencySelected.emit($event)">
+          <mat-option *ngFor="let dep of filteredDependencies" [value]="dep">
+            {{ dep }}
+          </mat-option>
+        </mat-autocomplete>
+      </mat-form-field>
+
+      <div class="selected-dependencies" *ngIf="selectedDependencies.length > 0">
+        <div class="dependency-chip" *ngFor="let dep of selectedDependencies">
+          <span>{{ dep }}</span>
+          <button type="button" class="remove-chip" (click)="dependencyRemoved.emit(dep)" aria-label="Remove dependency">
+            <mat-icon>close</mat-icon>
+          </button>
+        </div>
+      </div>
+    </div>
+  </mat-expansion-panel>
 </mat-accordion>

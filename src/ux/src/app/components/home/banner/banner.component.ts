@@ -20,7 +20,7 @@ export class BannerComponent {
     this.showStartProjectDialog = true;
   }
 
-  proceedToProject(language: 'java' | 'node'): void {
+  proceedToProject(language: 'java' | 'node' | 'python'): void {
     this.showStartProjectDialog = false;
     this.router.navigate([resolveProjectGenerationRoute(language)]);
   }

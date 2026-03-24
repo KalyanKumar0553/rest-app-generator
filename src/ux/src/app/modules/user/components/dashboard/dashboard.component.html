@@ -8,16 +8,6 @@
   (cancel)="cancelLogout()"
 ></app-confirmation-modal>
 
-<app-confirmation-modal
-  *ngIf="showDeleteConfirmation"
-  [title]="deleteModalConfig.title"
-  [message]="deleteModalConfig.message"
-  [buttons]="deleteModalConfig.buttons"
-  [isLoading]="isDeletingProject"
-  (confirm)="confirmDeleteProject()"
-  (cancel)="cancelDeleteProject()"
-></app-confirmation-modal>
-
 <div class="dashboard-container">
   <div class="mobile-header">
     <div class="container">
@@ -63,56 +53,6 @@
   </aside>
 
   <main class="main-content">
-    <div class="content-header">
-      <div class="action-buttons">
-        <button class="btn btn-primary" (click)="createNewProject()">Create new project</button>
-        <!-- <button class="btn btn-secondary">Link existing project</button> -->
-      </div>
-      <app-search-sort
-        *ngIf="!isLoadingProjects && projects.length > 0"
-        [searchConfig]="searchConfig"
-        [sortOptions]="sortOptions"
-        (searchSortChange)="onSearchSortChange($event)"
-      ></app-search-sort>
-    </div>
-
-    <div class="content-body">
-
-      <div *ngIf="isLoadingProjects" class="loading-state">
-        <div class="spinner"></div>
-        <p>Loading projects...</p>
-      </div>
-
-      <div *ngIf="!isLoadingProjects && projects.length === 0" class="empty-state">
-        <p>No projects found. Create your first project to get started.</p>
-      </div>
-
-      <div *ngIf="!isLoadingProjects && projects.length > 0 && filteredProjects.length === 0" class="empty-state">
-        <p>No projects match your search criteria.</p>
-      </div>
-
-      <div class="projects-grid" *ngIf="!isLoadingProjects && filteredProjects.length > 0">
-        <div class="project-card" *ngFor="let project of filteredProjects">
-          <div class="project-title">
-            <div class="project-title-row">
-              <h3>{{ project.name }}</h3>
-              <span class="project-date">{{ formatDate(project.createdAt) }}</span>
-            </div>
-            <p class="project-description">{{ project.description }}</p>
-          </div>
-          <div class="project-actions">
-            <button class="btn-open" (click)="openProject(project)">Open</button>
-            <div class="action-icons">
-              <button class="icon-btn" type="button" aria-label="Delete project" (click)="promptDeleteProject(project)">
-                <i class="bi bi-archive"></i>
-              </button>
-              <button class="icon-btn" aria-label="Add">
-                <i class="bi bi-plus-lg"></i>
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+    <router-outlet></router-outlet>
   </main>
 </div>

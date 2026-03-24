@@ -13,7 +13,7 @@ import { MatProgressBarModule } from '@angular/material/progress-bar';
 })
 export class LoadingOverlayComponent {
   @Input() visible = false;
-  @Input() title = 'Request in progress';
+  @Input() title = 'Request In Progress';
   @Input() message = 'Please wait while we process your request.';
   @Input() showCancel = false;
   @Output() cancel = new EventEmitter<void>();

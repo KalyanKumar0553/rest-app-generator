@@ -28,6 +28,13 @@ public final class ProjectQueries {
 			where p.id = :projectId
 			""";
 
+	public static final String FIND_WITH_CONTRIBUTORS_BY_ID_FOR_UPDATE = """
+			select distinct p
+			from ProjectEntity p
+			left join fetch p.contributors c
+			where p.id = :projectId
+			""";
+
 	public static final String FIND_ALL_WITH_CONTRIBUTORS = """
 			select distinct p
 			from ProjectEntity p

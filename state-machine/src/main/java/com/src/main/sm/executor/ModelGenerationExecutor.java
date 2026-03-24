@@ -10,6 +10,7 @@ import com.src.main.dto.StepResult;
 import com.src.main.sm.config.StepExecutor;
 import com.src.main.sm.executor.common.GenerationLanguage;
 import com.src.main.sm.executor.common.GenerationLanguageResolver;
+import com.src.main.sm.executor.common.LayeredSpecSupport;
 import com.src.main.sm.executor.model.ModelGenerationService;
 import com.src.main.util.ProjectMetaDataConstants;
 
@@ -17,7 +18,7 @@ import com.src.main.util.ProjectMetaDataConstants;
  * State executor for MODEL_GENERATION step.
  * Reads the same YAML used for DTOs and generates JPA model classes.
  */
-@Component
+@Component("modelGenerationExecutor")
 public class ModelGenerationExecutor implements StepExecutor {
 
     private final ModelGenerationService modelGenerationService;
@@ -36,7 +37,7 @@ public class ModelGenerationExecutor implements StepExecutor {
         try {
     		Path root = Path.of((String) data.getVariables().get(ProjectMetaDataConstants.ROOT_DIR));
     		Map<String, Object> yaml = (Map<String, Object>) data.getVariables().get("yaml");
-    		String basePkg = (yaml != null) ? str(yaml.get("basePackage")) : null;
+    		String basePkg = LayeredSpecSupport.resolveBasePackage(yaml, null);
 			GenerationLanguage language = GenerationLanguageResolver.resolveFromYaml(yaml);
             modelGenerationService.generate(yaml, root, basePkg, language);
             Map<String, Object> output = Map.of("status", "Success");

@@ -30,6 +30,16 @@ public class ProjectEntity {
 	@Column(nullable = false, columnDefinition = "text")
 	private String yaml;
 
+	@JdbcTypeCode(SqlTypes.LONGVARCHAR)
+	@Column(name = "draft_data", columnDefinition = "text")
+	private String draftData;
+
+	@Column(name = "draft_version")
+	private Integer draftVersion;
+
+	@Column(name = "invite_token", length = 64)
+	private String inviteToken;
+
 	@Column
 	private String artifact;
 
@@ -82,4 +92,9 @@ public class ProjectEntity {
 	@ToString.Exclude
 	@EqualsAndHashCode.Exclude
 	private List<ProjectContributorEntity> contributors = new ArrayList<>();
+
+	@OneToMany(mappedBy = "project")
+	@ToString.Exclude
+	@EqualsAndHashCode.Exclude
+	private List<ProjectCollaborationRequestEntity> collaborationRequests = new ArrayList<>();
 }

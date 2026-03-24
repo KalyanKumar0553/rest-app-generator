@@ -34,8 +34,8 @@
 
     <div class="form-row">
       <mat-checkbox [checked]="developerPreferences.configureApi" (change)="configureApiChange.emit($event)">
-        Enable Express API configuration
-        <mat-icon class="inline-icon" matTooltip="Generate route, controller, and DTO configuration for the Node project"
+        Enable {{ apiFrameworkLabel }} API configuration
+        <mat-icon class="inline-icon" [matTooltip]="'Generate route, controller, and DTO configuration for the ' + runtimeLabel + ' project'"
           (mousedown)="onHelpIconInteraction($event)" (click)="onHelpIconInteraction($event)">info</mat-icon>
       </mat-checkbox>
     </div>
@@ -43,7 +43,7 @@
     <div class="form-row">
       <mat-checkbox [(ngModel)]="developerPreferences.useDockerCompose">
         Include Docker support
-        <mat-icon class="inline-icon" matTooltip="Generate Docker files for the Node project"
+        <mat-icon class="inline-icon" [matTooltip]="'Generate Docker files for the ' + runtimeLabel + ' project'"
           (mousedown)="onHelpIconInteraction($event)" (click)="onHelpIconInteraction($event)">info</mat-icon>
       </mat-checkbox>
     </div>

@@ -11,6 +11,7 @@ import java.util.LinkedHashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 import org.springframework.statemachine.ExtendedState;
@@ -21,9 +22,11 @@ import org.yaml.snakeyaml.representer.Representer;
 
 import com.src.main.dto.StepResult;
 import com.src.main.sm.config.StepExecutor;
+import com.src.main.sm.executor.common.LayeredSpecSupport;
 import com.src.main.util.ProjectMetaDataConstants;
+import com.src.main.util.ShippableModuleSupport;
 
-@Component
+@Component("applicationFileGenerationExecutor")
 public class ApplicationFileGenerationExecutor implements StepExecutor {
 
 	@Override
@@ -43,6 +46,7 @@ public class ApplicationFileGenerationExecutor implements StepExecutor {
 		boolean includeMessageSettings = hasValidationMessages(yaml);
 		String database = resolveDatabaseCode(yaml);
 		ensureDefaultApplicationProperties(propsObj, includeJpa, includeMessageSettings, database);
+		ensureShippableModuleProperties(propsObj, yaml);
 		if (useYaml) {
 			writeYamlFile(root, "application.yml", propsObj);
 		} else {
@@ -105,20 +109,8 @@ public class ApplicationFileGenerationExecutor implements StepExecutor {
 		}
 	}
 
-	@SuppressWarnings("unchecked")
 	private static String resolveApplicationFormat(Map<String, Object> yaml) {
-		if (yaml == null) {
-			return "yaml";
-		}
-		Object raw = yaml.get("applFormat");
-		if (raw == null && yaml.get("preferences") instanceof Map<?, ?> preferences) {
-			raw = ((Map<String, Object>) preferences).get("applFormat");
-		}
-		if (raw == null && yaml.get("app") instanceof Map<?, ?> app) {
-			raw = ((Map<String, Object>) app).get("applFormat");
-		}
-
-		String normalized = raw == null ? "" : String.valueOf(raw).trim().toLowerCase();
+		String normalized = LayeredSpecSupport.resolveApplicationFormat(yaml, "yaml").trim().toLowerCase();
 		if ("properties".equals(normalized) || "yaml".equals(normalized) || "yml".equals(normalized)) {
 			return normalized;
 		}
@@ -280,6 +272,30 @@ public class ApplicationFileGenerationExecutor implements StepExecutor {
 		}
 	}
 
+	private static void ensureShippableModuleProperties(Map<String, Object> propsObj, Map<String, Object> yaml) {
+		if (!ShippableModuleSupport.requiresFlyway(extractDependenciesFromYaml(yaml))) {
+			return;
+		}
+		propsObj.putIfAbsent("spring", new LinkedHashMap<String, Object>());
+		Map<String, Object> spring = castMap(propsObj.get("spring"));
+		propsObj.put("spring", spring);
+		spring.putIfAbsent("flyway", new LinkedHashMap<String, Object>());
+		Map<String, Object> flyway = castMap(spring.get("flyway"));
+		spring.put("flyway", flyway);
+		flyway.putIfAbsent("enabled", true);
+		flyway.putIfAbsent("locations", "classpath:rest-app-db/migration");
+		flyway.putIfAbsent("baseline-on-migrate", true);
+	}
+
+	private static List<String> extractDependenciesFromYaml(Map<String, Object> yaml) {
+		return LayeredSpecSupport.resolveDependencies(yaml).stream()
+				.filter(Objects::nonNull)
+				.map(String::valueOf)
+				.map(String::trim)
+				.filter(value -> !value.isEmpty())
+				.toList();
+	}
+
 	@SuppressWarnings("unchecked")
 	private static boolean hasEntities(Map<String, Object> yaml) {
 		if (yaml == null) {
@@ -292,33 +308,17 @@ public class ApplicationFileGenerationExecutor implements StepExecutor {
 		return models.stream().anyMatch(item -> item instanceof Map<?, ?>);
 	}
 
-	@SuppressWarnings("unchecked")
 	private static String resolveDatabaseCode(Map<String, Object> yaml) {
-		if (yaml == null) {
-			return "POSTGRES";
-		}
-		Object db = yaml.get("database");
-		if (db != null) {
-			return String.valueOf(db);
-		}
-		if (yaml.get("app") instanceof Map<?, ?> appRaw) {
-			Object appDb = ((Map<String, Object>) appRaw).get("database");
-			if (appDb != null) {
-				return String.valueOf(appDb);
-			}
-		}
-		return "POSTGRES";
+		return String.valueOf(LayeredSpecSupport.resolveDatabaseCode(yaml) == null
+				? "POSTGRES"
+				: LayeredSpecSupport.resolveDatabaseCode(yaml));
 	}
 
-	@SuppressWarnings("unchecked")
 	private static boolean isNoSqlDatabase(Map<String, Object> yaml) {
 		if (yaml == null) {
 			return false;
 		}
-		Object dbTypeRaw = yaml.get("dbType");
-		if (dbTypeRaw == null && yaml.get("app") instanceof Map<?, ?> appRaw) {
-			dbTypeRaw = ((Map<String, Object>) appRaw).get("dbType");
-		}
+		Object dbTypeRaw = LayeredSpecSupport.resolveDatabaseType(yaml);
 		if (dbTypeRaw != null && "NOSQL".equalsIgnoreCase(String.valueOf(dbTypeRaw).trim())) {
 			return true;
 		}

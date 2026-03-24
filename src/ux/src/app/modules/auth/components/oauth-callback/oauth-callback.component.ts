@@ -3,44 +3,30 @@ import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { AuthResponse, AuthService } from '../../../../services/auth.service';
 import { ToastService } from '../../../../services/toast.service';
+import { OauthProgressService } from '../../../../services/oauth-progress.service';
 
 @Component({
   selector: 'app-oauth-callback',
   standalone: true,
   imports: [CommonModule],
-  template: `
-    <section class="oauth-callback">
-      <p class="oauth-callback__message">Completing sign-in...</p>
-    </section>
-  `,
-  styles: [`
-    .oauth-callback {
-      min-height: 40vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: var(--theme-modal-body-text);
-    }
-
-    .oauth-callback__message {
-      margin: 0;
-      font-size: 1rem;
-      color: var(--theme-neutral-text);
-    }
-  `]
+  template: ``
 })
 export class OauthCallbackComponent implements OnInit {
   constructor(
     private route: ActivatedRoute,
     private router: Router,
     private authService: AuthService,
-    private toastService: ToastService
+    private toastService: ToastService,
+    private oauthProgressService: OauthProgressService
   ) {}
 
   ngOnInit(): void {
+    this.oauthProgressService.show('Completing sign-in', 'Request in progress.');
+
     this.route.queryParamMap.subscribe((params) => {
       const error = params.get('error');
       if (error) {
+        this.oauthProgressService.hide();
         this.toastService.error(decodeURIComponent(error));
         this.router.navigate(['/'], { replaceUrl: true });
         return;
@@ -51,6 +37,7 @@ export class OauthCallbackComponent implements OnInit {
       const email = params.get('email') ?? undefined;
 
       if (!accessToken || !email) {
+        this.oauthProgressService.hide();
         this.toastService.error('OAuth sign-in response is incomplete.');
         this.router.navigate(['/'], { replaceUrl: true });
         return;
@@ -69,8 +56,10 @@ export class OauthCallbackComponent implements OnInit {
       };
 
       this.authService.completeExternalAuth(response);
-      this.toastService.success(response.message || 'Login successful!');
-      this.router.navigate(['/user/dashboard'], { replaceUrl: true });
+      this.router.navigate(['/user/dashboard'], { replaceUrl: true }).then(() => {
+        this.oauthProgressService.hide();
+        this.toastService.success(response.message || 'Login successful!');
+      });
     });
   }
 }

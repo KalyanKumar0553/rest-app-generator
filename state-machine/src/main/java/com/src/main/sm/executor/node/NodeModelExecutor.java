@@ -8,7 +8,7 @@ import org.springframework.stereotype.Component;
 import com.src.main.dto.StepResult;
 import com.src.main.sm.config.StepExecutor;
 
-@Component
+@Component("nodeModelExecutor")
 public class NodeModelExecutor implements StepExecutor {
 
 	@Override

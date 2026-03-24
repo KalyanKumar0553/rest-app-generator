@@ -16,10 +16,10 @@ import { ModalComponent } from '../modal/modal.component';
 })
 export class StartProjectDialogComponent {
   @Input() isOpen = false;
-  @Output() proceed = new EventEmitter<'java' | 'node'>();
+  @Output() proceed = new EventEmitter<'java' | 'node' | 'python'>();
   @Output() cancel = new EventEmitter<void>();
 
-  selectedLanguage: 'java' | 'node' = 'java';
+  selectedLanguage: 'java' | 'node' | 'python' = 'java';
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['isOpen']?.currentValue) {

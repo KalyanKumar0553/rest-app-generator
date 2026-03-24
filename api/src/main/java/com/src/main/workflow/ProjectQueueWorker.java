@@ -5,18 +5,20 @@ import java.util.UUID;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.core.task.TaskExecutor;
 import org.springframework.dao.PessimisticLockingFailureException;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
+import org.yaml.snakeyaml.Yaml;
 
 import com.src.main.model.ProjectRunEntity;
 import com.src.main.repository.ProjectRunRepository;
+import com.src.main.sm.executor.common.GenerationLanguage;
+import com.src.main.sm.executor.common.GenerationLanguageResolver;
 import com.src.main.util.ProjectRunStatus;
 import com.src.main.util.ProjectRunType;
+import com.src.main.workflow.engine.WorkflowEngineService;
 
 @Component
 public class ProjectQueueWorker {
@@ -26,16 +28,16 @@ public class ProjectQueueWorker {
 	private static final int BATCH_SIZE = 10;
 
 	private final ProjectRunRepository projectRunRepository;
-	private final TaskExecutor projectExecutor;
 	private final ProjectWorkflowService workflowService;
+	private final WorkflowEngineService workflowEngineService;
 
 	public ProjectQueueWorker(
 			ProjectRunRepository projectRunRepository,
-			@Qualifier("projectTaskExecutor") TaskExecutor projectExecutor,
-			ProjectWorkflowService workflowService) {
+			ProjectWorkflowService workflowService,
+			WorkflowEngineService workflowEngineService) {
 		this.projectRunRepository = projectRunRepository;
-		this.projectExecutor = projectExecutor;
 		this.workflowService = workflowService;
+		this.workflowEngineService = workflowEngineService;
 	}
 
 	@Transactional
@@ -61,7 +63,10 @@ public class ProjectQueueWorker {
 		for (ProjectRunEntity run : queued) {
 			UUID runId = run.getId();
 			try {
-				projectExecutor.execute(() -> workflowService.runFullWorkflow(run));
+				@SuppressWarnings("unchecked")
+				GenerationLanguage language = GenerationLanguageResolver
+						.resolveFromYaml((java.util.Map<String, Object>) new Yaml().load(run.getProject().getYaml()));
+				workflowEngineService.dispatch(language, () -> workflowService.runFullWorkflow(run));
 				run.setStatus(ProjectRunStatus.INPROGRESS);
 			} catch (RuntimeException ex) {
 				log.warn("Executor busy, could not submit run {}: {}", runId, ex.getMessage());

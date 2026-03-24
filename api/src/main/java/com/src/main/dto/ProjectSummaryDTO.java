@@ -16,6 +16,7 @@ public class ProjectSummaryDTO {
 	private UUID id;
 	private String name;
 	private String description;
+	private String generator;
 	private OffsetDateTime createdAt;
 	private OffsetDateTime updatedAt;
 }

@@ -12,6 +12,25 @@ export interface UserRoles {
   permissions: string[];
 }
 
+export interface UserProfile {
+  userId: string;
+  email: string;
+  name: string;
+  firstName?: string | null;
+  lastName?: string | null;
+  avatarUrl?: string | null;
+  timeZoneId?: string | null;
+}
+
+export interface UpdateUserProfilePayload {
+  timeZoneId?: string | null;
+}
+
+export interface ChangePasswordPayload {
+  currentPassword: string;
+  newPassword: string;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -36,13 +55,18 @@ export class UserService {
     );
   }
 
-  getUserProfile(): Observable<any> {
+  getUserProfile(): Observable<UserProfile> {
     const url = `${API_CONFIG.BASE_URL}${API_ENDPOINTS.USER.PROFILE}`;
-    return this.http.get(url);
+    return this.http.get<any>(url).pipe(map((response: any) => response.data || response));
   }
 
-  updateUserProfile(data: any): Observable<any> {
+  updateUserProfile(data: UpdateUserProfilePayload): Observable<UserProfile> {
     const url = `${API_CONFIG.BASE_URL}${API_ENDPOINTS.USER.UPDATE_PROFILE}`;
-    return this.http.put(url, data);
+    return this.http.put<any>(url, data).pipe(map((response: any) => response.data || response));
+  }
+
+  changePassword(payload: ChangePasswordPayload): Observable<void> {
+    const url = `${API_CONFIG.BASE_URL}${API_ENDPOINTS.USER.CHANGE_PASSWORD}`;
+    return this.http.post<any>(url, payload).pipe(map(() => void 0));
   }
 }

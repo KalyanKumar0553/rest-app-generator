@@ -25,6 +25,8 @@ import { MatTooltipModule } from '@angular/material/tooltip';
   styleUrls: ['./general-tab-section.component.css']
 })
 export class NodeDeveloperPreferencesSectionComponent {
+  @Input() runtimeLabel = 'Node';
+  @Input() apiFrameworkLabel = 'Express';
   @Input({ required: true }) developerPreferences!: any;
 
   @Output() addProfile = new EventEmitter<void>();

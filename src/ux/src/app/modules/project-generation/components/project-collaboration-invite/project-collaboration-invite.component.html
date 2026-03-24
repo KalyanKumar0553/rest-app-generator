@@ -1,0 +1,37 @@
+<div class="invite-page">
+  <mat-card class="invite-card">
+    <h1>Collaborate on a project</h1>
+
+    <p *ngIf="isLoading">Loading collaboration invite...</p>
+
+    <ng-container *ngIf="!isLoading && invite as collaborationInvite">
+      <p class="invite-meta">
+        Project: <strong>{{ collaborationInvite.projectName || collaborationInvite.projectId }}</strong>
+      </p>
+      <p class="invite-meta">
+        Owner: <strong>{{ collaborationInvite.ownerId }}</strong>
+      </p>
+
+      <div *ngIf="collaborationInvite.contributorAccess" class="invite-state">
+        <p>You already have access to this project.</p>
+        <button mat-raised-button color="primary" type="button" (click)="openProject()">Open project</button>
+      </div>
+
+      <div *ngIf="!collaborationInvite.contributorAccess && collaborationInvite.requestPending" class="invite-state">
+        <p>Your collaboration request is pending owner approval.</p>
+      </div>
+
+      <div *ngIf="!collaborationInvite.contributorAccess && !collaborationInvite.requestPending" class="invite-request">
+        <p>Select the access you need, then send your request.</p>
+
+        <mat-checkbox [(ngModel)]="requestedPermissions.canEditDraft">Edit project spec</mat-checkbox>
+        <mat-checkbox [(ngModel)]="requestedPermissions.canGenerate">Generate project zip</mat-checkbox>
+        <mat-checkbox [(ngModel)]="requestedPermissions.canManageCollaboration">Manage collaboration</mat-checkbox>
+
+        <button mat-raised-button color="primary" type="button" (click)="requestAccess()" [disabled]="isSubmitting">
+          {{ isSubmitting ? 'Sending...' : 'Request collaboration access' }}
+        </button>
+      </div>
+    </ng-container>
+  </mat-card>
+</div>

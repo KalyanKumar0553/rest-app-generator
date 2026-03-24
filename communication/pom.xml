@@ -45,6 +45,19 @@
 	</dependencies>
 
 	<build>
+		<resources>
+			<resource>
+				<directory>src/main/java</directory>
+				<includes>
+					<include>**/*.java</include>
+				</includes>
+				<targetPath>shipped-modules/communication/src/main/java</targetPath>
+			</resource>
+			<resource>
+				<directory>src/main/resources</directory>
+				<targetPath>shipped-modules/communication/src/main/resources</targetPath>
+			</resource>
+		</resources>
 		<plugins>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>

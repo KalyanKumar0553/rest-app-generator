@@ -15,23 +15,47 @@ export const API_ENDPOINTS = {
     LOGIN: '/api/v1/auth/login',
     LOGOUT: '/api/v1/auth/logout',
     REFRESH_TOKEN: '/api/v1/auth/token/refresh',
+    PROVIDERS: '/api/v1/auth/providers',
     SEND_OTP: '/api/v1/auth/otp/generate',
     VERIFY_OTP: '/api/v1/auth/otp/verify',
     FORGOT_PASSWORD: '/api/v1/auth/password/forgot',
     RESET_PASSWORD_WITH_OTP: '/api/v1/auth/password/reset',
     ROLES: '/api/v1/auth/roles',
-    GOOGLE_OAUTH_START: '/oauth2/authorization/google'
+    GOOGLE_OAUTH_START: '/oauth2/authorization/google',
+    KEYCLOAK_OAUTH_START: '/oauth2/authorization/keycloak'
   },
   USER: {
     PROFILE: '/api/user/profile',
-    UPDATE_PROFILE: '/api/user/profile/update'
+    UPDATE_PROFILE: '/api/user/profile/update',
+    CHANGE_PASSWORD: '/api/user/password/change'
+  },
+  ADMIN: {
+    DATA_ENCRYPTION_RULES: '/api/admin/data-encryption-rules',
+    UPDATE_DATA_ENCRYPTION_RULE: (ruleId: string) => `/api/admin/data-encryption-rules/${ruleId}`,
+    ARTIFACT_APPS: '/api/v1/admin/artifacts/apps',
+    ARTIFACT_APP: (appId: string) => `/api/v1/admin/artifacts/apps/${appId}`,
+    ARTIFACT_APP_VERSIONS: (appId: string) => `/api/v1/admin/artifacts/apps/${appId}/versions`,
+    ARTIFACT_APP_PUBLISH: (appId: string) => `/api/v1/admin/artifacts/apps/${appId}/publish`
   },
   PROJECT: {
     LIST: '/api/projects',
-    CREATE: '/api/projects',
+    CREATE_DRAFT: '/api/projects/draft',
     GET: (id: string) => `/api/projects/${id}`,
-    UPDATE: (id: string) => `/api/projects/${id}/update`,
-    DELETE: (id: string) => `/api/projects/${id}`
+    UPDATE_DRAFT: (id: string) => `/api/projects/${id}/draft`,
+    PATCH_DRAFT_TAB: (id: string) => `/api/projects/${id}/draft-tab`,
+    DELETE: (id: string) => `/api/projects/${id}`,
+    GENERATE: (id: string) => `/api/projects/${id}/generate`,
+    RETRY_STAGE: (id: string) => `/api/projects/${id}/retry-stage`,
+    COLLABORATION: (id: string) => `/api/projects/${id}/collaboration`,
+    COLLABORATION_REQUESTS: (id: string) => `/api/projects/${id}/collaboration/requests`,
+    REVIEW_COLLABORATION_REQUEST: (id: string, requestId: string) => `/api/projects/${id}/collaboration/requests/${requestId}`,
+    COLLABORATION_INVITE: (token: string) => `/api/projects/collaboration/invites/${token}`,
+    REQUEST_COLLABORATION: (token: string) => `/api/projects/collaboration/invites/${token}/requests`,
+    REGISTER_PRESENCE: (id: string) => `/api/projects/${id}/collaboration/presence`,
+    HEARTBEAT_PRESENCE: (id: string, sessionId: string) => `/api/projects/${id}/collaboration/presence/${sessionId}`,
+    RECORD_ACTION: (id: string) => `/api/projects/${id}/collaboration/actions`,
+    UPDATE_CONTRIBUTOR_PERMISSIONS: (projectId: string, contributorId: string) => `/api/projects/${projectId}/contributors/${contributorId}/permissions`,
+    TAB_DETAILS: '/api/projects/tab-details'
   },
   RUN: {
     LIST_BY_PROJECT: (projectId: string) => `/api/runs/project/${projectId}`,
@@ -39,6 +63,11 @@ export const API_ENDPOINTS = {
   },
   PROJECT_VIEW: {
     GENERATE_ZIP: '/api/project-view/generate-zip'
+  },
+  AI_LABS: {
+    JOBS: '/api/ai-labs/jobs',
+    JOB: (jobId: string) => `/api/ai-labs/jobs/${jobId}`,
+    JOB_EVENTS: (jobId: string) => `/api/ai-labs/jobs/${jobId}/events`
   },
   ANALYTICS: {
     TRACK_HOME_VISIT: '/api/analytics/visits/home'

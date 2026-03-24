@@ -113,6 +113,7 @@
             <i class="bi bi-house-door"></i>
             Home
           </button>
+          <span class="active-editors-badge" *ngIf="shouldShowActiveEditorsBadge()">{{ activeEditorsBadgeLabel }}</span>
         </div>
 
         <app-info-banner storageKey="general-info">
@@ -136,6 +137,15 @@
           [javaVersionOptions]="javaVersionOptions"
           [showDbGeneration]="shouldShowDbGeneration()"
           [showPluralizeTableNames]="shouldShowPluralizeTableNames()"
+          [backendProjectId]="backendProjectId"
+          [contributorUserId]="contributorUserId"
+          [projectContributors]="projectContributors"
+          [isContributorSaving]="isContributorSaving"
+          [canManageContributors]="canManageContributors()"
+          [dependencyInput]="dependencyInput"
+          [filteredDependencies]="filteredDependencies"
+          [selectedDependencies]="selectedDependencies"
+          [dependencyTooltipMessage]="appSettings.websiteName + ' already adds required dependencies. Add your custom dependencies here.'"
           (projectGroupChange)="onProjectGroupChange()"
           (projectNameChange)="onProjectNameChange()"
           (projectDescriptionChange)="onProjectDescriptionChange()"
@@ -144,92 +154,15 @@
           (addProfile)="onAddProfileClick()"
           (removeProfile)="removeProfile($event)"
           (enableActuatorChange)="onEnableActuatorChange($event)"
-          (configureApiChange)="onEnableConfigureApiChange($event)">
+          (configureApiChange)="onEnableConfigureApiChange($event)"
+          (contributorUserIdChange)="contributorUserId = $event"
+          (addContributor)="addContributor()"
+          (removeContributor)="removeContributor($event)"
+          (dependencyInputChange)="dependencyInput = $event"
+          (dependencySearchChange)="filterDependencies($event)"
+          (dependencySelected)="addDependency($event)"
+          (dependencyRemoved)="removeDependency($event)">
         </app-java-general-tab>
-
-        <mat-accordion class="expansion-panels">
-        <mat-expansion-panel *ngIf="backendProjectId">
-          <mat-expansion-panel-header>
-            <mat-panel-title>
-              Project contributors
-            </mat-panel-title>
-          </mat-expansion-panel-header>
-
-          <div class="panel-content">
-            <div class="form-row" *ngIf="canManageContributors()">
-              <mat-form-field appearance="fill" class="full-width">
-                <mat-label>Contributor user id</mat-label>
-                <input
-                  matInput
-                  [(ngModel)]="contributorUserId"
-                  placeholder="Enter user id to grant access" />
-              </mat-form-field>
-              <button mat-raised-button color="primary" type="button" (click)="addContributor()" [disabled]="isContributorSaving">
-                Add contributor
-              </button>
-            </div>
-
-            <p *ngIf="!canManageContributors()">Only the project owner can add or remove contributors.</p>
-            <p *ngIf="projectContributors.length === 0">No contributors added yet.</p>
-
-            <div class="selected-dependencies" *ngIf="projectContributors.length > 0">
-              <div class="dependency-chip" *ngFor="let contributor of projectContributors">
-                <span>{{ contributor.userId }}</span>
-                <button *ngIf="canManageContributors()"
-                        type="button"
-                        class="remove-chip"
-                        (click)="removeContributor(contributor.userId)"
-                        [disabled]="isContributorSaving"
-                        aria-label="Remove contributor">
-                  <mat-icon>close</mat-icon>
-                </button>
-              </div>
-            </div>
-          </div>
-        </mat-expansion-panel>
-
-        <mat-expansion-panel>
-          <mat-expansion-panel-header>
-            <mat-panel-title>
-              Further dependencies
-            </mat-panel-title>
-          </mat-expansion-panel-header>
-
-          <div class="panel-content">
-            <div class="form-row">
-              <label class="field-label">Dependencies
-                <mat-icon class="inline-icon" [matTooltip]="appSettings.websiteName + ' already adds required dependencies. Add your custom dependencies here.'"
-                  (mousedown)="onHelpIconInteraction($event)" (click)="onHelpIconInteraction($event)">info</mat-icon>
-              </label>
-            </div>
-
-            <mat-form-field appearance="fill" class="full-width">
-              <input
-                matInput
-                [matAutocomplete]="auto"
-                [(ngModel)]="dependencyInput"
-                (ngModelChange)="filterDependencies($event)"
-                placeholder="Type to search dependencies"
-              />
-              <mat-icon matSuffix>search</mat-icon>
-              <mat-autocomplete #auto="matAutocomplete" (optionSelected)="addDependency($event)">
-                <mat-option *ngFor="let dep of filteredDependencies" [value]="dep">
-                  {{ dep }}
-                </mat-option>
-              </mat-autocomplete>
-            </mat-form-field>
-
-            <div class="selected-dependencies" *ngIf="selectedDependencies.length > 0">
-              <div class="dependency-chip" *ngFor="let dep of selectedDependencies">
-                <span>{{ dep }}</span>
-                <button type="button" class="remove-chip" (click)="removeDependency(dep)" aria-label="Remove dependency">
-                  <mat-icon>close</mat-icon>
-                </button>
-              </div>
-            </div>
-          </div>
-        </mat-expansion-panel>
-      </mat-accordion>
       </div>
 
       <div class="sticky-footer">
@@ -253,6 +186,7 @@
             <i class="bi bi-house-door"></i>
             Home
           </button>
+          <span class="active-editors-badge" *ngIf="shouldShowActiveEditorsBadge()">{{ activeEditorsBadgeLabel }}</span>
         </div>
 
         <app-info-banner storageKey="actuator-info">
@@ -291,6 +225,7 @@
             <i class="bi bi-house-door"></i>
             Home
           </button>
+          <span class="active-editors-badge" *ngIf="shouldShowActiveEditorsBadge()">{{ activeEditorsBadgeLabel }}</span>
         </div>
       </div>
 
@@ -325,6 +260,7 @@
             <i class="bi bi-house-door"></i>
             Home
           </button>
+          <span class="active-editors-badge" *ngIf="shouldShowActiveEditorsBadge()">{{ activeEditorsBadgeLabel }}</span>
         </div>
       </div>
 
@@ -363,6 +299,7 @@
             <i class="bi bi-house-door"></i>
             Home
           </button>
+          <span class="active-editors-badge" *ngIf="shouldShowActiveEditorsBadge()">{{ activeEditorsBadgeLabel }}</span>
         </div>
       </div>
 
@@ -401,6 +338,7 @@
             <i class="bi bi-house-door"></i>
             Home
           </button>
+          <span class="active-editors-badge" *ngIf="shouldShowActiveEditorsBadge()">{{ activeEditorsBadgeLabel }}</span>
         </div>
 
         <app-info-banner storageKey="controllers-info">
@@ -466,6 +404,243 @@
       </div>
     </div>
 
+    <div class="content-body" *ngIf="activeSection === 'modules'" id="modules">
+      <div class="sticky-header">
+        <div class="top-actions">
+          <button class="back-btn-desktop" (click)="handleHome()" aria-label="Go to home" mat-stroked-button>
+            <i class="bi bi-house-door"></i>
+            Home
+          </button>
+          <span class="active-editors-badge" *ngIf="shouldShowActiveEditorsBadge()">{{ activeEditorsBadgeLabel }}</span>
+        </div>
+      </div>
+
+      <div class="scrollable-content">
+        <app-modules-selection
+          [modules]="shippableModuleCards"
+          [selectedModuleKeys]="selectedShippableModules"
+          (selectedModuleKeysChange)="onSelectedShippableModulesChange($event)">
+        </app-modules-selection>
+      </div>
+
+      <div class="sticky-footer">
+        <div class="action-section">
+          <button mat-raised-button type="button" (click)="handleModulesPrimaryAction()" [disabled]="isLoading || isGeneratingFromDtoSave">
+            <mat-spinner *ngIf="isLoading" diameter="20" class="button-spinner"></mat-spinner>
+            <span *ngIf="!isLoading">{{ getModulesPrimaryActionLabel() }}</span>
+            <span *ngIf="isLoading">Loading...</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="content-body" *ngIf="isModuleSectionActive('rbac')" id="rbac">
+      <div class="sticky-header">
+        <div class="top-actions">
+          <button class="back-btn-desktop" (click)="handleHome()" aria-label="Go to home" mat-stroked-button>
+            <i class="bi bi-house-door"></i>
+            Home
+          </button>
+          <span class="active-editors-badge" *ngIf="shouldShowActiveEditorsBadge()">{{ activeEditorsBadgeLabel }}</span>
+        </div>
+      </div>
+      <div class="scrollable-content">
+        <app-rbac-module-tab></app-rbac-module-tab>
+      </div>
+    </div>
+
+    <div class="content-body" *ngIf="isModuleSectionActive('auth')" id="auth">
+      <div class="sticky-header">
+        <div class="top-actions">
+          <button class="back-btn-desktop" (click)="handleHome()" aria-label="Go to home" mat-stroked-button>
+            <i class="bi bi-house-door"></i>
+            Home
+          </button>
+          <span class="active-editors-badge" *ngIf="shouldShowActiveEditorsBadge()">{{ activeEditorsBadgeLabel }}</span>
+        </div>
+      </div>
+      <div class="scrollable-content">
+        <app-auth-module-tab></app-auth-module-tab>
+      </div>
+    </div>
+
+    <div class="content-body" *ngIf="isModuleSectionActive('state-machine')" id="state-machine">
+      <div class="sticky-header">
+        <div class="top-actions">
+          <button class="back-btn-desktop" (click)="handleHome()" aria-label="Go to home" mat-stroked-button>
+            <i class="bi bi-house-door"></i>
+            Home
+          </button>
+          <span class="active-editors-badge" *ngIf="shouldShowActiveEditorsBadge()">{{ activeEditorsBadgeLabel }}</span>
+        </div>
+      </div>
+      <div class="scrollable-content">
+        <app-state-machine-module-tab></app-state-machine-module-tab>
+      </div>
+    </div>
+
+    <div class="content-body" *ngIf="isModuleSectionActive('subscription')" id="subscription">
+      <div class="sticky-header">
+        <div class="top-actions">
+          <button class="back-btn-desktop" (click)="handleHome()" aria-label="Go to home" mat-stroked-button>
+            <i class="bi bi-house-door"></i>
+            Home
+          </button>
+          <span class="active-editors-badge" *ngIf="shouldShowActiveEditorsBadge()">{{ activeEditorsBadgeLabel }}</span>
+        </div>
+      </div>
+      <div class="scrollable-content">
+        <app-subscription-module-tab></app-subscription-module-tab>
+      </div>
+    </div>
+
+    <div class="content-body" *ngIf="activeSection === 'collaborate'" id="collaborate">
+      <div class="sticky-header">
+        <div class="top-actions">
+          <button class="back-btn-desktop" (click)="handleHome()" aria-label="Go to home" mat-stroked-button>
+            <i class="bi bi-house-door"></i>
+            Home
+          </button>
+          <span class="active-editors-badge" *ngIf="shouldShowActiveEditorsBadge()">{{ activeEditorsBadgeLabel }}</span>
+        </div>
+
+        <app-info-banner storageKey="collaborate-info">
+          <span>
+            Share a collaboration URL, review access requests, and control contributor permissions.
+          </span>
+        </app-info-banner>
+      </div>
+
+      <div class="scrollable-content collaborate-scrollable-content">
+        <div class="collaboration-panel" *ngIf="backendProjectId; else collaborateSaveFirst">
+          <div class="collaboration-card">
+            <h3>Invite collaborators</h3>
+            <p>Share this URL with authenticated users so they can request access to this project.</p>
+            <div class="collaboration-link-row">
+              <mat-form-field appearance="fill" class="full-width">
+                <mat-label>Collaboration invite URL</mat-label>
+                <input matInput [value]="collaborationInviteUrl" readonly />
+              </mat-form-field>
+              <button mat-raised-button color="primary" type="button" (click)="copyCollaborationInviteUrl()">
+                Copy URL
+              </button>
+            </div>
+          </div>
+
+          <div class="collaboration-card">
+            <h3>Pending requests</h3>
+            <p *ngIf="!canManageContributors()">Only project owners or collaborators with manage access can review requests.</p>
+            <p *ngIf="canManageContributors() && collaborationRequests.length === 0">No collaboration requests yet.</p>
+
+            <table mat-table [dataSource]="collaborationRequests" class="collaboration-table" *ngIf="canManageContributors() && collaborationRequests.length > 0">
+              <ng-container matColumnDef="requester">
+                <th mat-header-cell *matHeaderCellDef>Requester</th>
+                <td mat-cell *matCellDef="let request">{{ request.requesterId }}</td>
+              </ng-container>
+
+              <ng-container matColumnDef="requested">
+                <th mat-header-cell *matHeaderCellDef>Requested</th>
+                <td mat-cell *matCellDef="let request">{{ formatPermissionsLabel(request.requestedPermissions) }}</td>
+              </ng-container>
+
+              <ng-container matColumnDef="granted">
+                <th mat-header-cell *matHeaderCellDef>Grant</th>
+                <td mat-cell *matCellDef="let request">
+                  <div class="permission-toggle-group">
+                    <mat-checkbox [(ngModel)]="request.grantedPermissions.canEditDraft">Edit</mat-checkbox>
+                    <mat-checkbox [(ngModel)]="request.grantedPermissions.canGenerate">Generate</mat-checkbox>
+                    <mat-checkbox [(ngModel)]="request.grantedPermissions.canManageCollaboration">Manage</mat-checkbox>
+                  </div>
+                </td>
+              </ng-container>
+
+              <ng-container matColumnDef="status">
+                <th mat-header-cell *matHeaderCellDef>Status</th>
+                <td mat-cell *matCellDef="let request">{{ request.status }}</td>
+              </ng-container>
+
+              <ng-container matColumnDef="actions">
+                <th mat-header-cell *matHeaderCellDef>Actions</th>
+                <td mat-cell *matCellDef="let request">
+                  <div class="table-actions" *ngIf="request.status === 'PENDING'; else reviewedRequest">
+                    <button mat-icon-button type="button" color="primary" (click)="approveCollaborationRequest(request)" matTooltip="Approve request">
+                      <mat-icon>check_circle</mat-icon>
+                    </button>
+                    <button mat-icon-button type="button" color="warn" (click)="rejectCollaborationRequest(request)" matTooltip="Reject request">
+                      <mat-icon>cancel</mat-icon>
+                    </button>
+                  </div>
+                  <ng-template #reviewedRequest>
+                    <span>{{ request.reviewedBy || 'Reviewed' }}</span>
+                  </ng-template>
+                </td>
+              </ng-container>
+
+              <tr mat-header-row *matHeaderRowDef="collaborationRequestColumns"></tr>
+              <tr mat-row *matRowDef="let row; columns: collaborationRequestColumns;"></tr>
+            </table>
+          </div>
+
+          <div class="collaboration-card">
+            <h3>Contributors</h3>
+            <p *ngIf="projectContributors.length === 0">No contributors added yet.</p>
+
+            <table mat-table [dataSource]="projectContributors" class="collaboration-table" *ngIf="projectContributors.length > 0">
+              <ng-container matColumnDef="userId">
+                <th mat-header-cell *matHeaderCellDef>User</th>
+                <td mat-cell *matCellDef="let contributor">{{ contributor.userId }}</td>
+              </ng-container>
+
+              <ng-container matColumnDef="edit">
+                <th mat-header-cell *matHeaderCellDef>Edit spec</th>
+                <td mat-cell *matCellDef="let contributor">
+                  <mat-checkbox [(ngModel)]="contributor.canEditDraft" [disabled]="!canManageContributors()"></mat-checkbox>
+                </td>
+              </ng-container>
+
+              <ng-container matColumnDef="generate">
+                <th mat-header-cell *matHeaderCellDef>Generate</th>
+                <td mat-cell *matCellDef="let contributor">
+                  <mat-checkbox [(ngModel)]="contributor.canGenerate" [disabled]="!canManageContributors()"></mat-checkbox>
+                </td>
+              </ng-container>
+
+              <ng-container matColumnDef="manage">
+                <th mat-header-cell *matHeaderCellDef>Manage collaboration</th>
+                <td mat-cell *matCellDef="let contributor">
+                  <mat-checkbox [(ngModel)]="contributor.canManageCollaboration" [disabled]="!canManageContributors()"></mat-checkbox>
+                </td>
+              </ng-container>
+
+              <ng-container matColumnDef="actions">
+                <th mat-header-cell *matHeaderCellDef>Actions</th>
+                <td mat-cell *matCellDef="let contributor">
+                  <div class="table-actions">
+                    <button mat-icon-button type="button" color="primary" (click)="updateContributorPermissions(contributor)" [disabled]="!canManageContributors()" matTooltip="Save permissions">
+                      <mat-icon>save</mat-icon>
+                    </button>
+                    <button mat-icon-button type="button" color="warn" (click)="removeContributor(contributor.userId)" [disabled]="!canManageContributors()" matTooltip="Remove contributor">
+                      <mat-icon>person_remove</mat-icon>
+                    </button>
+                  </div>
+                </td>
+              </ng-container>
+
+              <tr mat-header-row *matHeaderRowDef="contributorPermissionColumns"></tr>
+              <tr mat-row *matRowDef="let row; columns: contributorPermissionColumns;"></tr>
+            </table>
+          </div>
+        </div>
+
+        <ng-template #collaborateSaveFirst>
+          <div class="collaboration-card">
+            <h3>Save project first</h3>
+            <p>Create the saved project draft first. Then you can share a collaboration link and review requests here.</p>
+          </div>
+        </ng-template>
+      </div>
+    </div>
+
     <div class="content-body" *ngIf="activeSection === 'explore'" id="explore">
       <div class="sticky-header">
         <div class="top-actions">
@@ -476,6 +651,7 @@
             <i class="bi bi-house-door"></i>
             Home
           </button>
+          <span class="active-editors-badge" *ngIf="shouldShowActiveEditorsBadge()">{{ activeEditorsBadgeLabel }}</span>
         </div>
       </div>
 
@@ -504,6 +680,56 @@
             <span class="explore-meta-pill" *ngIf="getExploreEventCount()">{{ getExploreEventCount() }} event{{ getExploreEventCount() === 1 ? '' : 's' }}</span>
           </div>
           <div class="explore-status-section" *ngIf="exploreStageEvents.length || exploreRuns.length; else noExploreRuns">
+            <div class="explore-stage-table-wrapper" *ngIf="isGenerationInProgress() && getExploreStageRows().length; else exploreRunHistory">
+              <table mat-table [dataSource]="getExploreStageRows()" class="explore-stage-table">
+                <ng-container matColumnDef="stage">
+                  <th mat-header-cell *matHeaderCellDef>Stage</th>
+                  <td mat-cell *matCellDef="let event">
+                    <div class="explore-stage-name">{{ event.stepName || formatExploreStageLabel(event.stage) }}</div>
+                    <div class="explore-stage-meta">{{ event.message || 'Waiting for stage output.' }}</div>
+                  </td>
+                </ng-container>
+
+                <ng-container matColumnDef="status">
+                  <th mat-header-cell *matHeaderCellDef>Status</th>
+                  <td mat-cell *matCellDef="let event">
+                    <span class="explore-status-badge" [ngClass]="getExploreRunStatusClass(event.status)">
+                      {{ event.status || 'UNKNOWN' }}
+                    </span>
+                  </td>
+                </ng-container>
+
+                <ng-container matColumnDef="progress">
+                  <th mat-header-cell *matHeaderCellDef>Progress</th>
+                  <td mat-cell *matCellDef="let event">{{ getExploreStageProgress(event) }}</td>
+                </ng-container>
+
+                <ng-container matColumnDef="updatedAt">
+                  <th mat-header-cell *matHeaderCellDef>Updated</th>
+                  <td mat-cell *matCellDef="let event">{{ event.timestamp ? (event.timestamp | date:'medium') : 'Waiting' }}</td>
+                </ng-container>
+
+                <ng-container matColumnDef="actions">
+                  <th mat-header-cell *matHeaderCellDef>Actions</th>
+                  <td mat-cell *matCellDef="let event">
+                    <button
+                      *ngIf="canRetryExploreStage(event)"
+                      mat-icon-button
+                      type="button"
+                      aria-label="Retry generation stage"
+                      matTooltip="Queues a fresh generation run from the saved project spec."
+                      (click)="retryExploreStage(event)">
+                      <mat-icon>restart_alt</mat-icon>
+                    </button>
+                    <span *ngIf="!canRetryExploreStage(event)" class="explore-stage-action-placeholder">-</span>
+                  </td>
+                </ng-container>
+
+                <tr mat-header-row *matHeaderRowDef="exploreStageColumns"></tr>
+                <tr mat-row *matRowDef="let row; columns: exploreStageColumns;"></tr>
+              </table>
+            </div>
+            <ng-template #exploreRunHistory>
             <div class="explore-status-list">
               <article class="explore-status-item" *ngFor="let event of exploreStageEvents; trackBy: trackExploreStageEvent">
                 <div class="explore-status-topline">
@@ -529,6 +755,7 @@
                 </p>
               </article>
             </div>
+            </ng-template>
           </div>
           <ng-template #noExploreRuns>
             <p class="explore-empty-body">{{ getExploreEmptyMessage() }}</p>

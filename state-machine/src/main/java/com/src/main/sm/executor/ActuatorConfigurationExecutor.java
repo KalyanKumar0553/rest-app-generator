@@ -13,7 +13,7 @@ import com.src.main.sm.executor.actuator.ActuatorConfigurationService;
 import com.src.main.sm.executor.actuator.ActuatorConfigurationSupport;
 import com.src.main.util.ProjectMetaDataConstants;
 
-@Component
+@Component("actuatorConfigurationExecutor")
 public class ActuatorConfigurationExecutor implements StepExecutor {
 
 	private final ActuatorConfigurationService actuatorConfigurationService;

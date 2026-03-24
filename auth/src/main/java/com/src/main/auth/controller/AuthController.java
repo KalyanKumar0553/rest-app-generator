@@ -23,10 +23,12 @@ import com.src.main.auth.dto.request.ResetPasswordRequestDto;
 import com.src.main.auth.dto.request.SignupRequestDto;
 import com.src.main.auth.dto.request.TokenValidateRequestDto;
 import com.src.main.auth.dto.response.CaptchaResponseDto;
+import com.src.main.auth.dto.response.AuthProviderResponseDto;
 import com.src.main.auth.dto.response.RolesResponseDto;
 import com.src.main.auth.dto.response.TokenPairResponseDto;
 import com.src.main.auth.service.AuthService;
 import com.src.main.auth.service.CaptchaService;
+import com.src.main.auth.service.OAuthProviderConfigService;
 import com.src.main.auth.service.OauthService;
 
 import jakarta.validation.Valid;
@@ -37,17 +39,30 @@ public class AuthController {
 	private final AuthService authService;
 	private final OauthService oauthService;
 	private final CaptchaService captchaService;
+	private final OAuthProviderConfigService oAuthProviderConfigService;
 
-	public AuthController(AuthService authService, OauthService oauthService, CaptchaService captchaService) {
+	public AuthController(
+			AuthService authService,
+			OauthService oauthService,
+			CaptchaService captchaService,
+			OAuthProviderConfigService oAuthProviderConfigService) {
 		this.authService = authService;
 		this.oauthService = oauthService;
 		this.captchaService = captchaService;
+		this.oAuthProviderConfigService = oAuthProviderConfigService;
 	}
 
 	@GetMapping("/captcha")
 	public ResponseEntity<ApiResponseDto<CaptchaResponseDto>> captcha() {
 		var captcha = captchaService.generate();
 		return ResponseEntity.ok(ApiResponseDto.ok("OK", new CaptchaResponseDto(captcha.captchaId(), captcha.imageBase64())));
+	}
+
+	@GetMapping("/providers")
+	public ResponseEntity<ApiResponseDto<AuthProviderResponseDto>> providers() {
+		boolean googleEnabled = oAuthProviderConfigService.isGoogleOauthEnabled();
+		boolean keycloakEnabled = oAuthProviderConfigService.isKeycloakOauthEnabled();
+		return ResponseEntity.ok(ApiResponseDto.ok("OK", new AuthProviderResponseDto(googleEnabled, keycloakEnabled)));
 	}
 
 	@PostMapping("/signup")

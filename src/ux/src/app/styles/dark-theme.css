@@ -55,6 +55,14 @@
   --theme-footer-toggle-hover-shadow: var(--shadow-md);
   --theme-link-color: var(--color-primary);
   --theme-link-hover-color: var(--color-primary-hover);
+  --theme-success-bg: color-mix(in srgb, var(--color-success) 18%, var(--color-background-white));
+  --theme-success-text: var(--color-success);
+  --theme-warning-bg: color-mix(in srgb, var(--color-warning) 18%, var(--color-background-white));
+  --theme-warning-text: var(--color-warning);
+  --theme-danger-bg: color-mix(in srgb, var(--color-error) 18%, var(--color-background-white));
+  --theme-danger-text: var(--color-error);
+  --theme-info-bg: color-mix(in srgb, var(--color-primary) 20%, var(--color-background-white));
+  --theme-info-text: var(--color-text-primary);
 
   --gradient-primary: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
   --gradient-secondary: linear-gradient(135deg, var(--color-secondary), var(--color-primary-hover));

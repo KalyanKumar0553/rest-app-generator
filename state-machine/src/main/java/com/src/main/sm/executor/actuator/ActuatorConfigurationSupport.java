@@ -8,6 +8,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
+import com.src.main.sm.executor.common.LayeredSpecSupport;
+
 public final class ActuatorConfigurationSupport {
 
 	private static final Set<String> SUPPORTED_ENDPOINTS = Set.of(
@@ -20,14 +22,7 @@ public final class ActuatorConfigurationSupport {
 	}
 
 	public static boolean isActuatorEnabled(Map<String, Object> yaml) {
-		if (yaml == null) {
-			return false;
-		}
-		Object raw = yaml.get("enableActuator");
-		if (raw == null && yaml.get("app") instanceof Map<?, ?> appRaw) {
-			raw = ((Map<String, Object>) appRaw).get("enableActuator");
-		}
-		return parseBoolean(raw);
+		return LayeredSpecSupport.resolveActuatorEnabled(yaml, false);
 	}
 
 	@SuppressWarnings("unchecked")

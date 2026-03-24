@@ -19,6 +19,7 @@ import com.src.main.sm.executor.common.BoilerplateStyleResolver;
 import com.src.main.sm.executor.common.GenerationLanguage;
 import com.src.main.sm.executor.common.GenerationLanguageResolver;
 import com.src.main.sm.executor.common.JavaNamingUtils;
+import com.src.main.sm.executor.common.LayeredSpecSupport;
 import com.src.main.sm.executor.common.TemplatePathResolver;
 import com.src.main.sm.executor.TemplateEngine;
 import com.src.main.sm.executor.enumgen.EnumGenerationSupport;
@@ -88,7 +89,7 @@ public class DtoGenerationService {
 	}
 
 	private String resolveBasePackage(Map<String, Object> yaml, String groupId, String artifact) {
-		String basePkg = (yaml != null) ? DtoGenerationSupport.str(yaml.get("basePackage")) : null;
+		String basePkg = LayeredSpecSupport.resolveBasePackage(yaml, null);
 		if (basePkg == null || basePkg.isBlank()) {
 			return groupId + "." + artifact.replace('-', '_');
 		}

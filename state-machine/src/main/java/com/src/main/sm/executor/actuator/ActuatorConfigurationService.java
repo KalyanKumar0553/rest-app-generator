@@ -16,6 +16,8 @@ import org.yaml.snakeyaml.DumperOptions;
 import org.yaml.snakeyaml.Yaml;
 import org.yaml.snakeyaml.representer.Representer;
 
+import com.src.main.sm.executor.common.LayeredSpecSupport;
+
 @Service
 public class ActuatorConfigurationService {
 
@@ -154,19 +156,8 @@ public class ActuatorConfigurationService {
 		}
 	}
 
-	@SuppressWarnings("unchecked")
 	private String resolveApplicationFormat(Map<String, Object> yaml) {
-		if (yaml == null) {
-			return "yaml";
-		}
-		Object raw = yaml.get("applFormat");
-		if (raw == null && yaml.get("preferences") instanceof Map<?, ?> preferences) {
-			raw = ((Map<String, Object>) preferences).get("applFormat");
-		}
-		if (raw == null && yaml.get("app") instanceof Map<?, ?> app) {
-			raw = ((Map<String, Object>) app).get("applFormat");
-		}
-		String normalized = raw == null ? "" : String.valueOf(raw).trim().toLowerCase();
+		String normalized = LayeredSpecSupport.resolveApplicationFormat(yaml, "yaml").trim().toLowerCase();
 		return "properties".equals(normalized) ? "properties" : "yaml";
 	}
 }

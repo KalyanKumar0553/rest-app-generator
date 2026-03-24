@@ -6,7 +6,7 @@ import org.springframework.stereotype.Component;
 import com.src.main.dto.StepResult;
 import com.src.main.sm.config.StepExecutor;
 
-@Component
+@Component("nodeDockerExecutor")
 public class NodeDockerExecutor implements StepExecutor {
 
 	@Override

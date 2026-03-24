@@ -13,6 +13,7 @@
 		<module>../common</module>
 		<module>../communication</module>
 		<module>../rbac</module>
+		<module>../subscription</module>
 		<module>../auth</module>
 		<module>../state-machine</module>
 		<module>../swagger</module>
@@ -40,6 +41,7 @@
 		<statemachine.version>3.2.1</statemachine.version>
 		<flyway.version>10.17.0</flyway.version>
 		<springdoc.version>2.6.0</springdoc.version>
+		<spring-ai.version>1.0.3</spring-ai.version>
 		<json.version>20240303</json.version>
 		<jackson-dataformat-yaml.version>2.17.2</jackson-dataformat-yaml.version>
 		<poi.version>5.2.2</poi.version>
@@ -56,6 +58,13 @@
 				<scope>import</scope>
 			</dependency>
 			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-bom</artifactId>
+				<version>${spring-ai.version}</version>
+				<type>pom</type>
+				<scope>import</scope>
+			</dependency>
+			<dependency>
 				<groupId>com.src</groupId>
 				<artifactId>common</artifactId>
 				<version>${project.version}</version>
@@ -68,6 +77,11 @@
 			<dependency>
 				<groupId>com.src</groupId>
 				<artifactId>rbac</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>com.src</groupId>
+				<artifactId>subscription</artifactId>
 				<version>${project.version}</version>
 			</dependency>
 			<dependency>

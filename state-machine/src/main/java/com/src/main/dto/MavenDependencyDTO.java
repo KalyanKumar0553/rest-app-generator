@@ -2,7 +2,15 @@ package com.src.main.dto;
 
 import java.util.Objects;
 
-public record MavenDependencyDTO(String groupId, String artifactId, String scope, boolean optional) {
+public record MavenDependencyDTO(String groupId, String artifactId, String version, String scope, boolean optional) {
+
+	public MavenDependencyDTO(String groupId, String artifactId, String scope, boolean optional) {
+		this(groupId, artifactId, null, scope, optional);
+	}
+
+	public String versionOrNull() {
+		return version == null || version.isBlank() ? null : version.trim();
+	}
 
 	public String scopeOrCompile() {
 		if (scope == null || scope.isBlank())
@@ -15,6 +23,9 @@ public record MavenDependencyDTO(String groupId, String artifactId, String scope
 		sb.append("        <dependency>\n");
 		sb.append("            <groupId>").append(groupId).append("</groupId>\n");
 		sb.append("            <artifactId>").append(artifactId).append("</artifactId>\n");
+		if (versionOrNull() != null) {
+			sb.append("            <version>").append(versionOrNull()).append("</version>\n");
+		}
 		if (scope != null && !scope.isBlank()) {
 			sb.append("            <scope>").append(scope).append("</scope>\n");
 		}
@@ -26,7 +37,8 @@ public record MavenDependencyDTO(String groupId, String artifactId, String scope
 	}
 
 	public String toGradleLine() {
-		final String gav = groupId + ":" + artifactId;
+		final String gav = versionOrNull() == null ? groupId + ":" + artifactId
+				: groupId + ":" + artifactId + ":" + versionOrNull();
 		String s = scopeOrCompile();
 		return switch (s) {
 		case "test" -> "testImplementation(\"" + gav + "\")";
@@ -43,7 +55,14 @@ public record MavenDependencyDTO(String groupId, String artifactId, String scope
 
 	@Override
 	public String toString() {
-		return groupId + ":" + artifactId + (scope != null ? ":" + scope : "");
+		StringBuilder sb = new StringBuilder(groupId).append(":").append(artifactId);
+		if (versionOrNull() != null) {
+			sb.append(":").append(versionOrNull());
+		}
+		if (scope != null) {
+			sb.append(":").append(scope);
+		}
+		return sb.toString();
 	}
 
 	@Override
@@ -53,11 +72,12 @@ public record MavenDependencyDTO(String groupId, String artifactId, String scope
 		if (!(o instanceof MavenDependencyDTO that))
 			return false;
 		return Objects.equals(groupId, that.groupId) && Objects.equals(artifactId, that.artifactId)
+				&& Objects.equals(versionOrNull(), that.versionOrNull())
 				&& Objects.equals(scopeOrCompile(), that.scopeOrCompile());
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(groupId, artifactId, scopeOrCompile());
+		return Objects.hash(groupId, artifactId, versionOrNull(), scopeOrCompile());
 	}
 }

@@ -1,7 +1,14 @@
 import { CommonModule } from '@angular/common';
 import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { FormsModule } from '@angular/forms';
+import { MatAutocompleteModule, MatAutocompleteSelectedEvent } from '@angular/material/autocomplete';
+import { MatButtonModule } from '@angular/material/button';
 import { MatCheckboxChange } from '@angular/material/checkbox';
 import { MatExpansionModule } from '@angular/material/expansion';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatIconModule } from '@angular/material/icon';
+import { MatInputModule } from '@angular/material/input';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { JavaDatabaseSettingsSectionComponent } from './java-database-settings-section.component';
 import { JavaDeveloperPreferencesSectionComponent } from './java-developer-preferences-section.component';
 import { JavaProjectSettingsSectionComponent } from './java-project-settings-section.component';
@@ -11,7 +18,14 @@ import { JavaProjectSettingsSectionComponent } from './java-project-settings-sec
   standalone: true,
   imports: [
     CommonModule,
+    FormsModule,
+    MatAutocompleteModule,
+    MatButtonModule,
     MatExpansionModule,
+    MatFormFieldModule,
+    MatIconModule,
+    MatInputModule,
+    MatTooltipModule,
     JavaProjectSettingsSectionComponent,
     JavaDatabaseSettingsSectionComponent,
     JavaDeveloperPreferencesSectionComponent
@@ -32,6 +46,15 @@ export class JavaGeneralTabComponent {
   @Input({ required: true }) javaVersionOptions!: string[];
   @Input({ required: true }) showDbGeneration!: boolean;
   @Input({ required: true }) showPluralizeTableNames!: boolean;
+  @Input() backendProjectId: string | null = null;
+  @Input() contributorUserId = '';
+  @Input() projectContributors: Array<{ userId: string }> = [];
+  @Input() isContributorSaving = false;
+  @Input() canManageContributors = false;
+  @Input() dependencyInput = '';
+  @Input() filteredDependencies: string[] = [];
+  @Input() selectedDependencies: string[] = [];
+  @Input() dependencyTooltipMessage = '';
 
   @Output() projectGroupChange = new EventEmitter<void>();
   @Output() projectNameChange = new EventEmitter<void>();
@@ -42,4 +65,20 @@ export class JavaGeneralTabComponent {
   @Output() removeProfile = new EventEmitter<string>();
   @Output() enableActuatorChange = new EventEmitter<boolean>();
   @Output() configureApiChange = new EventEmitter<MatCheckboxChange>();
+  @Output() contributorUserIdChange = new EventEmitter<string>();
+  @Output() addContributor = new EventEmitter<void>();
+  @Output() removeContributor = new EventEmitter<string>();
+  @Output() dependencyInputChange = new EventEmitter<string>();
+  @Output() dependencySearchChange = new EventEmitter<string>();
+  @Output() dependencySelected = new EventEmitter<MatAutocompleteSelectedEvent>();
+  @Output() dependencyRemoved = new EventEmitter<string>();
+
+  onContributorUserIdChange(value: string): void {
+    this.contributorUserIdChange.emit(value);
+  }
+
+  onDependencyInputChange(value: string): void {
+    this.dependencyInputChange.emit(value);
+    this.dependencySearchChange.emit(value);
+  }
 }

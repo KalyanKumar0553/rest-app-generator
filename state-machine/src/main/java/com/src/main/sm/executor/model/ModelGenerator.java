@@ -46,6 +46,7 @@ import com.src.main.sm.executor.common.BoilerplateStyle;
 import com.src.main.sm.executor.common.BoilerplateStyleResolver;
 import com.src.main.sm.executor.common.GenerationLanguage;
 import com.src.main.sm.executor.common.JavaNamingUtils;
+import com.src.main.sm.executor.common.LayeredSpecSupport;
 import com.src.main.sm.executor.common.TemplatePathResolver;
 import com.src.main.sm.executor.enumgen.EnumGenerationSupport;
 import com.src.main.sm.executor.enumgen.EnumSpecResolved;
@@ -964,22 +965,15 @@ public class ModelGenerator {
 		return "Integer".equalsIgnoreCase(raw) || "int".equalsIgnoreCase(raw);
 	}
 
-	@SuppressWarnings("unchecked")
 	private boolean isNoSqlDatabase(Map<String, Object> yaml) {
 		if (yaml == null) {
 			return false;
 		}
-		Object dbTypeRaw = yaml.get("dbType");
-		if (dbTypeRaw == null && yaml.get("app") instanceof Map<?, ?> appRaw) {
-			dbTypeRaw = ((Map<String, Object>) appRaw).get("dbType");
-		}
+		Object dbTypeRaw = LayeredSpecSupport.resolveDatabaseType(yaml);
 		if (dbTypeRaw != null && "NOSQL".equalsIgnoreCase(String.valueOf(dbTypeRaw).trim())) {
 			return true;
 		}
-		Object dbRaw = yaml.get("database");
-		if (dbRaw == null && yaml.get("app") instanceof Map<?, ?> appRaw) {
-			dbRaw = ((Map<String, Object>) appRaw).get("database");
-		}
+		Object dbRaw = LayeredSpecSupport.resolveDatabaseCode(yaml);
 		return dbRaw != null && "MONGODB".equalsIgnoreCase(String.valueOf(dbRaw).trim());
 	}
 }

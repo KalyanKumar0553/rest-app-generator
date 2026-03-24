@@ -8,4 +8,8 @@ import com.src.main.auth.model.User;
 
 public interface UserRepository extends JpaRepository<User, String> {
 	Optional<User> findByIdentifier(String identifier);
+
+	Optional<User> findByIdentifierHash(String identifierHash);
+
+	Optional<User> findFirstByIdentifierHashOrIdentifier(String identifierHash, String identifier);
 }

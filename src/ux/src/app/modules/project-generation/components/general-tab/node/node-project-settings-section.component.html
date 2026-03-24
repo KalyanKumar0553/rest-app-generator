@@ -20,7 +20,7 @@
         matInput
         [(ngModel)]="projectSettings.projectName"
         (ngModelChange)="projectNameChange.emit()"
-        placeholder="my-node-app">
+        [placeholder]="runtimeLabel === 'Python' ? 'my-python-app' : 'my-node-app'">
       <mat-error *ngIf="projectNameError">{{ projectNameError }}</mat-error>
     </mat-form-field>
 
@@ -35,7 +35,7 @@
       <mat-error *ngIf="projectDescriptionError">{{ projectDescriptionError }}</mat-error>
     </mat-form-field>
 
-    <mat-form-field appearance="fill" class="full-width">
+    <mat-form-field appearance="fill" class="full-width" *ngIf="showPackageManager">
       <mat-label>Package manager</mat-label>
       <mat-select [(ngModel)]="projectSettings.packageManager">
         <mat-option *ngFor="let option of packageManagerOptions" [value]="option">{{ option }}</mat-option>

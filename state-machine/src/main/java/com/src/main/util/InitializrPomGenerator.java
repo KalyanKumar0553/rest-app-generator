@@ -45,12 +45,15 @@ public class InitializrPomGenerator {
 		if (deps != null) {
 			deps.stream()
 					.filter(Objects::nonNull)
-					.map(md -> new String[] { trimOrNull(md.groupId()), trimOrNull(md.artifactId()), md.scope() })
-					.filter(parts -> parts[0] != null && parts[1] != null)
+					.filter(md -> trimOrNull(md.groupId()) != null && trimOrNull(md.artifactId()) != null)
 					.forEach(parts -> {
-						String id = parts[0] + ":" + parts[1];
-						build.dependencies().add(id,
-								Dependency.withCoordinates(parts[0], parts[1]).scope(toScope(parts[2])));
+						String id = parts.groupId() + ":" + parts.artifactId();
+						Dependency.Builder builder = Dependency.withCoordinates(parts.groupId(), parts.artifactId())
+								.scope(toScope(parts.scope()));
+						if (trimOrNull(parts.version()) != null) {
+							builder.version(VersionReference.ofValue(parts.version()));
+						}
+						build.dependencies().add(id, builder);
 					});
 		}
 		boolean includeJpa = hasJpaDependency(deps);

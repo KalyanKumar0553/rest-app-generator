@@ -39,6 +39,15 @@ public class ProjectContributorEntity {
 	@Column(name = "created_at", nullable = false, updatable = false)
 	private OffsetDateTime createdAt;
 
+	@Column(name = "can_edit_draft", nullable = false)
+	private boolean canEditDraft;
+
+	@Column(name = "can_generate", nullable = false)
+	private boolean canGenerate;
+
+	@Column(name = "can_manage_collaboration", nullable = false)
+	private boolean canManageCollaboration;
+
 	@PrePersist
 	public void prePersist() {
 		if (id == null) {

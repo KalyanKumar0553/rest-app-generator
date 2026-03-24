@@ -131,6 +131,14 @@
 
   --theme-error-text-color: var(--color-error);
   --theme-error-bg: var(--error-50);
+  --theme-success-bg: var(--success-50);
+  --theme-success-text: var(--success-700);
+  --theme-warning-bg: var(--warning-50);
+  --theme-warning-text: var(--warning-700);
+  --theme-danger-bg: var(--error-50);
+  --theme-danger-text: var(--error-700);
+  --theme-info-bg: color-mix(in srgb, var(--brand-background) 74%, var(--color-background-white));
+  --theme-info-text: var(--color-text-primary);
 
   --theme-neutral-text: var(--color-text-muted);
   --theme-neutral-border: var(--color-border);

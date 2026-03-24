@@ -10,6 +10,8 @@ export const BASE_NAV_ITEMS: NavItem[] = [
   { icon: 'public', label: 'General', value: 'general' },
   { icon: 'storage', label: 'Entities', value: 'entities' },
   { icon: 'category', label: 'Data Objects', value: 'data-objects' },
+  { icon: 'widgets', label: 'Modules', value: 'modules' },
+  { icon: 'groups', label: 'Collaborate', value: 'collaborate' },
   { icon: 'search', label: 'Explore', value: 'explore' },
 ];
 

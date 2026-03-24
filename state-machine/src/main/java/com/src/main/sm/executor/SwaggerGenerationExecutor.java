@@ -15,13 +15,14 @@ import com.src.main.dto.StepResult;
 import com.src.main.sm.config.StepExecutor;
 import com.src.main.sm.executor.common.GenerationLanguage;
 import com.src.main.sm.executor.common.GenerationLanguageResolver;
+import com.src.main.sm.executor.common.LayeredSpecSupport;
 import com.src.main.sm.executor.swagger.SwaggerGenerationService;
 import com.src.main.sm.executor.swagger.SwaggerGenerationSupport;
 import com.src.main.sm.executor.swagger.SwaggerGroupSpec;
 import com.src.main.util.PathUtils;
 import com.src.main.util.ProjectMetaDataConstants;
 
-@Component
+@Component("swaggerGenerationExecutor")
 public class SwaggerGenerationExecutor implements StepExecutor {
 
 	private final SwaggerGenerationService swaggerGenerationService;
@@ -42,11 +43,11 @@ public class SwaggerGenerationExecutor implements StepExecutor {
 			}
 
 			AppSpecDTO spec = mapper.convertValue(yaml, AppSpecDTO.class);
-			Object enabledRaw = firstNonNull(yaml.get("enableOpenapi"), spec.getEnableOpenapi(),
+			Object enabledRaw = firstNonNull(LayeredSpecSupport.resolveOpenApiEnabled(yaml, false), spec.getEnableOpenapi(),
 					yaml.get(ProjectMetaDataConstants.EXTRAS_OPENAPI), false);
-			String basePackage = StringUtils.firstNonBlank(str(yaml.get("basePackage")), spec.getBasePackage(),
+			String basePackage = StringUtils.firstNonBlank(LayeredSpecSupport.resolveBasePackage(yaml, null), spec.getBasePackage(),
 					(String) data.getVariables().get(ProjectMetaDataConstants.GROUP_ID), ProjectMetaDataConstants.DEFAULT_GROUP);
-			String packageStructure = StringUtils.firstNonBlank(str(yaml.get("packages")), spec.getPackages(),
+			String packageStructure = StringUtils.firstNonBlank(LayeredSpecSupport.resolvePackageStructure(yaml, null), spec.getPackages(),
 					"technical");
 			GenerationLanguage language = GenerationLanguageResolver.resolveFromYaml(yaml);
 			String swaggerPackage = SwaggerGenerationSupport.resolveSwaggerPackage(basePackage, packageStructure);
@@ -81,11 +82,7 @@ public class SwaggerGenerationExecutor implements StepExecutor {
 
 	@SuppressWarnings("unchecked")
 	private String extractAppName(Map<String, Object> yaml) {
-		if (yaml.get("app") instanceof Map<?, ?> appRaw) {
-			Map<String, Object> app = (Map<String, Object>) appRaw;
-			return StringUtils.firstNonBlank(str(app.get("name")), "Generated API");
-		}
-		return "Generated API";
+		return StringUtils.firstNonBlank(LayeredSpecSupport.resolveAppName(yaml, null), "Generated API");
 	}
 
 	private static Object firstNonNull(Object... values) {

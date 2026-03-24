@@ -4,7 +4,6 @@
       <mat-icon aria-hidden="true">hourglass_top</mat-icon>
       <h3 [title]="title">{{ title }}</h3>
     </header>
-    <p class="loading-message" [title]="message">{{ message }}</p>
     <mat-progress-bar mode="indeterminate"></mat-progress-bar>
     <div class="loading-actions" *ngIf="showCancel">
       <button type="button" mat-stroked-button class="loading-cancel-btn" (click)="cancel.emit()">Cancel</button>

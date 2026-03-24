@@ -11,11 +11,12 @@ import com.src.main.common.util.StringUtils;
 import com.src.main.dto.AppSpecDTO;
 import com.src.main.dto.StepResult;
 import com.src.main.sm.config.StepExecutor;
+import com.src.main.sm.executor.common.LayeredSpecSupport;
 import com.src.main.sm.executor.docker.DockerGenerationService;
 import com.src.main.sm.executor.docker.DockerGenerationSupport;
 import com.src.main.util.ProjectMetaDataConstants;
 
-@Component
+@Component("dockerGenerationExecutor")
 public class DockerGenerationExecutor implements StepExecutor {
 
 	private final DockerGenerationService dockerGenerationService;
@@ -64,33 +65,21 @@ public class DockerGenerationExecutor implements StepExecutor {
 
 	@SuppressWarnings("unchecked")
 	private static String resolveArtifactId(ExtendedState data, Map<String, Object> yaml) {
-		if (yaml.get("app") instanceof Map<?, ?> appRaw) {
-			Map<String, Object> app = (Map<String, Object>) appRaw;
-			String appArtifactId = str(app.get(ProjectMetaDataConstants.ARTIFACT_ID));
-			if (StringUtils.firstNonBlank(appArtifactId, null) != null) {
-				return appArtifactId;
-			}
-		}
-		return StringUtils.firstNonBlank(str(data.getVariables().get(ProjectMetaDataConstants.ARTIFACT_ID)),
+		return StringUtils.firstNonBlank(
+				LayeredSpecSupport.resolveArtifactId(yaml, null),
+				str(data.getVariables().get(ProjectMetaDataConstants.ARTIFACT_ID)),
 				ProjectMetaDataConstants.DEFAULT_ARTIFACT);
 	}
 
-	@SuppressWarnings("unchecked")
 	private static String resolveBuildTool(ExtendedState data, Map<String, Object> yaml) {
-		if (yaml.get("app") instanceof Map<?, ?> appRaw) {
-			Map<String, Object> app = (Map<String, Object>) appRaw;
-			String appBuildTool = str(app.get(ProjectMetaDataConstants.BUILD_TOOL));
-			if (StringUtils.firstNonBlank(appBuildTool, null) != null) {
-				return appBuildTool;
-			}
-		}
-		return StringUtils.firstNonBlank(str(data.getVariables().get(ProjectMetaDataConstants.BUILD_TOOL)),
+		return StringUtils.firstNonBlank(
+				LayeredSpecSupport.resolveBuildTool(yaml, null),
+				str(data.getVariables().get(ProjectMetaDataConstants.BUILD_TOOL)),
 				ProjectMetaDataConstants.DEFAULT_BUILD_TOOL);
 	}
 
 	private static String resolveDatabase(Map<String, Object> yaml) {
-		Object database = yaml.get("database");
-		return database == null ? null : String.valueOf(database);
+		return LayeredSpecSupport.resolveDatabaseCode(yaml);
 	}
 
 	private static Object firstNonNull(Object... values) {

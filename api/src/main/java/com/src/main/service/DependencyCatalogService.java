@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.src.main.util.ShippableModuleSupport;
 
 @Service
 public class DependencyCatalogService {
@@ -45,6 +46,11 @@ public class DependencyCatalogService {
 				String id = node.path("id").asText("").trim();
 				if (!id.isEmpty()) {
 					dependencies.add(id);
+				}
+			}
+			for (String moduleId : ShippableModuleSupport.visibleModuleIds()) {
+				if (!dependencies.contains(moduleId)) {
+					dependencies.add(moduleId);
 				}
 			}
 			return List.copyOf(dependencies);

@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, BehaviorSubject, throwError } from 'rxjs';
-import { tap, catchError, map } from 'rxjs/operators';
+import { tap, catchError, map, finalize, shareReplay } from 'rxjs/operators';
 import { Router } from '@angular/router';
 import { API_CONFIG, API_ENDPOINTS, STORAGE_KEYS } from '../constants/api.constants';
 import { LocalStorageService } from './local-storage.service';
@@ -68,6 +68,11 @@ export interface RefreshTokenResponse {
   refreshToken?: string;
 }
 
+export interface AuthProvidersResponse {
+  googleEnabled: boolean;
+  keycloakEnabled: boolean;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -76,6 +81,7 @@ export class AuthService {
   public currentUser$: Observable<UserData | null>;
   private isAuthenticatedSubject: BehaviorSubject<boolean>;
   public isAuthenticated$: Observable<boolean>;
+  private refreshInFlight$: Observable<RefreshTokenResponse> | null = null;
 
   constructor(
     private http: HttpClient,
@@ -129,7 +135,14 @@ export class AuthService {
 
   logout(): Observable<any> {
     const url = `${API_CONFIG.AUTH_BASE_URL}${API_ENDPOINTS.AUTH.LOGOUT}`;
-    return this.mockApiService.post(url, {}, '/assets/mock/logout-response.json').pipe(
+    const refreshToken = this.getRefreshToken();
+
+    if (!refreshToken) {
+      this.handleLogout();
+      return throwError(() => new Error('No refresh token available'));
+    }
+
+    return this.mockApiService.post(url, { refreshToken }, '/assets/mock/logout-response.json').pipe(
       tap(() => this.handleLogout()),
       catchError(error => {
         this.handleLogout();
@@ -172,6 +185,10 @@ export class AuthService {
   }
 
   refreshToken(): Observable<RefreshTokenResponse> {
+    if (this.refreshInFlight$) {
+      return this.refreshInFlight$;
+    }
+
     const url = `${API_CONFIG.AUTH_BASE_URL}${API_ENDPOINTS.AUTH.REFRESH_TOKEN}`;
     const refreshToken = this.localStorageService.getItem(STORAGE_KEYS.REFRESH_TOKEN);
 
@@ -180,7 +197,7 @@ export class AuthService {
       return throwError(() => new Error('No refresh token available'));
     }
 
-    return this.http.post<RefreshTokenResponse>(url, { refreshToken }).pipe(
+    this.refreshInFlight$ = this.http.post<RefreshTokenResponse>(url, { refreshToken }).pipe(
       tap(response => {
         if (response.accessToken) {
           this.localStorageService.setItem(STORAGE_KEYS.ACCESS_TOKEN, response.accessToken);
@@ -192,7 +209,21 @@ export class AuthService {
       catchError(error => {
         this.handleLogout();
         return throwError(() => error);
-      })
+      }),
+      finalize(() => {
+        this.refreshInFlight$ = null;
+      }),
+      shareReplay(1)
+    );
+
+    return this.refreshInFlight$;
+  }
+
+  getAuthProviders(): Observable<AuthProvidersResponse> {
+    const url = `${API_CONFIG.AUTH_BASE_URL}${API_ENDPOINTS.AUTH.PROVIDERS}`;
+    return this.http.get<any>(url).pipe(
+      map((response: any) => response?.data || response),
+      catchError(error => this.handleAuthError(error))
     );
   }
 
@@ -204,11 +235,32 @@ export class AuthService {
     return this.localStorageService.getItem(STORAGE_KEYS.REFRESH_TOKEN);
   }
 
+  getAccessTokenExpiration(): number | null {
+    const token = this.getAccessToken();
+    if (!token) {
+      return null;
+    }
+
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      return typeof payload?.exp === 'number' ? payload.exp * 1000 : null;
+    } catch {
+      return null;
+    }
+  }
+
   startGoogleLogin(): void {
     if (typeof window === 'undefined') {
       return;
     }
     window.location.href = `${API_CONFIG.AUTH_BASE_URL}${API_ENDPOINTS.AUTH.GOOGLE_OAUTH_START}`;
+  }
+
+  startKeycloakLogin(): void {
+    if (typeof window === 'undefined') {
+      return;
+    }
+    window.location.href = `${API_CONFIG.AUTH_BASE_URL}${API_ENDPOINTS.AUTH.KEYCLOAK_OAUTH_START}`;
   }
 
   completeExternalAuth(response: AuthResponse): void {
@@ -282,5 +334,6 @@ export class AuthService {
     this.localStorageService.removeItem('project_zip_cache_v1');
     this.currentUserSubject.next(null);
     this.isAuthenticatedSubject.next(false);
+    this.router.navigate(['/'], { replaceUrl: true });
   }
 }

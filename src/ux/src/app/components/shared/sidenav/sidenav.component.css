@@ -26,6 +26,21 @@
   user-select: none;
 }
 
+.nav-item-with-separator {
+  position: relative;
+  margin-top: 14px;
+}
+
+.nav-item-with-separator::before {
+  content: '';
+  position: absolute;
+  top: -9px;
+  left: 24px;
+  right: 24px;
+  height: 1px;
+  background: var(--color-border);
+}
+
 .nav-item:hover {
   background-color: var(--theme-neutral-bg);
 }

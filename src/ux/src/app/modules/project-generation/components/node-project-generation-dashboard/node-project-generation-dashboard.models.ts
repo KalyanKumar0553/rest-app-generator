@@ -3,7 +3,7 @@ export interface ProjectSettings {
   projectName: string;
   projectDescription: string;
   buildType: 'gradle' | 'maven';
-  language: 'java' | 'kotlin' | 'node';
+  language: 'java' | 'kotlin' | 'node' | 'python';
   frontend: string;
   packageManager: 'npm' | 'pnpm' | 'yarn';
   serverPort: number;
@@ -51,6 +51,12 @@ export interface ProjectRunSummary {
 
 export interface ProjectGenerationStageEvent {
   stage: string;
+  stepName?: string;
+  stepOrder?: number;
+  totalSteps?: number;
+  attempt?: number;
+  retryEnabled?: boolean;
+  runId?: string;
   status: string;
   message?: string;
   timestamp?: string;

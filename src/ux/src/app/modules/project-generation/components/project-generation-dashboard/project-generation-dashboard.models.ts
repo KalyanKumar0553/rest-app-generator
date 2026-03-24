@@ -49,6 +49,12 @@ export interface ProjectRunSummary {
 
 export interface ProjectGenerationStageEvent {
   stage: string;
+  stepName?: string;
+  stepOrder?: number;
+  totalSteps?: number;
+  attempt?: number;
+  retryEnabled?: boolean;
+  runId?: string;
   status: string;
   message?: string;
   timestamp?: string;

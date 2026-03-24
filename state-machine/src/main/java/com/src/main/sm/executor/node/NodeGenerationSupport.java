@@ -4,6 +4,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -15,8 +16,10 @@ import java.util.regex.Pattern;
 import org.springframework.statemachine.ExtendedState;
 
 import com.src.main.dto.StepResult;
+import com.src.main.sm.executor.common.LayeredSpecSupport;
 import com.src.main.sm.executor.dto.DtoGenerationSupport;
 import com.src.main.util.ProjectMetaDataConstants;
+import com.src.main.util.ShippableModuleSupport;
 
 final class NodeGenerationSupport {
 
@@ -33,12 +36,8 @@ final class NodeGenerationSupport {
 		}
 		Path root = Path.of(String.valueOf(rootRaw));
 		Map<String, Object> yaml = (Map<String, Object>) state.getVariables().get(ProjectMetaDataConstants.YAML);
-		Map<String, Object> app = yaml != null && yaml.get("app") instanceof Map<?, ?> appRaw
-				? (Map<String, Object>) appRaw
-				: Map.of();
-		Map<String, Object> node = yaml != null && yaml.get("node") instanceof Map<?, ?> nodeRaw
-				? (Map<String, Object>) nodeRaw
-				: Map.of();
+		Map<String, Object> app = resolveSection(yaml, "app", "core", "app");
+		Map<String, Object> node = resolveSection(yaml, "node", "runtime", "node");
 
 		String artifactId = valueOrDefault(app.get(ProjectMetaDataConstants.ARTIFACT_ID),
 				valueOrDefault(state.getVariables().get(ProjectMetaDataConstants.ARTIFACT_ID), "generated-node-app"));
@@ -53,6 +52,21 @@ final class NodeGenerationSupport {
 		List<NodeDtoDefinition> dtos = extractDtos(yaml);
 		List<NodeModelDefinition> models = extractModels(yaml);
 		return new NodeProjectContext(root, appName, artifactId, description, version, port, packageManager, dockerEnabled, enums, dtos, models);
+	}
+
+	@SuppressWarnings("unchecked")
+	private static Map<String, Object> resolveSection(Map<String, Object> yaml, String topLevelKey, String parentKey,
+			String nestedKey) {
+		if (yaml != null && yaml.get(topLevelKey) instanceof Map<?, ?> topLevelRaw) {
+			return (Map<String, Object>) topLevelRaw;
+		}
+		if (yaml != null && yaml.get(parentKey) instanceof Map<?, ?> parentRaw) {
+			Object nested = ((Map<String, Object>) parentRaw).get(nestedKey);
+			if (nested instanceof Map<?, ?> nestedRaw) {
+				return (Map<String, Object>) nestedRaw;
+			}
+		}
+		return Map.of();
 	}
 
 	static StepResult success(String status) {
@@ -162,6 +176,44 @@ final class NodeGenerationSupport {
 	static String indent(String value, int spaces) {
 		String prefix = " ".repeat(Math.max(0, spaces));
 		return value.lines().map(line -> prefix + line).reduce((a, b) -> a + "\n" + b).orElse("");
+	}
+
+	static List<String> extractSelectedShippedModules(Map<String, Object> yaml) {
+		List<String> selected = new ArrayList<>();
+		for (String dependency : LayeredSpecSupport.resolveDependencies(yaml)) {
+			if (ShippableModuleSupport.isVisibleModule(dependency)) {
+				selected.add(dependency);
+			}
+		}
+		return selected;
+	}
+
+	@SuppressWarnings("unchecked")
+	static Map<String, Object> extractModuleConfigs(Map<String, Object> yaml) {
+		if (yaml == null || !(yaml.get("moduleConfigs") instanceof Map<?, ?> rawConfigs)) {
+			return Map.of();
+		}
+		Map<String, Object> configs = new LinkedHashMap<>();
+		for (Map.Entry<?, ?> entry : rawConfigs.entrySet()) {
+			if (entry.getKey() == null) {
+				continue;
+			}
+			String moduleId = String.valueOf(entry.getKey()).trim();
+			if (!ShippableModuleSupport.isShippableModule(moduleId)) {
+				continue;
+			}
+			Object value = entry.getValue();
+			if (value instanceof Map<?, ?> mapValue) {
+				configs.put(moduleId, new LinkedHashMap<>((Map<String, Object>) mapValue));
+			} else if (value instanceof List<?> listValue) {
+				configs.put(moduleId, new ArrayList<>(listValue));
+			} else if (value != null) {
+				configs.put(moduleId, value);
+			} else {
+				configs.put(moduleId, Collections.emptyMap());
+			}
+		}
+		return configs;
 	}
 
 	private static Object firstNonNull(Object first, Object second) {

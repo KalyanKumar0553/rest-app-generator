@@ -4,6 +4,7 @@ import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Value;
@@ -16,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.src.main.auth.service.RbacService;
 import com.src.main.model.ProjectEntity;
 import com.src.main.model.ProjectRunEntity;
+import com.src.main.model.ProjectContributorEntity;
 import com.src.main.repository.ProjectContributorRepository;
 import com.src.main.repository.ProjectRepository;
 import com.src.main.repository.ProjectRunRepository;
@@ -61,7 +63,7 @@ public class ProjectOrchestrationServiceImpl implements ProjectOrchestrationServ
 			throw new SecurityException("User not allowed to update projects");
 		}
 		ProjectUserIdentityService.ResolvedProjectUser currentUser = projectUserIdentityService.resolve(ownerId);
-		ProjectEntity project = getEditableProject(projectId, currentUser.userId());
+		ProjectEntity project = getProjectForDraftUpdate(projectId, currentUser.userId());
 		String updatedProjectName = projectYamlService.extractProjectName(yamlContent);
 		String currentProjectName = project.getName() == null ? "" : project.getName().trim();
 		String normalizedUpdatedProjectName = updatedProjectName == null ? "" : updatedProjectName.trim();
@@ -92,7 +94,7 @@ public class ProjectOrchestrationServiceImpl implements ProjectOrchestrationServ
 		if (!rbacService.currentUserHasPermission("project.generate")) {
 			throw new SecurityException("User not allowed to generate projects");
 		}
-		ProjectEntity project = getEditableProject(projectId, ownerId);
+		ProjectEntity project = getProjectForGenerate(projectId, ownerId);
 		ProjectRunEntity latest = projectRunRepository.findTopByProjectIdAndTypeOrderByCreatedAtDesc(projectId, ProjectRunType.GENERATE_CODE);
 		if (latest != null && (latest.getStatus() == ProjectRunStatus.QUEUED || latest.getStatus() == ProjectRunStatus.INPROGRESS)) {
 			return latest;
@@ -119,15 +121,29 @@ public class ProjectOrchestrationServiceImpl implements ProjectOrchestrationServ
 	}
 
 	@Transactional(readOnly = true)
-	protected ProjectEntity getEditableProject(UUID projectId, String ownerId) {
+	protected ProjectEntity getProjectForDraftUpdate(UUID projectId, String ownerId) {
 		ProjectUserIdentityService.ResolvedProjectUser currentUser = projectUserIdentityService.resolve(ownerId);
 		ProjectEntity project = projectRepository.findWithContributorsById(projectId)
 				.orElseThrow(() -> new IllegalArgumentException("Project not found: " + projectId));
 		reassignOwnerIfNeeded(project, currentUser);
 		if (!canUpdateAllProjects()
 				&& !currentUser.keys().contains(project.getOwnerId())
-				&& !projectContributorRepository.existsByProjectIdAndUserIdIn(projectId, currentUser.keys())) {
+				&& !findContributorAccess(projectId, currentUser).map(ProjectContributorEntity::isCanEditDraft).orElse(false)) {
 			throw new SecurityException("User not allowed to modify this project");
+		}
+		return project;
+	}
+
+	@Transactional(readOnly = true)
+	protected ProjectEntity getProjectForGenerate(UUID projectId, String ownerId) {
+		ProjectUserIdentityService.ResolvedProjectUser currentUser = projectUserIdentityService.resolve(ownerId);
+		ProjectEntity project = projectRepository.findWithContributorsById(projectId)
+				.orElseThrow(() -> new IllegalArgumentException("Project not found: " + projectId));
+		reassignOwnerIfNeeded(project, currentUser);
+		if (!canUpdateAllProjects()
+				&& !currentUser.keys().contains(project.getOwnerId())
+				&& !findContributorAccess(projectId, currentUser).map(ProjectContributorEntity::isCanGenerate).orElse(false)) {
+			throw new SecurityException("User not allowed to generate this project");
 		}
 		return project;
 	}
@@ -206,5 +222,12 @@ public class ProjectOrchestrationServiceImpl implements ProjectOrchestrationServ
 
 	private boolean canUpdateAllProjects() {
 		return rbacService.currentUserHasPermission("project.update.all");
+	}
+
+	private Optional<ProjectContributorEntity> findContributorAccess(UUID projectId, ProjectUserIdentityService.ResolvedProjectUser currentUser) {
+		if (currentUser == null || currentUser.keys() == null || currentUser.keys().isEmpty()) {
+			return Optional.empty();
+		}
+		return projectContributorRepository.findFirstByProjectIdAndUserIdIn(projectId, currentUser.keys());
 	}
 }

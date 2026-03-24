@@ -29,6 +29,7 @@ public class GlobalExceptionHandler {
 
 	@ExceptionHandler(ConstraintViolationException.class)
 	public ResponseEntity<Map<String, Object>> onConstraintViolation(ConstraintViolationException ex) {
+		ex.printStackTrace();
 		String firstError = ex.getConstraintViolations()
 				.stream()
 				.findFirst()
@@ -39,6 +40,7 @@ public class GlobalExceptionHandler {
 
 	@ExceptionHandler(MethodArgumentNotValidException.class)
 	public ResponseEntity<Map<String, Object>> onMethodArgInvalid(MethodArgumentNotValidException ex) {
+		ex.printStackTrace();
 		String firstError = ex.getBindingResult()
 				.getFieldErrors()
 				.stream()
@@ -50,11 +52,13 @@ public class GlobalExceptionHandler {
 
 	@ExceptionHandler(MethodArgumentTypeMismatchException.class)
 	public ResponseEntity<Map<String, Object>> onMethodArgumentTypeMismatch(MethodArgumentTypeMismatchException ex) {
+		ex.printStackTrace();
 		return error(HttpStatus.BAD_REQUEST, "Invalid value for parameter: " + ex.getName());
 	}
 
 	@ExceptionHandler(IllegalArgumentException.class)
 	public ResponseEntity<Map<String, Object>> onIllegalArgument(IllegalArgumentException ex) {
+		ex.printStackTrace();
 		return error(HttpStatus.BAD_REQUEST, ex.getMessage());
 	}
 
@@ -66,21 +70,30 @@ public class GlobalExceptionHandler {
 
 	@ExceptionHandler({ SecurityException.class, AccessDeniedException.class })
 	public ResponseEntity<Map<String, Object>> onSecurity(RuntimeException ex) {
+		ex.printStackTrace();
 		return error(HttpStatus.FORBIDDEN, ex.getMessage());
 	}
 
 	@ExceptionHandler(NoResourceFoundException.class)
 	public ResponseEntity<Map<String, Object>> onNoResourceFound(NoResourceFoundException ex) {
+		String resourcePath = ex.getResourcePath();
+		if (resourcePath != null && resourcePath.contains(".well-known/appspecific/com.chrome.devtools.json")) {
+			log.debug("Ignoring browser probe for missing static resource: {}", resourcePath);
+		} else {
+			log.debug("Static resource not found: {}", resourcePath);
+		}
 		return error(HttpStatus.NOT_FOUND, ex.getMessage());
 	}
 
 	@ExceptionHandler(EntityNotFoundException.class)
 	public ResponseEntity<Map<String, Object>> onEntityNotFound(EntityNotFoundException ex) {
+		ex.printStackTrace();
 		return error(HttpStatus.NOT_FOUND, ex.getMessage());
 	}
 
 	@ExceptionHandler(ResponseStatusException.class)
 	public ResponseEntity<Map<String, Object>> onResponseStatus(ResponseStatusException ex) {
+		ex.printStackTrace();
 		String message = ex.getReason() == null || ex.getReason().isBlank()
 				? ex.getStatusCode().toString()
 				: ex.getReason();
@@ -94,6 +107,7 @@ public class GlobalExceptionHandler {
 			DataAccessException.class
 	})
 	public ResponseEntity<Map<String, Object>> onPersistenceException(Exception ex) {
+		ex.printStackTrace();
 		log.error("Persistence error handled", ex);
 		if (ex instanceof LazyInitializationException) {
 			return error(HttpStatus.INTERNAL_SERVER_ERROR, "The requested data could not be loaded completely.");
@@ -107,6 +121,7 @@ public class GlobalExceptionHandler {
 	@ExceptionHandler(Exception.class)
 	public ResponseEntity<Map<String, Object>> onUnhandled(Exception ex) {
 		log.error("Unhandled exception", ex);
+		ex.printStackTrace();
 		return error(HttpStatus.INTERNAL_SERVER_ERROR, "An unexpected error occurred.");
 	}
 

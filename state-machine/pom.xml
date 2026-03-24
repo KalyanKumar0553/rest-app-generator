@@ -72,6 +72,26 @@
 	</dependencies>
 
 	<build>
+		<resources>
+			<resource>
+				<directory>src/main/resources/shipped-modules/node/state-machine</directory>
+				<targetPath>shipped-modules/node/state-machine</targetPath>
+			</resource>
+			<resource>
+				<directory>src/main/java</directory>
+				<includes>
+					<include>**/*.java</include>
+				</includes>
+				<targetPath>shipped-modules/state-machine/src/main/java</targetPath>
+			</resource>
+			<resource>
+				<directory>src/main/resources</directory>
+				<excludes>
+					<exclude>shipped-modules/node/**</exclude>
+				</excludes>
+				<targetPath>shipped-modules/state-machine/src/main/resources</targetPath>
+			</resource>
+		</resources>
 		<plugins>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>

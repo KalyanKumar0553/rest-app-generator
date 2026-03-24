@@ -3,33 +3,50 @@ package com.src.main.service;
 import java.util.Base64;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.src.main.auth.service.RbacService;
+import com.src.main.dto.ProjectCollaborationInviteDTO;
+import com.src.main.dto.ProjectCollaborationRequestCreateDTO;
+import com.src.main.dto.ProjectCollaborationRequestDTO;
+import com.src.main.dto.ProjectCollaborationRequestReviewDTO;
 import com.src.main.dto.ProjectCreateResponseDTO;
 import com.src.main.dto.ProjectContributorDTO;
+import com.src.main.dto.ProjectContributorPermissionUpdateDTO;
+import com.src.main.dto.ProjectContributorPermissionsDTO;
 import com.src.main.dto.ProjectContributorUpsertRequestDTO;
+import com.src.main.dto.ProjectDraftResponseDTO;
+import com.src.main.dto.ProjectDraftTabPatchRequestDTO;
+import com.src.main.dto.ProjectDraftUpsertRequestDTO;
 import com.src.main.dto.ProjectDetailsDTO;
 import com.src.main.dto.ProjectSummaryDTO;
+import com.src.main.dto.ProjectTabDefinitionDTO;
 import com.src.main.exception.GenericException;
+import com.src.main.model.ProjectCollaborationRequestEntity;
 import com.src.main.model.ProjectContributorEntity;
 import com.src.main.model.ProjectEntity;
 import com.src.main.model.ProjectRunEntity;
+import com.src.main.repository.ProjectCollaborationRequestRepository;
 import com.src.main.repository.ProjectContributorRepository;
 import com.src.main.repository.ProjectRepository;
 import com.src.main.repository.ProjectRunRepository;
 import com.src.main.util.ProjectMetaDataConstants;
 import com.src.main.util.ProjectRunStatus;
 import com.src.main.util.ProjectRunType;
+import com.src.main.common.util.JsonYamlConverterUtil;
 
 import jakarta.validation.ConstraintViolationException;
 import jakarta.validation.Validator;
@@ -40,11 +57,19 @@ import lombok.AllArgsConstructor;
 @AllArgsConstructor
 public class ProjectServiceImpl implements ProjectService {
 
+	private static final Logger log = LoggerFactory.getLogger(ProjectServiceImpl.class);
+	private static final String REQUEST_STATUS_PENDING = "PENDING";
+	private static final String REQUEST_STATUS_ACCEPTED = "ACCEPTED";
+	private static final String REQUEST_STATUS_REJECTED = "REJECTED";
+
 	private final ProjectRepository repo;
 	private final ProjectRunRepository projectRunRepository;
+	private final ProjectCollaborationRequestRepository projectCollaborationRequestRepository;
 	private final ProjectContributorRepository projectContributorRepository;
 	private final ProjectUserIdentityService projectUserIdentityService;
 	private final ProjectYamlService projectYamlService;
+	private final ProjectDraftService projectDraftService;
+	private final ProjectDraftSpecMapperService projectDraftSpecMapperService;
 	private final ProjectNameValidationService projectNameValidationService;
 	private final RbacService rbacService;
 	private final Validator validator;
@@ -59,6 +84,51 @@ public class ProjectServiceImpl implements ProjectService {
 
 		public String getYaml() {
 			return yaml;
+		}
+	}
+
+	private static final class ResolvedProjectDraft {
+		private final Map<String, Object> draftData;
+		private final Map<String, Object> spec;
+		private final String yamlText;
+		private final String artifact;
+		private final String groupId;
+		private final String version;
+		private final String buildTool;
+		private final String packaging;
+		private final String generator;
+		private final String name;
+		private final String description;
+		private final String springBootVersion;
+		private final String jdkVersion;
+
+		private ResolvedProjectDraft(
+				Map<String, Object> draftData,
+				Map<String, Object> spec,
+				String yamlText,
+				String artifact,
+				String groupId,
+				String version,
+				String buildTool,
+				String packaging,
+				String generator,
+				String name,
+				String description,
+				String springBootVersion,
+				String jdkVersion) {
+			this.draftData = draftData;
+			this.spec = spec;
+			this.yamlText = yamlText;
+			this.artifact = artifact;
+			this.groupId = groupId;
+			this.version = version;
+			this.buildTool = buildTool;
+			this.packaging = packaging;
+			this.generator = generator;
+			this.name = name;
+			this.description = description;
+			this.springBootVersion = springBootVersion;
+			this.jdkVersion = jdkVersion;
 		}
 	}
 
@@ -135,14 +205,170 @@ public class ProjectServiceImpl implements ProjectService {
 
 	@Override
 	@Transactional
+	public ProjectDraftResponseDTO createDraft(ProjectDraftUpsertRequestDTO request, String ownerId) {
+		try {
+			if (!rbacService.currentUserHasPermission("project.create")) {
+				throw new SecurityException("User not allowed to create projects");
+			}
+			ResolvedProjectDraft resolvedDraft = resolveProjectDraft(request, ProjectMetaDataConstants.DEFAULT_GRADLE_GENERATOR);
+			ProjectUserIdentityService.ResolvedProjectUser currentUser = projectUserIdentityService.resolve(ownerId);
+			projectNameValidationService.ensureUniqueProjectName(resolvedDraft.name, currentUser, null);
+			ProjectEntity p = new ProjectEntity();
+			p.setId(UUID.randomUUID());
+			applyResolvedProjectDraft(p, resolvedDraft, request.getDraftVersion());
+			p.setOwnerId(currentUser.userId());
+			p.setCreatedAt(OffsetDateTime.now());
+			p.setUpdatedAt(OffsetDateTime.now());
+			ProjectEntity savedProject = repo.saveAndFlush(p);
+			return new ProjectDraftResponseDTO(savedProject.getId().toString(), savedProject.getDraftVersion());
+		} catch (GenericException e) {
+			throw e;
+		} catch (IllegalArgumentException | ConstraintViolationException e) {
+			throw new GenericException(HttpStatus.BAD_REQUEST, e.getMessage());
+		} catch (Exception e) {
+			throw new GenericException(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage());
+		}
+	}
+
+	@Override
+	@Transactional
+	public ProjectDraftResponseDTO updateDraft(UUID projectId, ProjectDraftUpsertRequestDTO request, String ownerId) {
+		if (!rbacService.currentUserHasPermission("project.update")) {
+			throw new SecurityException("User not allowed to update projects");
+		}
+		ProjectUserIdentityService.ResolvedProjectUser currentUser = projectUserIdentityService.resolve(ownerId);
+		ProjectEntity project = getProjectForDraftUpdate(projectId, currentUser, true);
+		ResolvedProjectDraft resolvedDraft = resolveProjectDraft(request, project.getGenerator());
+		String updatedProjectName = resolvedDraft.name;
+		String currentProjectName = project.getName() == null ? "" : project.getName().trim();
+		String normalizedUpdatedProjectName = updatedProjectName == null ? "" : updatedProjectName.trim();
+		if (!currentProjectName.equalsIgnoreCase(normalizedUpdatedProjectName)) {
+			projectNameValidationService.ensureUniqueProjectName(updatedProjectName, currentUser, projectId);
+		}
+		project.setOwnerId(currentUser.userId());
+		Integer currentDraftVersion = project.getDraftVersion() == null ? 1 : project.getDraftVersion();
+		Integer requestedDraftVersion = request.getDraftVersion() == null ? currentDraftVersion : request.getDraftVersion();
+		assertExactDraftVersionMatch(currentDraftVersion, requestedDraftVersion);
+		applyResolvedProjectDraft(project, resolvedDraft, currentDraftVersion + 1);
+		project.setUpdatedAt(OffsetDateTime.now());
+		ProjectEntity savedProject = repo.saveAndFlush(project);
+		return new ProjectDraftResponseDTO(savedProject.getId().toString(), savedProject.getDraftVersion());
+	}
+
+	@Override
+	@Transactional
+	public ProjectDraftResponseDTO patchDraftTab(UUID projectId, ProjectDraftTabPatchRequestDTO request, String ownerId) {
+		if (!rbacService.currentUserHasPermission("project.update")) {
+			throw new SecurityException("User not allowed to update projects");
+		}
+		ProjectUserIdentityService.ResolvedProjectUser currentUser = projectUserIdentityService.resolve(ownerId);
+		ProjectEntity project = getProjectForDraftUpdate(projectId, currentUser, true);
+		Integer currentDraftVersion = project.getDraftVersion() == null ? 1 : project.getDraftVersion();
+		assertExactDraftVersionMatch(currentDraftVersion, request.getDraftVersion());
+		Map<String, Object> existingDraftData = projectDraftService.deserialize(project.getDraftData());
+		Map<String, Object> mergedDraftData = projectDraftService.mergeTabData(existingDraftData, request.getTabKey(), request.getTabData(), project.getGenerator());
+		ProjectDraftUpsertRequestDTO fullRequest = new ProjectDraftUpsertRequestDTO();
+		fullRequest.setDraftData(mergedDraftData);
+		fullRequest.setDraftVersion(currentDraftVersion);
+		return updateDraft(projectId, fullRequest, ownerId);
+	}
+
+	private ResolvedProjectDraft resolveProjectDraft(ProjectDraftUpsertRequestDTO request, String fallbackGenerator) {
+		Map<String, Object> draftData = request.getDraftData();
+		if (draftData == null) {
+			throw new IllegalArgumentException("draftData must be provided");
+		}
+		validateDraftData(draftData);
+		Map<String, Object> spec = projectDraftSpecMapperService.buildSpec(draftData);
+		String yamlText = JsonYamlConverterUtil.mapToYaml(spec);
+		Map<String, Object> app = projectYamlService.getRequiredAppSection(spec);
+		String artifact = projectYamlService.getString(app, ProjectMetaDataConstants.ARTIFACT_ID, ProjectMetaDataConstants.DEFAULT_ARTIFACT);
+		String groupId = projectYamlService.getString(app, ProjectMetaDataConstants.GROUP_ID, ProjectMetaDataConstants.DEFAULT_GROUP);
+		String version = projectYamlService.getString(app, ProjectMetaDataConstants.VERSION, ProjectMetaDataConstants.DEFAULT_VERSION);
+		String buildTool = projectYamlService.getString(app, ProjectMetaDataConstants.BUILD_TOOL, ProjectMetaDataConstants.DEFAULT_BUILD_TOOL);
+		String packaging = projectYamlService.getString(app, ProjectMetaDataConstants.PACKAGING, ProjectMetaDataConstants.DEFAULT_PACKAGING);
+		String generator = projectDraftService.resolveGenerator(draftData,
+				projectYamlService.getString(app, ProjectMetaDataConstants.GENERATOR, fallbackGenerator));
+		String name = projectYamlService.getString(app, ProjectMetaDataConstants.NAME, ProjectMetaDataConstants.DEFAULT_NAME);
+		String description = projectYamlService.getString(app, ProjectMetaDataConstants.DESCRIPTION, ProjectMetaDataConstants.DEFAULT_DESCRIPTION);
+		String springBootVersion = projectYamlService.getString(app, ProjectMetaDataConstants.SPRING_BOOT_VERSION, ProjectMetaDataConstants.DEFAULT_BOOT_VERSION);
+		String jdkVersion = projectYamlService.getString(app, ProjectMetaDataConstants.JDK_VERSION, ProjectMetaDataConstants.DEFAULT_JDK);
+		if (artifact == null || artifact.isBlank()) {
+			throw new IllegalArgumentException("app.artifact must be provided");
+		}
+		if (groupId == null || groupId.isBlank()) {
+			throw new IllegalArgumentException("app.groupId must be provided");
+		}
+		if (version == null || version.isBlank()) {
+			throw new IllegalArgumentException("app.version must be provided");
+		}
+
+		return new ResolvedProjectDraft(
+				draftData,
+				spec,
+				yamlText,
+				artifact,
+				groupId,
+				version,
+				buildTool,
+				packaging,
+				generator,
+				name,
+				description,
+				springBootVersion,
+				jdkVersion);
+	}
+
+	private void validateDraftData(Map<String, Object> draftData) {
+		Map<String, Object> settings = asSettingsMap(draftData.get("settings"));
+		if (settings.containsKey("projectName") && trimmed(settings.get("projectName")).isBlank()) {
+			throw new IllegalArgumentException("Project name is required.");
+		}
+	}
+
+	@SuppressWarnings("unchecked")
+	private Map<String, Object> asSettingsMap(Object value) {
+		return value instanceof Map<?, ?> map ? (Map<String, Object>) map : Collections.emptyMap();
+	}
+
+	private String trimmed(Object value) {
+		return value == null ? "" : String.valueOf(value).trim();
+	}
+
+	private void assertExactDraftVersionMatch(Integer currentDraftVersion, Integer requestedDraftVersion) {
+		if (requestedDraftVersion == null || !requestedDraftVersion.equals(currentDraftVersion)) {
+			throw new GenericException(HttpStatus.CONFLICT, "Project draft is outdated. Reload the latest project state and try again.");
+		}
+	}
+
+	private void applyResolvedProjectDraft(ProjectEntity project, ResolvedProjectDraft resolvedDraft, Integer draftVersion) {
+		project.setArtifact(resolvedDraft.artifact);
+		project.setGroupId(resolvedDraft.groupId);
+		project.setVersion(resolvedDraft.version);
+		project.setBuildTool(resolvedDraft.buildTool);
+		project.setPackaging(resolvedDraft.packaging);
+		project.setGenerator(resolvedDraft.generator);
+		project.setName(resolvedDraft.name);
+		project.setDescription(resolvedDraft.description);
+		project.setSpringBootVersion(resolvedDraft.springBootVersion);
+		project.setJdkVersion(resolvedDraft.jdkVersion);
+		project.setYaml(resolvedDraft.yamlText);
+		project.setDraftData(projectDraftService.serialize(resolvedDraft.draftData));
+		project.setDraftVersion(draftVersion);
+	}
+
+	@Override
+	@Transactional
 	public List<ProjectSummaryDTO> list(String userId) {
 		if (!rbacService.currentUserHasPermission("project.read")) {
 			throw new SecurityException("User not allowed to view projects");
 		}
 		ProjectUserIdentityService.ResolvedProjectUser currentUser = projectUserIdentityService.resolve(userId);
+		log.debug("Listing projects for resolved user: userId='{}', keys={}", currentUser.userId(), currentUser.keys());
 		List<ProjectEntity> all = canReadAllProjects()
 				? repo.findAll()
 				: findAccessibleProjectsForList(currentUser);
+		log.debug("Matched accessible projects for resolved user: userId='{}', count={}", currentUser.userId(), all.size());
 		List<ProjectSummaryDTO> out = new ArrayList<>();
 		for (ProjectEntity p : all) {
 			out.add(toSummary(p));
@@ -152,6 +378,8 @@ public class ProjectServiceImpl implements ProjectService {
 
 	private List<ProjectEntity> findAccessibleProjectsForList(ProjectUserIdentityService.ResolvedProjectUser currentUser) {
 		List<ProjectEntity> accessible = repo.findAccessibleProjectsByUserKeys(currentUser.keys());
+		log.debug("Project list fast query result: userId='{}', keys={}, count={}",
+				currentUser.userId(), currentUser.keys(), accessible.size());
 		if (!accessible.isEmpty()) {
 			return accessible;
 		}
@@ -173,6 +401,8 @@ public class ProjectServiceImpl implements ProjectService {
 
 		matchedProjects.sort(Comparator.comparing(ProjectEntity::getUpdatedAt,
 				Comparator.nullsLast(Comparator.reverseOrder())));
+		log.debug("Project list fallback match result: userId='{}', keys={}, count={}",
+				currentUser.userId(), currentUser.keys(), matchedProjects.size());
 		return matchedProjects;
 	}
 
@@ -208,6 +438,10 @@ public class ProjectServiceImpl implements ProjectService {
 		ProjectEntity project = getAccessibleProject(projectId, currentUser);
 		boolean canManageAllContributors = canManageAllProjectContributors();
 		boolean isOwner = currentUser.keys().contains(project.getOwnerId());
+		Optional<ProjectContributorEntity> currentContributor = findContributorAccess(project.getId(), currentUser);
+		boolean canManageContributors = isOwner || canManageAllContributors
+				|| currentContributor.map(ProjectContributorEntity::isCanManageCollaboration).orElse(false);
+		String inviteToken = canManageContributors ? ensureInviteToken(project) : null;
 		List<ProjectRunEntity> runs = projectRunRepository.findByProjectIdOrderByCreatedAtAsc(project.getId());
 		ProjectRunEntity latestRun = runs.isEmpty() ? null : runs.get(runs.size() - 1);
 		ProjectRunEntity latestRunWithZip = null;
@@ -218,17 +452,27 @@ public class ProjectServiceImpl implements ProjectService {
 				break;
 			}
 		}
+		Map<String, Object> draftData = projectDraftService.deserialize(project.getDraftData());
+		List<ProjectTabDefinitionDTO> tabDetails = projectDraftService.getTabDetails(
+				projectDraftService.resolveGenerator(draftData, project.getGenerator()),
+				projectDraftService.resolveSelectedDependencies(draftData));
 		return new ProjectDetailsDTO(
 				project.getId().toString(),
 				project.getId(),
 				project.getName(),
 				project.getDescription(),
+				projectDraftService.resolveGenerator(draftData, project.getGenerator()),
 				project.getArtifact(),
 				project.getYaml(),
+				draftData,
+				project.getDraftVersion(),
+				tabDetails,
 				project.getOwnerId(),
 				!isOwner && !canManageAllContributors,
-				isOwner || canManageAllContributors,
+				canManageContributors,
+				inviteToken,
 				toContributorDtos(project.getId()),
+				canManageContributors ? toCollaborationRequestDtos(project.getId()) : Collections.emptyList(),
 				latestRun == null ? null : latestRun.getId(),
 				latestRun == null || latestRun.getStatus() == null ? null : latestRun.getStatus().name(),
 				latestRun == null ? null : latestRun.getRunNumber(),
@@ -237,6 +481,11 @@ public class ProjectServiceImpl implements ProjectService {
 				buildZipFileName(project),
 				project.getCreatedAt(),
 				project.getUpdatedAt());
+	}
+
+	@Override
+	public List<ProjectTabDefinitionDTO> getTabDetails(String generator, List<String> dependencies) {
+		return projectDraftService.getTabDetails(generator, dependencies);
 	}
 
 	private String encodeZipBase64(ProjectRunEntity run) {
@@ -263,7 +512,7 @@ public class ProjectServiceImpl implements ProjectService {
 	@Transactional
 	public List<ProjectContributorDTO> addContributor(UUID projectId, String ownerId, ProjectContributorUpsertRequestDTO request) {
 		ProjectUserIdentityService.ResolvedProjectUser currentUser = projectUserIdentityService.resolve(ownerId);
-		ProjectEntity project = getOwnedProject(projectId, currentUser);
+		ProjectEntity project = getProjectForContributorManagement(projectId, currentUser, false);
 		if (!rbacService.currentUserHasPermission("project.contributor.manage")) {
 			throw new SecurityException("User not allowed to manage contributors");
 		}
@@ -278,8 +527,26 @@ public class ProjectServiceImpl implements ProjectService {
 			ProjectContributorEntity contributor = new ProjectContributorEntity();
 			contributor.setProject(project);
 			contributor.setUserId(contributorUserId);
+			contributor.setCanEditDraft(true);
+			contributor.setCanGenerate(true);
+			contributor.setCanManageCollaboration(false);
 			projectContributorRepository.save(contributor);
 		}
+		return getContributors(projectId, currentUser.userId());
+	}
+
+	@Override
+	@Transactional
+	public List<ProjectContributorDTO> updateContributorPermissions(UUID projectId, UUID contributorId, String ownerId,
+			ProjectContributorPermissionUpdateDTO request) {
+		ProjectUserIdentityService.ResolvedProjectUser currentUser = projectUserIdentityService.resolve(ownerId);
+		getProjectForContributorManagement(projectId, currentUser, true);
+		ProjectContributorEntity contributor = projectContributorRepository.findByIdAndProjectId(contributorId, projectId)
+				.orElseThrow(() -> new IllegalArgumentException("Contributor not found"));
+		contributor.setCanEditDraft(request.isCanEditDraft());
+		contributor.setCanGenerate(request.isCanGenerate());
+		contributor.setCanManageCollaboration(request.isCanManageCollaboration());
+		projectContributorRepository.save(contributor);
 		return getContributors(projectId, currentUser.userId());
 	}
 
@@ -289,12 +556,100 @@ public class ProjectServiceImpl implements ProjectService {
 		if (!rbacService.currentUserHasPermission("project.contributor.manage")) {
 			throw new SecurityException("User not allowed to manage contributors");
 		}
-		getOwnedProject(projectId, projectUserIdentityService.resolve(ownerId));
+		getProjectForContributorManagement(projectId, projectUserIdentityService.resolve(ownerId), false);
 		String normalizedUserId = contributorUserId == null ? "" : contributorUserId.trim();
 		if (normalizedUserId.isEmpty()) {
 			throw new IllegalArgumentException("contributorUserId is required");
 		}
 		projectContributorRepository.deleteByProjectIdAndUserId(projectId, normalizedUserId);
+	}
+
+	@Override
+	public List<ProjectCollaborationRequestDTO> getCollaborationRequests(UUID projectId, String userId) {
+		ProjectUserIdentityService.ResolvedProjectUser currentUser = projectUserIdentityService.resolve(userId);
+		getProjectForContributorManagement(projectId, currentUser, false);
+		return toCollaborationRequestDtos(projectId);
+	}
+
+	@Override
+	@Transactional
+	public ProjectCollaborationRequestDTO reviewCollaborationRequest(UUID projectId, UUID requestId, String ownerId,
+			ProjectCollaborationRequestReviewDTO request) {
+		ProjectUserIdentityService.ResolvedProjectUser currentUser = projectUserIdentityService.resolve(ownerId);
+		ProjectEntity project = getProjectForContributorManagement(projectId, currentUser, true);
+		ProjectCollaborationRequestEntity collaborationRequest = projectCollaborationRequestRepository.findByIdAndProjectId(requestId, projectId)
+				.orElseThrow(() -> new IllegalArgumentException("Collaboration request not found"));
+		String status = trimmed(request.getStatus()).toUpperCase();
+		if (!REQUEST_STATUS_ACCEPTED.equals(status) && !REQUEST_STATUS_REJECTED.equals(status)) {
+			throw new IllegalArgumentException("status must be ACCEPTED or REJECTED");
+		}
+		collaborationRequest.setStatus(status);
+		collaborationRequest.setReviewedBy(currentUser.userId());
+		collaborationRequest.setReviewedAt(OffsetDateTime.now());
+		collaborationRequest.setGrantedCanEditDraft(REQUEST_STATUS_ACCEPTED.equals(status) && request.isCanEditDraft());
+		collaborationRequest.setGrantedCanGenerate(REQUEST_STATUS_ACCEPTED.equals(status) && request.isCanGenerate());
+		collaborationRequest.setGrantedCanManageCollaboration(REQUEST_STATUS_ACCEPTED.equals(status) && request.isCanManageCollaboration());
+		if (REQUEST_STATUS_ACCEPTED.equals(status)) {
+			ProjectContributorEntity contributor = projectContributorRepository
+					.findFirstByProjectIdAndUserIdIn(projectId, List.of(collaborationRequest.getRequesterId()))
+					.orElseGet(() -> {
+						ProjectContributorEntity created = new ProjectContributorEntity();
+						created.setProject(project);
+						created.setUserId(collaborationRequest.getRequesterId());
+						return created;
+					});
+			contributor.setCanEditDraft(collaborationRequest.isGrantedCanEditDraft());
+			contributor.setCanGenerate(collaborationRequest.isGrantedCanGenerate());
+			contributor.setCanManageCollaboration(collaborationRequest.isGrantedCanManageCollaboration());
+			projectContributorRepository.save(contributor);
+		}
+		return toCollaborationRequestDto(projectCollaborationRequestRepository.save(collaborationRequest));
+	}
+
+	@Override
+	@Transactional
+	public ProjectCollaborationInviteDTO getCollaborationInvite(String inviteToken, String userId) {
+		ProjectUserIdentityService.ResolvedProjectUser currentUser = projectUserIdentityService.resolve(userId);
+		ProjectEntity project = getProjectByInviteToken(inviteToken);
+		Optional<ProjectContributorEntity> contributor = findContributorAccess(project.getId(), currentUser);
+		boolean isOwner = currentUser.keys().contains(project.getOwnerId());
+		boolean hasAccess = isOwner || contributor.isPresent();
+		boolean requestPending = projectCollaborationRequestRepository
+				.findFirstByProjectIdAndRequesterIdOrderByCreatedAtDesc(project.getId(), currentUser.userId())
+				.map(item -> REQUEST_STATUS_PENDING.equalsIgnoreCase(item.getStatus()))
+				.orElse(false);
+		return new ProjectCollaborationInviteDTO(project.getInviteToken(), project.getId().toString(), project.getName(), project.getGenerator(), project.getOwnerId(),
+				hasAccess, requestPending);
+	}
+
+	@Override
+	@Transactional
+	public ProjectCollaborationRequestDTO requestCollaboration(String inviteToken, String userId,
+			ProjectCollaborationRequestCreateDTO request) {
+		ProjectUserIdentityService.ResolvedProjectUser currentUser = projectUserIdentityService.resolve(userId);
+		ProjectEntity project = getProjectByInviteToken(inviteToken);
+		if (currentUser.keys().contains(project.getOwnerId())) {
+			throw new IllegalArgumentException("Project owner already has access");
+		}
+		if (findContributorAccess(project.getId(), currentUser).isPresent()) {
+			throw new IllegalArgumentException("You already have contributor access to this project");
+		}
+		ProjectCollaborationRequestEntity collaborationRequest = projectCollaborationRequestRepository
+				.findFirstByProjectIdAndRequesterIdOrderByCreatedAtDesc(project.getId(), currentUser.userId())
+				.filter(existing -> REQUEST_STATUS_PENDING.equalsIgnoreCase(existing.getStatus()))
+				.orElseGet(ProjectCollaborationRequestEntity::new);
+		collaborationRequest.setProject(project);
+		collaborationRequest.setRequesterId(currentUser.userId());
+		collaborationRequest.setStatus(REQUEST_STATUS_PENDING);
+		collaborationRequest.setRequestedCanEditDraft(request.isCanEditDraft());
+		collaborationRequest.setRequestedCanGenerate(request.isCanGenerate());
+		collaborationRequest.setRequestedCanManageCollaboration(request.isCanManageCollaboration());
+		collaborationRequest.setGrantedCanEditDraft(false);
+		collaborationRequest.setGrantedCanGenerate(false);
+		collaborationRequest.setGrantedCanManageCollaboration(false);
+		collaborationRequest.setReviewedBy(null);
+		collaborationRequest.setReviewedAt(null);
+		return toCollaborationRequestDto(projectCollaborationRequestRepository.save(collaborationRequest));
 	}
 
 	@Override
@@ -333,14 +688,29 @@ public class ProjectServiceImpl implements ProjectService {
 		throw new SecurityException("User not allowed to access this project");
 	}
 
-	private ProjectEntity getOwnedProject(UUID projectId, ProjectUserIdentityService.ResolvedProjectUser currentUser) {
-		ProjectEntity project = repo.findWithContributorsById(projectId)
+	private ProjectEntity getProjectForContributorManagement(UUID projectId, ProjectUserIdentityService.ResolvedProjectUser currentUser, boolean forUpdate) {
+		ProjectEntity project = (forUpdate ? repo.findWithContributorsByIdForUpdate(projectId) : repo.findWithContributorsById(projectId))
 				.orElseThrow(() -> new IllegalArgumentException("Project not found: " + projectId));
 		reassignOwnerIfNeeded(project, currentUser);
-		if (!canManageAllProjectContributors() && !currentUser.keys().contains(project.getOwnerId())) {
+		if (!canManageAllProjectContributors()
+				&& !currentUser.keys().contains(project.getOwnerId())
+				&& !findContributorAccess(project.getId(), currentUser)
+						.map(ProjectContributorEntity::isCanManageCollaboration)
+						.orElse(false)) {
 			throw new SecurityException("Only the project owner can manage contributors");
 		}
 		return project;
+	}
+
+	private ProjectEntity getProjectForDraftUpdate(UUID projectId, ProjectUserIdentityService.ResolvedProjectUser currentUser, boolean forUpdate) {
+		ProjectEntity project = (forUpdate ? repo.findWithContributorsByIdForUpdate(projectId) : repo.findWithContributorsById(projectId))
+				.orElseThrow(() -> new IllegalArgumentException("Project not found: " + projectId));
+		reassignOwnerIfNeeded(project, currentUser);
+		if (currentUser.keys().contains(project.getOwnerId())
+				|| findContributorAccess(project.getId(), currentUser).map(ProjectContributorEntity::isCanEditDraft).orElse(false)) {
+			return project;
+		}
+		throw new SecurityException("User not allowed to modify this project");
 	}
 
 	private ProjectEntity getProjectForDelete(UUID projectId, ProjectUserIdentityService.ResolvedProjectUser currentUser) {
@@ -385,12 +755,72 @@ public class ProjectServiceImpl implements ProjectService {
 		return rbacService.currentUserHasPermission("project.delete.all");
 	}
 
+	private Optional<ProjectContributorEntity> findContributorAccess(UUID projectId, ProjectUserIdentityService.ResolvedProjectUser currentUser) {
+		if (currentUser == null || currentUser.keys() == null || currentUser.keys().isEmpty()) {
+			return Optional.empty();
+		}
+		return projectContributorRepository.findFirstByProjectIdAndUserIdIn(projectId, currentUser.keys());
+	}
+
+	private String ensureInviteToken(ProjectEntity project) {
+		if (project == null) {
+			return null;
+		}
+		String inviteToken = trimmed(project.getInviteToken());
+		if (!inviteToken.isBlank()) {
+			return inviteToken;
+		}
+		project.setInviteToken(UUID.randomUUID().toString());
+		return repo.saveAndFlush(project).getInviteToken();
+	}
+
+	private ProjectEntity getProjectByInviteToken(String inviteToken) {
+		String normalizedToken = trimmed(inviteToken);
+		if (normalizedToken.isBlank()) {
+			throw new IllegalArgumentException("inviteToken is required");
+		}
+		ProjectEntity project = repo.findByInviteToken(normalizedToken)
+				.orElseThrow(() -> new IllegalArgumentException("Invalid collaboration invite"));
+		if (!rbacService.currentUserHasPermission("project.read")) {
+			throw new SecurityException("User not allowed to access projects");
+		}
+		return project;
+	}
+
+	private List<ProjectCollaborationRequestDTO> toCollaborationRequestDtos(UUID projectId) {
+		return projectCollaborationRequestRepository.findByProjectIdOrderByCreatedAtDesc(projectId).stream()
+				.map(this::toCollaborationRequestDto)
+				.collect(Collectors.toList());
+	}
+
+	private ProjectCollaborationRequestDTO toCollaborationRequestDto(ProjectCollaborationRequestEntity request) {
+		return new ProjectCollaborationRequestDTO(
+				request.getId(),
+				request.getRequesterId(),
+				request.getStatus(),
+				new ProjectContributorPermissionsDTO(
+						request.isRequestedCanEditDraft(),
+						request.isRequestedCanGenerate(),
+						request.isRequestedCanManageCollaboration()),
+				new ProjectContributorPermissionsDTO(
+						request.isGrantedCanEditDraft(),
+						request.isGrantedCanGenerate(),
+						request.isGrantedCanManageCollaboration()),
+				request.getReviewedBy(),
+				request.getReviewedAt(),
+				request.getCreatedAt(),
+				request.getUpdatedAt());
+	}
+
 	private List<ProjectContributorDTO> toContributorDtos(UUID projectId) {
 		List<ProjectContributorEntity> contributors = projectContributorRepository.findByProjectIdOrderByCreatedAtAsc(projectId);
 		return contributors.stream()
 				.map(contributor -> new ProjectContributorDTO(
 						contributor.getId(),
 						contributor.getUserId(),
+						contributor.isCanEditDraft(),
+						contributor.isCanGenerate(),
+						contributor.isCanManageCollaboration(),
 						contributor.getCreatedAt()))
 				.collect(Collectors.toList());
 	}
@@ -402,6 +832,7 @@ public class ProjectServiceImpl implements ProjectService {
 				project.getId(),
 				project.getName(),
 				project.getDescription(),
+				project.getGenerator(),
 				project.getCreatedAt(),
 				project.getUpdatedAt());
 	}

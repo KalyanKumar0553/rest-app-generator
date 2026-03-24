@@ -20,7 +20,8 @@ import org.springframework.transaction.PlatformTransactionManager;
 @EnableJpaRepositories(
 		basePackages = {
 				"com.src.main.repository",
-				"com.src.main.auth.repository"
+				"com.src.main.auth.repository",
+				"com.src.main.subscription.repository"
 		},
 		entityManagerFactoryRef = "dbEntityManager",
 		transactionManagerRef = "dbTransactionManager"
@@ -42,7 +43,10 @@ public class DBConfig {
 	LocalContainerEntityManagerFactoryBean dbEntityManager() {
 		final LocalContainerEntityManagerFactoryBean em = new LocalContainerEntityManagerFactoryBean();
 		em.setDataSource(dbDataSource());
-		em.setPackagesToScan("com.src.main.model", "com.src.main.auth.model");
+		em.setPackagesToScan(
+				"com.src.main.model",
+				"com.src.main.auth.model",
+				"com.src.main.subscription.entity");
 		final HibernateJpaVendorAdapter vendorAdapter = new HibernateJpaVendorAdapter();
 		em.setJpaVendorAdapter(vendorAdapter);
 		final HashMap<String, Object> properties = new HashMap<String, Object>();

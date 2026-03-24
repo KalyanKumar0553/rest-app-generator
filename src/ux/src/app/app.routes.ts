@@ -26,8 +26,20 @@ export const routes: Routes = [
   },
   {
     path: 'project-generation-node',
+    data: { language: 'node' },
     loadComponent: () => import('./modules/project-generation/components/node-project-generation-dashboard/node-project-generation-dashboard.component')
       .then(m => m.NodeProjectGenerationDashboardComponent)
+  },
+  {
+    path: 'project-generation-python',
+    data: { language: 'python' },
+    loadComponent: () => import('./modules/project-generation/components/node-project-generation-dashboard/node-project-generation-dashboard.component')
+      .then(m => m.NodeProjectGenerationDashboardComponent)
+  },
+  {
+    path: 'project-collaboration/:inviteToken',
+    loadComponent: () => import('./modules/project-generation/components/project-collaboration-invite/project-collaboration-invite.component')
+      .then(m => m.ProjectCollaborationInviteComponent)
   },
   {
     path: 'dashboard',

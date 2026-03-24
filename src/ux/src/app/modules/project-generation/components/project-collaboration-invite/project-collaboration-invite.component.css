@@ -1,0 +1,29 @@
+.invite-page {
+  min-height: calc(100vh - 4rem);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  background: var(--color-background);
+}
+
+.invite-card {
+  width: min(40rem, 100%);
+  padding: 2rem;
+  background: var(--color-background-white);
+  color: var(--color-text-primary);
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-lg);
+}
+
+.invite-meta,
+.invite-state,
+.invite-request {
+  margin-top: 1rem;
+}
+
+.invite-request {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}

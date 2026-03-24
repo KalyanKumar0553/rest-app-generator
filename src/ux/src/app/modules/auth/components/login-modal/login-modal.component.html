@@ -153,13 +153,17 @@
       </button>
     </form>
 
-    <div class="oauth-section" *ngIf="!isSignupMode && !isForgotPasswordMode">
+    <div class="oauth-section" *ngIf="!isSignupMode && !isForgotPasswordMode && (authProviders.googleEnabled || authProviders.keycloakEnabled)">
       <div class="oauth-divider" aria-hidden="true">
         <span>or</span>
       </div>
-      <button type="button" class="oauth-google-btn" (click)="startGoogleLogin()" [disabled]="isLoading">
+      <button type="button" class="oauth-google-btn" *ngIf="authProviders.googleEnabled" (click)="startGoogleLogin()" [disabled]="isLoading">
         <span class="oauth-google-btn__icon" aria-hidden="true">G</span>
         <span class="oauth-google-btn__label">Sign in with Google</span>
+      </button>
+      <button type="button" class="oauth-google-btn" *ngIf="authProviders.keycloakEnabled" (click)="startKeycloakLogin()" [disabled]="isLoading">
+        <span class="oauth-google-btn__icon" aria-hidden="true">K</span>
+        <span class="oauth-google-btn__label">Sign in with Keycloak</span>
       </button>
     </div>
   </div>

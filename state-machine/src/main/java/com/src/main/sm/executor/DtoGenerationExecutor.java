@@ -13,7 +13,7 @@ import com.src.main.sm.executor.common.GenerationLanguageResolver;
 import com.src.main.sm.executor.dto.DtoGenerationService;
 import com.src.main.util.ProjectMetaDataConstants;
 
-@Component
+@Component("dtoGenerationExecutor")
 public class DtoGenerationExecutor implements StepExecutor {
 
 	private final DtoGenerationService dtoGenerationService;

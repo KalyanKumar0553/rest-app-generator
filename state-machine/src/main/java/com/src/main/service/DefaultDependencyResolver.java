@@ -75,10 +75,21 @@ public class DefaultDependencyResolver implements DependencyResolver {
 				// Raw GAV? "group:artifact[:scope]"
 				if (token.contains(":")) {
 					String[] p = token.split(":");
-					String scope = p.length >= 3 ? p[2] : null;
+					String version = null;
+					String scope = null;
+					if (p.length >= 3) {
+						if (isKnownScope(p[2])) {
+							scope = p[2];
+						} else {
+							version = p[2];
+						}
+					}
+					if (p.length >= 4) {
+						scope = p[3];
+					}
 					if (p[0].isBlank() || p[1].isBlank())
 						continue; // guard against invalid
-					out.add(new MavenDependencyDTO(p[0], p[1], scope, false));
+					out.add(new MavenDependencyDTO(p[0], p[1], version, scope, false));
 					continue;
 				}
 				remoteLookup.findByKeyword(token).ifPresent(out::add);
@@ -102,7 +113,8 @@ public class DefaultDependencyResolver implements DependencyResolver {
 	}
 
 	private List<String> gradleLines(MavenDependencyDTO d) {
-		String gav = d.groupId() + ":" + d.artifactId();
+		String gav = d.versionOrNull() == null ? d.groupId() + ":" + d.artifactId()
+				: d.groupId() + ":" + d.artifactId() + ":" + d.versionOrNull();
 		String s = d.scopeOrCompile();
 		return switch (s) {
 		case "test", "test_compile" -> List.of("testImplementation(\"" + gav + "\")");
@@ -124,6 +136,18 @@ public class DefaultDependencyResolver implements DependencyResolver {
 			}
 			yield List.of("implementation(\"" + gav + "\")");
 		}
+		};
+	}
+
+	private static boolean isKnownScope(String value) {
+		if (value == null || value.isBlank()) {
+			return false;
+		}
+		return switch (value.trim().toLowerCase()) {
+		case "annotation_processor", "annotation-processor", "compile_only", "compile-only", "runtime",
+				"runtimeonly", "provided", "providedruntime", "provided_runtime", "test", "test_compile",
+				"test-compile", "test_runtime", "test-runtime" -> true;
+		default -> false;
 		};
 	}
 }

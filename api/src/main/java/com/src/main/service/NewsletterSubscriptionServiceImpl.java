@@ -23,7 +23,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class NewsletterSubscriptionServiceImpl implements NewsletterSubscriptionService {
 
-    private static final Pattern EMAIL_PATTERN = Pattern.compile(AppConstants.emailRegex);
+    private static final Pattern EMAIL_PATTERN = Pattern.compile(AppConstants.EMAIL_REGEX);
 
     private final NewsletterSubscriptionRepository newsletterSubscriptionRepository;
     private final MsgService msgService;

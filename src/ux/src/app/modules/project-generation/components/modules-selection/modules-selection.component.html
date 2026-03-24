@@ -1,0 +1,37 @@
+<section class="modules-panel">
+  <div class="modules-copy">
+    <div class="modules-title-row">
+      <h2>Select Modules</h2>
+      <button
+        type="button"
+        class="modules-help-btn"
+        [matTooltip]="modulesHelpText"
+        aria-label="Modules help">
+        <mat-icon>help_outline</mat-icon>
+      </button>
+    </div>
+  </div>
+
+  <app-search-sort
+    [searchConfig]="searchConfig"
+    [sortOptions]="sortOptions"
+    (searchSortChange)="onSearchSortChange($event)">
+  </app-search-sort>
+
+  <div class="modules-grid">
+    <article class="module-card" *ngFor="let module of filteredModules">
+      <div class="module-card-header">
+        <h4>{{ module.title }}</h4>
+        <mat-checkbox
+          [checked]="isSelected(module.key)"
+          (change)="toggleModule(module.key, $event.checked)">
+        </mat-checkbox>
+      </div>
+      <p class="module-card-description">{{ module.description }}</p>
+    </article>
+  </div>
+
+  <div class="modules-empty" *ngIf="filteredModules.length === 0">
+    <p>No modules match the current filter.</p>
+  </div>
+</section>

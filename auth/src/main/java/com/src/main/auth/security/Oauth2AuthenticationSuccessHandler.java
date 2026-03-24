@@ -6,6 +6,7 @@ import java.nio.charset.StandardCharsets;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.stereotype.Component;
@@ -43,14 +44,18 @@ public class Oauth2AuthenticationSuccessHandler implements AuthenticationSuccess
 			return;
 		}
 
-		var principal = oauthService.extractGooglePrincipal(oauthUser.getAttributes());
+		String registrationId = authentication instanceof OAuth2AuthenticationToken token
+				? token.getAuthorizedClientRegistrationId()
+				: "oauth";
+		var principal = oauthService.extractOauthPrincipal(oauthUser.getAttributes());
 		String userId = oauthService.upsertOauthUser(principal);
 		TokenPairResponseDto tokenPair = authService.loginWithUserId(userId);
-		response.sendRedirect(buildSuccessRedirect(tokenPair));
+		response.sendRedirect(buildSuccessRedirect(tokenPair, registrationId));
 	}
 
-	private String buildSuccessRedirect(TokenPairResponseDto tokenPair) {
+	private String buildSuccessRedirect(TokenPairResponseDto tokenPair, String registrationId) {
 		String redirect = successRedirectUri;
+		redirect = appendQuery(redirect, "provider", registrationId);
 		redirect = appendQuery(redirect, "accessToken", tokenPair.getAccessToken());
 		redirect = appendQuery(redirect, "refreshToken", tokenPair.getRefreshToken());
 

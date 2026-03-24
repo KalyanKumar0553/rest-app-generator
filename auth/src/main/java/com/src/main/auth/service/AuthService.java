@@ -12,12 +12,15 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.src.main.auth.dto.response.TokenPairResponseDto;
 import com.src.main.auth.dto.response.AuthenticatedUserResponseDto;
+import com.src.main.auth.dto.request.UpdateUserProfileRequestDto;
+import com.src.main.auth.dto.response.UserProfileResponseDto;
 import com.src.main.auth.model.IdentifierType;
 import com.src.main.auth.model.OtpPurpose;
 import com.src.main.auth.model.OtpRequest;
 import com.src.main.auth.model.RefreshToken;
 import com.src.main.auth.model.Setting;
 import com.src.main.auth.model.User;
+import com.src.main.auth.model.UserProfile;
 import com.src.main.auth.model.UserRole;
 import com.src.main.auth.model.UserStatus;
 import com.src.main.auth.repository.OtpRequestRepository;
@@ -46,6 +49,7 @@ public class AuthService {
 	private final CaptchaService captchaService;
 	private final RoleCatalogService roleCatalogService;
 	private final RbacService rbacService;
+	private final IdentifierLookupHashService identifierLookupHashService;
 
 	private final long accessTtl;
 	private final long refreshTtl;
@@ -68,6 +72,7 @@ public class AuthService {
 			CaptchaService captchaService,
 			RoleCatalogService roleCatalogService,
 			RbacService rbacService,
+			IdentifierLookupHashService identifierLookupHashService,
 			@Value("${jwt.access.ttl.seconds:900}") long accessTtl,
 			@Value("${jwt.refresh.ttl.seconds:604800}") long refreshTtl,
 			@Value("${otp.ttl.seconds:300}") long otpTtl,
@@ -87,6 +92,7 @@ public class AuthService {
 		this.captchaService = captchaService;
 		this.roleCatalogService = roleCatalogService;
 		this.rbacService = rbacService;
+		this.identifierLookupHashService = identifierLookupHashService;
 		this.accessTtl = accessTtl;
 		this.refreshTtl = refreshTtl;
 		this.otpTtl = otpTtl;
@@ -98,7 +104,7 @@ public class AuthService {
 
 	public boolean identifierExists(String identifier) {
 		String id = IdentifierUtils.normalizeIdentifier(identifier);
-		return userRepository.findByIdentifier(id).isPresent();
+		return findUserByNormalizedIdentifier(id).isPresent();
 	}
 
 	@Transactional
@@ -106,13 +112,14 @@ public class AuthService {
 		captchaService.verify(captchaId, captchaText);
 		String normalized = IdentifierUtils.normalizeIdentifier(identifier);
 		IdentifierType type = IdentifierUtils.classify(normalized);
-		User existing = userRepository.findByIdentifier(normalized).orElse(null);
+		User existing = findUserByNormalizedIdentifier(normalized).orElse(null);
 
 		if (existing != null) {
 			throw new IllegalStateException("Identifier already exists");
 		}
 		User user = new User();
 		user.setIdentifier(normalized);
+		user.setIdentifierHash(hashIdentifier(normalized));
 		user.setIdentifierType(type);
 		user.setPasswordHash(CryptoUtils.hashPassword(password));
 		user.setStatus(UserStatus.PENDING_VERIFICATION);
@@ -185,8 +192,53 @@ public class AuthService {
 	}
 
 	@Transactional
+	public void changePassword(String userId, String currentPassword, String newPassword) {
+		User user = userRepository.findById(userId).orElseThrow(() -> new IllegalArgumentException("User not found"));
+		if (user.getStatus() != UserStatus.ACTIVE) {
+			throw new IllegalArgumentException("User is not active");
+		}
+		if (!CryptoUtils.verifyPassword(currentPassword, user.getPasswordHash())) {
+			throw new IllegalArgumentException("Current password is incorrect");
+		}
+		user.setPasswordHash(CryptoUtils.hashPassword(newPassword));
+		userRepository.save(user);
+		revokeUserRefreshTokens(userId);
+	}
+
+	@Transactional(readOnly = true)
+	public UserProfileResponseDto getUserProfile(String userId) {
+		User user = userRepository.findById(userId).orElseThrow(() -> new IllegalArgumentException("User not found"));
+		UserProfile profile = userProfileRepository.findById(userId).orElse(null);
+		String firstName = profile == null || profile.getFirstName() == null ? null : profile.getFirstName().trim();
+		String lastName = profile == null || profile.getLastName() == null ? null : profile.getLastName().trim();
+		String name = buildDisplayName(user, profile);
+		return new UserProfileResponseDto(
+				user.getId(),
+				user.getIdentifier(),
+				name,
+				firstName,
+				lastName,
+				profile == null ? null : profile.getAvatarUrl(),
+				profile == null ? null : profile.getTimeZoneId());
+	}
+
+	@Transactional
+	public UserProfileResponseDto updateUserProfile(String userId, UpdateUserProfileRequestDto request) {
+		User user = userRepository.findById(userId).orElseThrow(() -> new IllegalArgumentException("User not found"));
+		UserProfile profile = userProfileRepository.findById(userId).orElseGet(() -> {
+			UserProfile created = new UserProfile();
+			created.setUserId(userId);
+			return created;
+		});
+		profile.setTimeZoneId(normalizeTimeZone(request == null ? null : request.getTimeZoneId()));
+		userProfileRepository.save(profile);
+		return getUserProfile(user.getId());
+	}
+
+	@Transactional
 	public TokenPairResponseDto login(String identifier, String password) {
-		User user = userRepository.findByIdentifier(IdentifierUtils.normalizeIdentifier(identifier))
+		String normalizedIdentifier = IdentifierUtils.normalizeIdentifier(identifier);
+		User user = findUserByNormalizedIdentifier(normalizedIdentifier)
 				.orElseThrow(() -> new IllegalArgumentException("Invalid credentials"));
 		Instant now = Instant.now();
 		if (user.getLockedUntil() != null && user.getLockedUntil().isAfter(now)) {
@@ -412,26 +464,69 @@ public class AuthService {
 
 	private User findUser(String identifier) {
 		String id = IdentifierUtils.normalizeIdentifier(identifier);
-		return userRepository.findByIdentifier(id).orElseThrow(() -> new IllegalArgumentException("User not found"));
+		return findUserByNormalizedIdentifier(id).orElseThrow(() -> new IllegalArgumentException("User not found"));
+	}
+
+	private java.util.Optional<User> findUserByNormalizedIdentifier(String normalizedIdentifier) {
+		String identifierHash = hashIdentifier(normalizedIdentifier);
+		java.util.Optional<User> user = userRepository.findFirstByIdentifierHashOrIdentifier(identifierHash, normalizedIdentifier);
+		user.ifPresent(found -> ensureIdentifierHash(found, normalizedIdentifier, identifierHash));
+		return user;
+	}
+
+	private void ensureIdentifierHash(User user, String normalizedIdentifier, String identifierHash) {
+		if (user == null) {
+			return;
+		}
+		if (user.getIdentifierHash() != null && !user.getIdentifierHash().isBlank()) {
+			return;
+		}
+		if (!normalizedIdentifier.equals(user.getIdentifier())) {
+			return;
+		}
+		user.setIdentifierHash(identifierHash);
+		userRepository.save(user);
+	}
+
+	private String hashIdentifier(String identifier) {
+		return identifierLookupHashService.hash(identifier);
 	}
 
 	private AuthenticatedUserResponseDto buildAuthenticatedUser(String userId, List<String> roles, List<String> permissions) {
 		User user = userRepository.findById(userId).orElseThrow(() -> new IllegalArgumentException("User not found"));
 		var profile = userProfileRepository.findById(userId).orElse(null);
-		String name = user.getIdentifier();
+		String name = buildDisplayName(user, profile);
 		String avatarUrl = null;
 
 		if (profile != null) {
-			String firstName = profile.getFirstName() == null ? "" : profile.getFirstName().trim();
-			String lastName = profile.getLastName() == null ? "" : profile.getLastName().trim();
-			String fullName = (firstName + " " + lastName).trim();
-			if (!fullName.isEmpty()) {
-				name = fullName;
-			}
 			avatarUrl = profile.getAvatarUrl();
 		}
 
 		String primaryRole = roles.isEmpty() ? roleCatalogService.getDefaultAuthRoleName() : roles.get(0);
 		return new AuthenticatedUserResponseDto(user.getId(), user.getIdentifier(), name, primaryRole, roles, permissions, avatarUrl);
+	}
+
+	private String buildDisplayName(User user, UserProfile profile) {
+		String name = user.getIdentifier();
+		if (profile == null) {
+			return name;
+		}
+		String firstName = profile.getFirstName() == null ? "" : profile.getFirstName().trim();
+		String lastName = profile.getLastName() == null ? "" : profile.getLastName().trim();
+		String fullName = (firstName + " " + lastName).trim();
+		return fullName.isEmpty() ? name : fullName;
+	}
+
+	private String normalizeTimeZone(String timeZoneId) {
+		if (timeZoneId == null || timeZoneId.isBlank()) {
+			return null;
+		}
+		String trimmed = timeZoneId.trim();
+		try {
+			ZoneId.of(trimmed);
+			return trimmed;
+		} catch (Exception ex) {
+			throw new IllegalArgumentException("Invalid time zone");
+		}
 	}
 }

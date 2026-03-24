@@ -3,6 +3,7 @@
     <li
       *ngFor="let item of navItems"
       class="nav-item"
+      [class.nav-item-with-separator]="item.value === 'explore'"
       [class.active]="activeItem === item.value"
       (click)="onItemClick(item.value)">
       <mat-icon class="nav-icon">{{ item.icon }}</mat-icon>

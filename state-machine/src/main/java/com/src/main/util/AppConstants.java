@@ -20,7 +20,7 @@ public interface AppConstants {
 	String MAVEN_URL = "/solrsearch/select?q=%s&rows=1&wt=json";
 	String THREAD_PREFIX = "proj-job-";
 
-	String mobileRegex = "^[0-9]{10}$";
-	String emailRegex = "^[A-Za-z0-9][A-Za-z0-9+_.-]*@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$";
-	String roleSeperator = "::@@::";
+	String MOBILE_REGEX = "^[0-9]{10}$";
+	String EMAIL_REGEX = "^[A-Za-z0-9][A-Za-z0-9+_.-]*@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$";
+	String ROLE_SEPARATOR = "::@@::";
 }

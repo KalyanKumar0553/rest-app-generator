@@ -27,7 +27,7 @@ public class Oauth2AuthenticationFailureHandler implements AuthenticationFailure
 			HttpServletRequest request,
 			HttpServletResponse response,
 			AuthenticationException exception) throws IOException, ServletException {
-		String message = exception == null ? "Google sign-in failed." : exception.getMessage();
+		String message = exception == null ? "OAuth sign-in failed." : exception.getMessage();
 		char separator = failureRedirectUri.contains("?") ? '&' : '?';
 		response.sendRedirect(failureRedirectUri + separator + "error=" + URLEncoder.encode(message, StandardCharsets.UTF_8));
 	}

@@ -4,7 +4,9 @@ export function resolveProjectGenerationRoute(language: string | null | undefine
   const routesByLanguage: Record<string, string> = {
     java: '/project-generation',
     kotlin: '/project-generation',
-    node: '/project-generation-node'
+    node: '/project-generation-node',
+    python: '/project-generation-python',
+    py: '/project-generation-python'
   };
 
   return routesByLanguage[normalized] ?? '/project-generation';

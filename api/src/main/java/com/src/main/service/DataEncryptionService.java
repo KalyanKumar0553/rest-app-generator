@@ -22,6 +22,7 @@ public class DataEncryptionService {
 
     private static final String AES_GCM_NO_PADDING = "AES/GCM/NoPadding";
     private static final String HMAC_SHA_256 = "HmacSHA256";
+    private static final String ENCRYPTED_PREFIX = "enc::";
     private static final int GCM_IV_LENGTH = 12;
     private static final int GCM_TAG_BITS = 128;
 
@@ -47,6 +48,9 @@ public class DataEncryptionService {
         if (plaintext == null) {
             return null;
         }
+        if (isEncrypted(plaintext)) {
+            return plaintext;
+        }
         try {
             byte[] iv = new byte[GCM_IV_LENGTH];
             secureRandom.nextBytes(iv);
@@ -56,7 +60,7 @@ public class DataEncryptionService {
             byte[] encrypted = cipher.doFinal(plaintext.getBytes(StandardCharsets.UTF_8));
 
             byte[] packed = ByteBuffer.allocate(iv.length + encrypted.length).put(iv).put(encrypted).array();
-            return Base64.getEncoder().encodeToString(packed);
+            return ENCRYPTED_PREFIX + Base64.getEncoder().encodeToString(packed);
         } catch (GeneralSecurityException ex) {
             throw new IllegalStateException("Failed to encrypt sensitive data", ex);
         }
@@ -67,7 +71,10 @@ public class DataEncryptionService {
             return null;
         }
         try {
-            byte[] packed = Base64.getDecoder().decode(ciphertext);
+            String normalizedCiphertext = ciphertext.startsWith(ENCRYPTED_PREFIX)
+                    ? ciphertext.substring(ENCRYPTED_PREFIX.length())
+                    : ciphertext;
+            byte[] packed = Base64.getDecoder().decode(normalizedCiphertext);
             if (packed.length <= GCM_IV_LENGTH) {
                 throw new IllegalArgumentException("Invalid encrypted payload");
             }
@@ -85,6 +92,10 @@ public class DataEncryptionService {
             // Backward compatibility for legacy plain-text rows
             return ciphertext;
         }
+    }
+
+    public boolean isEncrypted(String value) {
+        return value != null && value.startsWith(ENCRYPTED_PREFIX);
     }
 
     public String hashForLookup(String value) {
