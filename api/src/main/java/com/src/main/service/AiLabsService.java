@@ -15,6 +15,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.HttpStatus;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.openai.OpenAiChatOptions;
@@ -39,6 +40,7 @@ import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
+@ConditionalOnProperty(prefix = "app.ai.openai", name = "enabled", havingValue = "true")
 public class AiLabsService {
 
 	private static final Pattern YAML_FENCE_PATTERN = Pattern.compile("```(?:yaml|yml)?\\s*(.*?)```", Pattern.DOTALL | Pattern.CASE_INSENSITIVE);

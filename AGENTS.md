@@ -42,3 +42,10 @@
   - `mvn -f pom.xml flyway:migrate`
 - If datasource credentials are required, provide them via `SPRING_DATASOURCE_URL`, `SPRING_DATASOURCE_USERNAME`, and `SPRING_DATASOURCE_PASSWORD`.
 - Do not claim DB changes are complete until Flyway migrate has been run successfully or an explicit blocker has been reported.
+
+### Cross-Module Flyway Packaging (Mandatory)
+- If a Flyway migration lives outside `api/src/main/resources/rest-app-db/migration` but must be applied by the main app at runtime, make sure the main packaged app jar exposes that migration under `BOOT-INF/classes/rest-app-db/migration`.
+- Do not assume a migration is discoverable by Flyway just because it exists in another module or nested dependency jar.
+- After adding or moving migrations across modules, verify the packaged artifact contents, for example:
+  - `jar tf target/*.jar | grep 'BOOT-INF/classes/rest-app-db/migration/'`
+- If the database already has applied versions that are "not resolved locally", fix the artifact packaging or restore the missing migration files before considering `flyway repair`.

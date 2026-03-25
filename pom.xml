@@ -169,6 +169,10 @@
 			<resource>
 				<directory>api/src/main/resources</directory>
 			</resource>
+			<resource>
+				<directory>subscription/src/main/resources/rest-app-db/migration</directory>
+				<targetPath>rest-app-db/migration</targetPath>
+			</resource>
 		</resources>
 		<testResources>
 			<testResource>
