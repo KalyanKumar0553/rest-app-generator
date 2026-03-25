@@ -17,6 +17,13 @@ jobs:
 
     steps:
       - uses: actions/checkout@v5
+        with:
+          fetch-depth: 1
+
+      - name: Show commit being built
+        run: |
+          git rev-parse HEAD
+          git log -1 --oneline
 
       - name: Set up Java version
         uses: actions/setup-java@v5
@@ -30,8 +37,13 @@ jobs:
       - name: Prepare app jar
         run: |
           mkdir -p target
-          JAR_PATH=$(ls target/*.jar | grep -v 'original' | head -n1)
+          JAR_PATH=$(ls target/rest-app-generator-*.jar | grep -v 'original' | head -n1)
           cp "$JAR_PATH" target/app.jar
+
+      - name: Verify Flyway migrations in packaged jar
+        run: |
+          jar tf target/app.jar | grep 'BOOT-INF/classes/rest-app-db/migration/V122__subscription_schema.sql'
+          jar tf target/app.jar | grep 'BOOT-INF/classes/rest-app-db/migration/V123__subscription_seed.sql'
 
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v6
@@ -51,6 +63,12 @@ jobs:
         uses: actions/download-artifact@v5
         with:
           name: java-app
+
+      - name: Verify downloaded deploy artifact
+        run: |
+          ls -la
+          jar tf app.jar | grep 'BOOT-INF/classes/rest-app-db/migration/V122__subscription_schema.sql'
+          jar tf app.jar | grep 'BOOT-INF/classes/rest-app-db/migration/V123__subscription_seed.sql'
       
       - name: Login to Azure
         uses: azure/login@v2
