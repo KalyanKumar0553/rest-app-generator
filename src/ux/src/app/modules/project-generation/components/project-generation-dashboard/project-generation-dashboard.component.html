@@ -608,6 +608,7 @@
 
           <div class="collaboration-card">
             <div class="collaboration-title-row">
+              <div class="collaboration-card-header">
               <h3>Contributors</h3>
               <button
                 *ngIf="canManageContributors()"
@@ -617,6 +618,16 @@
                 (click)="openAddContributorModal()">
                 <mat-icon>person_add</mat-icon>
                 Add contributor
+              </button>
+            </div>
+              <button
+                *ngIf="canDetachFromProject()"
+                mat-stroked-button
+                type="button"
+                class="detach-collaboration-btn"
+                (click)="detachFromProject()"
+                [disabled]="isContributorSaving">
+                Archive My Access
               </button>
             </div>
             <p *ngIf="projectContributors.length === 0">No contributors added yet.</p>
@@ -653,6 +664,7 @@
                 <td mat-cell *matCellDef="let contributor">
                   <div class="table-actions">
                     <button
+                      *ngIf="canManageContributors()"
                       mat-icon-button
                       type="button"
                       class="table-action-btn table-action-btn-save"
@@ -661,7 +673,14 @@
                       matTooltip="Save permissions">
                       <i class="bi bi-check2-circle" aria-hidden="true"></i>
                     </button>
-                    <button mat-icon-button type="button" color="warn" (click)="removeContributor(contributor.userId)" [disabled]="!canManageContributors()" matTooltip="Remove contributor">
+                    <button
+                      *ngIf="canManageContributors()"
+                      mat-icon-button
+                      type="button"
+                      color="warn"
+                      (click)="removeContributor(contributor.userId)"
+                      [disabled]="!canManageContributors()"
+                      matTooltip="Remove contributor">
                       <mat-icon>person_remove</mat-icon>
                     </button>
                   </div>

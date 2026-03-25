@@ -78,6 +78,8 @@ export interface ProjectContributor {
   canEditDraft?: boolean;
   canGenerate?: boolean;
   canManageCollaboration?: boolean;
+  disabled?: boolean;
+  disabledAt?: string;
   createdAt?: string;
 }
 
@@ -107,6 +109,16 @@ export interface ProjectCollaborationInvite {
   ownerId: string;
   contributorAccess: boolean;
   requestPending: boolean;
+}
+
+export interface ArchivedProjectCollaboration {
+  contributorId: string;
+  projectId: string;
+  projectName?: string;
+  ownerId: string;
+  generator?: string;
+  inviteToken?: string;
+  disabledAt?: string;
 }
 
 export interface ProjectDetails extends ProjectSummary {
@@ -250,6 +262,11 @@ export class ProjectService {
     return this.http.delete<void>(url);
   }
 
+  detachProjectContributor(projectId: string): Observable<void> {
+    const url = `${API_CONFIG.BASE_URL}${API_ENDPOINTS.PROJECT.DETACH_CONTRIBUTOR(projectId)}`;
+    return this.http.post<void>(url, {});
+  }
+
   getProjectCollaborationRequests(projectId: string): Observable<ProjectCollaborationRequest[]> {
     const url = `${API_CONFIG.BASE_URL}${API_ENDPOINTS.PROJECT.COLLABORATION_REQUESTS(projectId)}`;
     return this.http.get<ProjectCollaborationRequest[]>(url);
@@ -272,6 +289,16 @@ export class ProjectService {
   requestCollaboration(inviteToken: string, permissions: ProjectContributorPermissions): Observable<ProjectCollaborationRequest> {
     const url = `${API_CONFIG.BASE_URL}${API_ENDPOINTS.PROJECT.REQUEST_COLLABORATION(inviteToken)}`;
     return this.http.post<ProjectCollaborationRequest>(url, permissions);
+  }
+
+  getArchivedCollaborations(): Observable<ArchivedProjectCollaboration[]> {
+    const url = `${API_CONFIG.BASE_URL}${API_ENDPOINTS.PROJECT.ARCHIVED_COLLABORATIONS}`;
+    return this.http.get<ArchivedProjectCollaboration[]>(url);
+  }
+
+  resubscribeArchivedCollaboration(contributorId: string): Observable<ProjectCollaborationRequest> {
+    const url = `${API_CONFIG.BASE_URL}${API_ENDPOINTS.PROJECT.RESUBSCRIBE_ARCHIVED_COLLABORATION(contributorId)}`;
+    return this.http.post<ProjectCollaborationRequest>(url, {});
   }
 
   deleteProject(projectId: string): Observable<void> {

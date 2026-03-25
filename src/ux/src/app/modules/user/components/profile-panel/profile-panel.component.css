@@ -17,9 +17,31 @@
   color: var(--color-text-primary);
 }
 
-.section-subtitle {
-  margin: 8px 0 0;
-  color: var(--color-text-muted);
+.section-title-row,
+.panel-title-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.section-help-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  background-color: var(--color-background-muted);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+}
+
+.section-help-btn:hover {
+  background-color: var(--theme-neutral-bg);
+  color: var(--color-text-primary);
+  border-color: var(--color-primary);
 }
 
 .panel-card {
@@ -32,30 +54,6 @@
 
 .panel-header h2 {
   margin: 0;
-  color: var(--color-text-primary);
-}
-
-.panel-header p {
-  margin: 8px 0 0;
-  color: var(--color-text-muted);
-  line-height: 1.5;
-}
-
-.profile-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: 16px;
-  margin-top: 24px;
-}
-
-.profile-field {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  border: 1px solid var(--color-border);
-  border-radius: 12px;
-  padding: 16px;
-  background-color: var(--color-background-secondary);
   color: var(--color-text-primary);
 }
 
@@ -91,6 +89,10 @@
   gap: 22px;
 }
 
+.access-profile-form {
+  margin-top: 24px;
+}
+
 .form-row {
   display: grid;
   grid-template-columns: 160px minmax(0, 1fr);
@@ -121,6 +123,15 @@
   font: inherit;
   color: var(--color-text-primary);
   background-color: var(--color-background-secondary);
+}
+
+.text-input[readonly] {
+  cursor: default;
+}
+
+.text-textarea {
+  min-height: 104px;
+  resize: none;
 }
 
 .text-input:focus,

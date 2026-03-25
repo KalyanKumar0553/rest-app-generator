@@ -1,6 +1,8 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { AbstractControl, FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { MatIconModule } from '@angular/material/icon';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { ToastService } from '../../../../services/toast.service';
 import { AuthService } from '../../../../services/auth.service';
 import { ChangePasswordPayload, UserProfile, UserRoles, UserService } from '../../../../services/user.service';
@@ -10,11 +12,15 @@ import { COUNTRY_TIMEZONE_OPTIONS, CountryTimezoneOption } from './profile-timez
 @Component({
   selector: 'app-profile-panel',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule, MatIconModule, MatTooltipModule],
   templateUrl: './profile-panel.component.html',
   styleUrls: ['./profile-panel.component.css']
 })
 export class ProfilePanelComponent implements OnInit {
+  readonly profileHelpText = 'Your account details, security settings, and timezone preferences.';
+  readonly accessProfileHelpText = 'Review the authenticated identity and granted access rights for this account.';
+  readonly changePasswordHelpText = 'Update your credentials with your current password and a stronger new password.';
+  readonly changeTimezoneHelpText = 'Pick your country first, then select the city or timezone that should drive your account preferences.';
   userEmail = '';
   userName = '';
   userRoles: string[] = [];

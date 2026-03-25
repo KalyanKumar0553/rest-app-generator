@@ -33,6 +33,8 @@ export const API_ENDPOINTS = {
   ADMIN: {
     DATA_ENCRYPTION_RULES: '/api/admin/data-encryption-rules',
     UPDATE_DATA_ENCRYPTION_RULE: (ruleId: string) => `/api/admin/data-encryption-rules/${ruleId}`,
+    CONFIG_FEATURES: '/api/config/features',
+    UPDATE_CONFIG_FEATURE_VALUE: '/api/config/features/value',
     ARTIFACT_APPS: '/api/v1/admin/artifacts/apps',
     ARTIFACT_APP: (appId: string) => `/api/v1/admin/artifacts/apps/${appId}`,
     ARTIFACT_APP_VERSIONS: (appId: string) => `/api/v1/admin/artifacts/apps/${appId}/versions`,
@@ -54,10 +56,13 @@ export const API_ENDPOINTS = {
     REVIEW_COLLABORATION_REQUEST: (id: string, requestId: string) => `/api/projects/${id}/collaboration/requests/${requestId}`,
     COLLABORATION_INVITE: (token: string) => `/api/projects/collaboration/invites/${token}`,
     REQUEST_COLLABORATION: (token: string) => `/api/projects/collaboration/invites/${token}/requests`,
+    ARCHIVED_COLLABORATIONS: '/api/projects/collaboration/archived',
+    RESUBSCRIBE_ARCHIVED_COLLABORATION: (contributorId: string) => `/api/projects/collaboration/archived/${contributorId}/resubscribe`,
     REGISTER_PRESENCE: (id: string) => `/api/projects/${id}/collaboration/presence`,
     HEARTBEAT_PRESENCE: (id: string, sessionId: string) => `/api/projects/${id}/collaboration/presence/${sessionId}`,
     RECORD_ACTION: (id: string) => `/api/projects/${id}/collaboration/actions`,
     UPDATE_CONTRIBUTOR_PERMISSIONS: (projectId: string, contributorId: string) => `/api/projects/${projectId}/contributors/${contributorId}/permissions`,
+    DETACH_CONTRIBUTOR: (projectId: string) => `/api/projects/${projectId}/contributors/detach`,
     TAB_DETAILS: '/api/projects/tab-details'
   },
   RUN: {
@@ -68,6 +73,7 @@ export const API_ENDPOINTS = {
     GENERATE_ZIP: '/api/project-view/generate-zip'
   },
   AI_LABS: {
+    AVAILABILITY: '/api/ai-labs/availability',
     JOBS: '/api/ai-labs/jobs',
     JOB: (jobId: string) => `/api/ai-labs/jobs/${jobId}`,
     JOB_EVENTS: (jobId: string) => `/api/ai-labs/jobs/${jobId}/events`

@@ -1,35 +1,70 @@
 <section class="dashboard-panel">
   <div class="content-header">
     <div class="section-intro">
-      <h1 class="section-title">Profile</h1>
-      <p class="section-subtitle">Your account details, security settings, and timezone preferences.</p>
+      <div class="section-title-row">
+        <h1 class="section-title">Profile</h1>
+        <button
+          type="button"
+          class="section-help-btn"
+          [matTooltip]="profileHelpText"
+          aria-label="Profile help">
+          <mat-icon>help_outline</mat-icon>
+        </button>
+      </div>
     </div>
   </div>
 
   <div class="content-body">
     <section class="panel-card">
       <div class="panel-header">
-        <div>
+        <div class="panel-title-row">
           <h2>Access Profile</h2>
-          <p>Review the authenticated identity and granted access rights for this account.</p>
+          <button
+            type="button"
+            class="section-help-btn"
+            [matTooltip]="accessProfileHelpText"
+            aria-label="Access profile help">
+            <mat-icon>help_outline</mat-icon>
+          </button>
         </div>
       </div>
-      <div class="profile-grid">
-        <div class="profile-field">
-          <span class="field-label">Name</span>
-          <span>{{ userName }}</span>
+      <div class="stack-form access-profile-form">
+        <div class="form-row">
+          <label class="form-label" for="profileName">Name</label>
+          <div class="field-group">
+            <input id="profileName" type="text" class="text-input" [value]="userName" readonly />
+          </div>
         </div>
-        <div class="profile-field">
-          <span class="field-label">Email</span>
-          <span>{{ userEmail }}</span>
+
+        <div class="form-row">
+          <label class="form-label" for="profileEmail">Email</label>
+          <div class="field-group">
+            <input id="profileEmail" type="email" class="text-input" [value]="userEmail" readonly />
+          </div>
         </div>
-        <div class="profile-field">
-          <span class="field-label">Roles</span>
-          <span>{{ userRoles.length ? userRoles.join(', ') : 'No roles found' }}</span>
+
+        <div class="form-row">
+          <label class="form-label" for="profileRoles">Roles</label>
+          <div class="field-group">
+            <textarea
+              id="profileRoles"
+              class="text-input text-textarea"
+              [value]="userRoles.length ? userRoles.join(', ') : 'No roles found'"
+              rows="2"
+              readonly></textarea>
+          </div>
         </div>
-        <div class="profile-field">
-          <span class="field-label">Permissions</span>
-          <span>{{ userPermissions.length ? userPermissions.join(', ') : 'No permissions found' }}</span>
+
+        <div class="form-row">
+          <label class="form-label" for="profilePermissions">Permissions</label>
+          <div class="field-group">
+            <textarea
+              id="profilePermissions"
+              class="text-input text-textarea"
+              [value]="userPermissions.length ? userPermissions.join(', ') : 'No permissions found'"
+              rows="4"
+              readonly></textarea>
+          </div>
         </div>
       </div>
     </section>
@@ -39,9 +74,15 @@
     <section class="profile-sections">
       <article class="panel-card form-panel">
         <div class="panel-header">
-          <div>
+          <div class="panel-title-row">
             <h2>Change password</h2>
-            <p>Update your credentials with your current password and a stronger new password.</p>
+            <button
+              type="button"
+              class="section-help-btn"
+              [matTooltip]="changePasswordHelpText"
+              aria-label="Change password help">
+              <mat-icon>help_outline</mat-icon>
+            </button>
           </div>
         </div>
 
@@ -81,9 +122,15 @@
 
       <article class="panel-card form-panel">
         <div class="panel-header">
-          <div>
+          <div class="panel-title-row">
             <h2>Change timezone</h2>
-            <p>Pick your country first, then select the city or timezone that should drive your account preferences.</p>
+            <button
+              type="button"
+              class="section-help-btn"
+              [matTooltip]="changeTimezoneHelpText"
+              aria-label="Change timezone help">
+              <mat-icon>help_outline</mat-icon>
+            </button>
           </div>
         </div>
 

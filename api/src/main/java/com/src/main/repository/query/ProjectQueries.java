@@ -9,7 +9,7 @@ public final class ProjectQueries {
 			select distinct p
 			from ProjectEntity p
 			left join p.contributors c
-			where p.ownerId = :userId or c.userId = :userId
+			where p.ownerId = :userId or (c.userId = :userId and c.disabled = false)
 			order by p.updatedAt desc
 			""";
 
@@ -17,7 +17,7 @@ public final class ProjectQueries {
 			select distinct p
 			from ProjectEntity p
 			left join p.contributors c
-			where p.ownerId in :userKeys or c.userId in :userKeys
+			where p.ownerId in :userKeys or (c.userId in :userKeys and c.disabled = false)
 			order by p.updatedAt desc
 			""";
 

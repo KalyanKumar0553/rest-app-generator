@@ -8,6 +8,7 @@ import { ConfirmationModalComponent } from '../../../../components/confirmation-
 import { SidenavComponent, NavItem } from '../../../../components/shared/sidenav/sidenav.component';
 import { APP_SETTINGS } from '../../../../settings/app-settings';
 import { UserService } from '../../../../services/user.service';
+import { AiLabsService } from '../../../../services/ai-labs.service';
 
 @Component({
   selector: 'app-dashboard',
@@ -30,6 +31,7 @@ export class DashboardComponent implements OnInit {
   showLogoutConfirmation = false;
   isLoggingOut = false;
   userPermissions: string[] = [];
+  isAiLabsEnabled = false;
 
   private readonly baseNavItems: NavItem[] = [
     { icon: 'folder', label: 'Projects', value: 'projects' },
@@ -39,7 +41,7 @@ export class DashboardComponent implements OnInit {
   ];
 
   get navItems(): NavItem[] {
-    const items = [...this.baseNavItems];
+    const items = this.baseNavItems.filter((item) => item.value !== 'ai-labs' || this.isAiLabsEnabled);
     if (this.userPermissions.includes('artifact.app.read')) {
       items.push({ icon: 'inventory_2', label: 'Artifacts', value: 'artifacts' });
     }
@@ -58,7 +60,8 @@ export class DashboardComponent implements OnInit {
   constructor(
     private router: Router,
     private authService: AuthService,
-    private userService: UserService
+    private userService: UserService,
+    private aiLabsService: AiLabsService
   ) {}
 
   @HostListener('window:pageshow', ['$event'])
@@ -79,6 +82,16 @@ export class DashboardComponent implements OnInit {
     if (userData) {
       this.userEmail = userData.email;
     }
+    this.aiLabsService.getAvailability().subscribe({
+      next: (response) => {
+        this.isAiLabsEnabled = !!response?.enabled;
+        this.syncActiveSection(this.router.url);
+      },
+      error: () => {
+        this.isAiLabsEnabled = false;
+        this.syncActiveSection(this.router.url);
+      }
+    });
     this.userService.getUserRoles().subscribe({
       next: (response) => {
         this.userPermissions = response.permissions || [];

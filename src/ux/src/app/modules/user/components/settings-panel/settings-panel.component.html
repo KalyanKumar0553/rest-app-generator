@@ -7,7 +7,36 @@
   </div>
 
   <div class="content-body">
-    <section class="panel-card" *ngIf="canManageEncryptionRules(); else noSettingsAccess">
+    <section class="panel-card" *ngIf="canManageFeatureFlags()">
+      <div class="panel-header">
+        <div>
+          <h2>Feature Controls</h2>
+          <p>Enable or disable platform features that should be visible to end users.</p>
+        </div>
+      </div>
+
+      <div class="feature-settings" *ngIf="!isLoadingFeatureConfigs; else featureLoadingState">
+        <label class="feature-toggle">
+          <div class="feature-copy">
+            <span class="feature-label">AI Labs</span>
+            <span class="feature-description">Show AI Labs in the user dashboard and allow AI-assisted project planning.</span>
+          </div>
+          <input
+            type="checkbox"
+            [checked]="isAiLabsEnabled()"
+            [disabled]="isSavingAiLabsFeature"
+            (change)="updateAiLabsFeature($event.target.checked)" />
+        </label>
+      </div>
+
+      <ng-template #featureLoadingState>
+        <div class="empty-state compact-empty-state">
+          <p>Loading feature settings...</p>
+        </div>
+      </ng-template>
+    </section>
+
+    <section class="panel-card" *ngIf="canManageEncryptionRules()">
       <div class="panel-header">
         <div>
           <h2>Data Encryption Rules</h2>
@@ -90,8 +119,12 @@
 
     <ng-template #noSettingsAccess>
       <div class="empty-state">
-        <p>You do not have access to platform encryption settings.</p>
+        <p>You do not have access to platform settings.</p>
       </div>
     </ng-template>
+
+    <ng-container *ngIf="!canManageEncryptionRules() && !canManageFeatureFlags()">
+      <ng-container *ngTemplateOutlet="noSettingsAccess"></ng-container>
+    </ng-container>
   </div>
 </section>

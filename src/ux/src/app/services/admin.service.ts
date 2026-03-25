@@ -20,6 +20,25 @@ export interface DataEncryptionRulePayload {
   enabled: boolean;
 }
 
+export interface ConfigPropertyValue {
+  valueKey: string;
+  valueLabel: string;
+}
+
+export interface ConfigProperty {
+  category: string;
+  label: string;
+  propertyKey: string;
+  currentValueKey?: string | null;
+  values: ConfigPropertyValue[];
+}
+
+export interface ConfigFeatureValuePayload {
+  category: string;
+  propertyKey: string;
+  valueKey: string;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -44,5 +63,15 @@ export class AdminService {
   deleteDataEncryptionRule(ruleId: string): Observable<void> {
     const url = `${API_CONFIG.BASE_URL}${API_ENDPOINTS.ADMIN.UPDATE_DATA_ENCRYPTION_RULE(ruleId)}`;
     return this.http.delete<void>(url);
+  }
+
+  getConfigFeatures(): Observable<ConfigProperty[]> {
+    const url = `${API_CONFIG.BASE_URL}${API_ENDPOINTS.ADMIN.CONFIG_FEATURES}`;
+    return this.http.get<ConfigProperty[]>(url);
+  }
+
+  updateConfigFeatureValue(payload: ConfigFeatureValuePayload): Observable<ConfigProperty> {
+    const url = `${API_CONFIG.BASE_URL}${API_ENDPOINTS.ADMIN.UPDATE_CONFIG_FEATURE_VALUE}`;
+    return this.http.put<ConfigProperty>(url, payload);
   }
 }

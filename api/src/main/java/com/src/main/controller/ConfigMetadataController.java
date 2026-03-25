@@ -7,12 +7,14 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.src.main.dto.ConfigPropertyResponseDTO;
 import com.src.main.dto.ConfigPropertySaveRequestDTO;
+import com.src.main.dto.SingleConfigEntryRequestDTO;
 import com.src.main.service.ConfigMetadataService;
 
 import lombok.AllArgsConstructor;
@@ -37,6 +39,18 @@ public class ConfigMetadataController {
 	@GetMapping("/category/{category}")
 	public ResponseEntity<List<ConfigPropertyResponseDTO>> getByCategory(@PathVariable("category") String category) {
 		return ResponseEntity.ok(configMetadataService.getPropertiesByCategory(category));
+	}
+
+	@GetMapping("/features")
+	@PreAuthorize("hasRole('SUPER_ADMIN')")
+	public ResponseEntity<List<ConfigPropertyResponseDTO>> getFeatureProperties() {
+		return ResponseEntity.ok(configMetadataService.getPropertiesByCategory("FEATURES"));
+	}
+
+	@PutMapping("/features/value")
+	@PreAuthorize("hasRole('SUPER_ADMIN')")
+	public ResponseEntity<ConfigPropertyResponseDTO> updateFeatureValue(@RequestBody SingleConfigEntryRequestDTO request) {
+		return ResponseEntity.ok(configMetadataService.updateCurrentValue(request));
 	}
 	
 	@PostMapping("/reload")

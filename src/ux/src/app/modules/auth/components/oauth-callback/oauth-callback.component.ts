@@ -21,7 +21,7 @@ export class OauthCallbackComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    this.oauthProgressService.show('Completing sign-in', 'Request in progress.');
+    this.oauthProgressService.show('Request in progress', 'Request in progress.');
 
     this.route.queryParamMap.subscribe((params) => {
       const error = params.get('error');

@@ -14,6 +14,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.HttpStatus;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.openai.OpenAiChatOptions;
@@ -38,8 +39,8 @@ import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
+@ConditionalOnProperty(prefix = "app.ai.openai", name = "enabled", havingValue = "true")
 public class AiLabsService {
-	private static final String AI_LABS_FEATURE_KEY = "app.feature.ai-labs.enabled";
 
 	private static final Pattern YAML_FENCE_PATTERN = Pattern.compile("```(?:yaml|yml)?\\s*(.*?)```", Pattern.DOTALL | Pattern.CASE_INSENSITIVE);
 	private static final Pattern JSON_FENCE_PATTERN = Pattern.compile("```(?:json)?\\s*(.*?)```", Pattern.DOTALL | Pattern.CASE_INSENSITIVE);
@@ -59,7 +60,6 @@ public class AiLabsService {
 	private final ProjectDraftSpecMapperService projectDraftSpecMapperService;
 	private final ProjectNameValidationService projectNameValidationService;
 	private final ProjectUserIdentityService projectUserIdentityService;
-	private final ConfigMetadataService configMetadataService;
 	private final ChatClient.Builder chatClientBuilder;
 	private final ObjectMapper objectMapper;
 
@@ -72,8 +72,8 @@ public class AiLabsService {
 	private final ConcurrentMap<UUID, JobState> jobs = new ConcurrentHashMap<>();
 
 	public AiLabsGenerateResponseDTO createJob(String prompt, String ownerId) {
-		if (!configMetadataService.isPropertyEnabled(AI_LABS_FEATURE_KEY, false)) {
-			throw new GenericException(HttpStatus.BAD_REQUEST, "AI Labs is disabled.");
+		if (!openAiEnabled) {
+			throw new GenericException(HttpStatus.BAD_REQUEST, "AI Labs is not configured for this environment.");
 		}
 		UUID jobId = UUID.randomUUID();
 		JobState state = JobState.create(jobId, prompt);

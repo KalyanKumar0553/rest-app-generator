@@ -1,13 +1,27 @@
 <section class="dashboard-panel">
   <div class="content-header">
     <div class="section-intro">
-      <h1 class="section-title">AI Labs</h1>
-      <p class="section-subtitle">Turn a product idea into a saved project draft using AI-assisted project planning.</p>
+      <div class="section-title-row">
+        <h1 class="section-title">AI Labs</h1>
+        <button
+          type="button"
+          class="section-help-btn"
+          [matTooltip]="aiLabsHelpText"
+          aria-label="AI Labs help">
+          <mat-icon>help_outline</mat-icon>
+        </button>
+      </div>
     </div>
   </div>
 
   <div class="content-body">
-    <section class="panel-card ai-labs-panel">
+    <app-no-data-state
+      *ngIf="!isAiLabsEnabled"
+      [title]="'No Data Available'"
+      [message]="'AI Labs is not configured for this environment.'">
+    </app-no-data-state>
+
+    <section class="panel-card ai-labs-panel" *ngIf="isAiLabsEnabled">
       <label class="field-label" for="aiPrompt">Idea brief</label>
       <textarea
         id="aiPrompt"
@@ -23,7 +37,7 @@
       </div>
     </section>
 
-    <section class="panel-card" *ngIf="aiJob">
+    <section class="panel-card" *ngIf="isAiLabsEnabled && aiJob">
       <div class="panel-header">
         <div>
           <h2>Backend Progress</h2>

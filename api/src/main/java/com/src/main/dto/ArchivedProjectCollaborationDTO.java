@@ -10,13 +10,12 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class ProjectContributorDTO {
-	private UUID id;
-	private String userId;
-	private boolean canEditDraft;
-	private boolean canGenerate;
-	private boolean canManageCollaboration;
-	private boolean disabled;
+public class ArchivedProjectCollaborationDTO {
+	private UUID contributorId;
+	private UUID projectId;
+	private String projectName;
+	private String ownerId;
+	private String generator;
+	private String inviteToken;
 	private OffsetDateTime disabledAt;
-	private OffsetDateTime createdAt;
 }

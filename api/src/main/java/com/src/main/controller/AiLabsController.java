@@ -4,7 +4,6 @@ import java.security.Principal;
 import java.util.UUID;
 
 import org.springframework.http.MediaType;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -25,7 +24,6 @@ import lombok.RequiredArgsConstructor;
 @RestController
 @RequestMapping("/api/ai-labs")
 @RequiredArgsConstructor
-@ConditionalOnProperty(prefix = "app.ai.openai", name = "enabled", havingValue = "true")
 public class AiLabsController {
 
 	private final AiLabsService aiLabsService;

@@ -68,6 +68,18 @@ public class ProjectCollaborationService {
 		publishPresence(projectId, snapshot(projectId));
 	}
 
+	public void clearUserSessions(UUID projectId, String userId) {
+		Map<String, SessionPresence> sessions = sessionsByProject.get(projectId);
+		if (sessions == null || sessions.isEmpty()) {
+			return;
+		}
+		sessions.entrySet().removeIf(entry -> userId != null && userId.equals(entry.getValue().userId));
+		if (sessions.isEmpty()) {
+			sessionsByProject.remove(projectId);
+		}
+		publishPresence(projectId, snapshot(projectId));
+	}
+
 	public ProjectCollaborationStateDTO recordAction(UUID projectId, String userId, ProjectCollaborationActionRequestDTO request) {
 		touchExistingSession(projectId, userId, request.getSessionId());
 		ProjectCollaborationActionDTO action = new ProjectCollaborationActionDTO(

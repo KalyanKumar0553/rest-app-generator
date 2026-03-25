@@ -3,6 +3,7 @@ package com.src.main.service;
 import java.util.List;
 import java.util.UUID;
 
+import com.src.main.dto.ArchivedProjectCollaborationDTO;
 import com.src.main.dto.ProjectCollaborationInviteDTO;
 import com.src.main.dto.ProjectCollaborationRequestCreateDTO;
 import com.src.main.dto.ProjectCollaborationRequestDTO;
@@ -48,6 +49,12 @@ public interface ProjectService {
 			ProjectContributorPermissionUpdateDTO request);
 
 	void removeContributor(UUID projectId, String ownerId, String contributorUserId);
+
+	void detachContributor(UUID projectId, String userId);
+
+	List<ArchivedProjectCollaborationDTO> getArchivedCollaborations(String userId);
+
+	ProjectCollaborationRequestDTO resubscribeArchivedCollaboration(UUID contributorId, String userId);
 
 	List<ProjectCollaborationRequestDTO> getCollaborationRequests(UUID projectId, String userId);
 

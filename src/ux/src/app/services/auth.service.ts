@@ -197,7 +197,8 @@ export class AuthService {
       return throwError(() => new Error('No refresh token available'));
     }
 
-    this.refreshInFlight$ = this.http.post<RefreshTokenResponse>(url, { refreshToken }).pipe(
+    this.refreshInFlight$ = this.http.post<any>(url, { refreshToken }).pipe(
+      map((response: any) => response?.data || response),
       tap(response => {
         if (response.accessToken) {
           this.localStorageService.setItem(STORAGE_KEYS.ACCESS_TOKEN, response.accessToken);

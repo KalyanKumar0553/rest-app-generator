@@ -21,6 +21,7 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.src.main.auth.service.RbacService;
+import com.src.main.dto.ArchivedProjectCollaborationDTO;
 import com.src.main.dto.ProjectCollaborationInviteDTO;
 import com.src.main.dto.ProjectCollaborationRequestCreateDTO;
 import com.src.main.dto.ProjectCollaborationRequestDTO;
@@ -65,6 +66,7 @@ public class ProjectServiceImpl implements ProjectService {
 	private static final String REQUEST_STATUS_PENDING = "PENDING";
 	private static final String REQUEST_STATUS_ACCEPTED = "ACCEPTED";
 	private static final String REQUEST_STATUS_REJECTED = "REJECTED";
+	private static final String REQUEST_STATUS_ARCHIVED = "ARCHIVED";
 
 	private final ProjectRepository repo;
 	private final ProjectRunRepository projectRunRepository;
@@ -75,6 +77,7 @@ public class ProjectServiceImpl implements ProjectService {
 	private final ProjectDraftService projectDraftService;
 	private final ProjectDraftSpecMapperService projectDraftSpecMapperService;
 	private final ProjectNameValidationService projectNameValidationService;
+	private final ProjectCollaborationService projectCollaborationService;
 	private final RbacService rbacService;
 	private final Validator validator;
 
@@ -416,6 +419,9 @@ public class ProjectServiceImpl implements ProjectService {
 		}
 		boolean matched = false;
 		for (ProjectContributorEntity contributor : project.getContributors()) {
+			if (contributor.isDisabled()) {
+				continue;
+			}
 			if (!matchesUserKey(contributor.getUserId(), currentUser.keys())) {
 				continue;
 			}
@@ -544,7 +550,19 @@ public class ProjectServiceImpl implements ProjectService {
 			contributor.setCanEditDraft(true);
 			contributor.setCanGenerate(true);
 			contributor.setCanManageCollaboration(false);
+			contributor.setDisabled(false);
+			contributor.setDisabledAt(null);
 			projectContributorRepository.save(contributor);
+		} else {
+			projectContributorRepository.findFirstByProjectIdAndUserId(projectId, contributorUserId)
+					.ifPresent(contributor -> {
+						contributor.setDisabled(false);
+						contributor.setDisabledAt(null);
+						contributor.setCanEditDraft(true);
+						contributor.setCanGenerate(true);
+						contributor.setCanManageCollaboration(false);
+						projectContributorRepository.save(contributor);
+					});
 		}
 		return getContributors(projectId, currentUser.userId());
 	}
@@ -557,6 +575,9 @@ public class ProjectServiceImpl implements ProjectService {
 		getProjectForContributorManagement(projectId, currentUser, true);
 		ProjectContributorEntity contributor = projectContributorRepository.findByIdAndProjectId(contributorId, projectId)
 				.orElseThrow(() -> new IllegalArgumentException("Contributor not found"));
+		if (contributor.isDisabled()) {
+			throw new IllegalArgumentException("Contributor is archived");
+		}
 		contributor.setCanEditDraft(request.isCanEditDraft());
 		contributor.setCanGenerate(request.isCanGenerate());
 		contributor.setCanManageCollaboration(request.isCanManageCollaboration());
@@ -576,6 +597,51 @@ public class ProjectServiceImpl implements ProjectService {
 			throw new IllegalArgumentException("contributorUserId is required");
 		}
 		projectContributorRepository.deleteByProjectIdAndUserId(projectId, normalizedUserId);
+	}
+
+	@Override
+	@Transactional
+	public void detachContributor(UUID projectId, String userId) {
+		ProjectUserIdentityService.ResolvedProjectUser currentUser = projectUserIdentityService.resolve(userId);
+		getAccessibleProject(projectId, currentUser);
+		ProjectContributorEntity contributor = findContributorAccess(projectId, currentUser)
+				.orElseThrow(() -> new SecurityException("Contributor access not found"));
+		contributor.setDisabled(true);
+		contributor.setDisabledAt(OffsetDateTime.now());
+		projectContributorRepository.save(contributor);
+		projectCollaborationService.clearUserSessions(projectId, currentUser.userId());
+	}
+
+	@Override
+	@Transactional(readOnly = true)
+	public List<ArchivedProjectCollaborationDTO> getArchivedCollaborations(String userId) {
+		ProjectUserIdentityService.ResolvedProjectUser currentUser = projectUserIdentityService.resolve(userId);
+		return projectContributorRepository.findByUserIdInAndDisabledTrueOrderByDisabledAtDesc(currentUser.keys()).stream()
+				.map(contributor -> new ArchivedProjectCollaborationDTO(
+						contributor.getId(),
+						contributor.getProject().getId(),
+						contributor.getProject().getName(),
+						contributor.getProject().getOwnerId(),
+						contributor.getProject().getGenerator(),
+						contributor.getProject().getInviteToken(),
+						contributor.getDisabledAt()))
+				.collect(Collectors.toList());
+	}
+
+	@Override
+	@Transactional
+	public ProjectCollaborationRequestDTO resubscribeArchivedCollaboration(UUID contributorId, String userId) {
+		ProjectUserIdentityService.ResolvedProjectUser currentUser = projectUserIdentityService.resolve(userId);
+		ProjectContributorEntity contributor = projectContributorRepository.findById(contributorId)
+				.orElseThrow(() -> new IllegalArgumentException("Archived collaboration not found"));
+		if (!contributor.isDisabled() || !matchesUserKey(contributor.getUserId(), currentUser.keys())) {
+			throw new SecurityException("User not allowed to resubscribe this collaboration");
+		}
+		ProjectCollaborationRequestCreateDTO request = new ProjectCollaborationRequestCreateDTO();
+		request.setCanEditDraft(contributor.isCanEditDraft());
+		request.setCanGenerate(contributor.isCanGenerate());
+		request.setCanManageCollaboration(contributor.isCanManageCollaboration());
+		return requestCollaboration(contributor.getProject().getInviteToken(), currentUser.userId(), request);
 	}
 
 	@Override
@@ -612,6 +678,8 @@ public class ProjectServiceImpl implements ProjectService {
 						created.setUserId(collaborationRequest.getRequesterId());
 						return created;
 					});
+			contributor.setDisabled(false);
+			contributor.setDisabledAt(null);
 			contributor.setCanEditDraft(collaborationRequest.isGrantedCanEditDraft());
 			contributor.setCanGenerate(collaborationRequest.isGrantedCanGenerate());
 			contributor.setCanManageCollaboration(collaborationRequest.isGrantedCanManageCollaboration());
@@ -648,9 +716,13 @@ public class ProjectServiceImpl implements ProjectService {
 		if (findContributorAccess(project.getId(), currentUser).isPresent()) {
 			throw new IllegalArgumentException("You already have contributor access to this project");
 		}
+		projectContributorRepository.findFirstByProjectIdAndUserIdIn(project.getId(), currentUser.keys())
+				.filter(ProjectContributorEntity::isDisabled)
+				.ifPresent(contributor -> archivePendingRequests(project.getId(), contributor.getUserId()));
 		ProjectCollaborationRequestEntity collaborationRequest = projectCollaborationRequestRepository
 				.findFirstByProjectIdAndRequesterIdOrderByCreatedAtDesc(project.getId(), currentUser.userId())
-				.filter(existing -> REQUEST_STATUS_PENDING.equalsIgnoreCase(existing.getStatus()))
+				.filter(existing -> REQUEST_STATUS_PENDING.equalsIgnoreCase(existing.getStatus())
+						|| REQUEST_STATUS_ARCHIVED.equalsIgnoreCase(existing.getStatus()))
 				.orElseGet(ProjectCollaborationRequestEntity::new);
 		collaborationRequest.setProject(project);
 		collaborationRequest.setRequesterId(currentUser.userId());
@@ -710,7 +782,7 @@ public class ProjectServiceImpl implements ProjectService {
 		reassignOwnerIfNeeded(project, currentUser);
 		if (canReadAllProjects()
 				|| currentUser.keys().contains(project.getOwnerId())
-				|| projectContributorRepository.existsByProjectIdAndUserIdIn(projectId, currentUser.keys())) {
+				|| projectContributorRepository.existsByProjectIdAndUserIdInAndDisabledFalse(projectId, currentUser.keys())) {
 			return project;
 		}
 		throw new SecurityException("User not allowed to access this project");
@@ -787,7 +859,7 @@ public class ProjectServiceImpl implements ProjectService {
 		if (currentUser == null || currentUser.keys() == null || currentUser.keys().isEmpty()) {
 			return Optional.empty();
 		}
-		return projectContributorRepository.findFirstByProjectIdAndUserIdIn(projectId, currentUser.keys());
+		return projectContributorRepository.findFirstByProjectIdAndUserIdInAndDisabledFalse(projectId, currentUser.keys());
 	}
 
 	private String ensureInviteToken(ProjectEntity project) {
@@ -899,14 +971,29 @@ public class ProjectServiceImpl implements ProjectService {
 	private List<ProjectContributorDTO> toContributorDtos(UUID projectId) {
 		List<ProjectContributorEntity> contributors = projectContributorRepository.findByProjectIdOrderByCreatedAtAsc(projectId);
 		return contributors.stream()
+				.filter(contributor -> !contributor.isDisabled())
 				.map(contributor -> new ProjectContributorDTO(
 						contributor.getId(),
 						contributor.getUserId(),
 						contributor.isCanEditDraft(),
 						contributor.isCanGenerate(),
 						contributor.isCanManageCollaboration(),
+						contributor.isDisabled(),
+						contributor.getDisabledAt(),
 						contributor.getCreatedAt()))
 				.collect(Collectors.toList());
+	}
+
+	private void archivePendingRequests(UUID projectId, String requesterId) {
+		projectCollaborationRequestRepository.findFirstByProjectIdAndRequesterIdOrderByCreatedAtDesc(projectId, requesterId)
+				.ifPresent(existing -> {
+					if (REQUEST_STATUS_PENDING.equalsIgnoreCase(existing.getStatus())) {
+						existing.setStatus(REQUEST_STATUS_ARCHIVED);
+						existing.setReviewedBy(requesterId);
+						existing.setReviewedAt(OffsetDateTime.now());
+						projectCollaborationRequestRepository.save(existing);
+					}
+				});
 	}
 
 	private ProjectSummaryDTO toSummary(ProjectEntity project) {

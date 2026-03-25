@@ -11,10 +11,15 @@ import com.src.main.model.ProjectContributorEntity;
 
 public interface ProjectContributorRepository extends JpaRepository<ProjectContributorEntity, UUID> {
 	boolean existsByProjectIdAndUserId(UUID projectId, String userId);
+	boolean existsByProjectIdAndUserIdAndDisabledFalse(UUID projectId, String userId);
 	boolean existsByProjectIdAndUserIdIn(UUID projectId, Collection<String> userIds);
+	boolean existsByProjectIdAndUserIdInAndDisabledFalse(UUID projectId, Collection<String> userIds);
 	Optional<ProjectContributorEntity> findByIdAndProjectId(UUID contributorId, UUID projectId);
 	Optional<ProjectContributorEntity> findFirstByProjectIdAndUserIdIn(UUID projectId, Collection<String> userIds);
+	Optional<ProjectContributorEntity> findFirstByProjectIdAndUserIdInAndDisabledFalse(UUID projectId, Collection<String> userIds);
+	Optional<ProjectContributorEntity> findFirstByProjectIdAndUserId(UUID projectId, String userId);
 	List<ProjectContributorEntity> findByProjectIdOrderByCreatedAtAsc(UUID projectId);
+	List<ProjectContributorEntity> findByUserIdInAndDisabledTrueOrderByDisabledAtDesc(Collection<String> userIds);
 	long deleteByProjectId(UUID projectId);
 	long deleteByProjectIdAndUserId(UUID projectId, String userId);
 }

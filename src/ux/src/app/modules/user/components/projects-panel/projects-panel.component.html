@@ -51,10 +51,6 @@
 
 <section class="dashboard-panel">
   <div class="content-header">
-    <div class="section-intro">
-      <h1 class="section-title">Projects</h1>
-      <p class="section-subtitle">Manage, search, and reopen your generated projects.</p>
-    </div>
     <div class="action-buttons">
       <button class="btn btn-primary" (click)="createNewProject()">Create new project</button>
       <button class="btn btn-secondary" (click)="openImportProjectModal()">Import project</button>
@@ -68,13 +64,17 @@
   </div>
 
   <div class="content-body">
-    <div *ngIf="!isLoadingProjects && projects.length === 0" class="empty-state">
-      <p>No projects found. Create your first project to get started.</p>
-    </div>
+    <app-no-data-state
+      *ngIf="!isLoadingProjects && projects.length === 0"
+      [title]="'No Data Available'"
+      [message]="'No projects found. Create your first project to get started.'">
+    </app-no-data-state>
 
-    <div *ngIf="!isLoadingProjects && projects.length > 0 && filteredProjects.length === 0" class="empty-state">
-      <p>No projects match your search criteria.</p>
-    </div>
+    <app-no-data-state
+      *ngIf="!isLoadingProjects && projects.length > 0 && filteredProjects.length === 0"
+      [title]="'No Data Available'"
+      [message]="'No projects match your search criteria.'">
+    </app-no-data-state>
 
     <div class="projects-grid" *ngIf="!isLoadingProjects && filteredProjects.length > 0">
       <div class="project-card" *ngFor="let project of filteredProjects">

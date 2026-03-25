@@ -54,6 +54,8 @@ class ProjectServiceImplDraftTest {
 	@Mock
 	private ProjectNameValidationService projectNameValidationService;
 	@Mock
+	private ProjectCollaborationService projectCollaborationService;
+	@Mock
 	private com.src.main.auth.service.RbacService rbacService;
 	@Captor
 	private ArgumentCaptor<ProjectEntity> projectCaptor;
@@ -80,6 +82,7 @@ class ProjectServiceImplDraftTest {
 				projectDraftService,
 				projectDraftSpecMapperService,
 				projectNameValidationService,
+				projectCollaborationService,
 				rbacService,
 				validator);
 	}

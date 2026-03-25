@@ -141,3 +141,13 @@ VALUES ('LIQUIBASE', 'Enable Liquibase', 'spring.liquibase.enabled');
 INSERT INTO config_property_values (property_id, value_key, value_label) VALUES
 ((SELECT id FROM config_property WHERE property_key = 'spring.liquibase.enabled'), 'true', 'True'),
 ((SELECT id FROM config_property WHERE property_key = 'spring.liquibase.enabled'), 'false', 'False');
+
+-- ================================
+-- FEATURES
+-- ================================
+INSERT INTO config_property (category, label, property_key, current_value_key)
+VALUES ('FEATURES', 'AI Labs', 'app.feature.ai-labs.enabled', 'false');
+
+INSERT INTO config_property_values (property_id, value_key, value_label) VALUES
+((SELECT id FROM config_property WHERE property_key = 'app.feature.ai-labs.enabled'), 'true', 'Enabled'),
+((SELECT id FROM config_property WHERE property_key = 'app.feature.ai-labs.enabled'), 'false', 'Disabled');

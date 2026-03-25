@@ -10,6 +10,7 @@ import { SearchSortComponent, SearchConfig, SortOption, SearchSortEvent } from '
 import { resolveProjectGenerationRoute } from '../../../project-generation/utils/project-generation-route.utils';
 import { ModalComponent } from '../../../../components/modal/modal.component';
 import { LoadingOverlayComponent } from '../../../../components/shared/loading-overlay/loading-overlay.component';
+import { NoDataStateComponent } from '../../../../components/shared/no-data-state/no-data-state.component';
 
 export interface Project extends ProjectSummary {
   name: string;
@@ -21,7 +22,7 @@ export interface Project extends ProjectSummary {
 @Component({
   selector: 'app-projects-panel',
   standalone: true,
-  imports: [CommonModule, FormsModule, ConfirmationModalComponent, SearchSortComponent, ModalComponent, LoadingOverlayComponent],
+  imports: [CommonModule, FormsModule, ConfirmationModalComponent, SearchSortComponent, ModalComponent, LoadingOverlayComponent, NoDataStateComponent],
   templateUrl: './projects-panel.component.html',
   styleUrls: ['./projects-panel.component.css']
 })

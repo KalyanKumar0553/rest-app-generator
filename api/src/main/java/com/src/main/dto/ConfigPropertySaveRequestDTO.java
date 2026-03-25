@@ -26,4 +26,7 @@ public class ConfigPropertySaveRequestDTO {
     @Valid
     private List<ConfigPropertyValueDTO> values;
 
+    @Size(max = 200, message = "Current value can contain up to 200 characters")
+    private String currentValueKey;
+
 }

@@ -744,6 +744,21 @@
   box-shadow: var(--shadow-sm);
 }
 
+.collaboration-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.collaboration-card-header h3 {
+  margin: 0;
+}
+
+.detach-collaboration-btn {
+  white-space: nowrap;
+}
+
 .collaboration-title-row {
   display: flex;
   align-items: center;

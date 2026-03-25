@@ -11,5 +11,6 @@ public class ConfigPropertyResponseDTO {
 	private String category;
     private String label;
     private String propertyKey;
+    private String currentValueKey;
     private List<ConfigPropertyValueDTO> values;
 }

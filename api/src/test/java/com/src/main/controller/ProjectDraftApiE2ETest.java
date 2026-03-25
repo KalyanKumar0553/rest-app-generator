@@ -68,6 +68,8 @@ class ProjectDraftApiE2ETest {
 	@Mock
 	private ProjectNameValidationService projectNameValidationService;
 	@Mock
+	private ProjectCollaborationService projectCollaborationService;
+	@Mock
 	private RbacService rbacService;
 	@Mock
 	private ProjectOrchestrationService projectOrchestrationService;
@@ -90,6 +92,7 @@ class ProjectDraftApiE2ETest {
 				new ProjectDraftService(objectMapper),
 				new ProjectDraftSpecMapperService(),
 				projectNameValidationService,
+				projectCollaborationService,
 				rbacService,
 				Validation.buildDefaultValidatorFactory().getValidator());
 

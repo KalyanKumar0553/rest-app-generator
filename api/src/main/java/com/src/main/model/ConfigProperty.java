@@ -30,6 +30,9 @@ public class ConfigProperty {
     @Column(name = "property_key", nullable = false, length = 300, unique = true)
     private String propertyKey;
 
+    @Column(name = "current_value_key", length = 200)
+    private String currentValueKey;
+
     @OneToMany(mappedBy = "property", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     @OrderBy("id ASC")
     private Set<ConfigPropertyValue> allowedValues = new LinkedHashSet<>();

@@ -63,10 +63,14 @@ public class AiLabsService {
 	private final ChatClient.Builder chatClientBuilder;
 	private final ObjectMapper objectMapper;
 
+<<<<<<< HEAD
 	@Value("${app.ai.openai.enabled:false}")
 	private boolean openAiEnabled;
 
 	@Value("${app.ai.openai.model:gpt-4o-mini}")
+=======
+	@Value("${app.ai.openai.model:gpt-5.4}")
+>>>>>>> 95c53a3 (For AI Integration)
 	private String openAiModel;
 
 	private final ConcurrentMap<UUID, JobState> jobs = new ConcurrentHashMap<>();

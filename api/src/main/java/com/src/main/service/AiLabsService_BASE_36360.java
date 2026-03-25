@@ -2,6 +2,7 @@ package com.src.main.service;
 
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -14,6 +15,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.HttpStatus;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.openai.OpenAiChatOptions;
@@ -38,8 +40,8 @@ import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
+@ConditionalOnProperty(prefix = "app.ai.openai", name = "enabled", havingValue = "true")
 public class AiLabsService {
-	private static final String AI_LABS_FEATURE_KEY = "app.feature.ai-labs.enabled";
 
 	private static final Pattern YAML_FENCE_PATTERN = Pattern.compile("```(?:yaml|yml)?\\s*(.*?)```", Pattern.DOTALL | Pattern.CASE_INSENSITIVE);
 	private static final Pattern JSON_FENCE_PATTERN = Pattern.compile("```(?:json)?\\s*(.*?)```", Pattern.DOTALL | Pattern.CASE_INSENSITIVE);
@@ -51,7 +53,12 @@ public class AiLabsService {
 	private static final TypeReference<Map<String, Object>> MAP_TYPE = new TypeReference<>() {
 	};
 	private static final ResponseFormat AI_DRAFT_RESPONSE_FORMAT = ResponseFormat.builder()
-			.type(ResponseFormat.Type.JSON_OBJECT)
+			.type(ResponseFormat.Type.JSON_SCHEMA)
+			.jsonSchema(ResponseFormat.JsonSchema.builder()
+					.name("project_draft")
+					.strict(true)
+					.schema(buildDraftSchema())
+					.build())
 			.build();
 
 	private final AiLabsEventStreamService eventStreamService;
@@ -59,21 +66,20 @@ public class AiLabsService {
 	private final ProjectDraftSpecMapperService projectDraftSpecMapperService;
 	private final ProjectNameValidationService projectNameValidationService;
 	private final ProjectUserIdentityService projectUserIdentityService;
-	private final ConfigMetadataService configMetadataService;
 	private final ChatClient.Builder chatClientBuilder;
 	private final ObjectMapper objectMapper;
 
 	@Value("${app.ai.openai.enabled:false}")
 	private boolean openAiEnabled;
 
-	@Value("${app.ai.openai.model:gpt-4o-mini}")
+	@Value("${app.ai.openai.model:gpt-5-mini}")
 	private String openAiModel;
 
 	private final ConcurrentMap<UUID, JobState> jobs = new ConcurrentHashMap<>();
 
 	public AiLabsGenerateResponseDTO createJob(String prompt, String ownerId) {
-		if (!configMetadataService.isPropertyEnabled(AI_LABS_FEATURE_KEY, false)) {
-			throw new GenericException(HttpStatus.BAD_REQUEST, "AI Labs is disabled.");
+		if (!openAiEnabled) {
+			throw new GenericException(HttpStatus.BAD_REQUEST, "AI Labs is not configured for this environment.");
 		}
 		UUID jobId = UUID.randomUUID();
 		JobState state = JobState.create(jobId, prompt);
@@ -144,6 +150,7 @@ public class AiLabsService {
 				.defaultOptions(OpenAiChatOptions.builder()
 						.model(openAiModel)
 						.temperature(0.1d)
+						.reasoningEffort("low")
 						.responseFormat(AI_DRAFT_RESPONSE_FORMAT)
 						.build())
 				.build();
@@ -304,6 +311,93 @@ public class AiLabsService {
 		normalized.computeIfAbsent("controllers", ignored -> new LinkedHashMap<>());
 		normalized.computeIfAbsent("selectedDependencies", ignored -> new ArrayList<>());
 		return normalized;
+	}
+
+	private static Map<String, Object> buildDraftSchema() {
+		Map<String, Object> root = schemaObject(Map.of(
+				"settings", settingsSchema(),
+				"database", looseObjectSchema(),
+				"preferences", looseObjectSchema(),
+				"selectedDependencies", schemaArray(schemaString()),
+				"entities", schemaArray(entitySchema()),
+				"relations", schemaArray(looseObjectSchema()),
+				"dataObjects", schemaArray(looseObjectSchema()),
+				"enums", schemaArray(looseObjectSchema()),
+				"mappers", schemaArray(looseObjectSchema()),
+				"controllers", looseObjectSchema()),
+				List.of("settings"));
+		return root;
+	}
+
+	private static Map<String, Object> settingsSchema() {
+		return schemaObject(Map.of(
+				"language", schemaEnum(List.of("java", "node", "python")),
+				"projectName", schemaString(),
+				"projectGroup", schemaString(),
+				"projectDescription", schemaString(),
+				"buildType", schemaEnum(List.of("gradle", "maven")),
+				"packageManager", schemaEnum(List.of("npm", "pnpm", "yarn")),
+				"serverPort", schemaInteger()),
+				Collections.emptyList());
+	}
+
+	private static Map<String, Object> entitySchema() {
+		return schemaObject(Map.of(
+				"name", schemaString(),
+				"addRestEndpoints", schemaBoolean(),
+				"addCrudOperations", schemaBoolean(),
+				"fields", schemaArray(fieldSchema())),
+				List.of("name"));
+	}
+
+	private static Map<String, Object> fieldSchema() {
+		return schemaObject(Map.of(
+				"name", schemaString(),
+				"type", schemaString(),
+				"required", schemaBoolean(),
+				"unique", schemaBoolean(),
+				"primaryKey", schemaBoolean(),
+				"generationType", schemaString()),
+				List.of("name", "type"));
+	}
+
+	private static Map<String, Object> looseObjectSchema() {
+		return Map.of(
+				"type", "object",
+				"additionalProperties", true);
+	}
+
+	private static Map<String, Object> schemaObject(Map<String, Object> properties, List<String> required) {
+		Map<String, Object> schema = new LinkedHashMap<>();
+		schema.put("type", "object");
+		schema.put("properties", properties);
+		schema.put("required", required);
+		schema.put("additionalProperties", false);
+		return schema;
+	}
+
+	private static Map<String, Object> schemaArray(Object items) {
+		return Map.of(
+				"type", "array",
+				"items", items);
+	}
+
+	private static Map<String, Object> schemaString() {
+		return Map.of("type", "string");
+	}
+
+	private static Map<String, Object> schemaInteger() {
+		return Map.of("type", "integer");
+	}
+
+	private static Map<String, Object> schemaBoolean() {
+		return Map.of("type", "boolean");
+	}
+
+	private static Map<String, Object> schemaEnum(List<String> values) {
+		return Map.of(
+				"type", "string",
+				"enum", values);
 	}
 
 	@Transactional(readOnly = true)

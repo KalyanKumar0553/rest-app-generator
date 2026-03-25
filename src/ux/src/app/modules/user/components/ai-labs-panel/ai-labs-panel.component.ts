@@ -2,20 +2,25 @@ import { Component, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
+import { MatIconModule } from '@angular/material/icon';
 import { MatTableModule } from '@angular/material/table';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { AiLabsJobStatus, AiLabsService } from '../../../../services/ai-labs.service';
+import { NoDataStateComponent } from '../../../../components/shared/no-data-state/no-data-state.component';
 import { ToastService } from '../../../../services/toast.service';
 import { resolveProjectGenerationRoute } from '../../../project-generation/utils/project-generation-route.utils';
 
 @Component({
   selector: 'app-ai-labs-panel',
   standalone: true,
-  imports: [CommonModule, FormsModule, MatTableModule],
+  imports: [CommonModule, FormsModule, MatIconModule, MatTableModule, MatTooltipModule, NoDataStateComponent],
   templateUrl: './ai-labs-panel.component.html',
   styleUrls: ['./ai-labs-panel.component.css']
 })
 export class AiLabsPanelComponent implements OnDestroy {
   aiPrompt = '';
+  readonly aiLabsHelpText = 'Turn a product idea into a saved project draft using AI-assisted project planning.';
+  isAiLabsEnabled = true;
   isStartingAiJob = false;
   aiJob: AiLabsJobStatus | null = null;
   aiJobColumns: string[] = ['label', 'status', 'message', 'updatedAt'];
@@ -31,7 +36,22 @@ export class AiLabsPanelComponent implements OnDestroy {
     this.closeAiJobEvents();
   }
 
+  ngOnInit(): void {
+    this.aiLabsService.getAvailability().subscribe({
+      next: (response) => {
+        this.isAiLabsEnabled = !!response?.enabled;
+      },
+      error: () => {
+        this.isAiLabsEnabled = false;
+      }
+    });
+  }
+
   startAiProjectGeneration(): void {
+    if (!this.isAiLabsEnabled) {
+      this.toastService.error('AI Labs is not configured for this environment.');
+      return;
+    }
     const prompt = this.aiPrompt.trim();
     if (!prompt) {
       this.toastService.error('Enter an idea before generating a project.');

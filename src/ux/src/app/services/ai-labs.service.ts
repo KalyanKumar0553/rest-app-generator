@@ -30,6 +30,10 @@ export interface AiLabsGenerateResponse {
   status: string;
 }
 
+export interface AiLabsAvailability {
+  enabled: boolean;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -42,6 +46,11 @@ export class AiLabsService {
   generateProject(prompt: string): Observable<AiLabsGenerateResponse> {
     const url = `${API_CONFIG.BASE_URL}${API_ENDPOINTS.AI_LABS.JOBS}`;
     return this.http.post<AiLabsGenerateResponse>(url, { prompt });
+  }
+
+  getAvailability(): Observable<AiLabsAvailability> {
+    const url = `${API_CONFIG.BASE_URL}${API_ENDPOINTS.AI_LABS.AVAILABILITY}`;
+    return this.http.get<AiLabsAvailability>(url);
   }
 
   getJob(jobId: string): Observable<AiLabsJobStatus> {

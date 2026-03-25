@@ -1,6 +1,47 @@
 <div class="invite-page">
+  <app-modal
+    [isOpen]="showArchivedRequestsModal"
+    [title]="'Archived Requests'"
+    [size]="'medium'"
+    (close)="closeArchivedRequestsModal()">
+    <div class="archived-modal-body" *ngIf="!isLoadingArchivedCollaborations; else archivedLoadingState">
+      <app-no-data-state
+        *ngIf="archivedCollaborations.length === 0"
+        [title]="'No Data Available'"
+        [message]="'You have not archived any collaborator projects yet.'">
+      </app-no-data-state>
+
+      <div class="archived-list" *ngIf="archivedCollaborations.length > 0">
+        <article class="archived-card" *ngFor="let collaboration of archivedCollaborations">
+          <div class="archived-copy">
+            <h3>{{ collaboration.projectName || collaboration.projectId }}</h3>
+            <p>Owner: {{ collaboration.ownerId }}</p>
+            <p *ngIf="collaboration.disabledAt">Archived: {{ collaboration.disabledAt | date:'MM/dd/yyyy HH:mm' }}</p>
+          </div>
+          <button
+            mat-raised-button
+            color="primary"
+            type="button"
+            (click)="resubscribeToArchivedCollaboration(collaboration)"
+            [disabled]="isResubscribing">
+            {{ isResubscribing ? 'Sending...' : 'Resubscribe' }}
+          </button>
+        </article>
+      </div>
+    </div>
+
+    <ng-template #archivedLoadingState>
+      <div class="archived-loading-copy">Loading archived requests...</div>
+    </ng-template>
+  </app-modal>
+
   <mat-card class="invite-card">
-    <h1>Collaborate on a project</h1>
+    <div class="invite-card-header">
+      <button mat-stroked-button type="button" class="archived-requests-btn" (click)="openArchivedRequestsModal()">
+        Archived Requests
+      </button>
+      <h1>Collaborate on a project</h1>
+    </div>
 
     <p *ngIf="isLoading">Loading collaboration invite...</p>
 

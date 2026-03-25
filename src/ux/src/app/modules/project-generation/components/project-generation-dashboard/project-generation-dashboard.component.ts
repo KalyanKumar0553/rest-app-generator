@@ -691,6 +691,21 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
     return Boolean(this.backendProjectId && this.projectCanManageContributors);
   }
 
+  canDetachFromProject(): boolean {
+    return Boolean(this.backendProjectId && this.isCurrentUserContributor());
+  }
+
+  isCurrentUserContributor(contributor?: ProjectContributor): boolean {
+    const currentUserId = String(this.authService.currentUserValue?.id ?? '').trim();
+    const currentUserEmail = String(this.authService.currentUserValue?.email ?? '').trim().toLowerCase();
+    const contributorUserId = String(contributor?.userId ?? '').trim();
+    if (contributor) {
+      return contributorUserId === currentUserId
+        || (!!currentUserEmail && contributorUserId.toLowerCase() === currentUserEmail);
+    }
+    return this.projectContributors.some((item) => this.isCurrentUserContributor(item));
+  }
+
   get collaborationInviteUrl(): string {
     const token = trimmed(this.collaborationInviteToken);
     return token ? `${window.location.origin}/project-collaboration/${encodeURIComponent(token)}` : '';
@@ -804,6 +819,23 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
       console.error('Error adding contributors:', error);
     } finally {
       this.isAddingContributors = false;
+    }
+  }
+
+  async detachFromProject(): Promise<void> {
+    const projectId = this.backendProjectId?.trim();
+    if (!projectId || !this.canDetachFromProject()) {
+      return;
+    }
+    this.isContributorSaving = true;
+    try {
+      await firstValueFrom(this.projectService.detachProjectContributor(projectId));
+      this.toastService.success('Project archived from your collaborations.');
+      this.router.navigate(['/user/dashboard/projects']);
+    } catch (error: any) {
+      this.toastService.error(error?.message || 'Failed to archive this collaboration.');
+    } finally {
+      this.isContributorSaving = false;
     }
   }
 

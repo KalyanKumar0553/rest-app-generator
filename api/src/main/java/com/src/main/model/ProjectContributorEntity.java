@@ -48,6 +48,12 @@ public class ProjectContributorEntity {
 	@Column(name = "can_manage_collaboration", nullable = false)
 	private boolean canManageCollaboration;
 
+	@Column(name = "disabled", nullable = false)
+	private boolean disabled;
+
+	@Column(name = "disabled_at")
+	private OffsetDateTime disabledAt;
+
 	@PrePersist
 	public void prePersist() {
 		if (id == null) {

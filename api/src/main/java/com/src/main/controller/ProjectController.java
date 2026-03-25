@@ -23,6 +23,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import com.src.main.dto.ProjectCreateResponseDTO;
+import com.src.main.dto.ArchivedProjectCollaborationDTO;
 import com.src.main.dto.ProjectContributorDTO;
 import com.src.main.dto.ProjectContributorUpsertRequestDTO;
 import com.src.main.dto.ProjectCollaborationActionRequestDTO;
@@ -146,6 +147,12 @@ public class ProjectController {
 		return ResponseEntity.noContent().build();
 	}
 
+	@PostMapping("/{projectId}/contributors/detach")
+	public ResponseEntity<Void> detachContributor(@PathVariable("projectId") UUID projectId, Principal principal) {
+		service.detachContributor(projectId, currentUserId(principal));
+		return ResponseEntity.noContent().build();
+	}
+
 	@DeleteMapping("/{projectId}")
 	public ResponseEntity<Void> deleteProject(@PathVariable("projectId") UUID projectId, Principal principal) {
 		service.deleteProject(projectId, currentUserId(principal));
@@ -207,6 +214,17 @@ public class ProjectController {
 			Principal principal) {
 		return service.requestCollaboration(inviteToken, currentUserId(principal),
 				request == null ? new ProjectCollaborationRequestCreateDTO() : request);
+	}
+
+	@GetMapping(value = "/collaboration/archived", produces = MediaType.APPLICATION_JSON_VALUE)
+	public List<ArchivedProjectCollaborationDTO> getArchivedCollaborations(Principal principal) {
+		return service.getArchivedCollaborations(currentUserId(principal));
+	}
+
+	@PostMapping(value = "/collaboration/archived/{contributorId}/resubscribe", produces = MediaType.APPLICATION_JSON_VALUE)
+	public ProjectCollaborationRequestDTO resubscribeArchivedCollaboration(@PathVariable("contributorId") UUID contributorId,
+			Principal principal) {
+		return service.resubscribeArchivedCollaboration(contributorId, currentUserId(principal));
 	}
 
 	@PostMapping(value = "/{projectId}/collaboration/presence", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)

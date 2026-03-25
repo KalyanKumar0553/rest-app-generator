@@ -2,7 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatTableModule } from '@angular/material/table';
-import { AdminService, DataEncryptionRule, DataEncryptionRulePayload } from '../../../../services/admin.service';
+import { AdminService, ConfigProperty, DataEncryptionRule, DataEncryptionRulePayload } from '../../../../services/admin.service';
 import { ToastService } from '../../../../services/toast.service';
 import { UserService, UserRoles } from '../../../../services/user.service';
 
@@ -22,11 +22,15 @@ interface DataEncryptionRuleFormModel {
   styleUrls: ['./settings-panel.component.css']
 })
 export class SettingsPanelComponent implements OnInit {
+  private static readonly AI_LABS_FEATURE_KEY = 'app.feature.ai-labs.enabled';
   userRoles: string[] = [];
   userPermissions: string[] = [];
   encryptionRules: DataEncryptionRule[] = [];
+  featureConfigs: ConfigProperty[] = [];
   isLoadingEncryptionRules = false;
+  isLoadingFeatureConfigs = false;
   isSavingEncryptionRule = false;
+  isSavingAiLabsFeature = false;
   encryptionRuleColumns: string[] = ['tableName', 'columnName', 'hashShadowColumn', 'enabled', 'updatedAt', 'actions'];
   encryptionRuleForm: DataEncryptionRuleFormModel = this.createEmptyEncryptionRuleForm();
 
@@ -43,6 +47,9 @@ export class SettingsPanelComponent implements OnInit {
         this.userPermissions = rolesData.permissions || [];
         if (this.canManageEncryptionRules()) {
           this.loadEncryptionRules();
+        }
+        if (this.isSuperAdmin()) {
+          this.loadFeatureConfigs();
         }
       },
       error: () => {
@@ -63,6 +70,14 @@ export class SettingsPanelComponent implements OnInit {
     return this.hasPermission('config.encryption.manage');
   }
 
+  isSuperAdmin(): boolean {
+    return this.userRoles.includes('ROLE_SUPER_ADMIN');
+  }
+
+  canManageFeatureFlags(): boolean {
+    return this.isSuperAdmin();
+  }
+
   loadEncryptionRules(): void {
     if (!this.canManageEncryptionRules()) {
       return;
@@ -76,6 +91,52 @@ export class SettingsPanelComponent implements OnInit {
       error: () => {
         this.isLoadingEncryptionRules = false;
         this.toastService.error('Failed to load data encryption rules.');
+      }
+    });
+  }
+
+  loadFeatureConfigs(): void {
+    if (!this.canManageFeatureFlags()) {
+      return;
+    }
+    this.isLoadingFeatureConfigs = true;
+    this.adminService.getConfigFeatures().subscribe({
+      next: (features) => {
+        this.featureConfigs = Array.isArray(features) ? features : [];
+        this.isLoadingFeatureConfigs = false;
+      },
+      error: () => {
+        this.isLoadingFeatureConfigs = false;
+        this.toastService.error('Failed to load feature settings.');
+      }
+    });
+  }
+
+  isAiLabsEnabled(): boolean {
+    return this.getFeatureCurrentValue(SettingsPanelComponent.AI_LABS_FEATURE_KEY) === 'true';
+  }
+
+  updateAiLabsFeature(enabled: boolean): void {
+    const feature = this.featureConfigs.find((item) => item.propertyKey === SettingsPanelComponent.AI_LABS_FEATURE_KEY);
+    if (!feature || !this.canManageFeatureFlags()) {
+      return;
+    }
+    this.isSavingAiLabsFeature = true;
+    this.adminService.updateConfigFeatureValue({
+      category: feature.category,
+      propertyKey: feature.propertyKey,
+      valueKey: enabled ? 'true' : 'false'
+    }).subscribe({
+      next: (updatedFeature) => {
+        this.isSavingAiLabsFeature = false;
+        this.featureConfigs = this.featureConfigs.map((item) =>
+          item.propertyKey === updatedFeature.propertyKey ? updatedFeature : item
+        );
+        this.toastService.success('AI Labs setting updated.');
+      },
+      error: (error) => {
+        this.isSavingAiLabsFeature = false;
+        this.toastService.error(error?.message || 'Failed to update AI Labs setting.');
       }
     });
   }
@@ -168,5 +229,9 @@ export class SettingsPanelComponent implements OnInit {
       hashShadowColumn: '',
       enabled: true
     };
+  }
+
+  private getFeatureCurrentValue(propertyKey: string): string {
+    return this.featureConfigs.find((item) => item.propertyKey === propertyKey)?.currentValueKey || '';
   }
 }
