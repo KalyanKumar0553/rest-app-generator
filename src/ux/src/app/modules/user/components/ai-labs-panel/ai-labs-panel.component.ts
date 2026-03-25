@@ -68,6 +68,10 @@ export class AiLabsPanelComponent implements OnDestroy {
     this.aiLabsService.getJob(jobId).subscribe({
       next: (job) => {
         this.aiJob = job;
+        if (job.status === 'FAILED') {
+          this.toastService.error(job.errorMessage || 'AI project generation failed.');
+          this.closeAiJobEvents();
+        }
       },
       error: () => {
         this.toastService.error('Failed to load AI Labs job status.');
@@ -76,17 +80,22 @@ export class AiLabsPanelComponent implements OnDestroy {
 
     const source = new EventSource(this.aiLabsService.getJobEventsUrl(jobId), { withCredentials: true });
     source.addEventListener('status', (event: MessageEvent) => {
-      const payload = JSON.parse(event.data) as AiLabsJobStatus;
-      this.aiJob = payload;
-      if (payload.status === 'COMPLETED' && payload.projectId) {
-        this.closeAiJobEvents();
-        this.toastService.success('AI project generated successfully.');
-        const route = resolveProjectGenerationRoute(payload.generator);
-        this.router.navigate([route], { queryParams: { projectId: payload.projectId } });
-        return;
-      }
-      if (payload.status === 'FAILED') {
-        this.toastService.error(payload.errorMessage || 'Error while generating the Project. Please try again');
+      try {
+        const payload = JSON.parse(event.data) as AiLabsJobStatus;
+        this.aiJob = payload;
+        if (payload.status === 'COMPLETED' && payload.projectId) {
+          this.closeAiJobEvents();
+          this.toastService.success('AI project generated successfully.');
+          const route = resolveProjectGenerationRoute(payload.generator);
+          this.router.navigate([route], { queryParams: { projectId: payload.projectId } });
+          return;
+        }
+        if (payload.status === 'FAILED') {
+          this.toastService.error(payload.errorMessage || 'Error while generating the Project. Please try again');
+          this.closeAiJobEvents();
+        }
+      } catch {
+        this.toastService.error('Error while generating the Project. Please try again');
         this.closeAiJobEvents();
       }
     });
