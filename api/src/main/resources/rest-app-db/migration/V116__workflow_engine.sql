@@ -1,5 +1,3 @@
-CREATE EXTENSION IF NOT EXISTS pgcrypto;
-
 CREATE TABLE IF NOT EXISTS workflow_executor_pools (
     id UUID PRIMARY KEY,
     pool_code VARCHAR(120) NOT NULL UNIQUE,
@@ -90,7 +88,14 @@ CREATE INDEX IF NOT EXISTS idx_workflow_transition_step_type_priority
 INSERT INTO workflow_executor_pools (
     id, pool_code, pool_name, core_pool_size, max_pool_size, queue_capacity, keep_alive_seconds, active, created_at, updated_at
 )
-SELECT gen_random_uuid(), 'workflow-dispatch', 'Workflow Dispatch Pool', 4, 8, 100, 60, TRUE, now(), now()
+SELECT (
+           substr(md5('workflow_executor_pool:workflow-dispatch'), 1, 8) || '-' ||
+           substr(md5('workflow_executor_pool:workflow-dispatch'), 9, 4) || '-' ||
+           substr(md5('workflow_executor_pool:workflow-dispatch'), 13, 4) || '-' ||
+           substr(md5('workflow_executor_pool:workflow-dispatch'), 17, 4) || '-' ||
+           substr(md5('workflow_executor_pool:workflow-dispatch'), 21, 12)
+       )::uuid,
+       'workflow-dispatch', 'Workflow Dispatch Pool', 4, 8, 100, 60, TRUE, now(), now()
 WHERE NOT EXISTS (
     SELECT 1 FROM workflow_executor_pools WHERE pool_code = 'workflow-dispatch'
 );
@@ -98,7 +103,14 @@ WHERE NOT EXISTS (
 INSERT INTO workflow_executor_pools (
     id, pool_code, pool_name, core_pool_size, max_pool_size, queue_capacity, keep_alive_seconds, active, created_at, updated_at
 )
-SELECT gen_random_uuid(), 'workflow-default', 'Workflow Default Pool', 4, 8, 200, 60, TRUE, now(), now()
+SELECT (
+           substr(md5('workflow_executor_pool:workflow-default'), 1, 8) || '-' ||
+           substr(md5('workflow_executor_pool:workflow-default'), 9, 4) || '-' ||
+           substr(md5('workflow_executor_pool:workflow-default'), 13, 4) || '-' ||
+           substr(md5('workflow_executor_pool:workflow-default'), 17, 4) || '-' ||
+           substr(md5('workflow_executor_pool:workflow-default'), 21, 12)
+       )::uuid,
+       'workflow-default', 'Workflow Default Pool', 4, 8, 200, 60, TRUE, now(), now()
 WHERE NOT EXISTS (
     SELECT 1 FROM workflow_executor_pools WHERE pool_code = 'workflow-default'
 );
@@ -106,7 +118,14 @@ WHERE NOT EXISTS (
 INSERT INTO workflow_executor_pools (
     id, pool_code, pool_name, core_pool_size, max_pool_size, queue_capacity, keep_alive_seconds, active, created_at, updated_at
 )
-SELECT gen_random_uuid(), 'workflow-io', 'Workflow IO Pool', 4, 8, 200, 60, TRUE, now(), now()
+SELECT (
+           substr(md5('workflow_executor_pool:workflow-io'), 1, 8) || '-' ||
+           substr(md5('workflow_executor_pool:workflow-io'), 9, 4) || '-' ||
+           substr(md5('workflow_executor_pool:workflow-io'), 13, 4) || '-' ||
+           substr(md5('workflow_executor_pool:workflow-io'), 17, 4) || '-' ||
+           substr(md5('workflow_executor_pool:workflow-io'), 21, 12)
+       )::uuid,
+       'workflow-io', 'Workflow IO Pool', 4, 8, 200, 60, TRUE, now(), now()
 WHERE NOT EXISTS (
     SELECT 1 FROM workflow_executor_pools WHERE pool_code = 'workflow-io'
 );
@@ -114,7 +133,14 @@ WHERE NOT EXISTS (
 INSERT INTO workflow_definitions (
     id, code, name, language, version, active, dispatch_pool_code, created_at, updated_at
 )
-SELECT gen_random_uuid(), 'JAVA_DEFAULT', 'Java Workflow', 'JAVA', 1, TRUE, 'workflow-dispatch', now(), now()
+SELECT (
+           substr(md5('workflow_definition:JAVA_DEFAULT:1'), 1, 8) || '-' ||
+           substr(md5('workflow_definition:JAVA_DEFAULT:1'), 9, 4) || '-' ||
+           substr(md5('workflow_definition:JAVA_DEFAULT:1'), 13, 4) || '-' ||
+           substr(md5('workflow_definition:JAVA_DEFAULT:1'), 17, 4) || '-' ||
+           substr(md5('workflow_definition:JAVA_DEFAULT:1'), 21, 12)
+       )::uuid,
+       'JAVA_DEFAULT', 'Java Workflow', 'JAVA', 1, TRUE, 'workflow-dispatch', now(), now()
 WHERE NOT EXISTS (
     SELECT 1 FROM workflow_definitions WHERE code = 'JAVA_DEFAULT' AND version = 1
 );
@@ -122,7 +148,14 @@ WHERE NOT EXISTS (
 INSERT INTO workflow_definitions (
     id, code, name, language, version, active, dispatch_pool_code, created_at, updated_at
 )
-SELECT gen_random_uuid(), 'KOTLIN_DEFAULT', 'Kotlin Workflow', 'KOTLIN', 1, TRUE, 'workflow-dispatch', now(), now()
+SELECT (
+           substr(md5('workflow_definition:KOTLIN_DEFAULT:1'), 1, 8) || '-' ||
+           substr(md5('workflow_definition:KOTLIN_DEFAULT:1'), 9, 4) || '-' ||
+           substr(md5('workflow_definition:KOTLIN_DEFAULT:1'), 13, 4) || '-' ||
+           substr(md5('workflow_definition:KOTLIN_DEFAULT:1'), 17, 4) || '-' ||
+           substr(md5('workflow_definition:KOTLIN_DEFAULT:1'), 21, 12)
+       )::uuid,
+       'KOTLIN_DEFAULT', 'Kotlin Workflow', 'KOTLIN', 1, TRUE, 'workflow-dispatch', now(), now()
 WHERE NOT EXISTS (
     SELECT 1 FROM workflow_definitions WHERE code = 'KOTLIN_DEFAULT' AND version = 1
 );
@@ -130,7 +163,14 @@ WHERE NOT EXISTS (
 INSERT INTO workflow_definitions (
     id, code, name, language, version, active, dispatch_pool_code, created_at, updated_at
 )
-SELECT gen_random_uuid(), 'NODE_DEFAULT', 'Node Workflow', 'NODE', 1, TRUE, 'workflow-dispatch', now(), now()
+SELECT (
+           substr(md5('workflow_definition:NODE_DEFAULT:1'), 1, 8) || '-' ||
+           substr(md5('workflow_definition:NODE_DEFAULT:1'), 9, 4) || '-' ||
+           substr(md5('workflow_definition:NODE_DEFAULT:1'), 13, 4) || '-' ||
+           substr(md5('workflow_definition:NODE_DEFAULT:1'), 17, 4) || '-' ||
+           substr(md5('workflow_definition:NODE_DEFAULT:1'), 21, 12)
+       )::uuid,
+       'NODE_DEFAULT', 'Node Workflow', 'NODE', 1, TRUE, 'workflow-dispatch', now(), now()
 WHERE NOT EXISTS (
     SELECT 1 FROM workflow_definitions WHERE code = 'NODE_DEFAULT' AND version = 1
 );
@@ -138,7 +178,14 @@ WHERE NOT EXISTS (
 INSERT INTO workflow_definitions (
     id, code, name, language, version, active, dispatch_pool_code, created_at, updated_at
 )
-SELECT gen_random_uuid(), 'PYTHON_DEFAULT', 'Python Workflow', 'PYTHON', 1, TRUE, 'workflow-dispatch', now(), now()
+SELECT (
+           substr(md5('workflow_definition:PYTHON_DEFAULT:1'), 1, 8) || '-' ||
+           substr(md5('workflow_definition:PYTHON_DEFAULT:1'), 9, 4) || '-' ||
+           substr(md5('workflow_definition:PYTHON_DEFAULT:1'), 13, 4) || '-' ||
+           substr(md5('workflow_definition:PYTHON_DEFAULT:1'), 17, 4) || '-' ||
+           substr(md5('workflow_definition:PYTHON_DEFAULT:1'), 21, 12)
+       )::uuid,
+       'PYTHON_DEFAULT', 'Python Workflow', 'PYTHON', 1, TRUE, 'workflow-dispatch', now(), now()
 WHERE NOT EXISTS (
     SELECT 1 FROM workflow_definitions WHERE code = 'PYTHON_DEFAULT' AND version = 1
 );
@@ -148,7 +195,14 @@ INSERT INTO workflow_steps (
     timeout_ms, run_condition_json, required_inputs_json, optional_inputs_json, declared_outputs_json,
     retry_enabled, retry_max_attempts, retry_backoff_ms, retry_backoff_multiplier, created_at, updated_at
 )
-SELECT gen_random_uuid(), wd.id, seed.step_code, seed.step_name, seed.executor_key, TRUE, seed.terminal, seed.step_order,
+SELECT (
+           substr(md5('workflow_step:' || seed.workflow_code || ':' || seed.step_code), 1, 8) || '-' ||
+           substr(md5('workflow_step:' || seed.workflow_code || ':' || seed.step_code), 9, 4) || '-' ||
+           substr(md5('workflow_step:' || seed.workflow_code || ':' || seed.step_code), 13, 4) || '-' ||
+           substr(md5('workflow_step:' || seed.workflow_code || ':' || seed.step_code), 17, 4) || '-' ||
+           substr(md5('workflow_step:' || seed.workflow_code || ':' || seed.step_code), 21, 12)
+       )::uuid,
+       wd.id, seed.step_code, seed.step_name, seed.executor_key, TRUE, seed.terminal, seed.step_order,
        seed.pool_code, FALSE, 300000, NULL, seed.required_inputs_json, '[]', '["status"]', TRUE, 2, 500, 2.0, now(), now()
 FROM workflow_definitions wd
 JOIN (
@@ -195,7 +249,14 @@ WHERE NOT EXISTS (
 );
 
 INSERT INTO workflow_transitions (id, workflow_step_id, transition_type, target_step_code, condition_json, priority)
-SELECT gen_random_uuid(), ws.id, 'SUCCESS', seed.target_step_code, NULL, 1
+SELECT (
+           substr(md5('workflow_transition:' || seed.workflow_code || ':' || seed.source_step_code || ':SUCCESS:' || seed.target_step_code), 1, 8) || '-' ||
+           substr(md5('workflow_transition:' || seed.workflow_code || ':' || seed.source_step_code || ':SUCCESS:' || seed.target_step_code), 9, 4) || '-' ||
+           substr(md5('workflow_transition:' || seed.workflow_code || ':' || seed.source_step_code || ':SUCCESS:' || seed.target_step_code), 13, 4) || '-' ||
+           substr(md5('workflow_transition:' || seed.workflow_code || ':' || seed.source_step_code || ':SUCCESS:' || seed.target_step_code), 17, 4) || '-' ||
+           substr(md5('workflow_transition:' || seed.workflow_code || ':' || seed.source_step_code || ':SUCCESS:' || seed.target_step_code), 21, 12)
+       )::uuid,
+       ws.id, 'SUCCESS', seed.target_step_code, NULL, 1
 FROM workflow_steps ws
 JOIN workflow_definitions wd ON wd.id = ws.workflow_id
 JOIN (
