@@ -46,11 +46,6 @@ export class JavaGeneralTabComponent {
   @Input({ required: true }) javaVersionOptions!: string[];
   @Input({ required: true }) showDbGeneration!: boolean;
   @Input({ required: true }) showPluralizeTableNames!: boolean;
-  @Input() backendProjectId: string | null = null;
-  @Input() contributorUserId = '';
-  @Input() projectContributors: Array<{ userId: string }> = [];
-  @Input() isContributorSaving = false;
-  @Input() canManageContributors = false;
   @Input() dependencyInput = '';
   @Input() filteredDependencies: string[] = [];
   @Input() selectedDependencies: string[] = [];
@@ -65,17 +60,10 @@ export class JavaGeneralTabComponent {
   @Output() removeProfile = new EventEmitter<string>();
   @Output() enableActuatorChange = new EventEmitter<boolean>();
   @Output() configureApiChange = new EventEmitter<MatCheckboxChange>();
-  @Output() contributorUserIdChange = new EventEmitter<string>();
-  @Output() addContributor = new EventEmitter<void>();
-  @Output() removeContributor = new EventEmitter<string>();
   @Output() dependencyInputChange = new EventEmitter<string>();
   @Output() dependencySearchChange = new EventEmitter<string>();
   @Output() dependencySelected = new EventEmitter<MatAutocompleteSelectedEvent>();
   @Output() dependencyRemoved = new EventEmitter<string>();
-
-  onContributorUserIdChange(value: string): void {
-    this.contributorUserIdChange.emit(value);
-  }
 
   onDependencyInputChange(value: string): void {
     this.dependencyInputChange.emit(value);

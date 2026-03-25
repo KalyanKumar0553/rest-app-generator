@@ -1,0 +1,55 @@
+<div class="searchable-select">
+  <mat-form-field appearance="fill" class="full-width">
+    <mat-label>{{ label }}</mat-label>
+    <input
+      matInput
+      [ngModel]="searchTerm"
+      (ngModelChange)="onSearchInput($event)"
+      [placeholder]="placeholder" />
+    <mat-icon matSuffix>search</mat-icon>
+  </mat-form-field>
+
+  <div class="selected-items" *ngIf="selectedItems.length > 0">
+    <span class="select-badge" *ngFor="let item of selectedItems">
+      <span class="select-badge-avatar" *ngIf="item.avatarUrl; else badgeInitial">
+        <img [src]="item.avatarUrl" [alt]="item.label" />
+      </span>
+      <ng-template #badgeInitial>
+        <span class="select-badge-initial">{{ getInitial(item) }}</span>
+      </ng-template>
+      <span class="select-badge-label">{{ item.label }}</span>
+      <button
+        type="button"
+        class="select-badge-remove"
+        (click)="removeItem(item)"
+        aria-label="Remove item">
+        <i class="bi bi-x"></i>
+      </button>
+    </span>
+  </div>
+
+  <div class="search-results" *ngIf="searchTerm.trim().length > 0">
+    <div class="search-loading" *ngIf="isSearching">
+      <span>Searching...</span>
+    </div>
+
+    <div class="search-result-item" *ngFor="let item of filteredResults" (click)="selectItem(item)">
+      <div class="result-avatar" *ngIf="item.avatarUrl; else resultInitial">
+        <img [src]="item.avatarUrl" [alt]="item.label" />
+      </div>
+      <ng-template #resultInitial>
+        <div class="result-avatar result-avatar-initial">
+          {{ getInitial(item) }}
+        </div>
+      </ng-template>
+      <div class="result-info">
+        <span class="result-label">{{ item.label }}</span>
+        <span class="result-subtitle" *ngIf="item.subtitle">{{ item.subtitle }}</span>
+      </div>
+    </div>
+
+    <div class="search-empty" *ngIf="!isSearching && filteredResults.length === 0 && searchTerm.trim().length > 0">
+      {{ emptyMessage }}
+    </div>
+  </div>
+</div>

@@ -61,6 +61,31 @@
   (cancel)="cancelCancelGenerationRequest()"
 ></app-confirmation-modal>
 
+<app-modal
+  [isOpen]="showAddContributorModal"
+  title="Add contributors"
+  size="medium"
+  (close)="closeAddContributorModal()">
+  <app-searchable-select
+    label="Search users"
+    placeholder="Search by name or email"
+    [searchResults]="contributorSearchResults"
+    [isSearching]="isContributorSearching"
+    [selectedItems]="selectedContributorItems"
+    [excludeIds]="existingContributorIds"
+    emptyMessage="No users found."
+    (searchChange)="onContributorSearch($event)"
+    (selectedItemsChange)="selectedContributorItems = $event">
+  </app-searchable-select>
+  <div modal-footer>
+    <button mat-stroked-button type="button" (click)="closeAddContributorModal()">Cancel</button>
+    <button mat-raised-button color="primary" type="button" (click)="submitAddContributors()" [disabled]="isAddingContributors || selectedContributorItems.length === 0">
+      <span *ngIf="!isAddingContributors">Submit</span>
+      <span *ngIf="isAddingContributors">Adding...</span>
+    </button>
+  </div>
+</app-modal>
+
 <app-loading-overlay
   [visible]="isGeneratingFromDtoSave"
   [title]="'Generating Project'"
@@ -137,11 +162,6 @@
           [javaVersionOptions]="javaVersionOptions"
           [showDbGeneration]="shouldShowDbGeneration()"
           [showPluralizeTableNames]="shouldShowPluralizeTableNames()"
-          [backendProjectId]="backendProjectId"
-          [contributorUserId]="contributorUserId"
-          [projectContributors]="projectContributors"
-          [isContributorSaving]="isContributorSaving"
-          [canManageContributors]="canManageContributors()"
           [dependencyInput]="dependencyInput"
           [filteredDependencies]="filteredDependencies"
           [selectedDependencies]="selectedDependencies"
@@ -155,9 +175,6 @@
           (removeProfile)="removeProfile($event)"
           (enableActuatorChange)="onEnableActuatorChange($event)"
           (configureApiChange)="onEnableConfigureApiChange($event)"
-          (contributorUserIdChange)="contributorUserId = $event"
-          (addContributor)="addContributor()"
-          (removeContributor)="removeContributor($event)"
           (dependencyInputChange)="dependencyInput = $event"
           (dependencySearchChange)="filterDependencies($event)"
           (dependencySelected)="addDependency($event)"
@@ -590,7 +607,18 @@
           </div>
 
           <div class="collaboration-card">
-            <h3>Contributors</h3>
+            <div class="collaboration-title-row">
+              <h3>Contributors</h3>
+              <button
+                *ngIf="canManageContributors()"
+                mat-raised-button
+                color="primary"
+                type="button"
+                (click)="openAddContributorModal()">
+                <mat-icon>person_add</mat-icon>
+                Add contributor
+              </button>
+            </div>
             <p *ngIf="projectContributors.length === 0">No contributors added yet.</p>
 
             <table mat-table [dataSource]="projectContributors" class="collaboration-table" *ngIf="projectContributors.length > 0">
