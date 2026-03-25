@@ -12,6 +12,6 @@ public class LoggingOtpSender implements OtpSender {
 
 	@Override
 	public void send(IdentifierType type, String identifier, String otp) {
-		LOG.info("OTP({}) to {} => {}", type, identifier, otp);
+		LOG.info("OTP dispatched through {} logging sender", type);
 	}
 }

@@ -51,6 +51,15 @@
   background-color: var(--theme-primary-btn-hover-bg);
 }
 
+.btn-secondary {
+  background-color: var(--theme-secondary-btn-bg);
+  color: var(--color-background-white);
+}
+
+.btn-secondary:hover {
+  background-color: var(--theme-secondary-btn-hover-bg);
+}
+
 .empty-state {
   text-align: center;
   padding: 80px 20px;
@@ -124,12 +133,6 @@
   white-space: nowrap;
 }
 
-.project-actions {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
 .btn-open {
   background-color: var(--theme-secondary-btn-bg);
   color: var(--color-background-white);
@@ -149,6 +152,31 @@
 .action-icons {
   display: flex;
   gap: 12px;
+  align-items: center;
+  justify-content: flex-end;
+  margin-left: auto;
+}
+
+.project-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 12px;
+}
+
+.project-language-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  padding: 6px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  background-color: var(--color-background-muted);
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
 }
 
 .icon-btn {
@@ -165,6 +193,53 @@
 
 .icon-btn:hover {
   color: var(--color-text-muted);
+}
+
+.import-project-modal {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 168px;
+}
+
+.import-project-copy {
+  margin: 0;
+  color: var(--color-text-secondary);
+}
+
+.import-project-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.import-project-input {
+  width: 100%;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  padding: 14px 16px;
+  background-color: var(--color-background-white);
+  color: var(--color-text-primary);
+}
+
+.import-project-input:focus {
+  outline: none;
+  border-color: var(--theme-primary-btn-bg);
+  box-shadow: var(--shadow-sm);
+}
+
+.import-project-error {
+  margin: 0;
+  color: var(--color-error);
+  font-size: 14px;
+}
+
+.import-project-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  width: 100%;
 }
 
 @media (max-width: 1024px) {
@@ -188,6 +263,10 @@
 
   .btn {
     width: 100%;
+  }
+
+  .import-project-actions {
+    flex-direction: column;
   }
 
   .projects-grid {
@@ -219,5 +298,9 @@
 
   .project-date {
     padding-top: 0;
+  }
+
+  .project-footer {
+    gap: 10px;
   }
 }

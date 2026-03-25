@@ -18,6 +18,10 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class GradleWrapperInstaller {
+	private static final String[] TEMPLATE_RESOURCE_PREFIXES = {
+			"",
+			"/shipped-modules/state-machine/src/main/resources"
+	};
 
 	public void installWrapper(Path projectRoot, String gradleVersion) {
 		Objects.requireNonNull(projectRoot, "projectRoot");
@@ -55,7 +59,7 @@ public class GradleWrapperInstaller {
 	}
 
 	private static void copyClasspath(String resourcePath, Path dest) throws IOException {
-		try (InputStream in = GradleWrapperInstaller.class.getResourceAsStream(resourcePath)) {
+		try (InputStream in = openClasspathResource(resourcePath)) {
 			if (in == null) {
 				throw new IOException("Missing classpath resource: " + resourcePath);
 			}
@@ -68,7 +72,7 @@ public class GradleWrapperInstaller {
 	}
 
 	private static void copyClasspathIfPresent(String resourcePath, Path dest) throws IOException {
-		try (InputStream in = GradleWrapperInstaller.class.getResourceAsStream(resourcePath)) {
+		try (InputStream in = openClasspathResource(resourcePath)) {
 			if (in == null) {
 				return;
 			}
@@ -78,6 +82,16 @@ public class GradleWrapperInstaller {
 				in.transferTo(out);
 			}
 		}
+	}
+
+	private static InputStream openClasspathResource(String resourcePath) {
+		for (String prefix : TEMPLATE_RESOURCE_PREFIXES) {
+			InputStream stream = GradleWrapperInstaller.class.getResourceAsStream(prefix + resourcePath);
+			if (stream != null) {
+				return stream;
+			}
+		}
+		return null;
 	}
 
 	private static void ensureWrapperJar(String gradleVersion, Path wrapperJar) throws IOException {

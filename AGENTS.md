@@ -28,6 +28,11 @@
 - If the root cause is not yet found, do not ship a workaround as if it were the fix.
 - In that case, clearly inform the user that the root cause has not been confirmed yet, summarize what was checked, and state the next targeted debugging step.
 
+### Sensitive Logging (Mandatory)
+- Do not log customer or user-sensitive data in plaintext.
+- This includes OTPs, email addresses, phone numbers, access tokens, refresh tokens, captcha answers, and similar secrets or identifiers.
+- If operational logging is required, log only non-sensitive metadata such as channel, outcome, or masked identifiers.
+
 ### Confirmation Toggle State (Mandatory)
 - For any destructive checkbox toggle that needs confirmation, do not let UI commit unchecked state before user confirms.
 - With Angular Material checkbox, prefer `(change)` and pass full `MatCheckboxChange` event.
@@ -38,14 +43,24 @@
 
 ### Flyway Migration Verification (Mandatory)
 - For any backend/database change that adds, removes, renames, or edits Flyway migrations or schema-affecting JPA entities, run Flyway migrate after the code change.
+- The only canonical source location for app Flyway SQL migrations is:
+  - `/Users/ky/Workspace/rest-app-generator/api/src/main/resources/rest-app-db/migration`
+- Do not add new app migrations under any other module or resource path.
 - Use the app module Maven invocation so the project Flyway configuration and migration location are used:
   - `mvn -f pom.xml flyway:migrate`
 - If datasource credentials are required, provide them via `SPRING_DATASOURCE_URL`, `SPRING_DATASOURCE_USERNAME`, and `SPRING_DATASOURCE_PASSWORD`.
 - Do not claim DB changes are complete until Flyway migrate has been run successfully or an explicit blocker has been reported.
 
-### Cross-Module Flyway Packaging (Mandatory)
-- If a Flyway migration lives outside `api/src/main/resources/rest-app-db/migration` but must be applied by the main app at runtime, make sure the main packaged app jar exposes that migration under `BOOT-INF/classes/rest-app-db/migration`.
-- Do not assume a migration is discoverable by Flyway just because it exists in another module or nested dependency jar.
-- After adding or moving migrations across modules, verify the packaged artifact contents, for example:
-  - `jar tf target/*.jar | grep 'BOOT-INF/classes/rest-app-db/migration/'`
-- If the database already has applied versions that are "not resolved locally", fix the artifact packaging or restore the missing migration files before considering `flyway repair`.
+### Flyway Packaging (Mandatory)
+- Runtime Flyway and Maven Flyway must both resolve migrations from the same canonical app path:
+  - `classpath:rest-app-db/migration`
+  - `filesystem:api/src/main/resources/rest-app-db/migration`
+- Do not reintroduce extra migration locations in module poms or plugin configuration.
+- After changing Flyway packaging or moving migrations, verify the runtime classes contain the full set under:
+  - `target/classes/rest-app-db/migration`
+- If the database already has applied versions that are "not resolved locally", restore the missing migration files or correct the configured migration location before considering `flyway repair`.
+
+### Backend Route Changes (Mandatory)
+- For any backend change that adds, removes, or changes controller mappings, endpoint methods, WebSocket endpoints, filters, or security routing, assume a backend restart is required before runtime verification.
+- Do not describe a new API route as available unless the code has been compiled and the response clearly notes that the running backend must be restarted, or you have already verified it on a restarted server.
+- When a frontend change depends on a new backend route, explicitly call out the restart requirement in the final response to avoid stale-server false alarms such as `HttpRequestMethodNotSupportedException`.

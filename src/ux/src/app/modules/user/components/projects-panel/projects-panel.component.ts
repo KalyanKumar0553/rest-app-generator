@@ -1,5 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { ProjectService, ProjectSummary } from '../../../../services/project.service';
 import { LocalStorageService } from '../../../../services/local-storage.service';
@@ -7,6 +8,8 @@ import { ToastService } from '../../../../services/toast.service';
 import { ConfirmationModalComponent } from '../../../../components/confirmation-modal/confirmation-modal.component';
 import { SearchSortComponent, SearchConfig, SortOption, SearchSortEvent } from '../../../../components/search-sort/search-sort.component';
 import { resolveProjectGenerationRoute } from '../../../project-generation/utils/project-generation-route.utils';
+import { ModalComponent } from '../../../../components/modal/modal.component';
+import { LoadingOverlayComponent } from '../../../../components/shared/loading-overlay/loading-overlay.component';
 
 export interface Project extends ProjectSummary {
   name: string;
@@ -18,7 +21,7 @@ export interface Project extends ProjectSummary {
 @Component({
   selector: 'app-projects-panel',
   standalone: true,
-  imports: [CommonModule, ConfirmationModalComponent, SearchSortComponent],
+  imports: [CommonModule, FormsModule, ConfirmationModalComponent, SearchSortComponent, ModalComponent, LoadingOverlayComponent],
   templateUrl: './projects-panel.component.html',
   styleUrls: ['./projects-panel.component.css']
 })
@@ -28,9 +31,14 @@ export class ProjectsPanelComponent implements OnInit {
   isLoadingProjects = false;
   showDeleteConfirmation = false;
   showOpenConflictConfirmation = false;
+  showImportProjectModal = false;
   isDeletingProject = false;
+  isImportingProject = false;
   projectToDelete: Project | null = null;
   projectToOpen: Project | null = null;
+  importProjectUrl = '';
+  importProjectValidationMessage = '';
+  private currentSearchSortEvent: SearchSortEvent = { searchTerm: '', sortOption: null };
 
   readonly searchConfig: SearchConfig = {
     placeholder: 'Search projects by name or description...',
@@ -94,9 +102,60 @@ export class ProjectsPanelComponent implements OnInit {
   }
 
   onSearchSortChange(event: SearchSortEvent): void {
+    this.currentSearchSortEvent = event;
+    this.applySearchSort();
+  }
+
+  openImportProjectModal(): void {
+    this.showImportProjectModal = true;
+    this.importProjectUrl = '';
+    this.importProjectValidationMessage = '';
+  }
+
+  closeImportProjectModal(): void {
+    if (this.isImportingProject) {
+      return;
+    }
+    this.showImportProjectModal = false;
+    this.importProjectUrl = '';
+    this.importProjectValidationMessage = '';
+  }
+
+  importProject(): void {
+    const normalizedUrl = this.importProjectUrl.trim();
+    if (!this.isValidProjectImportUrl(normalizedUrl)) {
+      this.importProjectValidationMessage = 'Enter a valid project collaboration URL.';
+      return;
+    }
+
+    this.importProjectValidationMessage = '';
+    this.isImportingProject = true;
+    this.projectService.importProject(normalizedUrl).subscribe({
+      next: (response) => {
+        this.isImportingProject = false;
+        const importedProject = response as Project;
+        const importedProjectId = importedProject.projectId || importedProject.id;
+        if (this.projects.some((project) => (project.projectId || project.id) === importedProjectId)) {
+          this.toastService.error('Project already Exists');
+          this.closeImportProjectModal();
+          return;
+        }
+        this.projects = [importedProject, ...this.projects];
+        this.applySearchSort();
+        this.closeImportProjectModal();
+        this.toastService.success('Project imported successfully');
+      },
+      error: (error) => {
+        this.isImportingProject = false;
+        this.importProjectValidationMessage = error?.error?.errorMsg || 'Failed to import project.';
+      }
+    });
+  }
+
+  private applySearchSort(): void {
     let filtered = [...this.projects];
-    if (event.searchTerm) {
-      const searchLower = event.searchTerm.toLowerCase();
+    if (this.currentSearchSortEvent.searchTerm) {
+      const searchLower = this.currentSearchSortEvent.searchTerm.toLowerCase();
       filtered = filtered.filter((project) =>
         this.searchConfig.properties.some((prop) => {
           const value = (project as any)[prop];
@@ -104,14 +163,14 @@ export class ProjectsPanelComponent implements OnInit {
         })
       );
     }
-    if (event.sortOption) {
+    if (this.currentSearchSortEvent.sortOption) {
       filtered.sort((a, b) => {
-        const aValue = (a as any)[event.sortOption!.property];
-        const bValue = (b as any)[event.sortOption!.property];
+        const aValue = (a as any)[this.currentSearchSortEvent.sortOption!.property];
+        const bValue = (b as any)[this.currentSearchSortEvent.sortOption!.property];
         let comparison = 0;
         if (aValue < bValue) comparison = -1;
         if (aValue > bValue) comparison = 1;
-        return event.sortOption!.direction === 'asc' ? comparison : -comparison;
+        return this.currentSearchSortEvent.sortOption!.direction === 'asc' ? comparison : -comparison;
       });
     }
     this.filteredProjects = filtered;
@@ -208,7 +267,31 @@ export class ProjectsPanelComponent implements OnInit {
     }).replace(',', '');
   }
 
+  getProjectLanguageLabel(generator: string | null | undefined): string {
+    const normalizedGenerator = String(generator ?? '').trim().toLowerCase();
+    switch (normalizedGenerator) {
+      case 'python':
+        return 'Python';
+      case 'node':
+        return 'Node';
+      case 'java':
+        return 'Java';
+      default:
+        return normalizedGenerator ? normalizedGenerator.toUpperCase() : 'Unknown';
+    }
+  }
+
   private navigateToProject(projectId: string, generator?: string): void {
     this.router.navigate([resolveProjectGenerationRoute(generator)], { queryParams: { projectId } });
+  }
+
+  private isValidProjectImportUrl(value: string): boolean {
+    try {
+      const parsedUrl = new URL(value);
+      const routeText = `${parsedUrl.pathname}${parsedUrl.hash}`;
+      return routeText.includes('project-collaboration/');
+    } catch {
+      return false;
+    }
   }
 }

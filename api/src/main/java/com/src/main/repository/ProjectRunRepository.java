@@ -6,18 +6,13 @@ import java.util.UUID;
 
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.jpa.repository.QueryHints;
 import org.springframework.data.repository.query.Param;
 
 import com.src.main.model.ProjectRunEntity;
 import com.src.main.repository.query.ProjectRunQueries;
 import com.src.main.util.ProjectRunStatus;
 import com.src.main.util.ProjectRunType;
-
-import jakarta.persistence.LockModeType;
-import jakarta.persistence.QueryHint;
 
 public interface ProjectRunRepository extends JpaRepository<ProjectRunEntity, UUID> {
 
@@ -26,8 +21,6 @@ public interface ProjectRunRepository extends JpaRepository<ProjectRunEntity, UU
 	@Query(ProjectRunQueries.COUNT_USER_RUNS_IN_PERIOD)
 	long countUserRunsInPeriod(String ownerId, ProjectRunType type, OffsetDateTime from, OffsetDateTime to);
 
-	@Lock(LockModeType.PESSIMISTIC_WRITE)
-	@QueryHints(@QueryHint(name = "jakarta.persistence.lock.timeout", value = "0"))
 	List<ProjectRunEntity> findByStatusAndTypeOrderByCreatedAtAsc(ProjectRunStatus status, ProjectRunType type,
 			Pageable pageable);
 
@@ -43,10 +36,9 @@ public interface ProjectRunRepository extends JpaRepository<ProjectRunEntity, UU
 
 	long deleteByProjectId(UUID projectId);
 
-	@Lock(LockModeType.PESSIMISTIC_WRITE)
-	@QueryHints(@QueryHint(name = "jakarta.persistence.lock.timeout", value = "0"))
-	@Query(ProjectRunQueries.FIND_NEXT_BATCH_FOR_PROCESSING)
-	List<ProjectRunEntity> findNextBatchForProcessing(@Param("status") ProjectRunStatus status,
-			@Param("type") ProjectRunType type, Pageable pageable);
+	@Query(value = ProjectRunQueries.FIND_NEXT_BATCH_FOR_PROCESSING_NATIVE, nativeQuery = true)
+	List<ProjectRunEntity> findNextBatchForProcessing(@Param("status") String status,
+			@Param("type") String type,
+			@Param("limit") int limit);
 
 }

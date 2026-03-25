@@ -5,8 +5,6 @@ import java.util.UUID;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.dao.PessimisticLockingFailureException;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -48,15 +46,16 @@ public class ProjectQueueWorker {
 			if (!picked.isEmpty()) {
 				log.info("Picked {} projects from DB queue: {}", picked.size(), picked);
 			}
-		} catch (PessimisticLockingFailureException ex) {
-			log.debug("Project queue rows are already locked by another worker. Skipping this polling cycle.");
 		} catch (Exception ex) {
 			log.error("Error while polling project queue", ex);
 		}
 	}
 
 	protected List<UUID> pickAndSubmitBatch() {
-		List<ProjectRunEntity> queued = projectRunRepository.findNextBatchForProcessing(ProjectRunStatus.QUEUED,ProjectRunType.GENERATE_CODE, PageRequest.of(0, BATCH_SIZE));
+		List<ProjectRunEntity> queued = projectRunRepository.findNextBatchForProcessing(
+				ProjectRunStatus.QUEUED.name(),
+				ProjectRunType.GENERATE_CODE.name(),
+				BATCH_SIZE);
 		if (queued.isEmpty()) {
 			return List.of();
 		}

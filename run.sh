@@ -53,6 +53,6 @@ while IFS= read -r asset_dir; do
   fi
 done < <(find "$ASSET_SOURCE_DIR" -type d | sort)
 
-mvn -f "$ROOT_DIR/pom.xml" -DskipTests clean spring-boot:run \
+mvn -f "$ROOT_DIR/pom.xml" -DskipTests clean process-resources compile spring-boot:run \
   -Dspring-boot.run.jvmArguments='-Dspring.devtools.restart.enabled=false' \
   -Dspring-boot.run.arguments="--server.port=$APP_PORT"

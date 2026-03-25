@@ -5,11 +5,12 @@ import { AuthService } from '../../../../services/auth.service';
 import { ToastService } from '../../../../services/toast.service';
 import { ComponentThemeService } from '../../../../services/component-theme.service';
 import { FormValidator, ValidationErrors, CommonValidationRules } from '../../../../validators/form-validator';
+import { ModalComponent } from '../../../../components/modal/modal.component';
 
 @Component({
   selector: 'app-update-password-modal',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, ModalComponent],
   templateUrl: './update-password-modal.component.html',
   styleUrls: ['./update-password-modal.component.css']
 })

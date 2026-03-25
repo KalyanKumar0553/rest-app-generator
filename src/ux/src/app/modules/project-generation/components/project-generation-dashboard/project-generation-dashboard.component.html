@@ -168,7 +168,7 @@
       <div class="sticky-footer">
         <div class="action-section">
           <button mat-raised-button color="primary" type="button" (click)="handleGeneralPrimaryAction()" [disabled]="isLoading">
-            <mat-spinner *ngIf="isLoading" diameter="20" class="button-spinner"></mat-spinner>
+            <span *ngIf="isLoading" class="button-spinner" aria-hidden="true"></span>
             <span *ngIf="!isLoading">{{ getGeneralPrimaryActionLabel() }}</span>
             <span *ngIf="isLoading">Loading...</span>
           </button>
@@ -207,7 +207,7 @@
       <div class="sticky-footer">
         <div class="action-section">
           <button mat-raised-button color="primary" type="button" (click)="handleGeneralPrimaryAction()" [disabled]="isLoading">
-            <mat-spinner *ngIf="isLoading" diameter="20" class="button-spinner"></mat-spinner>
+            <span *ngIf="isLoading" class="button-spinner" aria-hidden="true"></span>
             <span *ngIf="!isLoading">{{ getGeneralPrimaryActionLabel() }}</span>
             <span *ngIf="isLoading">Loading...</span>
           </button>
@@ -242,7 +242,7 @@
       <div class="sticky-footer">
         <div class="action-section">
           <button mat-raised-button color="primary" type="button" (click)="setupDataObjects()" [disabled]="isLoading">
-            <mat-spinner *ngIf="isLoading" diameter="20" class="button-spinner"></mat-spinner>
+            <span *ngIf="isLoading" class="button-spinner" aria-hidden="true"></span>
             <span *ngIf="!isLoading">Setup Data Objects</span>
             <span *ngIf="isLoading">Loading...</span>
           </button>
@@ -426,7 +426,7 @@
       <div class="sticky-footer">
         <div class="action-section">
           <button mat-raised-button type="button" (click)="handleModulesPrimaryAction()" [disabled]="isLoading || isGeneratingFromDtoSave">
-            <mat-spinner *ngIf="isLoading" diameter="20" class="button-spinner"></mat-spinner>
+            <span *ngIf="isLoading" class="button-spinner" aria-hidden="true"></span>
             <span *ngIf="!isLoading">{{ getModulesPrimaryActionLabel() }}</span>
             <span *ngIf="isLoading">Loading...</span>
           </button>
@@ -514,8 +514,16 @@
       <div class="scrollable-content collaborate-scrollable-content">
         <div class="collaboration-panel" *ngIf="backendProjectId; else collaborateSaveFirst">
           <div class="collaboration-card">
-            <h3>Invite collaborators</h3>
-            <p>Share this URL with authenticated users so they can request access to this project.</p>
+            <div class="collaboration-title-row">
+              <h3>Invite collaborators</h3>
+              <button
+                type="button"
+                class="collaboration-help-btn"
+                matTooltip="Share this URL with authenticated users so they can request access to this project."
+                aria-label="Invite collaborators help">
+                <mat-icon>help_outline</mat-icon>
+              </button>
+            </div>
             <div class="collaboration-link-row">
               <mat-form-field appearance="fill" class="full-width">
                 <mat-label>Collaboration invite URL</mat-label>
@@ -616,8 +624,14 @@
                 <th mat-header-cell *matHeaderCellDef>Actions</th>
                 <td mat-cell *matCellDef="let contributor">
                   <div class="table-actions">
-                    <button mat-icon-button type="button" color="primary" (click)="updateContributorPermissions(contributor)" [disabled]="!canManageContributors()" matTooltip="Save permissions">
-                      <mat-icon>save</mat-icon>
+                    <button
+                      mat-icon-button
+                      type="button"
+                      class="table-action-btn table-action-btn-save"
+                      (click)="updateContributorPermissions(contributor)"
+                      [disabled]="!canManageContributors()"
+                      matTooltip="Save permissions">
+                      <i class="bi bi-check2-circle" aria-hidden="true"></i>
                     </button>
                     <button mat-icon-button type="button" color="warn" (click)="removeContributor(contributor.userId)" [disabled]="!canManageContributors()" matTooltip="Remove contributor">
                       <mat-icon>person_remove</mat-icon>

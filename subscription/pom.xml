@@ -63,10 +63,6 @@
 	<build>
 		<resources>
 			<resource>
-				<directory>src/main/resources/rest-app-db/migration</directory>
-				<targetPath>rest-app-db/migration</targetPath>
-			</resource>
-			<resource>
 				<directory>src/main/resources/shipped-modules/node/subscription</directory>
 				<targetPath>shipped-modules/node/subscription</targetPath>
 			</resource>

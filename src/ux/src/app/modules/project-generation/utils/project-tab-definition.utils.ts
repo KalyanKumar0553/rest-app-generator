@@ -1,6 +1,8 @@
 import { NavItem } from '../../../components/shared/sidenav/sidenav.component';
 import { ProjectTabDefinition } from '../../../services/project.service';
 
+const HIDDEN_MODULE_TAB_KEYS = new Set(['shipping']);
+
 export interface ProjectDashboardNavConfig {
   baseNavItems: NavItem[];
   controllersNavItem: NavItem;
@@ -36,7 +38,7 @@ export function buildProjectDashboardNavConfig(
     })
     .filter((item): item is NavItem => Boolean(item));
   const moduleNavItems = [...tabDetails]
-    .filter((tab) => !reservedKeys.has(tab.key))
+    .filter((tab) => !reservedKeys.has(tab.key) && !HIDDEN_MODULE_TAB_KEYS.has(tab.key))
     .sort((left, right) => left.order - right.order)
     .map((tab) => ({
       icon: tab.icon,

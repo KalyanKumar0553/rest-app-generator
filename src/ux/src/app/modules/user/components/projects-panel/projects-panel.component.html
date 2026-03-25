@@ -17,6 +17,38 @@
   (cancel)="cancelOpenProjectDespiteConflict()"
 ></app-confirmation-modal>
 
+<app-modal
+  [isOpen]="showImportProjectModal"
+  [title]="'Import Project'"
+  [size]="'medium'"
+  (close)="closeImportProjectModal()"
+>
+  <app-loading-overlay
+    [visible]="isImportingProject"
+    [title]="'Importing Project'"
+    [message]="'Please wait while we validate the collaboration URL.'"
+  ></app-loading-overlay>
+
+  <div class="import-project-modal">
+    <p class="import-project-copy">Enter the shared collaboration URL for the project you want to import.</p>
+    <label class="import-project-label" for="project-import-url">Project URL</label>
+    <input
+      id="project-import-url"
+      class="import-project-input"
+      type="url"
+      [(ngModel)]="importProjectUrl"
+      [disabled]="isImportingProject"
+      placeholder="https://your-domain/project-collaboration/..."
+    />
+    <p class="import-project-error" *ngIf="importProjectValidationMessage">{{ importProjectValidationMessage }}</p>
+  </div>
+
+  <div modal-footer class="import-project-actions">
+    <button class="btn btn-secondary" type="button" (click)="closeImportProjectModal()" [disabled]="isImportingProject">Cancel</button>
+    <button class="btn btn-primary" type="button" (click)="importProject()" [disabled]="isImportingProject">Import project</button>
+  </div>
+</app-modal>
+
 <section class="dashboard-panel">
   <div class="content-header">
     <div class="section-intro">
@@ -25,6 +57,7 @@
     </div>
     <div class="action-buttons">
       <button class="btn btn-primary" (click)="createNewProject()">Create new project</button>
+      <button class="btn btn-secondary" (click)="openImportProjectModal()">Import project</button>
     </div>
     <app-search-sort
       *ngIf="!isLoadingProjects && projects.length > 0"
@@ -52,8 +85,9 @@
           </div>
           <p class="project-description">{{ project.description }}</p>
         </div>
-        <div class="project-actions">
+        <div class="project-footer">
           <button class="btn-open" (click)="openProject(project)">Open</button>
+          <span class="project-language-badge">{{ getProjectLanguageLabel(project.generator) }}</span>
           <div class="action-icons">
             <button class="icon-btn" type="button" aria-label="Delete project" (click)="promptDeleteProject(project)">
               <i class="bi bi-archive"></i>

@@ -5,6 +5,7 @@ import java.time.Instant;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.src.main.auth.repository.InvalidatedTokenRepository;
 
@@ -21,6 +22,7 @@ public class InvalidatedTokenCleanupScheduler {
 	}
 
 	@Scheduled(fixedDelayString = "${security.invalidated.cleanup.ms:3600000}")
+	@Transactional
 	public void cleanupExpired() {
 		invalidatedTokenRepository.deleteByExpiresAtBefore(Instant.now());
 	}

@@ -1,6 +1,7 @@
 package com.src.main.auth.security;
 
 import java.io.IOException;
+import java.net.URI;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 
@@ -21,6 +22,7 @@ import jakarta.servlet.http.HttpServletResponse;
 
 @Component
 public class Oauth2AuthenticationSuccessHandler implements AuthenticationSuccessHandler {
+	private static final String OAUTH_CALLBACK_PATH = "/auth/oauth/callback";
 	private final OauthService oauthService;
 	private final AuthService authService;
 	private final String successRedirectUri;
@@ -39,8 +41,9 @@ public class Oauth2AuthenticationSuccessHandler implements AuthenticationSuccess
 			HttpServletRequest request,
 			HttpServletResponse response,
 			Authentication authentication) throws IOException, ServletException {
+		String redirectUri = normalizeRedirectUri(successRedirectUri);
 		if (!(authentication.getPrincipal() instanceof OAuth2User oauthUser)) {
-			response.sendRedirect(appendQuery(successRedirectUri, "error", "Unsupported OAuth principal"));
+			response.sendRedirect(appendQuery(redirectUri, "error", "Unsupported OAuth principal"));
 			return;
 		}
 
@@ -50,11 +53,11 @@ public class Oauth2AuthenticationSuccessHandler implements AuthenticationSuccess
 		var principal = oauthService.extractOauthPrincipal(oauthUser.getAttributes());
 		String userId = oauthService.upsertOauthUser(principal);
 		TokenPairResponseDto tokenPair = authService.loginWithUserId(userId);
-		response.sendRedirect(buildSuccessRedirect(tokenPair, registrationId));
+		response.sendRedirect(buildSuccessRedirect(redirectUri, tokenPair, registrationId));
 	}
 
-	private String buildSuccessRedirect(TokenPairResponseDto tokenPair, String registrationId) {
-		String redirect = successRedirectUri;
+	private String buildSuccessRedirect(String redirectUri, TokenPairResponseDto tokenPair, String registrationId) {
+		String redirect = redirectUri;
 		redirect = appendQuery(redirect, "provider", registrationId);
 		redirect = appendQuery(redirect, "accessToken", tokenPair.getAccessToken());
 		redirect = appendQuery(redirect, "refreshToken", tokenPair.getRefreshToken());
@@ -67,6 +70,28 @@ public class Oauth2AuthenticationSuccessHandler implements AuthenticationSuccess
 			redirect = appendQuery(redirect, "role", user.getRole());
 		}
 		return redirect;
+	}
+
+	private String normalizeRedirectUri(String uri) {
+		if (uri == null || uri.isBlank() || uri.contains("#/")) {
+			return uri;
+		}
+		try {
+			URI parsed = URI.create(uri.trim());
+			String path = parsed.getPath() == null ? "" : parsed.getPath().trim();
+			if (!path.endsWith(OAUTH_CALLBACK_PATH)) {
+				return uri;
+			}
+			StringBuilder normalized = new StringBuilder();
+			normalized.append(parsed.getScheme()).append("://").append(parsed.getRawAuthority());
+			normalized.append("/#").append(OAUTH_CALLBACK_PATH);
+			if (parsed.getRawQuery() != null && !parsed.getRawQuery().isBlank()) {
+				normalized.append('?').append(parsed.getRawQuery());
+			}
+			return normalized.toString();
+		} catch (IllegalArgumentException ex) {
+			return uri;
+		}
 	}
 
 	private String appendQuery(String uri, String key, String value) {

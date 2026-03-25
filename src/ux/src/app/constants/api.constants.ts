@@ -39,8 +39,10 @@ export const API_ENDPOINTS = {
   },
   PROJECT: {
     LIST: '/api/projects',
+    IMPORT: '/api/projects/import',
     CREATE_DRAFT: '/api/projects/draft',
     GET: (id: string) => `/api/projects/${id}`,
+    GET_DRAFT_TAB: (id: string) => `/api/projects/${id}/draft-tab`,
     UPDATE_DRAFT: (id: string) => `/api/projects/${id}/draft`,
     PATCH_DRAFT_TAB: (id: string) => `/api/projects/${id}/draft-tab`,
     DELETE: (id: string) => `/api/projects/${id}`,

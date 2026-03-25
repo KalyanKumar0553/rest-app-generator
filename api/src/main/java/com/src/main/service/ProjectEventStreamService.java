@@ -15,6 +15,11 @@ public class ProjectEventStreamService {
 
 	private static final long TIMEOUT_MS = 30L * 60L * 1000L;
 	private final Map<UUID, List<SseEmitter>> emittersByProject = new ConcurrentHashMap<>();
+	private final ProjectRealtimeSocketService projectRealtimeSocketService;
+
+	public ProjectEventStreamService(ProjectRealtimeSocketService projectRealtimeSocketService) {
+		this.projectRealtimeSocketService = projectRealtimeSocketService;
+	}
 
 	public SseEmitter subscribe(UUID projectId) {
 		SseEmitter emitter = new SseEmitter(TIMEOUT_MS);
@@ -34,6 +39,7 @@ public class ProjectEventStreamService {
 	}
 
 	public void publish(UUID projectId, String eventName, Object payload) {
+		projectRealtimeSocketService.publish(projectId, eventName, payload);
 		List<SseEmitter> emitters = emittersByProject.get(projectId);
 		if (emitters == null || emitters.isEmpty()) {
 			return;

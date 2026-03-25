@@ -36,9 +36,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 	@Override
 	protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
 			throws ServletException, IOException {
-		String header = request.getHeader(HttpHeaders.AUTHORIZATION);
-		if (header != null && header.startsWith("Bearer ")) {
-			String token = header.substring(7);
+		String token = resolveToken(request);
+		if (token != null && !token.isBlank()) {
 			if (invalidatedTokenRepository.existsByToken(token)) {
 				SecurityContextHolder.clearContext();
 				filterChain.doFilter(request, response);
@@ -70,5 +69,21 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 			}
 		}
 		filterChain.doFilter(request, response);
+	}
+
+	private String resolveToken(HttpServletRequest request) {
+		String header = request.getHeader(HttpHeaders.AUTHORIZATION);
+		if (header != null && header.startsWith("Bearer ")) {
+			return header.substring(7);
+		}
+		String queryToken = request.getParameter("access_token");
+		if (queryToken != null && !queryToken.isBlank()) {
+			return queryToken.trim();
+		}
+		String legacyQueryToken = request.getParameter("accessToken");
+		if (legacyQueryToken != null && !legacyQueryToken.isBlank()) {
+			return legacyQueryToken.trim();
+		}
+		return null;
 	}
 }

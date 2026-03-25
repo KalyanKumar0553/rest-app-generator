@@ -1,6 +1,7 @@
 package com.src.main.auth.security;
 
 import java.io.IOException;
+import java.net.URI;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 
@@ -15,6 +16,7 @@ import jakarta.servlet.http.HttpServletResponse;
 
 @Component
 public class Oauth2AuthenticationFailureHandler implements AuthenticationFailureHandler {
+	private static final String OAUTH_CALLBACK_PATH = "/auth/oauth/callback";
 	private final String failureRedirectUri;
 
 	public Oauth2AuthenticationFailureHandler(
@@ -28,7 +30,30 @@ public class Oauth2AuthenticationFailureHandler implements AuthenticationFailure
 			HttpServletResponse response,
 			AuthenticationException exception) throws IOException, ServletException {
 		String message = exception == null ? "OAuth sign-in failed." : exception.getMessage();
-		char separator = failureRedirectUri.contains("?") ? '&' : '?';
-		response.sendRedirect(failureRedirectUri + separator + "error=" + URLEncoder.encode(message, StandardCharsets.UTF_8));
+		String redirectUri = normalizeRedirectUri(failureRedirectUri);
+		char separator = redirectUri.contains("?") ? '&' : '?';
+		response.sendRedirect(redirectUri + separator + "error=" + URLEncoder.encode(message, StandardCharsets.UTF_8));
+	}
+
+	private String normalizeRedirectUri(String uri) {
+		if (uri == null || uri.isBlank() || uri.contains("#/")) {
+			return uri;
+		}
+		try {
+			URI parsed = URI.create(uri.trim());
+			String path = parsed.getPath() == null ? "" : parsed.getPath().trim();
+			if (!path.endsWith(OAUTH_CALLBACK_PATH)) {
+				return uri;
+			}
+			StringBuilder normalized = new StringBuilder();
+			normalized.append(parsed.getScheme()).append("://").append(parsed.getRawAuthority());
+			normalized.append("/#").append(OAUTH_CALLBACK_PATH);
+			if (parsed.getRawQuery() != null && !parsed.getRawQuery().isBlank()) {
+				normalized.append('?').append(parsed.getRawQuery());
+			}
+			return normalized.toString();
+		} catch (IllegalArgumentException ex) {
+			return uri;
+		}
 	}
 }

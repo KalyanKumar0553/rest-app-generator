@@ -52,6 +52,10 @@
 		</dependency>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-websocket</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-actuator</artifactId>
 		</dependency>
 		<dependency>
@@ -169,10 +173,6 @@
 			<resource>
 				<directory>api/src/main/resources</directory>
 			</resource>
-			<resource>
-				<directory>subscription/src/main/resources/rest-app-db/migration</directory>
-				<targetPath>rest-app-db/migration</targetPath>
-			</resource>
 		</resources>
 		<testResources>
 			<testResource>
@@ -240,6 +240,17 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-compiler-plugin</artifactId>
+				<configuration>
+					<release>${java.version}</release>
+					<parameters>true</parameters>
+					<annotationProcessorPaths>
+						<path>
+							<groupId>org.projectlombok</groupId>
+							<artifactId>lombok</artifactId>
+							<version>${lombok.version}</version>
+						</path>
+					</annotationProcessorPaths>
+				</configuration>
 			</plugin>
 			<plugin>
 				<groupId>org.flywaydb</groupId>
@@ -247,7 +258,6 @@
 				<configuration>
 					<locations>
 						<location>filesystem:api/src/main/resources/rest-app-db/migration</location>
-						<location>filesystem:subscription/src/main/resources/rest-app-db/migration</location>
 					</locations>
 				</configuration>
 			</plugin>

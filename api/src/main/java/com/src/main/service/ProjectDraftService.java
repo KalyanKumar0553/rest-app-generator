@@ -116,6 +116,31 @@ public class ProjectDraftService {
 		return List.copyOf(tabs);
 	}
 
+	public Map<String, Object> extractTabData(Map<String, Object> draftData, String tabKey, String generator) {
+		String normalizedTabKey = normalizeTabKey(tabKey);
+		if (normalizedTabKey.isBlank()) {
+			throw new IllegalArgumentException("tabKey must be provided");
+		}
+		Map<String, Object> source = draftData == null ? Collections.emptyMap() : draftData;
+		Map<String, Object> extracted = new LinkedHashMap<>();
+		if (isModuleTab(normalizedTabKey)) {
+			Object moduleConfigsRaw = source.get("moduleConfigs");
+			if (moduleConfigsRaw instanceof Map<?, ?> moduleConfigs) {
+				Object moduleConfig = ((Map<String, Object>) moduleConfigs).get(normalizedTabKey);
+				Map<String, Object> scopedConfigs = new LinkedHashMap<>();
+				scopedConfigs.put(normalizedTabKey, moduleConfig);
+				extracted.put("moduleConfigs", scopedConfigs);
+			}
+			return extracted;
+		}
+		for (String ownedKey : ownedDraftKeys(normalizedTabKey, generator)) {
+			if (source.containsKey(ownedKey)) {
+				extracted.put(ownedKey, source.get(ownedKey));
+			}
+		}
+		return extracted;
+	}
+
 	public Map<String, Object> mergeTabData(Map<String, Object> existingDraftData, String tabKey, Map<String, Object> tabData, String generator) {
 		String normalizedTabKey = normalizeTabKey(tabKey);
 		if (normalizedTabKey.isBlank()) {

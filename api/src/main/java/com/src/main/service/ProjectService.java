@@ -12,9 +12,11 @@ import com.src.main.dto.ProjectContributorDTO;
 import com.src.main.dto.ProjectContributorPermissionUpdateDTO;
 import com.src.main.dto.ProjectContributorUpsertRequestDTO;
 import com.src.main.dto.ProjectDraftResponseDTO;
+import com.src.main.dto.ProjectDraftTabDataDTO;
 import com.src.main.dto.ProjectDraftTabPatchRequestDTO;
 import com.src.main.dto.ProjectDraftUpsertRequestDTO;
 import com.src.main.dto.ProjectDetailsDTO;
+import com.src.main.dto.ProjectImportRequestDTO;
 import com.src.main.dto.ProjectSummaryDTO;
 import com.src.main.dto.ProjectTabDefinitionDTO;
 import com.src.main.model.ProjectEntity;
@@ -33,6 +35,8 @@ public interface ProjectService {
 	ProjectEntity getAccessibleProject(UUID projectId, String userId);
 
 	ProjectDetailsDTO getDetails(UUID projectId, String userId);
+
+	ProjectDraftTabDataDTO getDraftTabData(UUID projectId, String tabKey, String userId);
 
 	List<ProjectTabDefinitionDTO> getTabDetails(String generator, List<String> dependencies);
 
@@ -54,6 +58,8 @@ public interface ProjectService {
 
 	ProjectCollaborationRequestDTO requestCollaboration(String inviteToken, String userId,
 			ProjectCollaborationRequestCreateDTO request);
+
+	ProjectSummaryDTO importProject(ProjectImportRequestDTO request, String userId);
 
 	void deleteProject(UUID projectId, String userId);
 }

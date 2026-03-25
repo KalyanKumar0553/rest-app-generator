@@ -13,7 +13,6 @@ import { MatCheckbox, MatCheckboxChange } from '@angular/material/checkbox';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatTooltipModule } from '@angular/material/tooltip';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatAutocompleteModule } from '@angular/material/autocomplete';
 import { MatTableModule } from '@angular/material/table';
 import { ConfirmationModalComponent } from '../../../../components/confirmation-modal/confirmation-modal.component';
@@ -34,6 +33,7 @@ import {
   ProjectContributor,
   ProjectContributorPermissions,
   ProjectDraftPayload,
+  ProjectDraftTabData,
   ProjectDraftTabPatchPayload,
   ProjectService,
   ProjectTabDefinition
@@ -41,7 +41,7 @@ import {
 import type { ProjectDetails } from '../../../../services/project.service';
 import { ToastService } from '../../../../services/toast.service';
 import { HttpClient } from '@angular/common/http';
-import { API_CONFIG, API_ENDPOINTS } from '../../../../constants/api.constants';
+import { API_CONFIG, API_ENDPOINTS, STORAGE_KEYS } from '../../../../constants/api.constants';
 import { InfoBannerComponent } from '../../../../components/info-banner/info-banner.component';
 import { LoadingOverlayComponent } from '../../../../components/shared/loading-overlay/loading-overlay.component';
 import { finalize } from 'rxjs/operators';
@@ -118,7 +118,6 @@ import { buildProjectDashboardNavConfig } from '../../utils/project-tab-definiti
     MatButtonModule,
     MatIconModule,
     MatTooltipModule,
-    MatProgressSpinnerModule,
     MatAutocompleteModule,
     MatTableModule,
     ConfirmationModalComponent,
@@ -147,6 +146,7 @@ import { buildProjectDashboardNavConfig } from '../../utils/project-tab-definiti
 export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
   private static readonly projectStorageResetKey = 'project_storage_reset_v20260314';
   private static readonly shippableModuleKeys = ['rbac', 'auth', 'state-machine', 'subscription'];
+  private static readonly hiddenModuleTabKeys = new Set(['shipping']);
   private static readonly shippableModuleCards: ShippableModuleCard[] = [
     {
       key: 'rbac',
@@ -220,11 +220,16 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
   contributorPermissionColumns: string[] = ['userId', 'edit', 'generate', 'manage', 'actions'];
   contributorUserId = '';
   isContributorSaving = false;
-  private projectEventsSource: EventSource | null = null;
+  private projectEventsSource: WebSocket | null = null;
   private pendingGenerationYamlSpec: string | null = null;
   private generationGuestSubscription: Subscription | null = null;
   private collaborationHeartbeatId: number | null = null;
   private collaborationSessionId: string | null = null;
+  private changeTrackingIntervalId: number | null = null;
+  private savedProjectStateSnapshot = '';
+  private dependenciesLoadPromise: Promise<void> | null = null;
+  private loadedDraftSections = new Set<string>();
+  private draftSectionLoadPromises = new Map<string, Promise<void>>();
   draftVersion = 1;
   tabDefinitions: ProjectTabDefinition[] = [];
   exploreZipBlob: Blob | null = null;
@@ -367,8 +372,10 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
     if (!Array.isArray(tabDetails) || !tabDetails.length) {
       return;
     }
+    const sanitizedTabDetails = tabDetails.filter((tab) => !ProjectGenerationDashboardComponent.hiddenModuleTabKeys.has(tab.key));
+    this.tabDefinitions = sanitizedTabDetails;
     const navConfig = buildProjectDashboardNavConfig(
-      tabDetails,
+      sanitizedTabDetails,
       BASE_NAV_ITEMS,
       CONTROLLERS_NAV_ITEM,
       MAPPERS_NAV_ITEM,
@@ -387,7 +394,8 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.clearLegacyProjectStorageIfRequired();
     this.isLoggedIn = this.authService.isLoggedIn();
-    if (this.isLoggedIn) {
+    const initialProjectId = trimmed(this.route.snapshot.queryParamMap.get('projectId'));
+    if (this.isLoggedIn && !initialProjectId) {
       this.loadTabDefinitions(this.projectSettings.language);
     }
 
@@ -407,7 +415,7 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
       });
 
     this.trackChanges();
-    this.loadDependencies();
+    void this.loadDependencies();
     this.syncActuatorStateStore();
   }
 
@@ -415,16 +423,21 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
     this.cancelGenerationRequests();
     this.leaveProjectCollaboration();
     this.closeProjectEventsSource();
+    if (this.changeTrackingIntervalId !== null) {
+      window.clearInterval(this.changeTrackingIntervalId);
+      this.changeTrackingIntervalId = null;
+    }
     this.destroy$.next();
     this.destroy$.complete();
   }
 
   trackChanges(): void {
-    const initialState = JSON.stringify(this.getProjectData());
-
-    setInterval(() => {
-      const currentState = JSON.stringify(this.getProjectData());
-      this.hasUnsavedChanges = initialState !== currentState;
+    this.refreshSavedProjectStateSnapshot();
+    if (this.changeTrackingIntervalId !== null) {
+      window.clearInterval(this.changeTrackingIntervalId);
+    }
+    this.changeTrackingIntervalId = window.setInterval(() => {
+      this.hasUnsavedChanges = this.savedProjectStateSnapshot !== this.serializeProjectState();
     }, 1000);
   }
 
@@ -538,7 +551,12 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
         return;
       }
 
-      const projectDetails = await firstValueFrom(this.projectService.getProject(projectId));
+      const [projectDetails] = await Promise.all([
+        firstValueFrom(this.projectService.getProject(projectId)),
+        this.loadDependencies()
+      ]);
+      this.resetLazyLoadedDraftSections();
+      this.resetDraftBackedState();
       this.backendProjectId = projectDetails.projectId || projectId;
       this.projectOwnerId = projectDetails.ownerId || null;
       this.projectCanManageContributors = Boolean(projectDetails.canManageContributors);
@@ -549,65 +567,15 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
       this.tabDefinitions = Array.isArray(projectDetails.tabDetails) ? projectDetails.tabDetails : this.tabDefinitions;
       this.applyTabDefinitions(this.tabDefinitions);
       this.hydrateExploreStateFromProjectDetails(projectDetails);
-      const projectData = projectDetails.draftData || this.loadProjectFromStorage(projectId);
       this.connectProjectEvents(this.backendProjectId);
       this.initializeProjectCollaboration(this.backendProjectId);
-
-      if (projectData) {
-        this.entities = projectData.entities || [];
-        this.dataObjects = projectData.dataObjects || [];
-        this.relations = projectData.relations || [];
-        this.enums = Array.isArray(projectData.enums) ? projectData.enums : [];
-        this.mappers = Array.isArray(projectData.mappers) ? projectData.mappers : [];
-        this.moduleConfigs = projectData.moduleConfigs || {};
-        this.projectSettings = projectData.settings || this.projectSettings;
-        this.projectSettings.projectName = projectDetails.name || this.projectSettings.projectName;
-        this.projectSettings.projectDescription = projectDetails.description || this.projectSettings.projectDescription;
-        this.databaseSettings = projectData.database || this.databaseSettings;
-        this.databaseSettings.dbType = resolveDatabaseType(this.databaseSettings.dbType, this.databaseSettings.database);
-        this.databaseSettings.database = toDatabaseCode(this.databaseSettings.database);
-        this.ensureDatabaseSelectionForType();
-        this.previousDatabaseSelection = this.databaseSettings.database;
-        this.previousDatabaseType = this.databaseSettings.dbType;
-        this.developerPreferences = {
-          ...this.developerPreferences,
-          ...(projectData.preferences || {}),
-          enableActuator: Boolean(projectData?.preferences?.enableActuator),
-          configureApi: projectData?.preferences?.configureApi === undefined
-            ? this.developerPreferences.configureApi
-            : Boolean(projectData?.preferences?.configureApi),
-          enableLombok: projectData?.preferences?.enableLombok === undefined
-            ? Boolean(projectData?.preferences?.optionalLombok)
-            : Boolean(projectData?.preferences?.enableLombok)
-        };
-        this.controllersConfigEnabled = projectData?.controllers?.enabled === undefined
-          ? true
-          : Boolean(projectData?.controllers?.enabled);
-        this.controllersConfig = this.specMapper.parseControllersConfig(projectData?.controllers?.config);
-        const configurationOptions = this.specMapper.getActuatorConfigurationOptions(projectData?.preferences?.profiles);
-        this.actuatorConfigurationOptions = configurationOptions;
-        this.actuatorProfileEndpoints = this.sanitizeActuatorConfigurations(
-          projectData?.actuator?.configurations ?? projectData?.actuator?.endpoints,
-          configurationOptions
-        );
-        const selectedConfig = this.normalizeActuatorConfigurationName(projectData?.actuator?.selectedConfiguration) ?? 'default';
-        this.selectedActuatorConfiguration = configurationOptions.includes(selectedConfig) ? selectedConfig : 'default';
-        this.syncActuatorStateStore();
-        this.dependencies = projectData.dependencies || '';
-        this.toastService.success('Project loaded successfully');
-      } else {
-        this.projectSettings.projectName = projectDetails.name || this.projectSettings.projectName;
-        this.projectSettings.projectDescription = projectDetails.description || this.projectSettings.projectDescription;
-        this.entities = [];
-        this.dataObjects = [];
-        this.relations = [];
-        this.enums = [];
-        this.mappers = [];
-        this.controllersConfig = { ...DEFAULT_CONTROLLERS_CONFIG };
-        this.controllersConfigEnabled = true;
-        this.syncActuatorConfigurationsWithProfiles();
-        this.syncActuatorStateStore();
-      }
+      this.projectSettings.projectName = projectDetails.name || this.projectSettings.projectName;
+      this.projectSettings.projectDescription = projectDetails.description || this.projectSettings.projectDescription;
+      const initialSection = this.isSectionAvailable(this.activeSection) ? this.activeSection : 'general';
+      this.activeSection = initialSection;
+      await this.ensureSectionDataLoaded(initialSection);
+      this.toastService.success('Project loaded successfully');
+      this.refreshSavedProjectStateSnapshot();
     } catch (error) {
         this.toastService.error(`User doesn't have access.`);
         this.navigateHome();
@@ -633,7 +601,7 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
     const projectData = this.getProjectData();
     this.projectId = saveProjectDraftToStorage(projectData, this.backendProjectId, this.projectId);
     this.toastService.success('Project saved successfully');
-    this.hasUnsavedChanges = false;
+    this.refreshSavedProjectStateSnapshot();
   }
 
   private async saveProjectDraftToBackend(showToast: boolean): Promise<string | null> {
@@ -659,7 +627,7 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
         if (showToast) {
           this.toastService.success('Project saved successfully');
         }
-        this.hasUnsavedChanges = false;
+        this.refreshSavedProjectStateSnapshot();
         return existingProjectId;
       }
 
@@ -676,7 +644,7 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
       if (showToast) {
         this.toastService.success('Project saved successfully');
       }
-      this.hasUnsavedChanges = false;
+      this.refreshSavedProjectStateSnapshot();
       return projectId;
     } catch (error) {
       if (showToast) {
@@ -896,7 +864,7 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
     }
     if (section === 'explore') {
       const previousSection = this.activeSection;
-      this.handleExploreTab(previousSection);
+      await this.handleExploreTab(previousSection);
       this.closeSidebar();
       return true;
     }
@@ -913,12 +881,20 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
         return false;
       }
     }
+    try {
+      await this.ensureSectionDataLoaded(section);
+    } catch (error) {
+      this.toastService.error('Failed to load project section.');
+      console.error('Error loading project section:', error);
+      this.closeSidebar();
+      return false;
+    }
     this.activeSection = section;
     this.closeSidebar();
     return true;
   }
 
-  handleExploreTab(previousSection: string): void {
+  async handleExploreTab(previousSection: string): Promise<void> {
     if (this.isExploreSyncing) {
       return;
     }
@@ -926,6 +902,17 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
     if (!this.validateProjectNaming()) {
       this.activeSection = 'general';
       return;
+    }
+
+    if (this.isLoggedIn && this.backendProjectId) {
+      try {
+        await this.ensureAllDraftSectionsLoaded();
+      } catch (error) {
+        this.toastService.error('Failed to load project data for explore.');
+        this.activeSection = previousSection;
+        console.error('Error preparing project data for explore:', error);
+        return;
+      }
     }
 
     const yamlSpec = this.buildCurrentProjectYaml();
@@ -995,20 +982,21 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
       return;
     }
 
-    const yamlSpec = this.buildCurrentProjectYaml();
-    if (this.useCachedZipIfAvailable(yamlSpec, true)) {
-      return;
-    }
-    if (!this.validateYamlSpecPayloadSize(yamlSpec)) {
-      return;
-    }
-    this.clearLocalZipDataBeforeGeneration();
-
     this.isGeneratingFromDtoSave = true;
-    this.pendingGenerationYamlSpec = yamlSpec;
+    this.pendingGenerationYamlSpec = null;
 
     void (async () => {
       try {
+        await this.ensureAllDraftSectionsLoaded();
+        const yamlSpec = this.buildCurrentProjectYaml();
+        if (this.useCachedZipIfAvailable(yamlSpec, true)) {
+          return;
+        }
+        if (!this.validateYamlSpecPayloadSize(yamlSpec)) {
+          return;
+        }
+        this.clearLocalZipDataBeforeGeneration();
+        this.pendingGenerationYamlSpec = yamlSpec;
         const projectId = await this.saveProjectDraftToBackend(false);
         if (!projectId) {
           this.pendingGenerationYamlSpec = null;
@@ -1095,6 +1083,178 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
     return this.specMapper.buildYaml(this.getProjectData());
   }
 
+  private async ensureAllDraftSectionsLoaded(): Promise<void> {
+    if (!this.isLoggedIn || !this.backendProjectId) {
+      return;
+    }
+    const draftSections = this.visibleNavItems
+      .map((item) => item.value)
+      .filter((section, index, values) => values.indexOf(section) === index)
+      .filter((section) => this.isDraftBackedSection(section));
+    await Promise.all(draftSections.map((section) => this.ensureSectionDataLoaded(section)));
+  }
+
+  private async ensureSectionDataLoaded(section: string): Promise<void> {
+    const normalizedSection = trimmed(section);
+    if (!this.isLoggedIn || !this.backendProjectId || !normalizedSection || !this.isDraftBackedSection(normalizedSection)) {
+      return;
+    }
+    if (this.loadedDraftSections.has(normalizedSection)) {
+      return;
+    }
+    const existingPromise = this.draftSectionLoadPromises.get(normalizedSection);
+    if (existingPromise) {
+      return existingPromise;
+    }
+    const loadPromise = (async () => {
+      const response = await firstValueFrom(this.projectService.getProjectDraftTab(this.backendProjectId!, normalizedSection));
+      this.applyDraftTabData(normalizedSection, response);
+      this.loadedDraftSections.add(normalizedSection);
+      this.refreshSavedProjectStateSnapshot();
+    })();
+    this.draftSectionLoadPromises.set(normalizedSection, loadPromise);
+    try {
+      await loadPromise;
+    } finally {
+      this.draftSectionLoadPromises.delete(normalizedSection);
+    }
+  }
+
+  private applyDraftTabData(section: string, response: ProjectDraftTabData): void {
+    const tabData = response?.tabData || {};
+    switch (section) {
+      case 'general': {
+        const settings = tabData['settings'] || {};
+        const database = tabData['database'] || {};
+        const preferences = tabData['preferences'] || {};
+        this.projectSettings = {
+          ...this.projectSettings,
+          ...settings
+        };
+        this.projectSettings.projectName = this.projectSettings.projectName || this.projectSettings.projectName;
+        this.databaseSettings = {
+          ...this.databaseSettings,
+          ...database
+        };
+        this.databaseSettings.dbType = resolveDatabaseType(this.databaseSettings.dbType, this.databaseSettings.database);
+        this.databaseSettings.database = toDatabaseCode(this.databaseSettings.database);
+        this.ensureDatabaseSelectionForType();
+        this.previousDatabaseSelection = this.databaseSettings.database;
+        this.previousDatabaseType = this.databaseSettings.dbType;
+        this.developerPreferences = {
+          ...this.developerPreferences,
+          ...preferences,
+          enableActuator: Boolean((preferences as Record<string, unknown>)['enableActuator']),
+          configureApi: (preferences as Record<string, unknown>)['configureApi'] === undefined
+            ? this.developerPreferences.configureApi
+            : Boolean((preferences as Record<string, unknown>)['configureApi']),
+          enableLombok: (preferences as Record<string, unknown>)['enableLombok'] === undefined
+            ? Boolean((preferences as Record<string, unknown>)['optionalLombok'])
+            : Boolean((preferences as Record<string, unknown>)['enableLombok'])
+        };
+        this.applyDependencyDraftData(tabData);
+        this.syncActuatorConfigurationsWithProfiles();
+        this.syncActuatorStateStore();
+        return;
+      }
+      case 'modules':
+        this.applyDependencyDraftData(tabData);
+        if (tabData['moduleConfigs'] && typeof tabData['moduleConfigs'] === 'object') {
+          this.moduleConfigs = {
+            ...this.moduleConfigs,
+            ...(tabData['moduleConfigs'] as Record<string, any>)
+          };
+        }
+        return;
+      case 'actuator': {
+        const actuator = (tabData['actuator'] as Record<string, any> | undefined) || {};
+        const configurationOptions = this.specMapper.getActuatorConfigurationOptions(this.developerPreferences.profiles);
+        this.actuatorConfigurationOptions = configurationOptions;
+        this.actuatorProfileEndpoints = this.sanitizeActuatorConfigurations(
+          actuator['configurations'] ?? actuator['endpoints'],
+          configurationOptions
+        );
+        const selectedConfig = this.normalizeActuatorConfigurationName(actuator['selectedConfiguration']) ?? 'default';
+        this.selectedActuatorConfiguration = configurationOptions.includes(selectedConfig) ? selectedConfig : 'default';
+        this.syncActuatorStateStore();
+        return;
+      }
+      case 'entities':
+        this.entities = Array.isArray(tabData['entities']) ? tabData['entities'] as any[] : [];
+        this.relations = Array.isArray(tabData['relations']) ? tabData['relations'] as any[] : [];
+        return;
+      case 'data-objects':
+        this.dataObjects = Array.isArray(tabData['dataObjects']) ? tabData['dataObjects'] as any[] : [];
+        this.enums = Array.isArray(tabData['enums']) ? tabData['enums'] as any[] : [];
+        return;
+      case 'mappers':
+        this.mappers = Array.isArray(tabData['mappers']) ? tabData['mappers'] as any[] : [];
+        return;
+      case 'controllers': {
+        const controllers = (tabData['controllers'] as Record<string, any> | undefined) || {};
+        this.controllersConfigEnabled = controllers['enabled'] === undefined
+          ? true
+          : Boolean(controllers['enabled']);
+        this.controllersConfig = this.specMapper.parseControllersConfig(controllers['config']);
+        return;
+      }
+      case 'rbac':
+      case 'auth':
+      case 'state-machine':
+      case 'subscription':
+        if (tabData['moduleConfigs'] && typeof tabData['moduleConfigs'] === 'object') {
+          this.moduleConfigs = {
+            ...this.moduleConfigs,
+            ...(tabData['moduleConfigs'] as Record<string, any>)
+          };
+        }
+        return;
+      default:
+        return;
+    }
+  }
+
+  private applyDependencyDraftData(tabData: Record<string, any>): void {
+    const selectedDependencies = tabData['selectedDependencies'];
+    const dependencies = tabData['dependencies'];
+    if (Array.isArray(selectedDependencies)) {
+      this.selectedDependencies = selectedDependencies
+        .map((dependency: unknown) => String(dependency ?? '').trim())
+        .filter((dependency: string) => dependency.length > 0);
+    } else if (typeof dependencies === 'string' && dependencies.trim()) {
+      this.selectedDependencies = dependencies
+        .split(',')
+        .map((dependency: string) => dependency.trim())
+        .filter((dependency: string) => dependency.length > 0);
+    }
+    this.dependencies = typeof dependencies === 'string'
+      ? dependencies
+      : this.selectedDependencies.join(', ');
+  }
+
+  private resetLazyLoadedDraftSections(): void {
+    this.loadedDraftSections.clear();
+    this.draftSectionLoadPromises.clear();
+  }
+
+  private resetDraftBackedState(): void {
+    this.entities = [];
+    this.dataObjects = [];
+    this.relations = [];
+    this.enums = [];
+    this.mappers = [];
+    this.moduleConfigs = {};
+    this.dependencies = '';
+    this.selectedDependencies = [];
+    this.controllersConfig = { ...DEFAULT_CONTROLLERS_CONFIG };
+    this.controllersConfigEnabled = true;
+    this.projectSettings = { ...DEFAULT_PROJECT_SETTINGS };
+    this.databaseSettings = { ...DEFAULT_DATABASE_SETTINGS };
+    this.developerPreferences = { ...DEFAULT_DEVELOPER_PREFERENCES, profiles: [] };
+    this.syncActuatorConfigurationsWithProfiles();
+    this.syncActuatorStateStore();
+  }
+
   private getProjectSaveErrorMessage(error: any): string {
     const message = typeof error?.message === 'string' ? error.message.trim() : '';
     if (message.toLowerCase().includes('project name already exists')) {
@@ -1109,56 +1269,76 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
     }
     this.closeProjectEventsSource();
 
-    const url = `${API_CONFIG.BASE_URL}/api/projects/${projectId}/events`;
-    const source = new EventSource(url, { withCredentials: true });
+    const url = this.buildProjectRealtimeSocketUrl(projectId);
+    const source = new WebSocket(url);
     this.projectEventsSource = source;
 
-    source.addEventListener('stage', (event: MessageEvent) => {
-      const payload = this.parseJsonPayload(event.data);
-      if (!payload) {
+    source.onopen = () => {
+      this.initializeProjectCollaboration(projectId);
+    };
+
+    source.onmessage = (event: MessageEvent) => {
+      const envelope = this.parseJsonPayload(event.data);
+      if (!envelope) {
         return;
       }
-      this.upsertExploreStageEvent(payload);
-    });
-
-    source.addEventListener('presence', (event: MessageEvent) => {
-      const payload = this.parseJsonPayload(event.data);
-      if (!payload) {
-        return;
+      const eventName = String(envelope.event ?? '').trim();
+      const payload = envelope.payload;
+      switch (eventName) {
+        case 'stage':
+          this.upsertExploreStageEvent(payload);
+          break;
+        case 'presence':
+          this.applyCollaborationState(payload);
+          break;
+        case 'presence.registered':
+          this.collaborationSessionId = String(payload?.sessionId ?? '').trim() || this.collaborationSessionId;
+          this.applyCollaborationState(payload);
+          if (this.collaborationSessionId) {
+            this.startCollaborationHeartbeat(projectId, this.collaborationSessionId);
+          }
+          break;
+        case 'collaboration-action':
+          this.prependCollaborationAction(payload);
+          break;
+        case 'generation': {
+          const status = String(payload?.status ?? '').toUpperCase();
+          if (status === 'SUCCESS' && Boolean(payload?.hasZip)) {
+            void this.handleGeneratedZipEvent(projectId, payload);
+          } else if (status === 'ERROR') {
+            const message = typeof payload?.message === 'string' && payload.message.trim()
+              ? payload.message.trim()
+              : 'Project generation failed.';
+            this.refreshExploreRunHistory();
+            this.toastService.error(message);
+          }
+          break;
+        }
+        default:
+          break;
       }
-      this.applyCollaborationState(payload);
-    });
-
-    source.addEventListener('collaboration-action', (event: MessageEvent) => {
-      const payload = this.parseJsonPayload(event.data);
-      if (!payload) {
-        return;
-      }
-      this.prependCollaborationAction(payload);
-    });
-
-    source.addEventListener('generation', (event: MessageEvent) => {
-      const payload = this.parseJsonPayload(event.data);
-      if (!payload) {
-        return;
-      }
-
-      const status = String(payload.status ?? '').toUpperCase();
-      if (status === 'SUCCESS' && Boolean(payload.hasZip)) {
-        void this.handleGeneratedZipEvent(projectId, payload);
-      } else if (status === 'ERROR') {
-        const message = typeof payload.message === 'string' && payload.message.trim()
-          ? payload.message.trim()
-          : 'Project generation failed.';
-        this.refreshExploreRunHistory();
-        this.toastService.error(message);
-      }
-    });
+    };
 
     source.onerror = () => {
       this.stopCollaborationHeartbeat();
       this.closeProjectEventsSource();
     };
+
+    source.onclose = () => {
+      this.stopCollaborationHeartbeat();
+      this.projectEventsSource = null;
+    };
+  }
+
+  private buildProjectRealtimeSocketUrl(projectId: string): string {
+    const origin = new URL(API_CONFIG.BASE_URL);
+    const protocol = origin.protocol === 'https:' ? 'wss:' : 'ws:';
+    const baseUrl = `${protocol}//${origin.host}/ws/projects/${projectId}`;
+    const token = this.localStorageService.getItem(STORAGE_KEYS.ACCESS_TOKEN);
+    if (!token) {
+      return baseUrl;
+    }
+    return `${baseUrl}?access_token=${encodeURIComponent(token)}`;
   }
 
   private parseJsonPayload(raw: any): any | null {
@@ -1245,27 +1425,16 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
     if (!normalizedProjectId || !this.isLoggedIn) {
       return;
     }
-
     this.stopCollaborationHeartbeat();
-    this.projectService.registerProjectPresence(normalizedProjectId, this.collaborationSessionId ?? undefined).subscribe({
-      next: (response) => {
-        this.collaborationSessionId = response.sessionId;
-        this.applyCollaborationState(response);
-        this.startCollaborationHeartbeat(normalizedProjectId, response.sessionId);
-      },
-      error: () => {
-        console.error('Failed to register project collaboration presence.');
-      }
+    this.sendProjectRealtimeMessage('presence.register', {
+      sessionId: this.collaborationSessionId ?? undefined
     });
   }
 
   private startCollaborationHeartbeat(projectId: string, sessionId: string): void {
     this.stopCollaborationHeartbeat();
     this.collaborationHeartbeatId = window.setInterval(() => {
-      this.projectService.heartbeatProjectPresence(projectId, sessionId).subscribe({
-        next: (state) => this.applyCollaborationState(state),
-        error: () => console.error('Failed to refresh project collaboration presence.')
-      });
+      this.sendProjectRealtimeMessage('presence.heartbeat', { sessionId });
     }, 15000);
   }
 
@@ -1277,15 +1446,12 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
   }
 
   private leaveProjectCollaboration(): void {
-    const projectId = trimmed(this.backendProjectId);
     const sessionId = trimmed(this.collaborationSessionId);
     this.stopCollaborationHeartbeat();
-    if (!projectId || !sessionId || !this.isLoggedIn) {
+    if (!sessionId || !this.isLoggedIn) {
       return;
     }
-    this.projectService.leaveProjectPresence(projectId, sessionId).subscribe({
-      error: () => console.error('Failed to clear project collaboration presence.')
-    });
+    this.sendProjectRealtimeMessage('presence.leave', { sessionId });
   }
 
   private recordCollaborationAction(projectId: string, tabKey: string, actionType: string, message: string): void {
@@ -1293,10 +1459,24 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
     if (!projectId || !sessionId || !this.isLoggedIn) {
       return;
     }
-    this.projectService.recordProjectCollaborationAction(projectId, sessionId, tabKey, actionType, this.draftVersion, message).subscribe({
-      next: (state) => this.applyCollaborationState(state),
-      error: () => console.error('Failed to record collaboration action.')
+    this.sendProjectRealtimeMessage('collaboration.action', {
+      sessionId,
+      tabKey,
+      actionType,
+      draftVersion: this.draftVersion,
+      message
     });
+  }
+
+  private sendProjectRealtimeMessage(type: string, payload: Record<string, unknown>): void {
+    if (!this.projectEventsSource || this.projectEventsSource.readyState !== WebSocket.OPEN) {
+      return;
+    }
+    try {
+      this.projectEventsSource.send(JSON.stringify({ type, payload }));
+    } catch {
+      console.error('Failed to send project realtime message.');
+    }
   }
 
   private applyCollaborationState(state: Partial<ProjectCollaborationState> | null | undefined): void {
@@ -1740,17 +1920,28 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
     }
   }
 
-  loadDependencies(): void {
+  loadDependencies(forceReload = false): Promise<void> {
+    if (!forceReload && this.availableDependencies.length > 0) {
+      return Promise.resolve();
+    }
+    if (!forceReload && this.dependenciesLoadPromise) {
+      return this.dependenciesLoadPromise;
+    }
+
     const url = `${API_CONFIG.BASE_URL}${API_ENDPOINTS.DEPENDENCIES.LIST}`;
-    this.http.get<string[]>(url).subscribe({
-      next: (dependencies) => {
+    this.dependenciesLoadPromise = firstValueFrom(this.http.get<string[]>(url))
+      .then((dependencies) => {
         this.availableDependencies = Array.isArray(dependencies) ? dependencies : [];
-      },
-      error: () => {
+      })
+      .catch(() => {
         this.toastService.error('Failed to load dependencies');
         this.availableDependencies = [];
-      }
-    });
+      })
+      .finally(() => {
+        this.dependenciesLoadPromise = null;
+      });
+
+    return this.dependenciesLoadPromise;
   }
 
   filterDependencies(value: string): void {
@@ -1906,7 +2097,17 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
   }
 
   async setupControllers(): Promise<void> {
-    await this.setupModules();
+    this.isLoading = true;
+    try {
+      if (await this.navigateToSection('controllers')) {
+        this.toastService.success('Controller setup loaded');
+      }
+    } catch (error) {
+      this.toastService.error('Failed to proceed');
+      console.error('Error:', error);
+    } finally {
+      this.isLoading = false;
+    }
   }
 
   async setupModules(): Promise<void> {
@@ -1991,6 +2192,9 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
 
   getDataObjectsPrimaryActionLabel(): string {
     if (this.dataObjects.length === 0) {
+      if (!this.isLoggedIn) {
+        return this.developerPreferences.configureApi ? 'Setup Controller' : 'Save Project';
+      }
       return 'Setup Modules';
     }
     return 'Setup Mappers';
@@ -1998,6 +2202,14 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
 
   async handleDataObjectsPrimaryAction(): Promise<void> {
     if (this.dataObjects.length === 0) {
+      if (!this.isLoggedIn) {
+        if (this.developerPreferences.configureApi) {
+          await this.setupControllers();
+          return;
+        }
+        await this.saveProjectAndInvokeApi();
+        return;
+      }
       await this.setupModules();
       return;
     }
@@ -2005,10 +2217,21 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
   }
 
   getMappersPrimaryActionLabel(): string {
+    if (!this.isLoggedIn) {
+      return this.developerPreferences.configureApi ? 'Setup Controller' : 'Save Project';
+    }
     return 'Setup Modules';
   }
 
   async handleMappersPrimaryAction(): Promise<void> {
+    if (!this.isLoggedIn) {
+      if (this.developerPreferences.configureApi) {
+        await this.setupControllers();
+        return;
+      }
+      await this.saveProjectAndInvokeApi();
+      return;
+    }
     await this.setupModules();
   }
 
@@ -2386,7 +2609,16 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
     this.showProfileModal = false;
   }
 
-  openYamlPreviewModal(): void {
+  async openYamlPreviewModal(): Promise<void> {
+    if (this.isLoggedIn && this.backendProjectId) {
+      try {
+        await this.ensureAllDraftSectionsLoaded();
+      } catch (error) {
+        this.toastService.error('Failed to load project data for preview.');
+        console.error('Error preparing YAML preview:', error);
+        return;
+      }
+    }
     this.yamlPreviewContent = this.buildCurrentProjectYaml();
     this.showYamlPreviewModal = true;
   }
@@ -2862,5 +3094,14 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
     } catch {
       return [];
     }
+  }
+
+  private refreshSavedProjectStateSnapshot(): void {
+    this.savedProjectStateSnapshot = this.serializeProjectState();
+    this.hasUnsavedChanges = false;
+  }
+
+  private serializeProjectState(): string {
+    return JSON.stringify(this.getProjectData());
   }
 }

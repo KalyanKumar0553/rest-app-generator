@@ -33,10 +33,12 @@ import com.src.main.dto.ProjectCollaborationRequestDTO;
 import com.src.main.dto.ProjectCollaborationRequestReviewDTO;
 import com.src.main.dto.ProjectCollaborationStateDTO;
 import com.src.main.dto.ProjectDraftResponseDTO;
+import com.src.main.dto.ProjectDraftTabDataDTO;
 import com.src.main.dto.ProjectDraftTabPatchRequestDTO;
 import com.src.main.dto.ProjectDraftUpsertRequestDTO;
 import com.src.main.dto.ProjectDetailsDTO;
 import com.src.main.dto.ProjectEditorPresenceRequestDTO;
+import com.src.main.dto.ProjectImportRequestDTO;
 import com.src.main.dto.ProjectContributorPermissionUpdateDTO;
 import com.src.main.dto.ProjectRunDetailsResponseDTO;
 import com.src.main.dto.ProjectStageRetryRequestDTO;
@@ -91,9 +93,22 @@ public class ProjectController {
 		return projects;
 	}
 
+	@PostMapping(value = "/import", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+	public ProjectSummaryDTO importProject(@jakarta.validation.Valid @RequestBody ProjectImportRequestDTO request,
+			Principal principal) {
+		return service.importProject(request, currentUserId(principal));
+	}
+
 	@GetMapping("/{projectId}")
 	public ProjectDetailsDTO get(@PathVariable("projectId") UUID projectId, Principal principal) {
 		return service.getDetails(projectId, currentUserId(principal));
+	}
+
+	@GetMapping("/{projectId}/draft-tab")
+	public ProjectDraftTabDataDTO getDraftTab(@PathVariable("projectId") UUID projectId,
+			@RequestParam("tabKey") String tabKey,
+			Principal principal) {
+		return service.getDraftTabData(projectId, tabKey, currentUserId(principal));
 	}
 
 	@GetMapping("/tab-details")

@@ -1,7 +1,8 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { API_CONFIG, API_ENDPOINTS } from '../constants/api.constants';
+import { API_CONFIG, API_ENDPOINTS, STORAGE_KEYS } from '../constants/api.constants';
+import { LocalStorageService } from './local-storage.service';
 
 export interface AiLabsStep {
   key: string;
@@ -33,7 +34,10 @@ export interface AiLabsGenerateResponse {
   providedIn: 'root'
 })
 export class AiLabsService {
-  constructor(private http: HttpClient) {}
+  constructor(
+    private http: HttpClient,
+    private localStorageService: LocalStorageService
+  ) {}
 
   generateProject(prompt: string): Observable<AiLabsGenerateResponse> {
     const url = `${API_CONFIG.BASE_URL}${API_ENDPOINTS.AI_LABS.JOBS}`;
@@ -46,6 +50,15 @@ export class AiLabsService {
   }
 
   getJobEventsUrl(jobId: string): string {
-    return `${API_CONFIG.BASE_URL}${API_ENDPOINTS.AI_LABS.JOB_EVENTS(jobId)}`;
+    return this.appendAccessToken(`${API_CONFIG.BASE_URL}${API_ENDPOINTS.AI_LABS.JOB_EVENTS(jobId)}`);
+  }
+
+  private appendAccessToken(url: string): string {
+    const token = this.localStorageService.getItem(STORAGE_KEYS.ACCESS_TOKEN);
+    if (!token) {
+      return url;
+    }
+    const separator = url.includes('?') ? '&' : '?';
+    return `${url}${separator}access_token=${encodeURIComponent(token)}`;
   }
 }

@@ -36,4 +36,14 @@ public final class ProjectRunQueries {
 			  and r.type = :type
 			order by r.createdAt asc
 			""";
+
+	public static final String FIND_NEXT_BATCH_FOR_PROCESSING_NATIVE = """
+			select *
+			from project_runs
+			where status = :status
+			  and type = :type
+			order by created_at asc
+			limit :limit
+			for update skip locked
+			""";
 }

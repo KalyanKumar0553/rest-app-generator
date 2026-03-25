@@ -27,6 +27,11 @@ export interface ProjectDraftResponse {
   draftVersion?: number;
 }
 
+export interface ProjectDraftTabData {
+  tabKey: string;
+  tabData: Record<string, any>;
+}
+
 export interface ProjectCollaborationEditor {
   sessionId: string;
   userId: string;
@@ -134,6 +139,11 @@ export class ProjectService {
     return this.http.get<ProjectSummary[]>(url);
   }
 
+  importProject(projectUrl: string): Observable<ProjectSummary> {
+    const url = `${API_CONFIG.BASE_URL}${API_ENDPOINTS.PROJECT.IMPORT}`;
+    return this.http.post<ProjectSummary>(url, { projectUrl });
+  }
+
   getProjectTabDetails(generator?: string, dependencies: string[] = []): Observable<ProjectTabDefinition[]> {
     const queryParts: string[] = [];
     if (generator) {
@@ -150,6 +160,11 @@ export class ProjectService {
   getProject(projectId: string): Observable<ProjectDetails> {
     const url = `${API_CONFIG.BASE_URL}${API_ENDPOINTS.PROJECT.GET(projectId)}`;
     return this.http.get<ProjectDetails>(url);
+  }
+
+  getProjectDraftTab(projectId: string, tabKey: string): Observable<ProjectDraftTabData> {
+    const url = `${API_CONFIG.BASE_URL}${API_ENDPOINTS.PROJECT.GET_DRAFT_TAB(projectId)}?tabKey=${encodeURIComponent(tabKey)}`;
+    return this.http.get<ProjectDraftTabData>(url);
   }
 
   createProjectDraft(payload: ProjectDraftPayload): Observable<ProjectDraftResponse> {

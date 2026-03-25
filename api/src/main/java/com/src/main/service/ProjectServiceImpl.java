@@ -1,6 +1,8 @@
 package com.src.main.service;
 
 import java.util.Base64;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -29,9 +31,11 @@ import com.src.main.dto.ProjectContributorPermissionUpdateDTO;
 import com.src.main.dto.ProjectContributorPermissionsDTO;
 import com.src.main.dto.ProjectContributorUpsertRequestDTO;
 import com.src.main.dto.ProjectDraftResponseDTO;
+import com.src.main.dto.ProjectDraftTabDataDTO;
 import com.src.main.dto.ProjectDraftTabPatchRequestDTO;
 import com.src.main.dto.ProjectDraftUpsertRequestDTO;
 import com.src.main.dto.ProjectDetailsDTO;
+import com.src.main.dto.ProjectImportRequestDTO;
 import com.src.main.dto.ProjectSummaryDTO;
 import com.src.main.dto.ProjectTabDefinitionDTO;
 import com.src.main.exception.GenericException;
@@ -463,8 +467,8 @@ public class ProjectServiceImpl implements ProjectService {
 				project.getDescription(),
 				projectDraftService.resolveGenerator(draftData, project.getGenerator()),
 				project.getArtifact(),
-				project.getYaml(),
-				draftData,
+				null,
+				null,
 				project.getDraftVersion(),
 				tabDetails,
 				project.getOwnerId(),
@@ -481,6 +485,16 @@ public class ProjectServiceImpl implements ProjectService {
 				buildZipFileName(project),
 				project.getCreatedAt(),
 				project.getUpdatedAt());
+	}
+
+	@Override
+	public ProjectDraftTabDataDTO getDraftTabData(UUID projectId, String tabKey, String userId) {
+		ProjectUserIdentityService.ResolvedProjectUser currentUser = projectUserIdentityService.resolve(userId);
+		ProjectEntity project = getAccessibleProject(projectId, currentUser);
+		Map<String, Object> draftData = projectDraftService.deserialize(project.getDraftData());
+		String generator = projectDraftService.resolveGenerator(draftData, project.getGenerator());
+		Map<String, Object> tabData = projectDraftService.extractTabData(draftData, tabKey, generator);
+		return new ProjectDraftTabDataDTO(tabKey, tabData);
 	}
 
 	@Override
@@ -653,6 +667,20 @@ public class ProjectServiceImpl implements ProjectService {
 	}
 
 	@Override
+	@Transactional
+	public ProjectSummaryDTO importProject(ProjectImportRequestDTO request, String userId) {
+		ProjectUserIdentityService.ResolvedProjectUser currentUser = projectUserIdentityService.resolve(userId);
+		ProjectEntity project = getProjectByInviteToken(extractInviteToken(request == null ? null : request.getProjectUrl()));
+		if (currentUser.keys().contains(project.getOwnerId())) {
+			return toSummary(project);
+		}
+		if (findContributorAccess(project.getId(), currentUser).isEmpty()) {
+			throw new SecurityException("You do not have contributor access to this project.");
+		}
+		return toSummary(project);
+	}
+
+	@Override
 	@Transactional(propagation = Propagation.REQUIRED, rollbackFor = Exception.class)
 	public void deleteProject(UUID projectId, String userId) {
 		try {
@@ -785,6 +813,62 @@ public class ProjectServiceImpl implements ProjectService {
 			throw new SecurityException("User not allowed to access projects");
 		}
 		return project;
+	}
+
+	private String extractInviteToken(String projectUrl) {
+		String normalizedUrl = trimmed(projectUrl);
+		if (normalizedUrl.isBlank()) {
+			throw new IllegalArgumentException("Enter a valid project URL.");
+		}
+		String tokenFromPath = extractInviteTokenFromLocation(normalizedUrl);
+		if (!tokenFromPath.isBlank()) {
+			return tokenFromPath;
+		}
+		try {
+			URI uri = new URI(normalizedUrl);
+			String tokenFromFragment = extractInviteTokenFromLocation(uri.getFragment());
+			if (!tokenFromFragment.isBlank()) {
+				return tokenFromFragment;
+			}
+		} catch (URISyntaxException ex) {
+			throw new IllegalArgumentException("Enter a valid project URL.");
+		}
+		throw new IllegalArgumentException("Enter a valid project URL.");
+	}
+
+	private String extractInviteTokenFromLocation(String location) {
+		String normalizedLocation = trimmed(location);
+		if (normalizedLocation.isBlank()) {
+			return "";
+		}
+		String[] locationPatterns = { "/project-collaboration/", "project-collaboration/" };
+		for (String pattern : locationPatterns) {
+			int patternIndex = normalizedLocation.indexOf(pattern);
+			if (patternIndex < 0) {
+				continue;
+			}
+			String tail = normalizedLocation.substring(patternIndex + pattern.length()).trim();
+			if (tail.isBlank()) {
+				return "";
+			}
+			int delimiterIndex = firstDelimiterIndex(tail);
+			return (delimiterIndex >= 0 ? tail.substring(0, delimiterIndex) : tail).trim();
+		}
+		return "";
+	}
+
+	private int firstDelimiterIndex(String value) {
+		int firstIndex = -1;
+		for (char delimiter : new char[] { '/', '?', '#', '&' }) {
+			int index = value.indexOf(delimiter);
+			if (index < 0) {
+				continue;
+			}
+			if (firstIndex < 0 || index < firstIndex) {
+				firstIndex = index;
+			}
+		}
+		return firstIndex;
 	}
 
 	private List<ProjectCollaborationRequestDTO> toCollaborationRequestDtos(UUID projectId) {

@@ -427,6 +427,21 @@ export class LoginModalComponent implements OnInit {
   }
 
   private toCaptchaImageUrl(imageBase64: string): string {
-    return imageBase64.startsWith('data:') ? imageBase64 : `data:image/png;base64,${imageBase64}`;
+    if (imageBase64.startsWith('data:')) {
+      return imageBase64;
+    }
+
+    return this.isSvgCaptcha(imageBase64)
+      ? `data:image/svg+xml;base64,${imageBase64}`
+      : `data:image/png;base64,${imageBase64}`;
+  }
+
+  private isSvgCaptcha(imageBase64: string): boolean {
+    try {
+      const decodedImage = atob(imageBase64).trim().toLowerCase();
+      return decodedImage.startsWith('<?xml') || decodedImage.startsWith('<svg');
+    } catch {
+      return false;
+    }
   }
 }
