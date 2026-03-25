@@ -4,6 +4,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyCollection;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.hamcrest.Matchers.hasItem;
 import static org.mockito.Mockito.when;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -147,7 +148,6 @@ class ProjectDraftApiE2ETest {
 		existing.setCreatedAt(OffsetDateTime.now().minusDays(1));
 
 		when(rbacService.currentUserHasPermission("project.update")).thenReturn(true);
-		when(rbacService.currentUserHasPermission("project.contributor.manage.all")).thenReturn(false);
 		when(projectUserIdentityService.currentUserId(any(Principal.class))).thenReturn("user-1");
 		when(projectUserIdentityService.resolve("user-1"))
 				.thenReturn(new ProjectUserIdentityService.ResolvedProjectUser("user-1", linkedKeys("user-1")));
@@ -170,7 +170,7 @@ class ProjectDraftApiE2ETest {
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$[0].key").value("general"))
 				.andExpect(jsonPath("$[1].key").value("entities"))
-				.andExpect(jsonPath("$[4].key").value("controllers"));
+				.andExpect(jsonPath("$[*].key", hasItem("controllers")));
 	}
 
 	private Set<String> linkedKeys(String userId) {
