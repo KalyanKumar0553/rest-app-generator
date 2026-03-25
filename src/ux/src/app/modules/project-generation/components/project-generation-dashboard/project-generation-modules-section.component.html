@@ -1,0 +1,30 @@
+<div class="content-body" id="modules">
+  <div class="sticky-header">
+    <div class="top-actions">
+      <button class="back-btn-desktop" (click)="host.handleHome()" aria-label="Go to home" mat-stroked-button>
+        <i class="bi bi-house-door"></i>
+        Home
+      </button>
+      <span class="active-editors-badge" *ngIf="host.shouldShowActiveEditorsBadge()">{{ host.activeEditorsBadgeLabel }}</span>
+    </div>
+  </div>
+
+  <div class="scrollable-content">
+    <app-modules-selection
+      [modules]="host.shippableModuleCards"
+      [selectedModuleKeys]="host.selectedShippableModules"
+      [pluginModules]="host.publishedPluginModules"
+      [selectedPlugins]="host.selectedPlugins"
+      (selectedModuleKeysChange)="host.onSelectedShippableModulesChange($event)"
+      (selectedPluginsChange)="host.onSelectedPluginsChange($event)">
+    </app-modules-selection>
+  </div>
+
+  <div class="sticky-footer" *ngIf="!host.isLoading">
+    <div class="action-section">
+      <button mat-raised-button type="button" (click)="host.handleModulesPrimaryAction()" [disabled]="host.isGeneratingFromDtoSave">
+        {{ host.getModulesPrimaryActionLabel() }}
+      </button>
+    </div>
+  </div>
+</div>

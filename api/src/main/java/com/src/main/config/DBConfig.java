@@ -35,7 +35,7 @@ public class DBConfig {
 	@Value("${spring.jpa.properties.hibernate.dialect:org.hibernate.dialect.PostgreSQLDialect}")
     private String hibernateDialect;
 	
-	 @Value("${spring.jpa.hibernate.ddl-auto:none}")
+	@Value("${spring.jpa.hibernate.ddl-auto:none}")
 	 private String ddlAuto;
 	
 

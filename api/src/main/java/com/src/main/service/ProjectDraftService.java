@@ -2,11 +2,12 @@ package com.src.main.service;
 
 import java.util.Collections;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.LinkedHashSet;
 
 import org.springframework.stereotype.Service;
 
@@ -18,15 +19,26 @@ import com.src.main.dto.ProjectTabDefinitionDTO;
 @Service
 public class ProjectDraftService {
 
-	private static final Set<String> SHIPPABLE_MODULE_KEYS = Set.of("rbac", "auth", "state-machine", "subscription");
+	private static final Set<String> CORE_TAB_KEYS = Set.of(
+			"general",
+			"modules",
+			"actuator",
+			"entities",
+			"data-objects",
+			"mappers",
+			"controllers",
+			"collaborate",
+			"explore");
 
 	private static final TypeReference<Map<String, Object>> MAP_TYPE = new TypeReference<>() {
 	};
 
 	private final ObjectMapper objectMapper;
+	private final ProjectTabDefinitionService projectTabDefinitionService;
 
-	public ProjectDraftService(ObjectMapper objectMapper) {
+	public ProjectDraftService(ObjectMapper objectMapper, ProjectTabDefinitionService projectTabDefinitionService) {
 		this.objectMapper = objectMapper;
+		this.projectTabDefinitionService = projectTabDefinitionService;
 	}
 
 	public String serialize(Map<String, Object> draftData) {
@@ -89,31 +101,16 @@ public class ProjectDraftService {
 	}
 
 	public List<ProjectTabDefinitionDTO> getTabDetails(String generator, List<String> dependencies) {
-		String normalizedGenerator = generator == null ? "java" : generator.trim().toLowerCase();
-		List<ProjectTabDefinitionDTO> tabs = new java.util.ArrayList<>();
-		if ("node".equals(normalizedGenerator) || "python".equals(normalizedGenerator)) {
-			tabs.addAll(List.of(
-					new ProjectTabDefinitionDTO("general", "General", "public", "node-general", 10),
-					new ProjectTabDefinitionDTO("entities", "Entities", "storage", "entities", 20),
-					new ProjectTabDefinitionDTO("data-objects", "Data Objects", "category", "data-objects", 30),
-					new ProjectTabDefinitionDTO("mappers", "Mappers", "shuffle", "mappers", 40),
-					new ProjectTabDefinitionDTO("modules", "Modules", "widgets", "modules", 50)));
-		} else {
-			tabs.addAll(List.of(
-					new ProjectTabDefinitionDTO("general", "General", "public", "java-general", 10),
-					new ProjectTabDefinitionDTO("actuator", "Actuator", "device_hub", "actuator", 20),
-					new ProjectTabDefinitionDTO("entities", "Entities", "storage", "entities", 30),
-					new ProjectTabDefinitionDTO("data-objects", "Data Objects", "category", "data-objects", 40),
-					new ProjectTabDefinitionDTO("mappers", "Mappers", "shuffle", "mappers", 50),
-					new ProjectTabDefinitionDTO("modules", "Modules", "widgets", "modules", 60)));
-		}
-		tabs.addAll(buildModuleTabs(dependencies, tabs.get(tabs.size() - 1).getOrder() + 10));
-		int controllersOrder = tabs.get(tabs.size() - 1).getOrder() + 10;
-		tabs.add(new ProjectTabDefinitionDTO("controllers", "Controllers", "tune", "controllers", controllersOrder));
-		int tailOrder = controllersOrder + 10;
-		tabs.add(new ProjectTabDefinitionDTO("collaborate", "Collaborate", "groups", "collaborate", tailOrder));
-		tabs.add(new ProjectTabDefinitionDTO("explore", "Explore", "search", "explore", tailOrder + 10));
-		return List.copyOf(tabs);
+		return getTabDetails(generator, dependencies, Collections.emptySet());
+	}
+
+	public List<ProjectTabDefinitionDTO> getTabDetails(String generator, List<String> dependencies, Set<String> configEnabledModuleKeys) {
+		String normalizedGenerator = resolveGenerator(Map.of(), generator).toLowerCase(Locale.ROOT);
+		Set<String> selectedDependencies = normalizeValues(dependencies);
+		Set<String> enabledModuleKeys = normalizeValues(configEnabledModuleKeys);
+		return projectTabDefinitionService.getEnabledTabs(normalizedGenerator).stream()
+				.filter(tab -> shouldIncludeTab(tab, selectedDependencies, enabledModuleKeys))
+				.toList();
 	}
 
 	public Map<String, Object> extractTabData(Map<String, Object> draftData, String tabKey, String generator) {
@@ -177,50 +174,53 @@ public class ProjectDraftService {
 
 	public List<String> ownedDraftKeys(String tabKey, String generator) {
 		String normalizedTabKey = normalizeTabKey(tabKey);
-		String normalizedGenerator = resolveGenerator(Map.of(), generator).toLowerCase();
+		String normalizedGenerator = resolveGenerator(Map.of(), generator).toLowerCase(Locale.ROOT);
 		return switch (normalizedTabKey) {
 		case "general" -> List.of("settings", "database", "preferences", "dependencies", "selectedDependencies");
-		case "modules" -> List.of("dependencies", "selectedDependencies", "moduleConfigs");
+		case "modules" -> List.of("dependencies", "selectedDependencies", "moduleConfigs", "selectedPlugins");
 		case "actuator" -> List.of("actuator");
 		case "entities" -> List.of("entities", "relations");
 		case "data-objects" -> List.of("dataObjects", "enums");
 		case "mappers" -> List.of("mappers");
 		case "controllers" -> List.of("controllers");
-		case "rbac", "auth", "state-machine", "subscription" -> List.of("moduleConfigs");
-		default -> throw new IllegalArgumentException("Unsupported tabKey: " + tabKey + " for generator " + normalizedGenerator);
+		default -> isModuleTab(normalizedTabKey)
+				? List.of("moduleConfigs")
+				: throwUnsupportedTabKey(tabKey, normalizedGenerator);
 		};
 	}
 
 	private boolean isModuleTab(String tabKey) {
-		return SHIPPABLE_MODULE_KEYS.contains(tabKey);
-	}
-
-	private List<ProjectTabDefinitionDTO> buildModuleTabs(List<String> dependencies, int startingOrder) {
-		LinkedHashSet<String> moduleKeys = new LinkedHashSet<>();
-		if (dependencies != null) {
-			dependencies.stream()
-					.filter(Objects::nonNull)
-					.map(String::trim)
-					.map(String::toLowerCase)
-					.filter(SHIPPABLE_MODULE_KEYS::contains)
-					.forEach(moduleKeys::add);
-		}
-		int order = startingOrder;
-		List<ProjectTabDefinitionDTO> tabs = new java.util.ArrayList<>();
-		for (String moduleKey : moduleKeys) {
-			tabs.add(switch (moduleKey) {
-			case "rbac" -> new ProjectTabDefinitionDTO("rbac", "RBAC", "admin_panel_settings", "module-rbac", order);
-			case "auth" -> new ProjectTabDefinitionDTO("auth", "Auth", "lock", "module-auth", order);
-			case "state-machine" -> new ProjectTabDefinitionDTO("state-machine", "State Machine", "schema", "module-state-machine", order);
-			case "subscription" -> new ProjectTabDefinitionDTO("subscription", "Subscription", "workspace_premium", "module-subscription", order);
-			default -> null;
-			});
-			order += 10;
-		}
-		return tabs.stream().filter(Objects::nonNull).toList();
+		return !CORE_TAB_KEYS.contains(tabKey);
 	}
 
 	private String normalizeTabKey(String tabKey) {
-		return tabKey == null ? "" : tabKey.trim().toLowerCase();
+		return tabKey == null ? "" : tabKey.trim().toLowerCase(Locale.ROOT);
+	}
+
+	private Set<String> normalizeValues(java.util.Collection<String> values) {
+		return values == null ? Collections.emptySet()
+				: values.stream()
+						.filter(Objects::nonNull)
+						.map(String::valueOf)
+						.map(String::trim)
+						.filter(value -> !value.isBlank())
+						.map(value -> value.toLowerCase(Locale.ROOT))
+						.collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new));
+	}
+
+	private boolean shouldIncludeTab(
+			ProjectTabDefinitionDTO tab,
+			Set<String> selectedDependencies,
+			Set<String> enabledModuleKeys) {
+		String componentKey = normalizeTabKey(tab.getComponentKey());
+		if (!componentKey.startsWith("module-")) {
+			return true;
+		}
+		String tabKey = normalizeTabKey(tab.getKey());
+		return selectedDependencies.contains(tabKey) && enabledModuleKeys.contains(tabKey);
+	}
+
+	private List<String> throwUnsupportedTabKey(String tabKey, String generator) {
+		throw new IllegalArgumentException("Unsupported tabKey: " + tabKey + " for generator " + generator);
 	}
 }

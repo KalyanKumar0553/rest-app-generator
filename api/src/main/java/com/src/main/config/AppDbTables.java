@@ -2,12 +2,16 @@ package com.src.main.config;
 
 public final class AppDbTables {
 	public static final String PROJECTS = "projects";
+	public static final String PROJECT_DRAFT_VERSIONS = "project_draft_versions";
 	public static final String PROJECT_RUNS = "project_runs";
 	public static final String PROJECT_CONTRIBUTORS = "project_contributors";
 	public static final String PROJECT_COLLABORATION_REQUESTS = "project_collaboration_requests";
+	public static final String PROJECT_TAB_DEFINITIONS = "project_tab_definition";
+	public static final String AI_LABS_USAGE = "ai_labs_usage";
 	public static final String ARTIFACT_APPS = "artifact_app";
 	public static final String ARTIFACT_APP_VERSIONS = "artifact_app_version";
-	public static final String DATA_ENCRYPTION_RULES = "data_encryption_rules";
+	public static final String PLUGIN_MODULES = "plugin_module";
+	public static final String PLUGIN_MODULE_VERSIONS = "plugin_module_version";
 	public static final String NEWSLETTER_SUBSCRIPTIONS = "newsletter_subscriptions";
 	public static final String UNIQUE_VISITS = "unique_visits";
 	public static final String CONFIG_PROPERTIES = "config_property";

@@ -63,6 +63,7 @@ public class SubscriptionSelfController {
 	@PreAuthorize("hasAuthority('subscription.self.upgrade')")
 	public ResponseEntity<ApiResponseDto<SubscriptionResponse>> upgrade(@Valid @RequestBody UpgradeSubscriptionRequest request) {
 		request.setTenantId(tenantResolver.resolveRequiredTenantId());
+		request.setUserId(org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication().getName());
 		return ResponseEntity.ok(ApiResponseDto.ok("Subscription upgraded", subscriptionManagementService.upgrade(request)));
 	}
 

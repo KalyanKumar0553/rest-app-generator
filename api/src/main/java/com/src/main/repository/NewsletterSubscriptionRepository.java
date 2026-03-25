@@ -26,6 +26,8 @@ public interface NewsletterSubscriptionRepository extends JpaRepository<Newslett
 
     List<NewsletterSubscriptionEntity> findTop50ByWelcomeEmailSentFalseAndSendingInProgressFalseOrderBySubscribedAtAsc();
 
+    List<NewsletterSubscriptionEntity> findTop50ByWelcomeEmailSentFalseAndSendingInProgressFalseAndSendAttemptCountLessThanOrderBySubscribedAtAsc(int sendAttemptCount);
+
     @Modifying
     @Transactional
     @Query(NewsletterQueries.CLAIM_FOR_SENDING)

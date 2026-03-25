@@ -63,6 +63,7 @@
   --theme-danger-text: var(--color-error);
   --theme-info-bg: color-mix(in srgb, var(--color-primary) 20%, var(--color-background-white));
   --theme-info-text: var(--color-text-primary);
+  --theme-explore-switcher-active-text: #836767;
 
   --gradient-primary: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
   --gradient-secondary: linear-gradient(135deg, var(--color-secondary), var(--color-primary-hover));

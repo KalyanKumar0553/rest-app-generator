@@ -1,0 +1,33 @@
+<div class="content-body" id="actuator">
+  <div class="sticky-header">
+    <div class="top-actions">
+      <button class="back-btn-desktop" (click)="host.handleHome()" aria-label="Go to home" mat-stroked-button>
+        <i class="bi bi-house-door"></i>
+        Home
+      </button>
+      <span class="active-editors-badge" *ngIf="host.shouldShowActiveEditorsBadge()">{{ host.activeEditorsBadgeLabel }}</span>
+    </div>
+
+    <app-info-banner storageKey="actuator-info">
+      <span>
+        Configure management endpoints exposed by Spring Boot Actuator for your generated app. <a href="#" class="info-link" (click)="host.openDocumentation($event, 'actuator')">Explained here</a>.
+      </span>
+    </app-info-banner>
+  </div>
+
+  <div class="scrollable-content actuator-scrollable-content">
+    <app-actuator-config
+      [configurationOptions]="(host.actuatorConfigurationOptions$ | async) ?? host.actuatorConfigurationOptions"
+      [endpointsByConfiguration]="(host.actuatorProfileEndpoints$ | async) ?? host.actuatorProfileEndpoints"
+      (endpointsByConfigurationChange)="host.onActuatorConfigurationsChange($event)">
+    </app-actuator-config>
+  </div>
+
+  <div class="sticky-footer" *ngIf="!host.isLoading">
+    <div class="action-section">
+      <button mat-raised-button color="primary" type="button" (click)="host.handleGeneralPrimaryAction()">
+        {{ host.getGeneralPrimaryActionLabel() }}
+      </button>
+    </div>
+  </div>
+</div>

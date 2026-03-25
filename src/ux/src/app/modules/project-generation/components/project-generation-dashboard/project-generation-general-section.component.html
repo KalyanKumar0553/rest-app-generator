@@ -1,0 +1,59 @@
+<div class="content-body" id="general">
+  <div class="sticky-header">
+    <div class="top-actions">
+      <button class="back-btn-desktop" (click)="host.handleHome()" aria-label="Go to home" mat-stroked-button>
+        <i class="bi bi-house-door"></i>
+        Home
+      </button>
+      <span class="active-editors-badge" *ngIf="host.shouldShowActiveEditorsBadge()">{{ host.activeEditorsBadgeLabel }}</span>
+    </div>
+
+    <app-info-banner storageKey="general-info">
+      <span>
+        Define global project settings. Learn <a href="#" class="info-link" (click)="host.openDocumentation($event, 'general')">in the docs</a>.
+      </span>
+    </app-info-banner>
+  </div>
+
+  <div class="scrollable-content">
+    <app-java-general-tab
+      [projectSettings]="host.projectSettings"
+      [databaseSettings]="host.databaseSettings"
+      [developerPreferences]="host.developerPreferences"
+      [projectGroupError]="host.projectGroupError"
+      [projectNameError]="host.projectNameError"
+      [projectDescriptionError]="host.projectDescriptionError"
+      [dbTypeOptions]="host.dbTypeOptions"
+      [filteredDatabaseOptions]="host.filteredDatabaseOptions"
+      [dbGenerationOptions]="host.dbGenerationOptions"
+      [javaVersionOptions]="host.javaVersionOptions"
+      [showDbGeneration]="host.shouldShowDbGeneration()"
+      [showPluralizeTableNames]="host.shouldShowPluralizeTableNames()"
+      [dependencyInput]="host.dependencyInput"
+      [filteredDependencies]="host.filteredDependencies"
+      [selectedDependencies]="host.selectedDependencies"
+      [dependencyTooltipMessage]="host.appSettings.websiteName + ' already adds required dependencies. Add your custom dependencies here.'"
+      (projectGroupChange)="host.onProjectGroupChange()"
+      (projectNameChange)="host.onProjectNameChange()"
+      (projectDescriptionChange)="host.onProjectDescriptionChange()"
+      (databaseTypeChange)="host.onDatabaseTypeChange($event)"
+      (databaseSelectionChange)="host.onDatabaseSelectionChange($event)"
+      (addProfile)="host.onAddProfileClick()"
+      (removeProfile)="host.removeProfile($event)"
+      (enableActuatorChange)="host.onEnableActuatorChange($event)"
+      (configureApiChange)="host.onEnableConfigureApiChange($event)"
+      (dependencyInputChange)="host.dependencyInput = $event"
+      (dependencySearchChange)="host.filterDependencies($event)"
+      (dependencySelected)="host.addDependency($event)"
+      (dependencyRemoved)="host.removeDependency($event)">
+    </app-java-general-tab>
+  </div>
+
+  <div class="sticky-footer" *ngIf="!host.isLoading">
+    <div class="action-section">
+      <button mat-raised-button color="primary" type="button" (click)="host.handleGeneralPrimaryAction()">
+        {{ host.getGeneralPrimaryActionLabel() }}
+      </button>
+    </div>
+  </div>
+</div>

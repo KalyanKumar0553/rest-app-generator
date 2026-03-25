@@ -1,0 +1,59 @@
+<section class="explore-migrate-shell">
+  <div class="explore-migrate-hero">
+    <div class="explore-migrate-copy">
+      <span class="explore-migrate-eyebrow">Language Migration</span>
+      <h3>Generate this project in another target language</h3>
+      <p>
+        Switching the generator updates the saved project metadata, queues a fresh run, and opens the matching dashboard once the migration starts.
+      </p>
+    </div>
+    <div class="explore-migrate-current">
+      <span class="explore-migrate-current-label">Current runtime</span>
+      <strong>{{ host.getCurrentProjectLanguageLabel() }}</strong>
+      <span>{{ host.getCurrentProjectLanguageRuntime() }}</span>
+    </div>
+  </div>
+
+  <div class="explore-migrate-grid">
+    <button
+      *ngFor="let option of host.getMigrationTargetLanguageOptions()"
+      type="button"
+      class="explore-migrate-card"
+      [class.explore-migrate-card-selected]="host.selectedMigrationLanguage === option.value"
+      (click)="host.selectMigrationLanguage(option.value)">
+      <div class="explore-migrate-card-header">
+        <span class="explore-migrate-card-title">{{ option.label }}</span>
+        <span class="explore-migrate-card-runtime">{{ option.runtime }}</span>
+      </div>
+      <p>{{ option.summary }}</p>
+      <span class="explore-migrate-card-state">
+        {{ host.selectedMigrationLanguage === option.value ? 'Selected target' : 'Choose target' }}
+      </span>
+    </button>
+  </div>
+
+  <div class="explore-migrate-footer">
+    <p class="explore-migrate-note" *ngIf="host.canRunProjectMigration(); else migrationBlocked">
+      The project draft will be saved first, then a new generation run will be queued for the selected target language.
+    </p>
+    <ng-template #migrationBlocked>
+      <p class="explore-migrate-note">
+        Sign in to save the project draft and run a language migration from Explore.
+      </p>
+    </ng-template>
+    <div class="explore-migrate-actions">
+      <button type="button" mat-stroked-button (click)="host.showExploreRunsView()">
+        Back to Runs
+      </button>
+      <button
+        type="button"
+        mat-raised-button
+        color="primary"
+        [disabled]="!host.canSubmitProjectMigration()"
+        (click)="host.migrateProjectLanguage()">
+        <mat-icon>{{ host.isMigratingProject ? 'sync' : 'swap_horiz' }}</mat-icon>
+        <span>{{ host.isMigratingProject ? 'Migrating...' : 'Switch and Generate' }}</span>
+      </button>
+    </div>
+  </div>
+</section>

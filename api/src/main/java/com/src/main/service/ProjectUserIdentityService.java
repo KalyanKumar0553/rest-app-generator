@@ -22,11 +22,9 @@ public class ProjectUserIdentityService {
 	}
 
 	private final UserRepository userRepository;
-	private final DataEncryptionService dataEncryptionService;
 
-	public ProjectUserIdentityService(UserRepository userRepository, DataEncryptionService dataEncryptionService) {
+	public ProjectUserIdentityService(UserRepository userRepository) {
 		this.userRepository = userRepository;
-		this.dataEncryptionService = dataEncryptionService;
 	}
 
 	public String currentUserId(Principal principal) {
@@ -59,14 +57,9 @@ public class ProjectUserIdentityService {
 		Optional<String> normalized = normalizeIdentifier(trimmed);
 		if (normalized.isPresent()) {
 			keys.add(normalized.get());
-			String identifierHash = dataEncryptionService.hashForLookup(normalized.get());
-			Optional<User> byIdentifier = userRepository.findFirstByIdentifierHashOrIdentifier(identifierHash, normalized.get());
+			Optional<User> byIdentifier = userRepository.findByIdentifier(normalized.get());
 			if (byIdentifier.isPresent()) {
 				User user = byIdentifier.get();
-				if (user.getIdentifierHash() == null || user.getIdentifierHash().isBlank()) {
-					user.setIdentifierHash(identifierHash);
-					userRepository.save(user);
-				}
 				keys.add(user.getId());
 				keys.add(user.getIdentifier());
 				ResolvedProjectUser resolved = new ResolvedProjectUser(user.getId(), keys);

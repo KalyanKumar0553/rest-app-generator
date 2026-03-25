@@ -9,6 +9,7 @@ import com.src.main.subscription.dto.PlanFeatureResponse;
 import com.src.main.subscription.dto.PlanPriceResponse;
 import com.src.main.subscription.dto.PlanResponse;
 import com.src.main.subscription.dto.SubscriptionAuditResponse;
+import com.src.main.subscription.dto.SubscriptionCouponResponse;
 import com.src.main.subscription.dto.SubscriptionContextResponse;
 import com.src.main.subscription.dto.SubscriptionOverrideResponse;
 import com.src.main.subscription.dto.SubscriptionResponse;
@@ -17,6 +18,8 @@ import com.src.main.subscription.entity.CustomerSubscriptionEntity;
 import com.src.main.subscription.entity.PlanFeatureMappingEntity;
 import com.src.main.subscription.entity.PlanPriceEntity;
 import com.src.main.subscription.entity.SubscriptionAuditLogEntity;
+import com.src.main.subscription.entity.SubscriptionCouponEntity;
+import com.src.main.subscription.entity.SubscriptionCouponPlanMappingEntity;
 import com.src.main.subscription.entity.SubscriptionFeatureEntity;
 import com.src.main.subscription.entity.SubscriptionPlanEntity;
 import com.src.main.subscription.enums.SubscriptionStatus;
@@ -26,7 +29,7 @@ public final class SubscriptionMapperUtil {
 	private SubscriptionMapperUtil() {
 	}
 
-	public static PlanResponse toPlanResponse(SubscriptionPlanEntity entity) {
+	public static PlanResponse toPlanResponse(SubscriptionPlanEntity entity, List<String> roleNames) {
 		return PlanResponse.builder()
 				.id(entity.getId())
 				.code(entity.getCode())
@@ -41,6 +44,31 @@ public final class SubscriptionMapperUtil {
 				.maxUsers(entity.getMaxUsers())
 				.maxProjects(entity.getMaxProjects())
 				.maxStorageMb(entity.getMaxStorageMb())
+				.roleNames(roleNames == null ? List.of() : List.copyOf(roleNames))
+				.metadataJson(entity.getMetadataJson())
+				.createdAt(entity.getCreatedAt())
+				.updatedAt(entity.getUpdatedAt())
+				.build();
+	}
+
+	public static SubscriptionCouponResponse toCouponResponse(
+			SubscriptionCouponEntity entity,
+			List<SubscriptionCouponPlanMappingEntity> mappings) {
+		return SubscriptionCouponResponse.builder()
+				.id(entity.getId())
+				.code(entity.getCode())
+				.name(entity.getName())
+				.description(entity.getDescription())
+				.isActive(entity.getIsActive())
+				.discountType(entity.getDiscountType())
+				.discountValue(entity.getDiscountValue())
+				.currencyCode(entity.getCurrencyCode())
+				.validFrom(entity.getValidFrom())
+				.validTo(entity.getValidTo())
+				.maxRedemptions(entity.getMaxRedemptions())
+				.maxRedemptionsPerTenant(entity.getMaxRedemptionsPerTenant())
+				.firstSubscriptionOnly(entity.getFirstSubscriptionOnly())
+				.applicablePlanIds(mappings == null ? List.of() : mappings.stream().map(mapping -> mapping.getPlan().getId()).toList())
 				.metadataJson(entity.getMetadataJson())
 				.createdAt(entity.getCreatedAt())
 				.updatedAt(entity.getUpdatedAt())
@@ -102,6 +130,7 @@ public final class SubscriptionMapperUtil {
 		return SubscriptionResponse.builder()
 				.subscriptionId(entity.getId())
 				.tenantId(entity.getTenantId())
+				.subscriberUserId(entity.getSubscriberUserId())
 				.planCode(entity.getPlanCodeSnapshot())
 				.planName(entity.getPlan().getName())
 				.billingCycle(entity.getBillingCycle())
@@ -113,6 +142,8 @@ public final class SubscriptionMapperUtil {
 				.autoRenew(entity.getAutoRenew())
 				.priceSnapshot(entity.getPriceSnapshot())
 				.currencyCode(entity.getCurrencyCode())
+				.appliedCouponCode(entity.getAppliedCouponCode())
+				.appliedDiscountAmount(entity.getAppliedDiscountAmount())
 				.build();
 	}
 

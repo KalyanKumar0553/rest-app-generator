@@ -10,11 +10,13 @@ import lombok.Data;
 public class UpgradeSubscriptionRequest {
 	@NotNull
 	private Long tenantId;
+	private String userId;
 	@NotBlank
 	private String targetPlanCode;
 	@NotNull
 	private BillingCycle billingCycle;
 	@NotBlank
 	private String currencyCode;
+	private String couponCode;
 	private String reason;
 }

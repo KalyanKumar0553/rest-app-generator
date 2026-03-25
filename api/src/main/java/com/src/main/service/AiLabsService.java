@@ -60,6 +60,7 @@ public class AiLabsService {
 	private final ProjectNameValidationService projectNameValidationService;
 	private final ProjectUserIdentityService projectUserIdentityService;
 	private final ConfigMetadataService configMetadataService;
+	private final AiLabsQuotaService aiLabsQuotaService;
 	private final ChatClient.Builder chatClientBuilder;
 	private final ObjectMapper objectMapper;
 
@@ -75,6 +76,7 @@ public class AiLabsService {
 		if (!configMetadataService.isPropertyEnabled(AI_LABS_FEATURE_KEY, false)) {
 			throw new GenericException(HttpStatus.BAD_REQUEST, "AI Labs is disabled.");
 		}
+		aiLabsQuotaService.reserveUsage(ownerId);
 		UUID jobId = UUID.randomUUID();
 		JobState state = JobState.create(jobId, prompt);
 		jobs.put(jobId, state);

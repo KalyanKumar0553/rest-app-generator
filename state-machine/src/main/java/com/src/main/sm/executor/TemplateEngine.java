@@ -9,15 +9,20 @@ import java.util.Map;
 
 @Component
 public class TemplateEngine {
+
+	private static final String STATE_MACHINE_RESOURCE_PREFIX = "shipped-modules/state-machine/src/main/resources/";
 	
 	private final MustacheFactory mf = new DefaultMustacheFactory();
 
 	public String render(String tpl, Map<String, Object> m) {
-		try (Reader r = new InputStreamReader(getClass().getClassLoader().getResourceAsStream(tpl),
-				StandardCharsets.UTF_8); StringWriter w = new StringWriter()) {
-			if (r == null)
-				throw new IllegalArgumentException("Template not found: " + tpl);
-			Mustache mm = mf.compile(r, tpl);
+		String resolvedTemplate = resolveTemplatePath(tpl);
+		if (resolvedTemplate == null) {
+			throw new IllegalArgumentException("Template not found: " + tpl);
+		}
+		try (InputStream stream = getClass().getClassLoader().getResourceAsStream(resolvedTemplate);
+				Reader r = new InputStreamReader(stream, StandardCharsets.UTF_8);
+				StringWriter w = new StringWriter()) {
+			Mustache mm = mf.compile(r, resolvedTemplate);
 			mm.execute(w, m).flush();
 			return w.toString();
 		} catch (IOException e) {
@@ -38,6 +43,21 @@ public class TemplateEngine {
 	}
 
 	public boolean exists(String templatePath) {
-		return getClass().getClassLoader().getResource(templatePath) != null;
+		return resolveTemplatePath(templatePath) != null;
+	}
+
+	private String resolveTemplatePath(String templatePath) {
+		if (templatePath == null || templatePath.isBlank()) {
+			return null;
+		}
+		ClassLoader classLoader = getClass().getClassLoader();
+		if (classLoader.getResource(templatePath) != null) {
+			return templatePath;
+		}
+		String prefixedPath = STATE_MACHINE_RESOURCE_PREFIX + templatePath;
+		if (classLoader.getResource(prefixedPath) != null) {
+			return prefixedPath;
+		}
+		return null;
 	}
 }

@@ -14,6 +14,7 @@ import lombok.Data;
 public class SubscriptionResponse {
 	private Long subscriptionId;
 	private Long tenantId;
+	private String subscriberUserId;
 	private String planCode;
 	private String planName;
 	private BillingCycle billingCycle;
@@ -25,4 +26,6 @@ public class SubscriptionResponse {
 	private Boolean autoRenew;
 	private BigDecimal priceSnapshot;
 	private String currencyCode;
+	private String appliedCouponCode;
+	private BigDecimal appliedDiscountAmount;
 }

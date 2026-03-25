@@ -13,6 +13,9 @@ import com.src.main.dto.ProjectContributorDTO;
 import com.src.main.dto.ProjectContributorPermissionUpdateDTO;
 import com.src.main.dto.ProjectContributorUpsertRequestDTO;
 import com.src.main.dto.ProjectDraftResponseDTO;
+import com.src.main.dto.ProjectDraftVersionDetailsDTO;
+import com.src.main.dto.ProjectDraftVersionDiffDTO;
+import com.src.main.dto.ProjectDraftVersionSummaryDTO;
 import com.src.main.dto.ProjectDraftTabDataDTO;
 import com.src.main.dto.ProjectDraftTabPatchRequestDTO;
 import com.src.main.dto.ProjectDraftUpsertRequestDTO;
@@ -32,6 +35,14 @@ public interface ProjectService {
 	ProjectDraftResponseDTO updateDraft(UUID projectId, ProjectDraftUpsertRequestDTO request, String ownerId);
 
 	ProjectDraftResponseDTO patchDraftTab(UUID projectId, ProjectDraftTabPatchRequestDTO request, String ownerId);
+
+	List<ProjectDraftVersionSummaryDTO> getDraftVersions(UUID projectId, String userId);
+
+	ProjectDraftVersionDetailsDTO getDraftVersion(UUID projectId, UUID versionId, String userId);
+
+	ProjectDraftVersionDiffDTO diffDraftVersion(UUID projectId, UUID versionId, UUID compareToVersionId, String userId);
+
+	ProjectDraftResponseDTO restoreDraftVersion(UUID projectId, UUID versionId, String userId);
 
 	ProjectEntity getAccessibleProject(UUID projectId, String userId);
 

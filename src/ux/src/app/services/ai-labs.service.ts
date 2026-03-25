@@ -32,6 +32,10 @@ export interface AiLabsGenerateResponse {
 
 export interface AiLabsAvailability {
   enabled: boolean;
+  usageLimit?: number | null;
+  usedCount: number;
+  remainingCount?: number | null;
+  limitReached: boolean;
 }
 
 @Injectable({

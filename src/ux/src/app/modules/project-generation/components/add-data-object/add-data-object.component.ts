@@ -274,8 +274,7 @@ export class AddDataObjectComponent implements OnChanges {
         setError: (message) => {
           this.nameError = message;
         }
-      }),
-      { silent: true }
+      })
     );
 
     if (valid) {
@@ -425,8 +424,7 @@ export class AddDataObjectComponent implements OnChanges {
         setError: (message) => {
           field.nameError = message;
         }
-      }),
-      { silent: true }
+      })
     );
 
     if (valid) {

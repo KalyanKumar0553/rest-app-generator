@@ -21,6 +21,8 @@ public interface CustomerSubscriptionRepository extends JpaRepository<CustomerSu
 
 	List<CustomerSubscriptionEntity> findAllByTenantIdAndDeletedFalseOrderByCreatedAtDesc(Long tenantId);
 
+	long countByTenantIdAndDeletedFalse(Long tenantId);
+
 	@Lock(LockModeType.PESSIMISTIC_WRITE)
 	Optional<CustomerSubscriptionEntity> findWithLockingById(Long id);
 

@@ -23,4 +23,5 @@ export interface ProjectDraftState<TProjectSettings, TDatabaseSettings, TDevelop
   enums: any[];
   mappers: any[];
   moduleConfigs?: Record<string, any>;
+  selectedPlugins?: Array<Record<string, any>>;
 }

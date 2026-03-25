@@ -11,6 +11,8 @@
   align-items: center;
   gap: 12px;
   border-bottom: 1px solid var(--theme-neutral-border);
+  flex-wrap: nowrap;
+  min-width: 0;
 }
 
 .controllers-create-btn {
@@ -23,6 +25,12 @@
   font-size: 13px;
   padding: 6px 12px;
   cursor: pointer;
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 50%;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
 .controllers-create-btn:hover {
@@ -36,6 +44,11 @@
   color: var(--theme-modal-body-text);
   font-size: 18px;
   font-weight: 600;
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
 .controllers-table-wrap {
@@ -124,4 +137,19 @@
 
 .controllers-action-btn.danger {
   color: var(--color-error);
+}
+
+@media (max-width: 480px) {
+  .controllers-table-header {
+    gap: 8px;
+    padding: 0 12px;
+  }
+
+  .controllers-table-header h3 {
+    font-size: 16px;
+  }
+
+  .controllers-create-btn {
+    max-width: 44%;
+  }
 }

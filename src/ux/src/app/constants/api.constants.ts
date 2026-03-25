@@ -31,10 +31,14 @@ export const API_ENDPOINTS = {
     SEARCH: '/api/users/search'
   },
   ADMIN: {
-    DATA_ENCRYPTION_RULES: '/api/admin/data-encryption-rules',
-    UPDATE_DATA_ENCRYPTION_RULE: (ruleId: string) => `/api/admin/data-encryption-rules/${ruleId}`,
     CONFIG_FEATURES: '/api/config/features',
     UPDATE_CONFIG_FEATURE_VALUE: '/api/config/features/value',
+    PLUGIN_MODULES: '/api/v1/admin/plugin-modules',
+    UPDATE_PLUGIN_MODULE: (moduleId: string) => `/api/v1/admin/plugin-modules/${moduleId}`,
+    PLUGIN_MODULE_VERSIONS: (moduleId: string) => `/api/v1/admin/plugin-modules/${moduleId}/versions`,
+    PUBLISH_PLUGIN_MODULE_VERSION: (moduleId: string, versionId: string) => `/api/v1/admin/plugin-modules/${moduleId}/versions/${versionId}/publish`,
+    PROJECT_TAB_DEFINITIONS: '/api/v1/admin/project-tab-definitions',
+    UPDATE_PROJECT_TAB_DEFINITION: (tabId: string) => `/api/v1/admin/project-tab-definitions/${tabId}`,
     ARTIFACT_APPS: '/api/v1/admin/artifacts/apps',
     ARTIFACT_APP: (appId: string) => `/api/v1/admin/artifacts/apps/${appId}`,
     ARTIFACT_APP_VERSIONS: (appId: string) => `/api/v1/admin/artifacts/apps/${appId}/versions`,
@@ -77,6 +81,9 @@ export const API_ENDPOINTS = {
     JOBS: '/api/ai-labs/jobs',
     JOB: (jobId: string) => `/api/ai-labs/jobs/${jobId}`,
     JOB_EVENTS: (jobId: string) => `/api/ai-labs/jobs/${jobId}/events`
+  },
+  PLUGIN_MODULES: {
+    PUBLISHED: '/api/plugin-modules/published'
   },
   ANALYTICS: {
     TRACK_HOME_VISIT: '/api/analytics/visits/home'

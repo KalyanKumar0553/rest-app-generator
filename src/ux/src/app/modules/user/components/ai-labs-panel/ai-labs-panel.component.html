@@ -22,7 +22,13 @@
     </app-no-data-state>
 
     <section class="panel-card ai-labs-panel" *ngIf="isAiLabsEnabled">
-      <label class="field-label" for="aiPrompt">Idea brief</label>
+      <div class="usage-header">
+        <div>
+          <label class="field-label" for="aiPrompt">Idea brief</label>
+          <p class="usage-summary">{{ usageSummaryText }}</p>
+        </div>
+        <span class="usage-pill" [class.usage-pill-warning]="aiLabsAvailability.limitReached">{{ usagePillText }}</span>
+      </div>
       <textarea
         id="aiPrompt"
         class="idea-textarea"
@@ -31,8 +37,18 @@
         placeholder="Place your idea to generate the project."
       ></textarea>
       <div class="panel-actions">
-        <button class="btn btn-primary" (click)="startAiProjectGeneration()" [disabled]="isStartingAiJob">
-          {{ isStartingAiJob ? 'Starting...' : 'Generate Project' }}
+        <div class="action-feedback" *ngIf="aiLabsAvailability.limitReached">
+          <span class="limit-warning-text">{{ limitReachedMessage }}</span>
+          <button
+            type="button"
+            class="warning-help-btn"
+            [matTooltip]="limitReachedHelpText"
+            aria-label="AI Labs usage warning details">
+            <mat-icon>warning_amber</mat-icon>
+          </button>
+        </div>
+        <button class="btn btn-primary" (click)="startAiProjectGeneration()" [disabled]="!canGenerateCode">
+          {{ isStartingAiJob ? 'Starting...' : 'Generate Code' }}
         </button>
       </div>
     </section>

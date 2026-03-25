@@ -3,7 +3,6 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { API_CONFIG, API_ENDPOINTS } from '../constants/api.constants';
-import { MockApiService } from './mock-api.service';
 import { AuthService } from './auth.service';
 
 export interface UserRoles {
@@ -44,13 +43,12 @@ export interface UserSearchResult {
 export class UserService {
   constructor(
     private http: HttpClient,
-    private mockApiService: MockApiService,
     private authService: AuthService
   ) {}
 
   getUserRoles(): Observable<UserRoles> {
     const url = `${API_CONFIG.AUTH_BASE_URL}${API_ENDPOINTS.AUTH.ROLES}`;
-    return this.mockApiService.get<any>(url, '/assets/mock/user-roles-response.json').pipe(
+    return this.http.get<any>(url).pipe(
       map((response: any) => {
         const data = response.data || response;
         return {

@@ -1,0 +1,29 @@
+<div class="content-body" id="entities">
+  <div class="sticky-header">
+    <div class="top-actions">
+      <button class="back-btn-desktop" (click)="host.handleHome()" aria-label="Go to home" mat-stroked-button>
+        <i class="bi bi-house-door"></i>
+        Home
+      </button>
+      <span class="active-editors-badge" *ngIf="host.shouldShowActiveEditorsBadge()">{{ host.activeEditorsBadgeLabel }}</span>
+    </div>
+  </div>
+
+  <div class="scrollable-content">
+    <app-entities
+      [entities]="host.entities"
+      [relations]="host.relations"
+      [enums]="host.enums"
+      [dataObjects]="host.dataObjects"
+      (entitiesChange)="host.onEntitiesChange($event)">
+    </app-entities>
+  </div>
+
+  <div class="sticky-footer" *ngIf="!host.isLoading">
+    <div class="action-section">
+      <button mat-raised-button color="primary" type="button" (click)="host.setupDataObjects()">
+        Setup Data Objects
+      </button>
+    </div>
+  </div>
+</div>

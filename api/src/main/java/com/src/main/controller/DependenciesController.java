@@ -21,10 +21,6 @@ public class DependenciesController {
 
 	@GetMapping
 	public ResponseEntity<List<String>> list() {
-		try {
-			return ResponseEntity.ok(dependencyCatalogService.listDependencies());
-		} catch (Exception ex) {
-			return ResponseEntity.internalServerError().build();
-		}
+		return ResponseEntity.ok(dependencyCatalogService.listDependencies());
 	}
 }

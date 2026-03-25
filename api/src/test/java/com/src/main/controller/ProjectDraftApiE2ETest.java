@@ -15,6 +15,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import java.security.Principal;
 import java.time.OffsetDateTime;
+import java.util.List;
 import java.util.LinkedHashSet;
 import java.util.Optional;
 import java.util.Set;
@@ -32,10 +33,14 @@ import org.springframework.validation.beanvalidation.LocalValidatorFactoryBean;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.src.main.auth.service.RbacService;
+import com.src.main.dto.ProjectTabDefinitionDTO;
 import com.src.main.exception.GlobalExceptionHandler;
+import com.src.main.model.PluginModuleEntity;
 import com.src.main.model.ProjectEntity;
 import com.src.main.repository.ProjectCollaborationRequestRepository;
 import com.src.main.repository.ProjectContributorRepository;
+import com.src.main.repository.ProjectDraftVersionRepository;
+import com.src.main.repository.PluginModuleRepository;
 import com.src.main.repository.ProjectRepository;
 import com.src.main.repository.ProjectRunRepository;
 import com.src.main.service.ProjectDraftService;
@@ -46,6 +51,7 @@ import com.src.main.service.ProjectNameValidationService;
 import com.src.main.service.ProjectOrchestrationService;
 import com.src.main.service.ProjectService;
 import com.src.main.service.ProjectServiceImpl;
+import com.src.main.service.ProjectTabDefinitionService;
 import com.src.main.service.ProjectUserIdentityService;
 import com.src.main.service.ProjectYamlService;
 import com.src.main.testsupport.ProjectDraftFixtures;
@@ -64,6 +70,10 @@ class ProjectDraftApiE2ETest {
 	@Mock
 	private ProjectCollaborationRequestRepository projectCollaborationRequestRepository;
 	@Mock
+	private ProjectDraftVersionRepository projectDraftVersionRepository;
+	@Mock
+	private PluginModuleRepository pluginModuleRepository;
+	@Mock
 	private ProjectUserIdentityService projectUserIdentityService;
 	@Mock
 	private ProjectNameValidationService projectNameValidationService;
@@ -78,18 +88,24 @@ class ProjectDraftApiE2ETest {
 
 	private MockMvc mockMvc;
 	private ObjectMapper objectMapper;
+	private ProjectTabDefinitionService projectTabDefinitionService;
 
 	@BeforeEach
 	void setUp() {
 		objectMapper = new ObjectMapper();
+		projectTabDefinitionService = org.mockito.Mockito.mock(ProjectTabDefinitionService.class);
+		org.mockito.Mockito.lenient().when(projectTabDefinitionService.getEnabledTabs("java")).thenReturn(defaultJavaTabs());
+		org.mockito.Mockito.lenient().when(projectTabDefinitionService.getEnabledTabs("node")).thenReturn(defaultNodeTabs());
 		ProjectService projectService = new ProjectServiceImpl(
 				projectRepository,
 				projectRunRepository,
 				projectCollaborationRequestRepository,
 				projectContributorRepository,
+				projectDraftVersionRepository,
+				pluginModuleRepository,
 				projectUserIdentityService,
 				new ProjectYamlService(),
-				new ProjectDraftService(objectMapper),
+				new ProjectDraftService(objectMapper, projectTabDefinitionService),
 				new ProjectDraftSpecMapperService(),
 				projectNameValidationService,
 				projectCollaborationService,
@@ -176,9 +192,48 @@ class ProjectDraftApiE2ETest {
 				.andExpect(jsonPath("$[*].key", hasItem("controllers")));
 	}
 
+	@Test
+	void getTabDetails_onlyReturnsModuleTabWhenModuleConfigIsEnabledInRegistry() throws Exception {
+		PluginModuleEntity authModule = new PluginModuleEntity();
+		authModule.setId(UUID.randomUUID());
+		authModule.setCode("auth");
+		authModule.setName("Authentication");
+		authModule.setEnabled(true);
+		authModule.setEnableConfig(true);
+		when(pluginModuleRepository.findAllByOrderByNameAsc()).thenReturn(List.of(authModule));
+
+		mockMvc.perform(get("/api/projects/tab-details")
+						.param("generator", "java")
+						.param("dependency", "auth"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$[*].key", hasItem("auth")));
+	}
+
 	private Set<String> linkedKeys(String userId) {
 		Set<String> keys = new LinkedHashSet<>();
 		keys.add(userId);
 		return keys;
+	}
+
+	private List<ProjectTabDefinitionDTO> defaultJavaTabs() {
+		return List.of(
+				new ProjectTabDefinitionDTO("general", "General", "public", "java-general", 10),
+				new ProjectTabDefinitionDTO("actuator", "Actuator", "device_hub", "actuator", 20),
+				new ProjectTabDefinitionDTO("entities", "Entities", "storage", "entities", 30),
+				new ProjectTabDefinitionDTO("data-objects", "Data Objects", "category", "data-objects", 40),
+				new ProjectTabDefinitionDTO("mappers", "Mappers", "shuffle", "mappers", 50),
+				new ProjectTabDefinitionDTO("modules", "Modules", "widgets", "modules", 60),
+				new ProjectTabDefinitionDTO("auth", "Auth", "lock", "module-auth", 70),
+				new ProjectTabDefinitionDTO("controllers", "Controllers", "tune", "controllers", 80));
+	}
+
+	private List<ProjectTabDefinitionDTO> defaultNodeTabs() {
+		return List.of(
+				new ProjectTabDefinitionDTO("general", "General", "public", "node-general", 10),
+				new ProjectTabDefinitionDTO("entities", "Entities", "storage", "entities", 20),
+				new ProjectTabDefinitionDTO("data-objects", "Data Objects", "category", "data-objects", 30),
+				new ProjectTabDefinitionDTO("mappers", "Mappers", "shuffle", "mappers", 40),
+				new ProjectTabDefinitionDTO("modules", "Modules", "widgets", "modules", 50),
+				new ProjectTabDefinitionDTO("controllers", "Controllers", "tune", "controllers", 60));
 	}
 }

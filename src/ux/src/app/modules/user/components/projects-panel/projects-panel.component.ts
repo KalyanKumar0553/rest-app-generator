@@ -189,19 +189,7 @@ export class ProjectsPanelComponent implements OnInit {
       this.toastService.error('Unable to open project');
       return;
     }
-    this.projectService.getProjectCollaboration(projectId).subscribe({
-      next: (state) => {
-        if ((state?.activeEditors ?? 0) > 0) {
-          this.projectToOpen = project;
-          this.showOpenConflictConfirmation = true;
-          return;
-        }
-        this.navigateToProject(projectId, project.generator);
-      },
-      error: () => {
-        this.navigateToProject(projectId, project.generator);
-      }
-    });
+    this.navigateToProject(projectId, project.generator);
   }
 
   promptDeleteProject(project: Project): void {

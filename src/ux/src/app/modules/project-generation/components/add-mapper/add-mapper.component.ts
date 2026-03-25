@@ -5,6 +5,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { MatIconModule } from '@angular/material/icon';
+import { ToastService } from '../../../../services/toast.service';
 import { findReservedJavaOrDatabaseKeyword, isValidJavaTypeName } from '../../validators/naming-validation';
 import { VALIDATION_MESSAGES } from '../../constants/validation-messages';
 
@@ -71,6 +72,8 @@ export class AddMapperComponent implements OnChanges {
 
   mappedTargetBySource: Record<string, string> = {};
 
+  constructor(private readonly toastService: ToastService) {}
+
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['isOpen'] && this.isOpen) {
       this.initializeForm();
@@ -115,6 +118,9 @@ export class AddMapperComponent implements OnChanges {
 
   onFromModelChange(): void {
     this.fromModelError = '';
+    if (this.toModel && this.toModel === this.fromModel) {
+      this.toModel = '';
+    }
     this.refreshFieldOptions();
     this.autoMapCompatibleFields();
   }
@@ -175,6 +181,14 @@ export class AddMapperComponent implements OnChanges {
 
   getCompatibleTargetFields(source: ModelField): ModelField[] {
     return this.targetFields.filter((target) => this.areTypesCompatible(source.type, target.type));
+  }
+
+  getAvailableTargetModels(): MapperModel[] {
+    if (!this.fromModel) {
+      return this.targetModels;
+    }
+
+    return this.targetModels.filter((model) => model.name !== this.fromModel);
   }
 
   private initializeForm(): void {
@@ -357,12 +371,14 @@ export class AddMapperComponent implements OnChanges {
     const name = this.mapperName.trim();
     if (!name) {
       this.mapperNameError = VALIDATION_MESSAGES.mapperNameRequired;
+      this.showValidationError(this.mapperNameError);
       this.focusNameInput();
       return false;
     }
 
     if (!isValidJavaTypeName(name) || Boolean(findReservedJavaOrDatabaseKeyword(name))) {
       this.mapperNameError = VALIDATION_MESSAGES.mapperNameInvalid;
+      this.showValidationError(this.mapperNameError);
       this.focusNameInput();
       return false;
     }
@@ -376,28 +392,33 @@ export class AddMapperComponent implements OnChanges {
 
     if (duplicate) {
       this.mapperNameError = VALIDATION_MESSAGES.mapperNameDuplicate;
+      this.showValidationError(this.mapperNameError);
       this.focusNameInput();
       return false;
     }
 
     if (!this.fromModel) {
       this.fromModelError = VALIDATION_MESSAGES.fromModelRequired;
+      this.showValidationError(this.fromModelError);
       return false;
     }
 
     if (!this.toModel) {
       this.toModelError = VALIDATION_MESSAGES.toModelRequired;
+      this.showValidationError(this.toModelError);
       return false;
     }
 
     if (this.fromModel === this.toModel) {
       this.toModelError = VALIDATION_MESSAGES.sourceTargetDifferent;
+      this.showValidationError(this.toModelError);
       return false;
     }
 
     const visibleSources = this.getVisibleSourceFields().map((field) => field.name);
     if (visibleSources.length === 0) {
       this.mappingsError = VALIDATION_MESSAGES.atLeastOneMapping;
+      this.showValidationError(this.mappingsError);
       return false;
     }
 
@@ -407,6 +428,7 @@ export class AddMapperComponent implements OnChanges {
     });
     if (!allRowsMapped) {
       this.mappingsError = VALIDATION_MESSAGES.allRowsMapped;
+      this.showValidationError(this.mappingsError);
       return false;
     }
 
@@ -418,5 +440,11 @@ export class AddMapperComponent implements OnChanges {
       const nameInput = document.querySelector('.mapper-name-row .name-field input') as HTMLElement | null;
       nameInput?.focus();
     });
+  }
+
+  private showValidationError(message: string): void {
+    if (message) {
+      this.toastService.error(message);
+    }
   }
 }

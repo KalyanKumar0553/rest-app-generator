@@ -2,7 +2,7 @@
   <div class="content-header">
     <div class="section-intro">
       <h1 class="section-title">Settings</h1>
-      <p class="section-subtitle">Configure admin-only platform rules for encrypted and searchable database columns.</p>
+      <p class="section-subtitle">Configure admin-only platform settings, feature access, modules, and project layout.</p>
     </div>
   </div>
 
@@ -16,17 +16,69 @@
       </div>
 
       <div class="feature-settings" *ngIf="!isLoadingFeatureConfigs; else featureLoadingState">
-        <label class="feature-toggle">
+        <div class="feature-toggle feature-toggle-rich">
           <div class="feature-copy">
             <span class="feature-label">AI Labs</span>
             <span class="feature-description">Show AI Labs in the user dashboard and allow AI-assisted project planning.</span>
           </div>
+          <div class="feature-control-stack">
+            <label class="toggle-row">
+              <span class="toggle-caption">Feature access</span>
+              <input
+                type="checkbox"
+                [checked]="isAiLabsEnabled()"
+                [disabled]="isSavingAiLabsFeature || !canEditFeatureFlags()"
+                (change)="updateAiLabsFeature($event.target.checked)" />
+            </label>
+            <label class="limit-config-row">
+              <span class="toggle-caption">Usage limit</span>
+              <select
+                class="select-input"
+                [value]="getAiLabsUsageLimitValue()"
+                [disabled]="isSavingAiLabsFeature || !canEditFeatureFlags()"
+                (change)="updateAiLabsUsageLimit($any($event.target).value)">
+                <option *ngFor="let option of getAiLabsUsageLimitOptions()" [value]="option.valueKey">
+                  {{ option.valueLabel }}
+                </option>
+              </select>
+            </label>
+            <span class="feature-meta">Current cap: {{ getAiLabsUsageLimitLabel() }}</span>
+          </div>
+        </div>
+
+        <label class="feature-toggle">
+          <div class="feature-copy">
+            <span class="feature-label">Plugin Modules</span>
+            <span class="feature-description">Allow administrators to publish reusable plugin zip artifacts and let users include them in generated projects.</span>
+          </div>
           <input
             type="checkbox"
-            [checked]="isAiLabsEnabled()"
-            [disabled]="isSavingAiLabsFeature"
-            (change)="updateAiLabsFeature($event.target.checked)" />
+            [checked]="isPluginModulesEnabled()"
+            [disabled]="isSavingPluginModulesFeature || !canEditFeatureFlags()"
+            (change)="updatePluginModulesFeature($event.target.checked)" />
         </label>
+
+        <div class="feature-toggle feature-toggle-rich">
+          <div class="feature-copy">
+            <span class="feature-label">Newsletter Welcome Email Retries</span>
+            <span class="feature-description">Stop retrying welcome emails after the configured number of failed attempts.</span>
+          </div>
+          <div class="feature-control-stack">
+            <label class="limit-config-row">
+              <span class="toggle-caption">Max retry attempts</span>
+              <select
+                class="select-input"
+                [value]="getNewsletterRetryLimitValue()"
+                [disabled]="isSavingAiLabsFeature || !canEditFeatureFlags()"
+                (change)="updateNewsletterRetryLimit($any($event.target).value)">
+                <option *ngFor="let option of getNewsletterRetryLimitOptions()" [value]="option.valueKey">
+                  {{ option.valueLabel }}
+                </option>
+              </select>
+            </label>
+            <span class="feature-meta">Current cap: {{ getNewsletterRetryLimitLabel() }}</span>
+          </div>
+        </div>
       </div>
 
       <ng-template #featureLoadingState>
@@ -36,85 +88,264 @@
       </ng-template>
     </section>
 
-    <section class="panel-card" *ngIf="canManageEncryptionRules()">
+    <section class="panel-card" *ngIf="canManagePluginModules()">
       <div class="panel-header">
         <div>
-          <h2>Data Encryption Rules</h2>
-          <p>Define which tables and columns should be encrypted, and add hash-shadow columns for searchable fields.</p>
+          <h2>Plugin Modules</h2>
+          <p>Upload reusable plugin zip artifacts, manage module details, and publish versions for project generation.</p>
         </div>
       </div>
 
       <div class="rule-form-grid">
         <div class="form-field">
-          <label class="field-label" for="ruleTableName">Table name</label>
-          <input id="ruleTableName" class="text-input" [(ngModel)]="encryptionRuleForm.tableName" placeholder="users" />
+          <label class="field-label" for="pluginCode">Module code</label>
+          <input id="pluginCode" class="text-input" [(ngModel)]="pluginModuleForm.code" placeholder="crm-suite" />
         </div>
         <div class="form-field">
-          <label class="field-label" for="ruleColumnName">Column name</label>
-          <input id="ruleColumnName" class="text-input" [(ngModel)]="encryptionRuleForm.columnName" placeholder="identifier" />
+          <label class="field-label" for="pluginName">Module name</label>
+          <input id="pluginName" class="text-input" [(ngModel)]="pluginModuleForm.name" placeholder="CRM Suite" />
         </div>
         <div class="form-field">
-          <label class="field-label" for="ruleHashShadowColumn">Hash-shadow column</label>
-          <input id="ruleHashShadowColumn" class="text-input" [(ngModel)]="encryptionRuleForm.hashShadowColumn" placeholder="identifier_hash" />
+          <label class="field-label" for="pluginCategory">Category</label>
+          <input id="pluginCategory" class="text-input" [(ngModel)]="pluginModuleForm.category" placeholder="Sales" />
+        </div>
+        <div class="form-field">
+          <label class="field-label" for="pluginGenerators">Generator targets</label>
+          <input id="pluginGenerators" class="text-input" [(ngModel)]="pluginModuleForm.generatorTargetsInput" placeholder="java, node, python" />
+        </div>
+        <div class="form-field full-width">
+          <label class="field-label" for="pluginDescription">Description</label>
+          <input id="pluginDescription" class="text-input" [(ngModel)]="pluginModuleForm.description" placeholder="Reusable CRM module zip artifact" />
         </div>
         <label class="checkbox-field">
-          <input type="checkbox" [(ngModel)]="encryptionRuleForm.enabled" />
+          <input type="checkbox" [(ngModel)]="pluginModuleForm.enabled" />
           <span>Enabled</span>
+        </label>
+        <label class="checkbox-field">
+          <input type="checkbox" [(ngModel)]="pluginModuleForm.enableConfig" />
+          <span>Enable Config Tab</span>
         </label>
       </div>
 
+      <div class="rule-form-grid plugin-version-grid">
+        <div class="form-field">
+          <label class="field-label" for="pluginVersion">Version</label>
+          <input id="pluginVersion" class="text-input" [(ngModel)]="pluginModuleVersionForm.versionCode" placeholder="1.0.0" />
+        </div>
+        <div class="form-field">
+          <label class="field-label" for="pluginArtifact">Zip file</label>
+          <input id="pluginArtifact" class="text-input" type="file" accept=".zip" (change)="onPluginArtifactSelected($event)" />
+        </div>
+        <div class="form-field full-width">
+          <label class="field-label" for="pluginChangelog">Changelog</label>
+          <input id="pluginChangelog" class="text-input" [(ngModel)]="pluginModuleVersionForm.changelog" placeholder="Initial release" />
+        </div>
+      </div>
+
       <div class="panel-actions">
-        <button class="btn btn-secondary" type="button" (click)="resetEncryptionRuleForm()">Reset</button>
-        <button class="btn btn-primary" type="button" (click)="saveEncryptionRule()" [disabled]="isSavingEncryptionRule || !canEditEncryptionRules()">
-          {{ isSavingEncryptionRule ? 'Saving...' : (encryptionRuleForm.id ? 'Update Rule' : 'Create Rule') }}
+        <button class="btn btn-secondary" type="button" (click)="resetPluginModuleForm(); resetPluginVersionForm()">Reset</button>
+        <button class="btn btn-primary" type="button" (click)="savePluginModule()" [disabled]="isSavingPluginModule || !canEditPluginModules()">
+          {{ isSavingPluginModule ? 'Saving...' : (pluginModuleForm.id ? 'Update Module' : 'Create Module') }}
         </button>
       </div>
 
-      <div *ngIf="!isLoadingEncryptionRules && encryptionRules.length === 0" class="empty-state compact-empty-state">
-        <p>No encryption rules configured yet.</p>
+      <div class="version-upload-card" *ngIf="selectedPluginModuleForVersionUpload && canUploadPluginVersions(selectedPluginModuleForVersionUpload)">
+        <div class="panel-header">
+          <div>
+            <h3>Upload Version for {{ selectedPluginModuleForVersionUpload.name }}</h3>
+            <p>Add another zip artifact version for the selected module.</p>
+          </div>
+        </div>
+        <div class="panel-actions align-start">
+          <button class="btn btn-primary" type="button" (click)="uploadPluginModuleVersion()" [disabled]="isSavingPluginModule || !canEditPluginModules()">
+            {{ isSavingPluginModule ? 'Uploading...' : 'Upload Version' }}
+          </button>
+          <button class="btn btn-secondary" type="button" (click)="resetPluginVersionForm()">Cancel Version Upload</button>
+        </div>
       </div>
 
-      <table mat-table [dataSource]="encryptionRules" class="dashboard-table" *ngIf="!isLoadingEncryptionRules && encryptionRules.length > 0">
-        <ng-container matColumnDef="tableName">
-          <th mat-header-cell *matHeaderCellDef>Table</th>
-          <td mat-cell *matCellDef="let rule">{{ rule.tableName }}</td>
-        </ng-container>
+      <div *ngIf="!isLoadingPluginModules && pluginModules.length === 0" class="empty-state compact-empty-state">
+        <p>No plugin modules uploaded yet.</p>
+      </div>
 
-        <ng-container matColumnDef="columnName">
-          <th mat-header-cell *matHeaderCellDef>Column</th>
-          <td mat-cell *matCellDef="let rule">{{ rule.columnName || 'All string columns' }}</td>
-        </ng-container>
-
-        <ng-container matColumnDef="hashShadowColumn">
-          <th mat-header-cell *matHeaderCellDef>Hash shadow</th>
-          <td mat-cell *matCellDef="let rule">{{ rule.hashShadowColumn || '-' }}</td>
-        </ng-container>
-
-        <ng-container matColumnDef="enabled">
-          <th mat-header-cell *matHeaderCellDef>Enabled</th>
-          <td mat-cell *matCellDef="let rule">
-            <span class="status-badge" [attr.data-status]="rule.enabled ? 'ENABLED' : 'DISABLED'">{{ rule.enabled ? 'ENABLED' : 'DISABLED' }}</span>
-          </td>
-        </ng-container>
-
-        <ng-container matColumnDef="updatedAt">
-          <th mat-header-cell *matHeaderCellDef>Updated</th>
-          <td mat-cell *matCellDef="let rule">{{ rule.updatedAt ? formatDate(rule.updatedAt) : '-' }}</td>
-        </ng-container>
-
-        <ng-container matColumnDef="actions">
-          <th mat-header-cell *matHeaderCellDef>Actions</th>
-          <td mat-cell *matCellDef="let rule">
-            <div class="table-actions">
-              <button class="table-action-btn" type="button" (click)="editEncryptionRule(rule)" [disabled]="!canEditEncryptionRules()">Edit</button>
-              <button class="table-action-btn danger" type="button" (click)="deleteEncryptionRule(rule)" [disabled]="!canEditEncryptionRules()">Delete</button>
+      <div class="plugin-module-list" *ngIf="!isLoadingPluginModules && pluginModules.length > 0">
+        <article class="plugin-module-card" *ngFor="let plugin of pluginModules">
+          <div class="plugin-module-card-header">
+            <div>
+              <h3>{{ plugin.name }}</h3>
+              <p>{{ plugin.description || 'Reusable plugin module artifact.' }}</p>
             </div>
-          </td>
-        </ng-container>
+            <span class="status-badge" [attr.data-status]="plugin.enabled ? 'ENABLED' : 'DISABLED'">
+              {{ plugin.enabled ? 'ENABLED' : 'DISABLED' }}
+            </span>
+          </div>
+          <div class="plugin-module-meta">
+            <span>Code: {{ plugin.code }}</span>
+            <span *ngIf="plugin.category">Category: {{ plugin.category }}</span>
+            <span>Targets: {{ plugin.generatorTargets.join(', ') }}</span>
+            <span>Config Tab: {{ plugin.enableConfig ? 'Enabled' : 'Disabled' }}</span>
+          </div>
+          <div class="table-actions">
+            <button class="table-action-btn" type="button" (click)="editPluginModule(plugin)" [disabled]="!canEditPluginModules()">Edit</button>
+            <button
+              class="table-action-btn"
+              type="button"
+              *ngIf="canUploadPluginVersions(plugin)"
+              (click)="preparePluginVersionUpload(plugin)"
+              [disabled]="!canEditPluginModules()">New Version</button>
+          </div>
+          <div class="plugin-version-list" *ngIf="canUploadPluginVersions(plugin) && plugin.versions.length > 0">
+            <div class="plugin-version-row" *ngFor="let version of plugin.versions">
+              <div class="plugin-version-copy">
+                <strong>{{ version.versionCode }}</strong>
+                <span>{{ version.fileName }}</span>
+                <span *ngIf="version.changelog">{{ version.changelog }}</span>
+              </div>
+              <div class="table-actions">
+                <span class="status-badge" [attr.data-status]="version.published ? 'ENABLED' : 'DISABLED'">
+                  {{ version.published ? 'PUBLISHED' : 'DRAFT' }}
+                </span>
+                <button
+                  class="table-action-btn"
+                  type="button"
+                  *ngIf="!version.published"
+                  (click)="publishPluginVersion(plugin, version.id)"
+                  [disabled]="!canPublishPluginModules() || isPublishingPluginModule">
+                  Publish
+                </button>
+              </div>
+            </div>
+          </div>
+        </article>
+      </div>
+    </section>
 
-        <tr mat-header-row *matHeaderRowDef="encryptionRuleColumns"></tr>
-        <tr mat-row *matRowDef="let row; columns: encryptionRuleColumns;"></tr>
-      </table>
+    <section class="panel-card" *ngIf="canManageProjectTabLayouts()">
+      <div class="panel-header layout-header">
+        <div>
+          <h2>Project Layout</h2>
+          <p>Manage the language-specific project tabs that appear in the generation dashboard. Order controls the customer-facing tab sequence.</p>
+        </div>
+        <div class="layout-language-switch">
+          <button
+            type="button"
+            class="language-chip"
+            [class.language-chip-active]="selectedProjectTabLanguage === 'java'"
+            (click)="selectedProjectTabLanguage = 'java'; resetProjectTabDefinitionForm()">
+            Java
+          </button>
+          <button
+            type="button"
+            class="language-chip"
+            [class.language-chip-active]="selectedProjectTabLanguage === 'kotlin'"
+            (click)="selectedProjectTabLanguage = 'kotlin'; resetProjectTabDefinitionForm()">
+            Kotlin
+          </button>
+          <button
+            type="button"
+            class="language-chip"
+            [class.language-chip-active]="selectedProjectTabLanguage === 'node'"
+            (click)="selectedProjectTabLanguage = 'node'; resetProjectTabDefinitionForm()">
+            Node
+          </button>
+          <button
+            type="button"
+            class="language-chip"
+            [class.language-chip-active]="selectedProjectTabLanguage === 'python'"
+            (click)="selectedProjectTabLanguage = 'python'; resetProjectTabDefinitionForm()">
+            Python
+          </button>
+        </div>
+      </div>
+
+      <div class="layout-workspace">
+        <div class="layout-form-card">
+          <div class="layout-form-head">
+            <h3>{{ projectTabDefinitionForm.id ? 'Edit Tab' : 'Add Tab' }}</h3>
+            <p>Use the same runtime keys and component keys expected by the dashboard so the configured tab maps to the correct screen.</p>
+          </div>
+
+          <div class="rule-form-grid">
+            <div class="form-field">
+              <label class="field-label" for="tabKey">Tab key</label>
+              <input id="tabKey" class="text-input" [(ngModel)]="projectTabDefinitionForm.key" placeholder="general" />
+            </div>
+            <div class="form-field">
+              <label class="field-label" for="tabLabel">Label</label>
+              <input id="tabLabel" class="text-input" [(ngModel)]="projectTabDefinitionForm.label" placeholder="General" />
+            </div>
+            <div class="form-field">
+              <label class="field-label" for="tabIcon">Icon</label>
+              <input id="tabIcon" class="text-input" [(ngModel)]="projectTabDefinitionForm.icon" placeholder="public" />
+            </div>
+            <div class="form-field">
+              <label class="field-label" for="tabComponentKey">Component key</label>
+              <input id="tabComponentKey" class="text-input" [(ngModel)]="projectTabDefinitionForm.componentKey" placeholder="java-general" />
+            </div>
+            <div class="form-field">
+              <label class="field-label" for="tabOrder">Order</label>
+              <input id="tabOrder" class="text-input" type="number" [(ngModel)]="projectTabDefinitionForm.order" min="0" />
+            </div>
+            <div class="form-field">
+              <label class="field-label" for="tabLanguage">Language</label>
+              <select id="tabLanguage" class="text-input" [(ngModel)]="projectTabDefinitionForm.generatorLanguage">
+                <option value="java">Java</option>
+                <option value="kotlin">Kotlin</option>
+                <option value="node">Node</option>
+                <option value="python">Python</option>
+              </select>
+            </div>
+            <label class="checkbox-field">
+              <input type="checkbox" [(ngModel)]="projectTabDefinitionForm.enabled" />
+              <span>Enabled</span>
+            </label>
+          </div>
+
+          <div class="panel-actions">
+            <button class="btn btn-secondary" type="button" (click)="resetProjectTabDefinitionForm()">Reset</button>
+            <button class="btn btn-primary" type="button" (click)="saveProjectTabDefinition()" [disabled]="isSavingProjectTabDefinition || !canEditProjectTabLayouts()">
+              {{ isSavingProjectTabDefinition ? 'Saving...' : (projectTabDefinitionForm.id ? 'Update Tab' : 'Create Tab') }}
+            </button>
+          </div>
+        </div>
+
+        <div class="layout-preview-card">
+          <div class="layout-preview-head">
+            <div>
+              <h3>{{ selectedProjectTabLanguage | titlecase }} Layout</h3>
+              <p>Current live order for this language.</p>
+            </div>
+            <span class="status-badge" [attr.data-status]="getVisibleProjectTabDefinitions().length ? 'ENABLED' : 'DISABLED'">
+              {{ getVisibleProjectTabDefinitions().length }} tab{{ getVisibleProjectTabDefinitions().length === 1 ? '' : 's' }}
+            </span>
+          </div>
+
+          <div *ngIf="!isLoadingProjectTabDefinitions && getVisibleProjectTabDefinitions().length === 0" class="empty-state compact-empty-state">
+            <p>No tabs configured for this language yet.</p>
+          </div>
+
+          <div class="layout-tab-list" *ngIf="!isLoadingProjectTabDefinitions && getVisibleProjectTabDefinitions().length > 0">
+            <article class="layout-tab-card" *ngFor="let tab of getVisibleProjectTabDefinitions()">
+              <div class="layout-tab-topline">
+                <div class="layout-tab-copy">
+                  <strong>{{ tab.label }}</strong>
+                  <span>{{ tab.key }} · {{ tab.componentKey }}</span>
+                </div>
+                <span class="layout-order-pill">#{{ tab.order }}</span>
+              </div>
+              <div class="plugin-module-meta">
+                <span>Icon: {{ tab.icon }}</span>
+                <span>Language: {{ tab.generatorLanguage }}</span>
+                <span>Status: {{ tab.enabled ? 'Enabled' : 'Disabled' }}</span>
+              </div>
+              <div class="table-actions">
+                <button class="table-action-btn" type="button" (click)="editProjectTabDefinition(tab)" [disabled]="!canEditProjectTabLayouts()">Edit</button>
+                <button class="table-action-btn danger" type="button" (click)="deleteProjectTabDefinition(tab)" [disabled]="!canEditProjectTabLayouts() || isDeletingProjectTabDefinition">Delete</button>
+              </div>
+            </article>
+          </div>
+        </div>
+      </div>
     </section>
 
     <ng-template #noSettingsAccess>
@@ -123,7 +354,7 @@
       </div>
     </ng-template>
 
-    <ng-container *ngIf="!canManageEncryptionRules() && !canManageFeatureFlags()">
+    <ng-container *ngIf="!canManageFeatureFlags() && !canManagePluginModules() && !canManageProjectTabLayouts()">
       <ng-container *ngTemplateOutlet="noSettingsAccess"></ng-container>
     </ng-container>
   </div>

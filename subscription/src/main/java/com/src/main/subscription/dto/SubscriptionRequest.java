@@ -13,6 +13,7 @@ import lombok.Data;
 public class SubscriptionRequest {
 	@NotNull
 	private Long tenantId;
+	private String userId;
 	@NotBlank
 	private String planCode;
 	@NotNull
@@ -23,6 +24,7 @@ public class SubscriptionRequest {
 	private SubscriptionSource source;
 	private Boolean autoRenew = Boolean.FALSE;
 	private LocalDateTime startAt;
+	private String couponCode;
 	private String externalReference;
 	private String metadataJson;
 	private String reason;

@@ -13,4 +13,5 @@ public interface SubscriptionPlanService {
 	void setDefaultPlan(Long id);
 	PlanResponse getPlan(Long id);
 	List<PlanResponse> getAllPlans(Boolean activeOnly);
+	List<String> getPlanRoleNames(Long planId);
 }

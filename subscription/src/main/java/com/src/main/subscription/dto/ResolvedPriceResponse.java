@@ -14,8 +14,11 @@ public class ResolvedPriceResponse {
 	private String planCode;
 	private BillingCycle billingCycle;
 	private String currencyCode;
+	private BigDecimal baseAmount;
 	private BigDecimal amount;
 	private BigDecimal discountPercent;
+	private String couponCode;
+	private BigDecimal couponDiscountAmount;
 	private String displayLabel;
 	private LocalDateTime effectiveFrom;
 }

@@ -21,7 +21,7 @@
   <div class="modules-grid">
     <article class="module-card" *ngFor="let module of filteredModules">
       <div class="module-card-header">
-        <h4>{{ module.title }}</h4>
+        <h3>{{ module.title }}</h3>
         <mat-checkbox
           [checked]="isSelected(module.key)"
           (change)="toggleModule(module.key, $event.checked)">
@@ -31,7 +31,37 @@
     </article>
   </div>
 
-  <div class="modules-empty" *ngIf="filteredModules.length === 0">
+  <div class="modules-grid" *ngIf="filteredPluginModules.length > 0">
+    <article class="module-card" *ngFor="let plugin of filteredPluginModules">
+      <div class="module-card-header">
+        <div class="plugin-title-group">
+          <h3>{{ plugin.name }}</h3>
+          <span class="module-key">{{ plugin.code }}</span>
+        </div>
+        <mat-checkbox
+          [checked]="isPluginSelected(plugin.id)"
+          (change)="togglePlugin(plugin, $event.checked)">
+        </mat-checkbox>
+      </div>
+      <p class="module-card-description">{{ plugin.description || 'Reusable plugin module uploaded by an administrator.' }}</p>
+      <div class="plugin-meta-row">
+        <span class="module-key" *ngIf="plugin.category">{{ plugin.category }}</span>
+        <div class="plugin-version-control">
+          <label class="plugin-version-label" [attr.for]="'plugin-version-' + plugin.id">Version</label>
+          <select
+            class="plugin-version-select"
+            [id]="'plugin-version-' + plugin.id"
+            [ngModel]="getPluginSelectedVersionId(plugin)"
+            (ngModelChange)="onPluginVersionChange(plugin, $event)"
+            [disabled]="!isPluginSelected(plugin.id)">
+            <option *ngFor="let version of plugin.versions" [ngValue]="version.id">{{ version.versionCode }}</option>
+          </select>
+        </div>
+      </div>
+    </article>
+  </div>
+
+  <div class="modules-empty" *ngIf="filteredModules.length === 0 && filteredPluginModules.length === 0">
     <p>No modules match the current filter.</p>
   </div>
 </section>

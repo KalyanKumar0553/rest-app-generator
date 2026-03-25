@@ -1,6 +1,6 @@
 <div class="field-config">
   <div class="field-config-body">
-    <mat-form-field appearance="fill" class="field-input">
+    <mat-form-field appearance="fill" subscriptSizing="dynamic" class="field-input">
       <mat-label>Property name</mat-label>
       <input
         matInput
@@ -21,7 +21,7 @@
       (valueChange)="field.type = $event; onFieldTypeChange()">
     </app-field-type-select>
 
-    <mat-form-field appearance="fill" class="field-input">
+    <mat-form-field appearance="fill" subscriptSizing="dynamic" class="field-input">
       <mat-label>JSON property (optional)</mat-label>
       <input
         matInput
@@ -41,14 +41,14 @@
     <div class="constraints-list" *ngIf="field.constraints && field.constraints.length > 0; else emptyConstraints">
       <div class="constraint-row" *ngFor="let constraint of field.constraints; let i = index">
         <div class="constraint-fields">
-          <mat-form-field appearance="fill" class="constraint-select">
+          <mat-form-field appearance="fill" subscriptSizing="dynamic" class="constraint-select">
             <mat-label>Constraint</mat-label>
             <mat-select [(ngModel)]="constraint.name" (selectionChange)="onConstraintNameChange(i)">
               <mat-option *ngFor="let option of getAvailableConstraintOptions(i)" [value]="option">{{ option }}</mat-option>
             </mat-select>
           </mat-form-field>
 
-          <mat-form-field appearance="fill" class="constraint-value" *ngIf="hasFirstValue(constraint.name)">
+          <mat-form-field appearance="fill" subscriptSizing="dynamic" class="constraint-value" *ngIf="hasFirstValue(constraint.name)">
             <mat-label>{{ getFirstInputLabel(constraint.name) }}</mat-label>
             <input
               matInput
@@ -56,7 +56,7 @@
               [placeholder]="getFirstInputPlaceholder(constraint.name)">
           </mat-form-field>
 
-          <mat-form-field appearance="fill" class="constraint-value" *ngIf="hasSecondValue(constraint.name)">
+          <mat-form-field appearance="fill" subscriptSizing="dynamic" class="constraint-value" *ngIf="hasSecondValue(constraint.name)">
             <mat-label>{{ getSecondInputLabel(constraint.name) }}</mat-label>
             <input
               matInput

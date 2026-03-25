@@ -32,6 +32,25 @@ export interface ProjectDraftTabData {
   tabData: Record<string, any>;
 }
 
+export interface PublishedPluginModuleVersion {
+  id: string;
+  versionCode: string;
+  changelog?: string | null;
+  published: boolean;
+}
+
+export interface PublishedPluginModule {
+  id: string;
+  code: string;
+  name: string;
+  description?: string | null;
+  category?: string | null;
+  enabled: boolean;
+  generatorTargets: string[];
+  currentPublishedVersionId?: string | null;
+  versions: PublishedPluginModuleVersion[];
+}
+
 export interface ProjectCollaborationEditor {
   sessionId: string;
   userId: string;
@@ -177,6 +196,12 @@ export class ProjectService {
   getProjectDraftTab(projectId: string, tabKey: string): Observable<ProjectDraftTabData> {
     const url = `${API_CONFIG.BASE_URL}${API_ENDPOINTS.PROJECT.GET_DRAFT_TAB(projectId)}?tabKey=${encodeURIComponent(tabKey)}`;
     return this.http.get<ProjectDraftTabData>(url);
+  }
+
+  getPublishedPluginModules(generator?: string): Observable<PublishedPluginModule[]> {
+    const query = generator ? `?generator=${encodeURIComponent(generator)}` : '';
+    const url = `${API_CONFIG.BASE_URL}${API_ENDPOINTS.PLUGIN_MODULES.PUBLISHED}${query}`;
+    return this.http.get<PublishedPluginModule[]>(url);
   }
 
   createProjectDraft(payload: ProjectDraftPayload): Observable<ProjectDraftResponse> {

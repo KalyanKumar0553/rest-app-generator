@@ -1,0 +1,35 @@
+<div class="content-body" id="mappers">
+  <div class="sticky-header">
+    <div class="top-actions">
+      <button class="back-btn-desktop" (click)="host.handleHome()" aria-label="Go to home" mat-stroked-button>
+        <i class="bi bi-house-door"></i>
+        Home
+      </button>
+      <span class="active-editors-badge" *ngIf="host.shouldShowActiveEditorsBadge()">{{ host.activeEditorsBadgeLabel }}</span>
+    </div>
+  </div>
+
+  <div class="scrollable-content">
+    <app-data-objects
+      [dataObjects]="host.dataObjects"
+      [entities]="host.entities"
+      [enums]="host.enums"
+      [mappers]="host.mappers"
+      [javaVersion]="host.developerPreferences.javaVersion"
+      [defaultTab]="'mappers'"
+      (dataObjectsChange)="host.onDataObjectsChange($event)"
+      (entitiesChange)="host.onEntitiesFromDataObjectsChange($event)"
+      (enumsChange)="host.onEnumsChange($event)"
+      (mappersChange)="host.onMappersChange($event)"
+      (activeTabChange)="host.onDataObjectsActiveTabChange($event)">
+    </app-data-objects>
+  </div>
+
+  <div class="sticky-footer" *ngIf="!host.isLoading">
+    <div class="action-section">
+      <button mat-raised-button type="button" (click)="host.handleMappersPrimaryAction()" [disabled]="host.isGeneratingFromDtoSave">
+        {{ host.getMappersPrimaryActionLabel() }}
+      </button>
+    </div>
+  </div>
+</div>

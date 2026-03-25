@@ -39,7 +39,6 @@ public class OauthService {
 	private final UserRoleRepository userRoleRepository;
 	private final UserProfileRepository userProfileRepository;
 	private final RoleCatalogService roleCatalogService;
-	private final IdentifierLookupHashService identifierLookupHashService;
 	private final String googleClientId;
 	private final String appleClientId;
 
@@ -48,14 +47,12 @@ public class OauthService {
 			UserRoleRepository userRoleRepository,
 			UserProfileRepository userProfileRepository,
 			RoleCatalogService roleCatalogService,
-			IdentifierLookupHashService identifierLookupHashService,
 			@Value("${oauth.google.client-id:}") String googleClientId,
 			@Value("${oauth.apple.client-id:}") String appleClientId) {
 		this.userRepository = userRepository;
 		this.userRoleRepository = userRoleRepository;
 		this.userProfileRepository = userProfileRepository;
 		this.roleCatalogService = roleCatalogService;
-		this.identifierLookupHashService = identifierLookupHashService;
 		this.googleClientId = googleClientId;
 		this.appleClientId = appleClientId;
 	}
@@ -134,12 +131,8 @@ public class OauthService {
 
 	public String upsertOauthUser(OauthPrincipal principal) {
 		String identifier = principal.email().trim().toLowerCase();
-		String identifierHash = identifierLookupHashService.hash(identifier);
-		User existing = userRepository.findFirstByIdentifierHashOrIdentifier(identifierHash, identifier).orElse(null);
+		User existing = userRepository.findByIdentifier(identifier).orElse(null);
 		if (existing != null) {
-			if (existing.getIdentifierHash() == null || existing.getIdentifierHash().isBlank()) {
-				existing.setIdentifierHash(identifierHash);
-			}
 			if (existing.getStatus() != UserStatus.ACTIVE) {
 				existing.setStatus(UserStatus.ACTIVE);
 			}
@@ -150,7 +143,6 @@ public class OauthService {
 
 		User user = new User();
 		user.setIdentifier(identifier);
-		user.setIdentifierHash(identifierHash);
 		user.setIdentifierType(IdentifierType.EMAIL);
 		user.setPasswordHash(CryptoUtils.hashPassword("oauth-" + CryptoUtils.uuid()));
 		user.setStatus(UserStatus.ACTIVE);

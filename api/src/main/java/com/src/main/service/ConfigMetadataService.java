@@ -3,6 +3,7 @@ package com.src.main.service;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import javax.sql.DataSource;
@@ -104,6 +105,26 @@ public class ConfigMetadataService {
 					return Boolean.parseBoolean(currentValue.trim());
 				})
 				.orElse(defaultValue);
+	}
+
+	@Transactional(readOnly = true)
+	public Optional<String> getPropertyCurrentValue(String propertyKey) {
+		return configPropertyRepository.findByPropertyKey(propertyKey)
+				.map(ConfigProperty::getCurrentValueKey)
+				.map(String::trim)
+				.filter(value -> !value.isBlank());
+	}
+
+	@Transactional(readOnly = true)
+	public Optional<Integer> getPropertyCurrentIntValue(String propertyKey) {
+		return getPropertyCurrentValue(propertyKey)
+				.flatMap(value -> {
+					try {
+						return Optional.of(Integer.parseInt(value));
+					} catch (NumberFormatException ex) {
+						return Optional.empty();
+					}
+				});
 	}
 
 	private ConfigPropertyValue toEntityValue(ConfigPropertyValueDTO dto) {

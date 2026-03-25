@@ -22,6 +22,12 @@
 - Do not use `InprogressComponent` for request/loading states.
 - Reserve `InprogressComponent` only for dedicated informational/work-in-progress pages, not API/request progress.
 
+### Modal Validation UX (Mandatory)
+- Do not rely on native browser validation tooltips inside app modals or forms for required/invalid field handling.
+- Prefer application-level validation with inline Material errors and toast notifications where the screen already uses the shared validator/toast pattern.
+- Avoid native `required` on modal inputs when it causes browser popups like `Please fill in this field` to replace the app's own validation UX.
+- For Angular Material modal form fields that show dynamic validation messages, prefer `subscriptSizing="dynamic"` so `mat-error` content is visible and does not collapse awkwardly.
+
 ### Root Cause First (Mandatory)
 - Do not apply band-aid or speculative fixes just to mask a problem.
 - Fix issues only after identifying a defensible root cause from code, runtime behavior, logs, or reproducible evidence.
@@ -40,6 +46,11 @@
 - On `Continue`, commit unchecked state and run cleanup.
 - On `Cancel`, explicitly restore checked state on both bound model and checkbox source (`event.source.checked = true`), then trigger change detection.
 - Apply this pattern across desktop and mobile to avoid visual desync.
+
+### Project Generation Section Structure (Mandatory)
+- Do not keep `activeSection` screen content inline inside the project-generation dashboard template when adding or refactoring sections.
+- Each project-generation section must live in its own dedicated component with separate `.ts`, `.html`, and `.css` files under the same dashboard folder.
+- Keep the parent dashboard focused on orchestration, navigation, and shared state, and keep section rendering modular.
 
 ### Flyway Migration Verification (Mandatory)
 - For any backend/database change that adds, removes, renames, or edits Flyway migrations or schema-affecting JPA entities, run Flyway migrate after the code change.
@@ -64,3 +75,9 @@
 - For any backend change that adds, removes, or changes controller mappings, endpoint methods, WebSocket endpoints, filters, or security routing, assume a backend restart is required before runtime verification.
 - Do not describe a new API route as available unless the code has been compiled and the response clearly notes that the running backend must be restarted, or you have already verified it on a restarted server.
 - When a frontend change depends on a new backend route, explicitly call out the restart requirement in the final response to avoid stale-server false alarms such as `HttpRequestMethodNotSupportedException`.
+
+### DB-Driven Feature Access (Mandatory)
+- Do not hardcode role-to-feature or role-to-settings visibility mappings in backend or UX code.
+- Feature visibility and management access must come from DB-backed permissions and configuration only.
+- Prefer authority-based checks such as `hasAuthority(...)` on the backend and authenticated permission arrays on the frontend.
+- If a role such as `ROLE_SUPER_ADMIN` needs access, grant it through DB migrations or seeded role-permission mappings, not by hardcoding role checks in controllers or components.

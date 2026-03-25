@@ -77,7 +77,7 @@
     (searchChange)="onContributorSearch($event)"
     (selectedItemsChange)="selectedContributorItems = $event">
   </app-searchable-select>
-  <div modal-footer>
+  <div modal-footer class="project-modal-footer">
     <button mat-stroked-button type="button" (click)="closeAddContributorModal()">Cancel</button>
     <button mat-raised-button color="primary" type="button" (click)="submitAddContributors()" [disabled]="isAddingContributors || selectedContributorItems.length === 0">
       <span *ngIf="!isAddingContributors">Submit</span>
@@ -85,14 +85,6 @@
     </button>
   </div>
 </app-modal>
-
-<app-loading-overlay
-  [visible]="isGeneratingFromDtoSave"
-  [title]="'Generating Project'"
-  [message]="'Saving configuration and generating project artifacts. Please wait.'"
-  [showCancel]="true"
-  (cancel)="onCancelGenerationRequested()">
-</app-loading-overlay>
 
 <div class="mobile-header">
   <div class="container">
@@ -180,12 +172,10 @@
         </app-node-general-tab>
       </div>
 
-      <div class="sticky-footer">
+      <div class="sticky-footer" *ngIf="!isLoading">
         <div class="action-section">
-          <button mat-raised-button color="primary" type="button" (click)="handleGeneralPrimaryAction()" [disabled]="isLoading">
-            <span *ngIf="isLoading" class="button-spinner" aria-hidden="true"></span>
-            <span *ngIf="!isLoading">{{ getGeneralPrimaryActionLabel() }}</span>
-            <span *ngIf="isLoading">Loading...</span>
+          <button mat-raised-button color="primary" type="button" (click)="handleGeneralPrimaryAction()">
+            {{ getGeneralPrimaryActionLabel() }}
           </button>
         </div>
       </div>
@@ -215,12 +205,10 @@
         </app-node-entities>
       </div>
 
-      <div class="sticky-footer">
+      <div class="sticky-footer" *ngIf="!isLoading">
         <div class="action-section">
-          <button mat-raised-button color="primary" type="button" (click)="setupDataObjects()" [disabled]="isLoading">
-            <span *ngIf="isLoading" class="button-spinner" aria-hidden="true"></span>
-            <span *ngIf="!isLoading">Setup Data Objects</span>
-            <span *ngIf="isLoading">Loading...</span>
+          <button mat-raised-button color="primary" type="button" (click)="setupDataObjects()">
+            Setup Data Objects
           </button>
         </div>
       </div>
@@ -256,9 +244,9 @@
         </app-node-data-objects>
       </div>
 
-      <div class="sticky-footer">
+      <div class="sticky-footer" *ngIf="!isLoading">
         <div class="action-section">
-          <button mat-raised-button type="button" (click)="handleDataObjectsPrimaryAction()" [disabled]="isLoading || isGeneratingFromDtoSave">
+          <button mat-raised-button type="button" (click)="handleDataObjectsPrimaryAction()" [disabled]="isGeneratingFromDtoSave">
             {{ getDataObjectsPrimaryActionLabel() }}
           </button>
         </div>
@@ -295,9 +283,9 @@
         </app-node-data-objects>
       </div>
 
-      <div class="sticky-footer">
+      <div class="sticky-footer" *ngIf="!isLoading">
         <div class="action-section">
-          <button mat-raised-button type="button" (click)="handleMappersPrimaryAction()" [disabled]="isLoading || isGeneratingFromDtoSave">
+          <button mat-raised-button type="button" (click)="handleMappersPrimaryAction()" [disabled]="isGeneratingFromDtoSave">
             {{ getMappersPrimaryActionLabel() }}
           </button>
         </div>
@@ -352,14 +340,14 @@
         </ng-template>
       </div>
 
-      <div class="sticky-footer">
+      <div class="sticky-footer" *ngIf="!isLoading">
         <div class="action-section">
           <button
             *ngIf="showControllersConfigEditor; else saveProjectCta"
             mat-raised-button
             type="button"
             (click)="saveControllersConfiguration()"
-            [disabled]="isLoading || isGeneratingFromDtoSave">
+            [disabled]="isGeneratingFromDtoSave">
             Save Configuration
           </button>
           <button
@@ -368,11 +356,11 @@
             class="controllers-cancel-btn"
             type="button"
             (click)="requestCancelControllersConfiguration()"
-            [disabled]="isLoading || isGeneratingFromDtoSave">
+            [disabled]="isGeneratingFromDtoSave">
             Cancel
           </button>
           <ng-template #saveProjectCta>
-            <button mat-raised-button type="button" (click)="saveProjectAndInvokeApi()" [disabled]="isLoading || isGeneratingFromDtoSave">
+            <button mat-raised-button type="button" (click)="saveProjectAndInvokeApi()" [disabled]="isGeneratingFromDtoSave">
               Save Project
             </button>
           </ng-template>
@@ -395,16 +383,17 @@
         <app-modules-selection
           [modules]="shippableModuleCards"
           [selectedModuleKeys]="selectedShippableModules"
-          (selectedModuleKeysChange)="onSelectedShippableModulesChange($event)">
+          [pluginModules]="publishedPluginModules"
+          [selectedPlugins]="selectedPlugins"
+          (selectedModuleKeysChange)="onSelectedShippableModulesChange($event)"
+          (selectedPluginsChange)="onSelectedPluginsChange($event)">
         </app-modules-selection>
       </div>
 
-      <div class="sticky-footer">
+      <div class="sticky-footer" *ngIf="!isLoading">
         <div class="action-section">
-          <button mat-raised-button type="button" (click)="handleModulesPrimaryAction()" [disabled]="isLoading || isGeneratingFromDtoSave">
-            <span *ngIf="isLoading" class="button-spinner" aria-hidden="true"></span>
-            <span *ngIf="!isLoading">{{ getModulesPrimaryActionLabel() }}</span>
-            <span *ngIf="isLoading">Loading...</span>
+          <button mat-raised-button type="button" (click)="handleModulesPrimaryAction()" [disabled]="isGeneratingFromDtoSave">
+            {{ getModulesPrimaryActionLabel() }}
           </button>
         </div>
       </div>
@@ -567,7 +556,7 @@
 
           <div class="collaboration-card">
             <div class="collaboration-title-row">
-              <div class="collaboration-card-header">
+              <div class="collaboration-card-header collaboration-card-header-right">
               <h3>Contributors</h3>
               <button
                 *ngIf="canManageContributors()"
@@ -591,7 +580,38 @@
             </div>
             <p *ngIf="projectContributors.length === 0">No contributors added yet.</p>
 
-            <table mat-table [dataSource]="projectContributors" class="collaboration-table" *ngIf="projectContributors.length > 0">
+            <div class="collaboration-mobile-list" *ngIf="projectContributors.length > 0 && isMobileViewport">
+              <article class="collaboration-mobile-item" *ngFor="let contributor of projectContributors">
+                <div class="collaboration-mobile-copy">
+                  <strong>{{ contributor.userId }}</strong>
+                  <span>{{ formatPermissionsLabel(contributor) }}</span>
+                </div>
+                <div class="table-actions">
+                  <button
+                    *ngIf="canManageContributors()"
+                    mat-icon-button
+                    type="button"
+                    class="table-action-btn"
+                    (click)="openContributorPermissionsModal(contributor)"
+                    [disabled]="!canManageContributors()"
+                    matTooltip="Edit permissions">
+                    <mat-icon>edit</mat-icon>
+                  </button>
+                  <button
+                    *ngIf="canManageContributors()"
+                    mat-icon-button
+                    type="button"
+                    color="warn"
+                    (click)="removeContributor(contributor.userId)"
+                    [disabled]="!canManageContributors()"
+                    matTooltip="Remove contributor">
+                    <mat-icon>person_remove</mat-icon>
+                  </button>
+                </div>
+              </article>
+            </div>
+
+            <table mat-table [dataSource]="projectContributors" class="collaboration-table desktop-collaboration-table" *ngIf="projectContributors.length > 0">
               <ng-container matColumnDef="userId">
                 <th mat-header-cell *matHeaderCellDef>User</th>
                 <td mat-cell *matCellDef="let contributor">{{ contributor.userId }}</td>
@@ -661,136 +681,7 @@
       </div>
     </div>
 
-    <div class="content-body" *ngIf="activeSection === 'explore'" id="explore">
-      <div class="sticky-header">
-        <div class="top-actions">
-          <!-- <button class="back-btn-desktop" (click)="openYamlPreviewModal()" aria-label="Preview YAML spec" mat-stroked-button>
-            <i class="bi bi-eye"></i>
-          </button> -->
-          <button class="back-btn-desktop" (click)="handleHome()" aria-label="Go to home" mat-stroked-button>
-            <i class="bi bi-house-door"></i>
-            Home
-          </button>
-          <span class="active-editors-badge" *ngIf="shouldShowActiveEditorsBadge()">{{ activeEditorsBadgeLabel }}</span>
-        </div>
-      </div>
-
-      <div class="scrollable-content explore-content">
-        <div class="explore-empty-card" *ngIf="!exploreZipBlob">
-          <div class="explore-empty-header">
-            <div class="explore-heading-block">
-              <span class="explore-eyebrow">Project Explorer</span>
-              <h3>{{ projectSettings.projectName || 'Untitled project' }}</h3>
-              <p class="explore-empty-body" *ngIf="projectSettings.projectDescription">{{ projectSettings.projectDescription }}</p>
-            </div>
-            <button
-              class="reload-btn"
-              type="button"
-              (click)="reloadExplore()"
-              [disabled]="isExploreSyncing"
-              aria-label="Reload project explorer"
-              mat-stroked-button>
-              <mat-icon [class.spinning]="isExploreSyncing">{{ isExploreSyncing ? 'sync' : 'refresh' }}</mat-icon>
-              <span>{{ isExploreSyncing ? 'Syncing...' : 'Reload' }}</span>
-            </button>
-          </div>
-          <div class="explore-meta-strip">
-            <span class="explore-meta-pill">{{ backendProjectId ? 'Saved project' : 'Local preview' }}</span>
-            <span class="explore-meta-pill" *ngIf="projectSettings.projectGroup">{{ projectSettings.projectGroup }}</span>
-            <span class="explore-meta-pill" *ngIf="getExploreEventCount()">{{ getExploreEventCount() }} event{{ getExploreEventCount() === 1 ? '' : 's' }}</span>
-          </div>
-          <div class="explore-status-section" *ngIf="exploreStageEvents.length || exploreRuns.length; else noExploreRuns">
-            <div class="explore-stage-table-wrapper" *ngIf="isGenerationInProgress() && getExploreStageRows().length; else exploreRunHistory">
-              <table mat-table [dataSource]="getExploreStageRows()" class="explore-stage-table">
-                <ng-container matColumnDef="stage">
-                  <th mat-header-cell *matHeaderCellDef>Stage</th>
-                  <td mat-cell *matCellDef="let event">
-                    <div class="explore-stage-name">{{ event.stepName || formatExploreStageLabel(event.stage) }}</div>
-                    <div class="explore-stage-meta">{{ event.message || 'Waiting for stage output.' }}</div>
-                  </td>
-                </ng-container>
-
-                <ng-container matColumnDef="status">
-                  <th mat-header-cell *matHeaderCellDef>Status</th>
-                  <td mat-cell *matCellDef="let event">
-                    <span class="explore-status-badge" [ngClass]="getExploreRunStatusClass(event.status)">
-                      {{ event.status || 'UNKNOWN' }}
-                    </span>
-                  </td>
-                </ng-container>
-
-                <ng-container matColumnDef="progress">
-                  <th mat-header-cell *matHeaderCellDef>Progress</th>
-                  <td mat-cell *matCellDef="let event">{{ getExploreStageProgress(event) }}</td>
-                </ng-container>
-
-                <ng-container matColumnDef="updatedAt">
-                  <th mat-header-cell *matHeaderCellDef>Updated</th>
-                  <td mat-cell *matCellDef="let event">{{ event.timestamp ? (event.timestamp | date:'medium') : 'Waiting' }}</td>
-                </ng-container>
-
-                <ng-container matColumnDef="actions">
-                  <th mat-header-cell *matHeaderCellDef>Actions</th>
-                  <td mat-cell *matCellDef="let event">
-                    <button
-                      *ngIf="canRetryExploreStage(event)"
-                      mat-icon-button
-                      type="button"
-                      aria-label="Retry generation stage"
-                      matTooltip="Queues a fresh generation run from the saved project spec."
-                      (click)="retryExploreStage(event)">
-                      <mat-icon>restart_alt</mat-icon>
-                    </button>
-                    <span *ngIf="!canRetryExploreStage(event)" class="explore-stage-action-placeholder">-</span>
-                  </td>
-                </ng-container>
-
-                <tr mat-header-row *matHeaderRowDef="exploreStageColumns"></tr>
-                <tr mat-row *matRowDef="let row; columns: exploreStageColumns;"></tr>
-              </table>
-            </div>
-            <ng-template #exploreRunHistory>
-            <div class="explore-status-list">
-              <article class="explore-status-item" *ngFor="let event of exploreStageEvents; trackBy: trackExploreStageEvent">
-                <div class="explore-status-topline">
-                  <span class="explore-status-badge" [ngClass]="getExploreRunStatusClass(event.status)">
-                    {{ event.status || 'UNKNOWN' }}
-                  </span>
-                  <span class="explore-status-run-label">{{ formatExploreStageLabel(event.stage) }}</span>
-                  <span class="explore-status-time" *ngIf="event.timestamp">{{ event.timestamp | date:'medium' }}</span>
-                </div>
-                <p class="explore-status-body" *ngIf="event.message">{{ event.message }}</p>
-              </article>
-              <article class="explore-status-item" *ngFor="let run of exploreRuns; trackBy: trackExploreRun">
-                <div class="explore-status-topline">
-                  <span class="explore-status-badge" [ngClass]="getExploreRunStatusClass(run.status)">
-                    {{ run.status || 'UNKNOWN' }}
-                  </span>
-                  <span class="explore-status-run-label">Run {{ run.runNumber || '—' }}</span>
-                  <span class="explore-status-time">{{ (run.updatedAt || run.createdAt) | date:'medium' }}</span>
-                </div>
-                <p class="explore-status-body" *ngIf="run.errorMessage">{{ run.errorMessage }}</p>
-                <p class="explore-status-body" *ngIf="!run.errorMessage">
-                  {{ run.hasZip ? 'Generated zip is available for this run.' : 'Waiting for a generated zip from this run.' }}
-                </p>
-              </article>
-            </div>
-            </ng-template>
-          </div>
-          <ng-template #noExploreRuns>
-            <p class="explore-empty-body">{{ getExploreEmptyMessage() }}</p>
-          </ng-template>
-        </div>
-        <app-node-project-view
-          *ngIf="exploreZipBlob"
-          [isOpen]="activeSection === 'explore'"
-          [isSyncing]="isExploreSyncing"
-          [zipBlob]="exploreZipBlob"
-          [zipFileName]="exploreZipFileName"
-          (reload)="reloadExplore()">
-        </app-node-project-view>
-      </div>
-    </div>
+    <app-node-project-generation-explore-section *ngIf="activeSection === 'explore'" [host]="this"></app-node-project-generation-explore-section>
   </main>
 </div>
 
@@ -815,4 +706,26 @@
   [showFooter]="false"
   (close)="closeYamlPreviewModal()">
   <app-node-project-spec [spec]="yamlPreviewContent"></app-node-project-spec>
+</app-modal>
+
+<app-modal
+  [isOpen]="showContributorPermissionsModal"
+  [title]="'Edit permissions'"
+  [size]="'medium'"
+  [showFooter]="true"
+  (close)="closeContributorPermissionsModal()">
+  <div class="mobile-contributor-permissions-modal" *ngIf="selectedContributorForMobileEdit">
+    <p class="mobile-contributor-permissions-user">{{ selectedContributorForMobileEdit.userId }}</p>
+    <div class="mobile-contributor-permissions-options">
+      <mat-checkbox [(ngModel)]="selectedContributorForMobileEdit.canEditDraft">Edit spec</mat-checkbox>
+      <mat-checkbox [(ngModel)]="selectedContributorForMobileEdit.canGenerate">Generate</mat-checkbox>
+      <mat-checkbox [(ngModel)]="selectedContributorForMobileEdit.canManageCollaboration">Manage collaboration</mat-checkbox>
+    </div>
+  </div>
+  <div modal-footer>
+    <button mat-stroked-button type="button" (click)="closeContributorPermissionsModal()">Cancel</button>
+    <button mat-raised-button type="button" (click)="saveContributorPermissionsFromModal()" [disabled]="!canManageContributors()">
+      Save
+    </button>
+  </div>
 </app-modal>

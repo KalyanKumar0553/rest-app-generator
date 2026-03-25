@@ -12,6 +12,7 @@ import { ProjectViewComponent } from '../../project-view/project-view.component'
       [isSyncing]="isSyncing"
       [zipBlob]="zipBlob"
       [zipFileName]="zipFileName"
+      [showCloseButton]="showCloseButton"
       (close)="close.emit()"
       (reload)="reload.emit()">
     </app-project-view>
@@ -22,6 +23,7 @@ export class NodeProjectViewComponent {
   @Input() isSyncing = false;
   @Input() zipBlob: Blob | null = null;
   @Input() zipFileName = 'project.zip';
+  @Input() showCloseButton = false;
   @Output() close = new EventEmitter<void>();
   @Output() reload = new EventEmitter<void>();
 }

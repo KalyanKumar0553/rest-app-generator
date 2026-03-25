@@ -151,3 +151,32 @@ VALUES ('FEATURES', 'AI Labs', 'app.feature.ai-labs.enabled', 'false');
 INSERT INTO config_property_values (property_id, value_key, value_label) VALUES
 ((SELECT id FROM config_property WHERE property_key = 'app.feature.ai-labs.enabled'), 'true', 'Enabled'),
 ((SELECT id FROM config_property WHERE property_key = 'app.feature.ai-labs.enabled'), 'false', 'Disabled');
+
+INSERT INTO config_property (category, label, property_key, current_value_key)
+VALUES ('FEATURES', 'AI Labs Usage Limit', 'app.feature.ai-labs.usage-limit', '5');
+
+INSERT INTO config_property_values (property_id, value_key, value_label) VALUES
+((SELECT id FROM config_property WHERE property_key = 'app.feature.ai-labs.usage-limit'), '-1', 'Unlimited'),
+((SELECT id FROM config_property WHERE property_key = 'app.feature.ai-labs.usage-limit'), '1', '1 use'),
+((SELECT id FROM config_property WHERE property_key = 'app.feature.ai-labs.usage-limit'), '3', '3 uses'),
+((SELECT id FROM config_property WHERE property_key = 'app.feature.ai-labs.usage-limit'), '5', '5 uses'),
+((SELECT id FROM config_property WHERE property_key = 'app.feature.ai-labs.usage-limit'), '10', '10 uses'),
+((SELECT id FROM config_property WHERE property_key = 'app.feature.ai-labs.usage-limit'), '25', '25 uses'),
+((SELECT id FROM config_property WHERE property_key = 'app.feature.ai-labs.usage-limit'), '50', '50 uses');
+
+INSERT INTO config_property (category, label, property_key, current_value_key)
+VALUES ('FEATURES', 'Plugin Modules', 'app.feature.plugin-modules.enabled', 'false');
+
+INSERT INTO config_property_values (property_id, value_key, value_label) VALUES
+((SELECT id FROM config_property WHERE property_key = 'app.feature.plugin-modules.enabled'), 'true', 'Enabled'),
+((SELECT id FROM config_property WHERE property_key = 'app.feature.plugin-modules.enabled'), 'false', 'Disabled');
+
+INSERT INTO config_property (category, label, property_key, current_value_key)
+VALUES ('FEATURES', 'Newsletter Email Retry Limit', 'app.newsletter.max-email-retry-attempts', '3');
+
+INSERT INTO config_property_values (property_id, value_key, value_label) VALUES
+((SELECT id FROM config_property WHERE property_key = 'app.newsletter.max-email-retry-attempts'), '1', '1 attempt'),
+((SELECT id FROM config_property WHERE property_key = 'app.newsletter.max-email-retry-attempts'), '3', '3 attempts'),
+((SELECT id FROM config_property WHERE property_key = 'app.newsletter.max-email-retry-attempts'), '5', '5 attempts'),
+((SELECT id FROM config_property WHERE property_key = 'app.newsletter.max-email-retry-attempts'), '10', '10 attempts'),
+((SELECT id FROM config_property WHERE property_key = 'app.newsletter.max-email-retry-attempts'), '-1', 'Unlimited');

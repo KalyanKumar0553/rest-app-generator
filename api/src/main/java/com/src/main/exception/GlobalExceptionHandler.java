@@ -107,8 +107,7 @@ public class GlobalExceptionHandler {
 			DataAccessException.class
 	})
 	public ResponseEntity<Map<String, Object>> onPersistenceException(Exception ex) {
-		//ex.printStackTrace();
-		log.error("Persistence error handled", ex);
+		log.error("Persistence error handled: type={}, message={}", ex.getClass().getSimpleName(), ex.getMessage());
 		if (ex instanceof LazyInitializationException) {
 			return error(HttpStatus.INTERNAL_SERVER_ERROR, "The requested data could not be loaded completely.");
 		}
@@ -120,8 +119,7 @@ public class GlobalExceptionHandler {
 
 	@ExceptionHandler(Exception.class)
 	public ResponseEntity<Map<String, Object>> onUnhandled(Exception ex) {
-		log.error("Unhandled exception", ex);
-		//ex.printStackTrace();
+		log.error("Unhandled exception handled: type={}, message={}", ex.getClass().getSimpleName(), ex.getMessage());
 		return error(HttpStatus.INTERNAL_SERVER_ERROR, "An unexpected error occurred.");
 	}
 

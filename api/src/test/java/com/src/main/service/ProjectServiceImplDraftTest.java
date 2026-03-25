@@ -12,6 +12,7 @@ import static org.mockito.Mockito.when;
 
 import java.time.OffsetDateTime;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -27,10 +28,13 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.src.main.dto.ProjectDraftResponseDTO;
 import com.src.main.dto.ProjectDraftUpsertRequestDTO;
+import com.src.main.dto.ProjectTabDefinitionDTO;
 import com.src.main.exception.GenericException;
 import com.src.main.model.ProjectEntity;
 import com.src.main.repository.ProjectCollaborationRequestRepository;
 import com.src.main.repository.ProjectContributorRepository;
+import com.src.main.repository.ProjectDraftVersionRepository;
+import com.src.main.repository.PluginModuleRepository;
 import com.src.main.repository.ProjectRepository;
 import com.src.main.repository.ProjectRunRepository;
 import com.src.main.testsupport.ProjectDraftFixtures;
@@ -50,6 +54,10 @@ class ProjectServiceImplDraftTest {
 	@Mock
 	private ProjectCollaborationRequestRepository projectCollaborationRequestRepository;
 	@Mock
+	private ProjectDraftVersionRepository projectDraftVersionRepository;
+	@Mock
+	private PluginModuleRepository pluginModuleRepository;
+	@Mock
 	private ProjectUserIdentityService projectUserIdentityService;
 	@Mock
 	private ProjectNameValidationService projectNameValidationService;
@@ -63,13 +71,17 @@ class ProjectServiceImplDraftTest {
 	private ProjectYamlService projectYamlService;
 	private ProjectDraftService projectDraftService;
 	private ProjectDraftSpecMapperService projectDraftSpecMapperService;
+	private ProjectTabDefinitionService projectTabDefinitionService;
 	private Validator validator;
 	private ProjectServiceImpl service;
 
 	@BeforeEach
 	void setUp() {
 		projectYamlService = new ProjectYamlService();
-		projectDraftService = new ProjectDraftService(new com.fasterxml.jackson.databind.ObjectMapper());
+		projectTabDefinitionService = org.mockito.Mockito.mock(ProjectTabDefinitionService.class);
+		org.mockito.Mockito.lenient().when(projectTabDefinitionService.getEnabledTabs("java")).thenReturn(defaultJavaTabs());
+		org.mockito.Mockito.lenient().when(projectTabDefinitionService.getEnabledTabs("node")).thenReturn(defaultNodeTabs());
+		projectDraftService = new ProjectDraftService(new com.fasterxml.jackson.databind.ObjectMapper(), projectTabDefinitionService);
 		projectDraftSpecMapperService = new ProjectDraftSpecMapperService();
 		validator = Validation.buildDefaultValidatorFactory().getValidator();
 		service = new ProjectServiceImpl(
@@ -77,6 +89,8 @@ class ProjectServiceImplDraftTest {
 				projectRunRepository,
 				projectCollaborationRequestRepository,
 				projectContributorRepository,
+				projectDraftVersionRepository,
+				pluginModuleRepository,
 				projectUserIdentityService,
 				projectYamlService,
 				projectDraftService,
@@ -163,5 +177,26 @@ class ProjectServiceImplDraftTest {
 		Set<String> keys = new LinkedHashSet<>();
 		keys.add(userId);
 		return keys;
+	}
+
+	private List<ProjectTabDefinitionDTO> defaultJavaTabs() {
+		return List.of(
+				new ProjectTabDefinitionDTO("general", "General", "public", "java-general", 10),
+				new ProjectTabDefinitionDTO("actuator", "Actuator", "device_hub", "actuator", 20),
+				new ProjectTabDefinitionDTO("entities", "Entities", "storage", "entities", 30),
+				new ProjectTabDefinitionDTO("data-objects", "Data Objects", "category", "data-objects", 40),
+				new ProjectTabDefinitionDTO("mappers", "Mappers", "shuffle", "mappers", 50),
+				new ProjectTabDefinitionDTO("modules", "Modules", "widgets", "modules", 60),
+				new ProjectTabDefinitionDTO("controllers", "Controllers", "tune", "controllers", 70));
+	}
+
+	private List<ProjectTabDefinitionDTO> defaultNodeTabs() {
+		return List.of(
+				new ProjectTabDefinitionDTO("general", "General", "public", "node-general", 10),
+				new ProjectTabDefinitionDTO("entities", "Entities", "storage", "entities", 20),
+				new ProjectTabDefinitionDTO("data-objects", "Data Objects", "category", "data-objects", 30),
+				new ProjectTabDefinitionDTO("mappers", "Mappers", "shuffle", "mappers", 40),
+				new ProjectTabDefinitionDTO("modules", "Modules", "widgets", "modules", 50),
+				new ProjectTabDefinitionDTO("controllers", "Controllers", "tune", "controllers", 60));
 	}
 }

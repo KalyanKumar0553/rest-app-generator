@@ -1,6 +1,7 @@
 package com.src.main.auth.model;
 
 import java.time.Instant;
+import java.util.UUID;
 
 import com.src.main.auth.config.AuthDbTables;
 
@@ -15,7 +16,7 @@ import jakarta.persistence.Table;
 public class InvalidatedToken {
 	@Id
 	@Column(name = "id", nullable = false, updatable = false)
-	private String id;
+	private UUID id;
 
 	@Column(name = "token", nullable = false, unique = true)
 	private String token;
@@ -29,18 +30,18 @@ public class InvalidatedToken {
 	@PrePersist
 	public void prePersist() {
 		if (id == null) {
-			id = java.util.UUID.randomUUID().toString();
+			id = UUID.randomUUID();
 		}
 		if (createdAt == null) {
 			createdAt = Instant.now();
 		}
 	}
 
-	public String getId() {
+	public UUID getId() {
 		return id;
 	}
 
-	public void setId(String id) {
+	public void setId(UUID id) {
 		this.id = id;
 	}
 

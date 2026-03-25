@@ -57,7 +57,9 @@ public class AdminPlanPriceController {
 			@RequestParam String planCode,
 			@RequestParam BillingCycle billingCycle,
 			@RequestParam String currencyCode,
+			@RequestParam(name = "couponCode", required = false) String couponCode,
+			@RequestParam(name = "tenantId", required = false) Long tenantId,
 			@RequestParam(name = "asOf", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime asOf) {
-		return ResponseEntity.ok(ApiResponseDto.ok("OK", pricingService.resolvePrice(planCode, billingCycle, currencyCode, asOf)));
+		return ResponseEntity.ok(ApiResponseDto.ok("OK", pricingService.resolvePrice(planCode, billingCycle, currencyCode, couponCode, tenantId, asOf)));
 	}
 }

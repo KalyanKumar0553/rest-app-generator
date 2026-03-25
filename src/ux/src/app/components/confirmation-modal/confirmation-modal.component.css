@@ -76,7 +76,6 @@
 .modal-footer {
   padding: 12px 20px;
   display: flex;
-  gap: 16px;
   justify-content: right;
 }
 

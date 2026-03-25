@@ -19,9 +19,9 @@
           color="primary">
           Mapped superclass
         </mat-checkbox>
-        <button class="help-btn" type="button" aria-label="Help">
-          <i class="bi bi-question-circle"></i>
-        </button>
+        <app-help-popover [ariaLabel]="'Explain Add REST endpoints'" placement="left">
+          Generates REST API endpoints for this entity. Use Configure to customize routes, DTO mappings, filters, and supported operations.
+        </app-help-popover>
       </div>
       <div class="checkbox-group rest-endpoints-row" *ngIf="isEntityOptionVisible('addRestEndpoints')">
         <mat-checkbox

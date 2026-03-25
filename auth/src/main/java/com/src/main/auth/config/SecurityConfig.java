@@ -14,6 +14,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 
 import com.src.main.auth.repository.InvalidatedTokenRepository;
+import com.src.main.auth.service.RbacService;
 import com.src.main.auth.service.AuthRouteAuthorizationService;
 import com.src.main.auth.security.JwtAuthenticationFilter;
 import com.src.main.auth.security.Oauth2AuthenticationFailureHandler;
@@ -40,6 +41,7 @@ public class SecurityConfig {
 			HttpSecurity http,
 			InvalidatedTokenRepository invalidatedTokenRepository,
 			JwtUtils jwtUtils,
+			RbacService rbacService,
 			AuthRouteAuthorizationService authRouteAuthorizationService,
 			ObjectProvider<ClientRegistrationRepository> clientRegistrationRepositoryProvider,
 			Oauth2AuthenticationSuccessHandler oauth2AuthenticationSuccessHandler,
@@ -96,7 +98,7 @@ public class SecurityConfig {
 					.failureHandler(oauth2AuthenticationFailureHandler));
 		}
 
-		http.addFilterBefore(new JwtAuthenticationFilter(jwtUtils, invalidatedTokenRepository), UsernamePasswordAuthenticationFilter.class);
+		http.addFilterBefore(new JwtAuthenticationFilter(jwtUtils, invalidatedTokenRepository, rbacService), UsernamePasswordAuthenticationFilter.class);
 		return http.build();
 	}
 

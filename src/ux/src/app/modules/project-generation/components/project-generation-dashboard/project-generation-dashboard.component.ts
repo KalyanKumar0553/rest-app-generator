@@ -2,7 +2,7 @@ import { ChangeDetectorRef, Component, OnInit, OnDestroy, ViewChild, ElementRef 
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, ActivatedRoute } from '@angular/router';
-import { Subject, Subscription, firstValueFrom, takeUntil } from 'rxjs';
+import { Subject, Subscription, firstValueFrom, takeUntil, debounceTime, distinctUntilChanged, switchMap, of, catchError } from 'rxjs';
 import { MatExpansionModule } from '@angular/material/expansion';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
@@ -18,11 +18,7 @@ import { MatTableModule } from '@angular/material/table';
 import { ConfirmationModalComponent } from '../../../../components/confirmation-modal/confirmation-modal.component';
 import { ModalButton } from '../../../../components/confirmation-modal/confirmation-modal.component';
 import { ModalComponent } from '../../../../components/modal/modal.component';
-import { EntitiesComponent } from '../entities/entities.component';
-import { DataObjectsComponent } from '../data-objects/data-objects.component';
-import { ProjectViewComponent } from '../project-view/project-view.component';
 import { ProjectSpecComponent } from '../project-spec/project-spec.component';
-import { ControllersSpecTableComponent } from '../controllers-spec-table/controllers-spec-table.component';
 import { AddProfileComponent } from '../add-profile/add-profile.component';
 import { SidenavComponent, NavItem } from '../../../../components/shared/sidenav/sidenav.component';
 import { AuthService } from '../../../../services/auth.service';
@@ -35,6 +31,7 @@ import {
   ProjectDraftPayload,
   ProjectDraftTabData,
   ProjectDraftTabPatchPayload,
+  PublishedPluginModule,
   ProjectService,
   ProjectTabDefinition
 } from '../../../../services/project.service';
@@ -45,7 +42,6 @@ import { SearchableSelectComponent, SelectOption } from '../../../../components/
 import { HttpClient } from '@angular/common/http';
 import { API_CONFIG, API_ENDPOINTS, STORAGE_KEYS } from '../../../../constants/api.constants';
 import { InfoBannerComponent } from '../../../../components/info-banner/info-banner.component';
-import { LoadingOverlayComponent } from '../../../../components/shared/loading-overlay/loading-overlay.component';
 import { finalize } from 'rxjs/operators';
 import { ValidatorService } from '../../../../services/validator.service';
 import { buildMavenNamingRules, isValidJavaProjectFolderName } from '../../validators/naming-validation';
@@ -53,19 +49,17 @@ import { APP_SETTINGS } from '../../../../settings/app-settings';
 import { LocalStorageService } from '../../../../services/local-storage.service';
 import { ProjectGenerationStateService } from '../../services/project-generation-state.service';
 import {
-  ActuatorConfigComponent,
   ACTUATOR_ENDPOINT_OPTIONS,
   DEFAULT_ACTUATOR_ENDPOINTS
 } from '../actuator-config/actuator-config.component';
 import { RestConfigComponent, RestEndpointConfig } from '../rest-config/rest-config.component';
 import { ENTITY_FIELD_TYPE_OPTIONS } from '../../constants/backend-field-types';
 import { VALIDATION_MESSAGES } from '../../constants/validation-messages';
-import { JavaGeneralTabComponent } from '../general-tab/java/java-general-tab.component';
-import { RbacModuleTabComponent } from '../rbac-module-tab/rbac-module-tab.component';
-import { AuthModuleTabComponent } from '../auth-module-tab/auth-module-tab.component';
-import { StateMachineModuleTabComponent } from '../state-machine-module-tab/state-machine-module-tab.component';
-import { SubscriptionModuleTabComponent } from '../subscription-module-tab/subscription-module-tab.component';
-import { ModulesSelectionComponent, ShippableModuleCard } from '../modules-selection/modules-selection.component';
+import {
+  PluginModuleCard,
+  PluginModuleSelection,
+  ShippableModuleCard
+} from '../modules-selection/modules-selection.component';
 
 import {
   ProjectSettings,
@@ -103,7 +97,25 @@ import { ProjectSpecMapperService } from '../../services/project-spec-mapper.ser
 import { toDatabaseCode, resolveDatabaseType, trimmed, toArtifactId, hasNumber, isValidProjectDescription } from '../../utils/project-generation.utils';
 import { ProjectDraftState } from '../../models/project-draft.models';
 import { loadProjectDraftFromStorage, saveProjectDraftToStorage } from '../../utils/project-draft-storage.utils';
-import { buildProjectDashboardNavConfig } from '../../utils/project-tab-definition.utils';
+import { resolveProjectGenerationRoute } from '../../utils/project-generation-route.utils';
+import {
+  ProjectLanguageOption,
+  SupportedProjectLanguage,
+  getMigrationTargetLanguageOptions,
+  getProjectLanguageLabel,
+  getProjectLanguageOption,
+  normalizeProjectLanguage
+} from '../../utils/project-language.utils';
+import { ProjectGenerationActuatorSectionComponent } from './project-generation-actuator-section.component';
+import { ProjectGenerationCollaborateSectionComponent } from './project-generation-collaborate-section.component';
+import { ProjectGenerationControllersSectionComponent } from './project-generation-controllers-section.component';
+import { ProjectGenerationDataObjectsSectionComponent } from './project-generation-data-objects-section.component';
+import { ProjectGenerationEntitiesSectionComponent } from './project-generation-entities-section.component';
+import { ProjectGenerationExploreSectionComponent } from './project-generation-explore-section.component';
+import { ProjectGenerationGeneralSectionComponent } from './project-generation-general-section.component';
+import { ProjectGenerationMappersSectionComponent } from './project-generation-mappers-section.component';
+import { ProjectGenerationModuleTabSectionComponent } from './project-generation-module-tab-section.component';
+import { ProjectGenerationModulesSectionComponent } from './project-generation-modules-section.component';
 
 @Component({
   selector: 'app-project-generation-dashboard',
@@ -124,24 +136,20 @@ import { buildProjectDashboardNavConfig } from '../../utils/project-tab-definiti
     MatTableModule,
     ConfirmationModalComponent,
     ModalComponent,
-    EntitiesComponent,
-    DataObjectsComponent,
-    ActuatorConfigComponent,
     AddProfileComponent,
-    ProjectViewComponent,
     ProjectSpecComponent,
-    ControllersSpecTableComponent,
-    RestConfigComponent,
-    JavaGeneralTabComponent,
-    RbacModuleTabComponent,
-    AuthModuleTabComponent,
-    StateMachineModuleTabComponent,
-    SubscriptionModuleTabComponent,
-    ModulesSelectionComponent,
     SidenavComponent,
-    InfoBannerComponent,
-    LoadingOverlayComponent,
-    SearchableSelectComponent
+    SearchableSelectComponent,
+    ProjectGenerationGeneralSectionComponent,
+    ProjectGenerationActuatorSectionComponent,
+    ProjectGenerationEntitiesSectionComponent,
+    ProjectGenerationDataObjectsSectionComponent,
+    ProjectGenerationMappersSectionComponent,
+    ProjectGenerationControllersSectionComponent,
+    ProjectGenerationModulesSectionComponent,
+    ProjectGenerationModuleTabSectionComponent,
+    ProjectGenerationCollaborateSectionComponent,
+    ProjectGenerationExploreSectionComponent
   ],
   templateUrl: './project-generation-dashboard.component.html',
   styleUrls: ['./project-generation-dashboard.component.css']
@@ -149,7 +157,6 @@ import { buildProjectDashboardNavConfig } from '../../utils/project-tab-definiti
 export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
   private static readonly projectStorageResetKey = 'project_storage_reset_v20260314';
   private static readonly shippableModuleKeys = ['rbac', 'auth', 'state-machine', 'subscription'];
-  private static readonly hiddenModuleTabKeys = new Set(['shipping']);
   private static readonly shippableModuleCards: ShippableModuleCard[] = [
     {
       key: 'rbac',
@@ -195,6 +202,8 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
   enums: any[] = [];
   mappers: any[] = [];
   moduleConfigs: Record<string, any> = {};
+  selectedPlugins: PluginModuleSelection[] = [];
+  publishedPluginModules: PluginModuleCard[] = [];
   readonly shippableModuleCards = ProjectGenerationDashboardComponent.shippableModuleCards;
   dataObjectsDefaultTab: 'dataObjects' | 'enums' | 'mappers' = 'dataObjects';
   dataObjectsActiveTab: 'dataObjects' | 'enums' | 'mappers' = 'dataObjects';
@@ -210,7 +219,7 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
   private pendingDatabaseSelection: string | null = null;
   private databaseSelectionBeforeConfirmation: string | null = null;
   private hasCheckedRecentProjectPrompt = false;
-  private recentProjectToResume: { id: number } | null = null;
+  private recentProjectToResume: { id: string } | null = null;
   isExploreSyncing = false;
   isGeneratingFromDtoSave = false;
   backendProjectId: string | null = null;
@@ -224,10 +233,13 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
   contributorUserId = '';
   isContributorSaving = false;
   showAddContributorModal = false;
+  showContributorPermissionsModal = false;
   contributorSearchResults: SelectOption[] = [];
   isContributorSearching = false;
+  private contributorSearchInput$ = new Subject<string>();
   selectedContributorItems: SelectOption[] = [];
   isAddingContributors = false;
+  selectedContributorForMobileEdit: ProjectContributor | null = null;
   private projectEventsSource: WebSocket | null = null;
   private pendingGenerationYamlSpec: string | null = null;
   private generationGuestSubscription: Subscription | null = null;
@@ -235,6 +247,8 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
   private collaborationSessionId: string | null = null;
   private changeTrackingIntervalId: number | null = null;
   private savedProjectStateSnapshot = '';
+  private requestedSectionFromRoute = 'general';
+  private requestedExploreViewFromRoute: 'runs' | 'migrate' = 'runs';
   private dependenciesLoadPromise: Promise<void> | null = null;
   private loadedDraftSections = new Set<string>();
   private draftSectionLoadPromises = new Map<string, Promise<void>>();
@@ -244,6 +258,11 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
   exploreZipFileName = 'project.zip';
   exploreRuns: ProjectRunSummary[] = [];
   exploreStageEvents: ProjectGenerationStageEvent[] = [];
+  isExplorePreviewOpen = false;
+  activeExplorePreviewRunId = '';
+  exploreView: 'runs' | 'migrate' = 'runs';
+  selectedMigrationLanguage: SupportedProjectLanguage | null = null;
+  isMigratingProject = false;
   collaborationState: ProjectCollaborationState = {
     activeEditors: 0,
     editors: [],
@@ -300,6 +319,8 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
   dbGenerationOptions = DB_GENERATION_OPTIONS;
   javaVersionOptions = JAVA_VERSION_OPTIONS;
   deploymentOptions = DEPLOYMENT_OPTIONS;
+  private visibleNavItemsCache: NavItem[] = [];
+  private visibleNavItemsCacheKey = '';
 
   constructor(
     private router: Router,
@@ -317,46 +338,53 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
   ) {}
 
   get visibleNavItems(): NavItem[] {
-    const navItems = [...this.baseNavItems].filter((item) => this.isLoggedIn || item.value !== 'modules');
-    if (this.developerPreferences.enableActuator) {
-      navItems.splice(1, 0, this.actuatorNavItem);
-    }
-    if (this.dataObjects.length > 0) {
-      const dataObjectsIndex = navItems.findIndex((item) => item.value === 'data-objects');
-      const mapperInsertIndex = dataObjectsIndex >= 0 ? dataObjectsIndex + 1 : navItems.length - 1;
-      navItems.splice(mapperInsertIndex, 0, this.mappersNavItem);
-    }
-
-    const modulesIndex = navItems.findIndex((item) => item.value === 'modules');
-    if (this.moduleNavItems.length > 0 && modulesIndex >= 0) {
-      navItems.splice(modulesIndex + 1, 0, ...this.moduleNavItems);
-    }
-
-    if (this.developerPreferences.configureApi) {
-      const modulesEndIndex = navItems.findIndex((item) => item.value === 'modules');
-      const insertIndex = modulesEndIndex >= 0 ? modulesEndIndex + this.moduleNavItems.length + 1 : navItems.length - 1;
-      navItems.splice(insertIndex, 0, this.controllersNavItem);
+    const cacheKey = this.buildVisibleNavItemsCacheKey();
+    if (cacheKey === this.visibleNavItemsCacheKey) {
+      return this.visibleNavItemsCache;
     }
 
     const shouldShowExplore = !this.isGeneratingFromDtoSave && !this.isExploreSyncing && this.canAccessExplore();
-    if (!shouldShowExplore) {
-      const exploreIndex = navItems.findIndex((item) => item.value === 'explore');
-      if (exploreIndex >= 0) {
-        navItems.splice(exploreIndex, 1);
-      }
-    }
-    if (!this.backendProjectId) {
-      const collaborateIndex = navItems.findIndex((item) => item.value === 'collaborate');
-      if (collaborateIndex >= 0) {
-        navItems.splice(collaborateIndex, 1);
-      }
-    }
-
     const isNoneDatabase = toDatabaseCode(this.databaseSettings.database) === 'NONE';
-    if (!isNoneDatabase) {
-      return navItems;
-    }
-    return navItems.filter(item => item.value !== 'entities');
+    this.visibleNavItemsCache = [...this.tabDefinitions]
+      .sort((left, right) => {
+        if (left.order === right.order) {
+          return left.key.localeCompare(right.key);
+        }
+        return left.order - right.order;
+      })
+      .filter((tab) => this.isLoggedIn || tab.key !== 'modules')
+      .filter((tab) => shouldShowExplore || tab.key !== 'explore')
+      .filter((tab) => (this.backendProjectId && this.canManageContributors()) || tab.key !== 'collaborate')
+      .filter((tab) => this.developerPreferences.enableActuator || tab.key !== 'actuator')
+      .filter((tab) => this.developerPreferences.configureApi || tab.key !== 'controllers')
+      .filter((tab) => this.dataObjects.length > 0 || tab.key !== 'mappers')
+      .filter((tab) => !isNoneDatabase || tab.key !== 'entities')
+      .map((tab) => ({
+        icon: tab.icon,
+        label: tab.label,
+        value: tab.key
+      }));
+    this.visibleNavItemsCacheKey = cacheKey;
+    return this.visibleNavItemsCache;
+  }
+
+  private buildVisibleNavItemsCacheKey(): string {
+    const tabSignature = this.tabDefinitions
+      .map((tab) => `${tab.key}:${tab.label}:${tab.icon}:${tab.order}`)
+      .join('|');
+    return [
+      tabSignature,
+      this.isLoggedIn ? '1' : '0',
+      this.isGeneratingFromDtoSave ? '1' : '0',
+      this.isExploreSyncing ? '1' : '0',
+      this.canAccessExplore() ? '1' : '0',
+      trimmed(this.backendProjectId),
+      this.projectCanManageContributors ? '1' : '0',
+      this.developerPreferences.enableActuator ? '1' : '0',
+      this.developerPreferences.configureApi ? '1' : '0',
+      String(this.dataObjects.length),
+      toDatabaseCode(this.databaseSettings.database)
+    ].join('~');
   }
 
   isEntitiesTabVisible(): boolean {
@@ -381,20 +409,12 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
     if (!Array.isArray(tabDetails) || !tabDetails.length) {
       return;
     }
-    const sanitizedTabDetails = tabDetails.filter((tab) => !ProjectGenerationDashboardComponent.hiddenModuleTabKeys.has(tab.key));
-    this.tabDefinitions = sanitizedTabDetails;
-    const navConfig = buildProjectDashboardNavConfig(
-      sanitizedTabDetails,
-      BASE_NAV_ITEMS,
-      CONTROLLERS_NAV_ITEM,
-      MAPPERS_NAV_ITEM,
-      ACTUATOR_NAV_ITEM
-    );
-    this.baseNavItems = navConfig.baseNavItems;
-    this.moduleNavItems = navConfig.moduleNavItems;
-    this.actuatorNavItem = navConfig.actuatorNavItem || ACTUATOR_NAV_ITEM;
-    this.controllersNavItem = navConfig.controllersNavItem;
-    this.mappersNavItem = navConfig.mappersNavItem;
+    this.tabDefinitions = [...tabDetails].sort((left, right) => {
+      if (left.order === right.order) {
+        return left.key.localeCompare(right.key);
+      }
+      return left.order - right.order;
+    });
     if (!this.isSectionAvailable(this.activeSection)) {
       this.activeSection = 'general';
     }
@@ -404,13 +424,19 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
     this.clearLegacyProjectStorageIfRequired();
     this.isLoggedIn = this.authService.isLoggedIn();
     const initialProjectId = trimmed(this.route.snapshot.queryParamMap.get('projectId'));
-    if (this.isLoggedIn && !initialProjectId) {
+    if (!initialProjectId) {
       this.loadTabDefinitions(this.projectSettings.language);
+    }
+    if (this.isLoggedIn && !initialProjectId) {
+      void this.loadPublishedPluginModules(this.projectSettings.language);
     }
 
     this.route.queryParams
       .pipe(takeUntil(this.destroy$))
       .subscribe(params => {
+        this.requestedSectionFromRoute = this.resolveRequestedSection(params['section']);
+        this.requestedExploreViewFromRoute = this.resolveRequestedExploreView(params['exploreView']);
+        this.exploreView = this.requestedExploreViewFromRoute;
         if (params['projectId']) {
           this.backendProjectId = String(params['projectId']).trim();
           this.loadProject(this.backendProjectId);
@@ -421,6 +447,38 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
           this.hasCheckedRecentProjectPrompt = true;
           this.promptForRecentProjectIfAvailable();
         }
+      });
+
+    this.contributorSearchInput$
+      .pipe(
+        debounceTime(500),
+        distinctUntilChanged(),
+        switchMap((query) => {
+          const normalizedQuery = query.trim();
+          if (normalizedQuery.length < 2) {
+            this.contributorSearchResults = [];
+            this.isContributorSearching = false;
+            return of([] as UserSearchResult[]);
+          }
+          this.isContributorSearching = true;
+          return this.userService.searchUsers(normalizedQuery).pipe(
+            catchError(() => {
+              this.contributorSearchResults = [];
+              this.isContributorSearching = false;
+              return of([] as UserSearchResult[]);
+            })
+          );
+        }),
+        takeUntil(this.destroy$)
+      )
+      .subscribe((results: UserSearchResult[]) => {
+        this.contributorSearchResults = results.map((user) => ({
+          id: user.userId,
+          label: user.name || user.userId,
+          subtitle: user.email,
+          avatarUrl: user.avatarUrl
+        }));
+        this.isContributorSearching = false;
       });
 
     this.trackChanges();
@@ -472,6 +530,8 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
       enums: this.enums,
       mappers: this.mappers,
       moduleConfigs: this.moduleConfigs
+      ,
+      selectedPlugins: this.selectedPlugins
     };
   }
 
@@ -528,7 +588,8 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
         return {
           dependencies: this.dependencies,
           selectedDependencies: this.selectedDependencies,
-          moduleConfigs: this.moduleConfigs
+          moduleConfigs: this.moduleConfigs,
+          selectedPlugins: this.selectedPlugins
         };
       case 'controllers':
         return {
@@ -562,7 +623,8 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
 
       const [projectDetails] = await Promise.all([
         firstValueFrom(this.projectService.getProject(projectId)),
-        this.loadDependencies()
+        this.loadDependencies(),
+        this.loadPublishedPluginModules(this.projectSettings.language)
       ]);
       this.resetLazyLoadedDraftSections();
       this.resetDraftBackedState();
@@ -574,13 +636,19 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
       this.collaborationRequests = projectDetails.collaborationRequests || [];
       this.draftVersion = Number(projectDetails.draftVersion || 1);
       this.tabDefinitions = Array.isArray(projectDetails.tabDetails) ? projectDetails.tabDetails : this.tabDefinitions;
+      this.projectSettings.language = normalizeProjectLanguage(projectDetails.generator || this.projectSettings.language);
       this.applyTabDefinitions(this.tabDefinitions);
+      this.selectDefaultMigrationLanguage();
       this.hydrateExploreStateFromProjectDetails(projectDetails);
       this.connectProjectEvents(this.backendProjectId);
       this.initializeProjectCollaboration(this.backendProjectId);
+      void this.loadPublishedPluginModules(this.projectSettings.language);
       this.projectSettings.projectName = projectDetails.name || this.projectSettings.projectName;
       this.projectSettings.projectDescription = projectDetails.description || this.projectSettings.projectDescription;
-      const initialSection = this.isSectionAvailable(this.activeSection) ? this.activeSection : 'general';
+      const requestedSection = this.requestedSectionFromRoute;
+      const initialSection = this.isSectionAvailable(requestedSection)
+        ? requestedSection
+        : (this.isSectionAvailable(this.activeSection) ? this.activeSection : 'general');
       this.activeSection = initialSection;
       await this.ensureSectionDataLoaded(initialSection);
       this.toastService.success('Project loaded successfully');
@@ -614,6 +682,14 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
   }
 
   private async saveProjectDraftToBackend(showToast: boolean): Promise<string | null> {
+    return this.persistProjectDraftToBackend(showToast, false);
+  }
+
+  private async saveEntireProjectDraftToBackend(showToast: boolean): Promise<string | null> {
+    return this.persistProjectDraftToBackend(showToast, true);
+  }
+
+  private async persistProjectDraftToBackend(showToast: boolean, forceFullSave: boolean): Promise<string | null> {
     if (!this.isLoggedIn) {
       this.saveProjectLocally();
       return this.projectId;
@@ -623,14 +699,15 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
     const existingProjectId = trimmed(this.backendProjectId);
     try {
       if (existingProjectId) {
-        if (!this.isDraftBackedSection(this.activeSection)) {
+        if (!forceFullSave && !this.isDraftBackedSection(this.activeSection)) {
           if (showToast) {
             this.toastService.success('Project saved successfully');
           }
           return existingProjectId;
         }
-        const patchPayload = this.buildDraftTabPatchPayload(this.activeSection);
-        const response = await firstValueFrom(this.projectService.patchProjectDraftTab(existingProjectId, patchPayload));
+        const response = forceFullSave
+          ? await firstValueFrom(this.projectService.updateProjectDraft(existingProjectId, payload))
+          : await firstValueFrom(this.projectService.patchProjectDraftTab(existingProjectId, this.buildDraftTabPatchPayload(this.activeSection)));
         this.draftVersion = Number(response?.draftVersion || (this.draftVersion + 1));
         this.recordCollaborationAction(existingProjectId, this.activeSection, 'DRAFT_SAVED', 'Saved latest project spec changes.');
         if (showToast) {
@@ -771,26 +848,10 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
     if (!query || query.length < 2) {
       this.contributorSearchResults = [];
       this.isContributorSearching = false;
+      this.contributorSearchInput$.next('');
       return;
     }
-    this.isContributorSearching = true;
-    this.userService.searchUsers(query)
-      .pipe(takeUntil(this.destroy$))
-      .subscribe({
-        next: (results: UserSearchResult[]) => {
-          this.contributorSearchResults = results.map((user) => ({
-            id: user.userId,
-            label: user.name || user.userId,
-            subtitle: user.email,
-            avatarUrl: user.avatarUrl
-          }));
-          this.isContributorSearching = false;
-        },
-        error: () => {
-          this.contributorSearchResults = [];
-          this.isContributorSearching = false;
-        }
-      });
+    this.contributorSearchInput$.next(query);
   }
 
   get existingContributorIds(): string[] {
@@ -914,10 +975,33 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
     };
     try {
       this.projectContributors = await firstValueFrom(this.projectService.updateProjectContributorPermissions(projectId, contributorId, permissions));
+      this.syncSelectedContributorForMobileEdit(contributorId);
       this.toastService.success('Contributor permissions updated.');
     } catch (error: any) {
       this.toastService.error(error?.message || 'Failed to update contributor permissions.');
     }
+  }
+
+  get isMobileViewport(): boolean {
+    return typeof window !== 'undefined' && window.innerWidth <= 768;
+  }
+
+  openContributorPermissionsModal(contributor: ProjectContributor): void {
+    this.selectedContributorForMobileEdit = { ...contributor };
+    this.showContributorPermissionsModal = true;
+  }
+
+  closeContributorPermissionsModal(): void {
+    this.showContributorPermissionsModal = false;
+    this.selectedContributorForMobileEdit = null;
+  }
+
+  async saveContributorPermissionsFromModal(): Promise<void> {
+    if (!this.selectedContributorForMobileEdit) {
+      return;
+    }
+    await this.updateContributorPermissions(this.selectedContributorForMobileEdit);
+    this.closeContributorPermissionsModal();
   }
 
   formatPermissionsLabel(permissions?: ProjectContributorPermissions): string {
@@ -930,6 +1014,19 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
       permissions.canManageCollaboration ? 'Manage collaboration' : ''
     ].filter(Boolean);
     return actions.length ? actions.join(', ') : 'No actions';
+  }
+
+  private syncSelectedContributorForMobileEdit(contributorId: string): void {
+    if (!this.selectedContributorForMobileEdit || !contributorId) {
+      return;
+    }
+    if (trimmed(this.selectedContributorForMobileEdit.id) !== contributorId) {
+      return;
+    }
+    const updatedContributor = this.projectContributors.find((item) => trimmed(item.id) === contributorId);
+    if (updatedContributor) {
+      this.selectedContributorForMobileEdit = { ...updatedContributor };
+    }
   }
 
   toggleSidebar(): void {
@@ -1007,6 +1104,8 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
     if (this.isExploreSyncing) {
       return;
     }
+    this.exploreView = 'runs';
+    this.selectDefaultMigrationLanguage();
 
     if (!this.validateProjectNaming()) {
       this.activeSection = 'general';
@@ -1158,6 +1257,8 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
           this.exploreZipBlob = new Blob([zipData], { type: 'application/zip' });
           this.exploreZipFileName = `${toArtifactId(this.projectSettings.projectName || 'project')}.zip`;
           this.cacheZipFromArrayBuffer(yamlSpec, zipData, this.exploreZipFileName);
+          this.isExplorePreviewOpen = false;
+          this.activeExplorePreviewRunId = '';
           this.activeSection = 'explore';
           this.toastService.success('Project generated successfully.');
           this.generationGuestSubscription = null;
@@ -1274,6 +1375,7 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
             ...(tabData['moduleConfigs'] as Record<string, any>)
           };
         }
+        this.applySelectedPluginsDraftData(tabData);
         return;
       case 'actuator': {
         const actuator = (tabData['actuator'] as Record<string, any> | undefined) || {};
@@ -1341,6 +1443,52 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
       : this.selectedDependencies.join(', ');
   }
 
+  private applySelectedPluginsDraftData(tabData: Record<string, any>): void {
+    const selectedPlugins = tabData['selectedPlugins'];
+    this.selectedPlugins = Array.isArray(selectedPlugins)
+      ? selectedPlugins
+          .filter((plugin): plugin is Record<string, any> => !!plugin && typeof plugin === 'object')
+          .map((plugin) => ({
+            pluginId: String(plugin['pluginId'] ?? ''),
+            versionId: String(plugin['versionId'] ?? ''),
+            code: String(plugin['code'] ?? ''),
+            name: String(plugin['name'] ?? ''),
+            versionCode: String(plugin['versionCode'] ?? '')
+          }))
+          .filter((plugin) => plugin.pluginId.length > 0 && plugin.versionId.length > 0)
+      : [];
+  }
+
+  onSelectedPluginsChange(selectedPlugins: PluginModuleSelection[]): void {
+    this.selectedPlugins = Array.isArray(selectedPlugins) ? [...selectedPlugins] : [];
+  }
+
+  private async loadPublishedPluginModules(generator?: string): Promise<void> {
+    if (!this.isLoggedIn) {
+      this.publishedPluginModules = [];
+      return;
+    }
+    try {
+      const modules = await firstValueFrom(this.projectService.getPublishedPluginModules(generator));
+      this.publishedPluginModules = (Array.isArray(modules) ? modules : []).map((module: PublishedPluginModule) => ({
+        id: module.id,
+        code: module.code,
+        name: module.name,
+        description: module.description,
+        category: module.category,
+        enabled: module.enabled,
+        currentPublishedVersionId: module.currentPublishedVersionId,
+        versions: (module.versions || []).map((version) => ({
+          id: version.id,
+          versionCode: version.versionCode,
+          published: version.published
+        }))
+      }));
+    } catch {
+      this.publishedPluginModules = [];
+    }
+  }
+
   private resetLazyLoadedDraftSections(): void {
     this.loadedDraftSections.clear();
     this.draftSectionLoadPromises.clear();
@@ -1353,6 +1501,7 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
     this.enums = [];
     this.mappers = [];
     this.moduleConfigs = {};
+    this.selectedPlugins = [];
     this.dependencies = '';
     this.selectedDependencies = [];
     this.controllersConfig = { ...DEFAULT_CONTROLLERS_CONFIG };
@@ -1515,6 +1664,8 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
       this.exploreZipBlob = new Blob([bytes.buffer as ArrayBuffer], { type: 'application/zip' });
       this.exploreZipFileName = fileName || `${toArtifactId(this.projectSettings.projectName || 'project')}.zip`;
       this.cacheZipFromBase64(yamlSpec, base64Payload, this.exploreZipFileName);
+      this.activeExplorePreviewRunId = '';
+      this.isExplorePreviewOpen = false;
       this.activeSection = 'explore';
     } catch {
       this.toastService.error('Failed to download generated zip file.');
@@ -1622,7 +1773,7 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
     return sortedRuns[0] ?? null;
   }
 
-  private async downloadAndPrepareExploreZip(runId: string, projectId: string, yamlSpec: string): Promise<void> {
+  private async downloadAndPrepareExploreZip(runId: string, projectId: string, yamlSpec?: string): Promise<void> {
     const downloadUrl = `${API_CONFIG.BASE_URL}${API_ENDPOINTS.RUN.DOWNLOAD(runId)}`;
     const zipData = await firstValueFrom(this.http.get(downloadUrl, { responseType: 'arraybuffer' }));
     if (!zipData) {
@@ -1631,7 +1782,11 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
 
     this.exploreZipBlob = new Blob([zipData], { type: 'application/zip' });
     this.exploreZipFileName = `${toArtifactId(this.projectSettings.projectName || projectId)}.zip`;
-    this.cacheZipFromArrayBuffer(yamlSpec, zipData, this.exploreZipFileName);
+    this.activeExplorePreviewRunId = '';
+    this.isExplorePreviewOpen = false;
+    if (yamlSpec) {
+      this.cacheZipFromArrayBuffer(yamlSpec, zipData, this.exploreZipFileName);
+    }
   }
 
   private async refreshExploreRunHistoryAndLoadZip(projectId: string, yamlSpec: string): Promise<void> {
@@ -1687,7 +1842,166 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
   }
 
   reloadExplore(): void {
+    this.closeExplorePreview();
     this.handleExploreTab(this.activeSection);
+  }
+
+  canOpenExploreRunPreview(run: ProjectRunSummary | null | undefined): boolean {
+    return Boolean(run?.hasZip && this.getRunIdentifier(run));
+  }
+
+  async openExploreRunPreview(run?: ProjectRunSummary | null): Promise<void> {
+    const runId = this.getRunIdentifier(run);
+    if (!runId) {
+      if (this.exploreZipBlob) {
+        this.activeExplorePreviewRunId = '';
+        this.isExplorePreviewOpen = true;
+      }
+      return;
+    }
+
+    if (this.isExploreSyncing) {
+      return;
+    }
+
+    if (this.activeExplorePreviewRunId === runId && this.exploreZipBlob) {
+      this.isExplorePreviewOpen = true;
+      return;
+    }
+
+    const projectId = trimmed(run?.projectId || this.backendProjectId);
+    if (!projectId) {
+      this.toastService.error('Failed to load project preview for the selected run.');
+      return;
+    }
+
+    this.isExploreSyncing = true;
+    try {
+      await this.downloadAndPrepareExploreZip(runId, projectId);
+      this.activeExplorePreviewRunId = runId;
+      this.isExplorePreviewOpen = true;
+    } catch {
+      this.toastService.error('Failed to load project preview for the selected run.');
+    } finally {
+      this.isExploreSyncing = false;
+    }
+  }
+
+  closeExplorePreview(): void {
+    this.isExplorePreviewOpen = false;
+  }
+
+  isExploreRunsView(): boolean {
+    return this.exploreView === 'runs';
+  }
+
+  isExploreMigrationView(): boolean {
+    return this.exploreView === 'migrate';
+  }
+
+  showExploreRunsView(): void {
+    this.exploreView = 'runs';
+  }
+
+  showExploreMigrationView(): void {
+    this.closeExplorePreview();
+    this.selectDefaultMigrationLanguage();
+    this.exploreView = 'migrate';
+  }
+
+  getCurrentProjectLanguageLabel(): string {
+    return getProjectLanguageLabel(this.projectSettings.language);
+  }
+
+  getCurrentProjectLanguageRuntime(): string {
+    return getProjectLanguageOption(this.projectSettings.language).runtime;
+  }
+
+  getMigrationTargetLanguageOptions(): ProjectLanguageOption[] {
+    return getMigrationTargetLanguageOptions(this.projectSettings.language);
+  }
+
+  selectMigrationLanguage(language: SupportedProjectLanguage): void {
+    this.selectedMigrationLanguage = language;
+  }
+
+  canRunProjectMigration(): boolean {
+    return this.isLoggedIn;
+  }
+
+  canSubmitProjectMigration(): boolean {
+    const selectedLanguage = this.selectedMigrationLanguage;
+    return Boolean(
+      this.canRunProjectMigration()
+      && selectedLanguage
+      && selectedLanguage !== normalizeProjectLanguage(this.projectSettings.language)
+      && !this.isMigratingProject
+    );
+  }
+
+  async migrateProjectLanguage(): Promise<void> {
+    if (this.isMigratingProject) {
+      return;
+    }
+
+    if (!this.isLoggedIn) {
+      this.toastService.error('Sign in and save the project before running a language migration.');
+      return;
+    }
+
+    if (!this.validateProjectNaming()) {
+      this.activeSection = 'general';
+      return;
+    }
+
+    const targetLanguage = this.selectedMigrationLanguage;
+    if (!targetLanguage) {
+      this.toastService.error('Select a target language to migrate the project.');
+      return;
+    }
+
+    const currentLanguage = normalizeProjectLanguage(this.projectSettings.language);
+    if (targetLanguage === currentLanguage) {
+      this.toastService.error('Choose a different target language to start migration.');
+      return;
+    }
+
+    const previousLanguage = currentLanguage;
+    this.isMigratingProject = true;
+    try {
+      await this.ensureAllDraftSectionsLoaded();
+      this.projectSettings.language = targetLanguage;
+      this.loadTabDefinitions(targetLanguage, this.selectedDependencies);
+      await this.loadPublishedPluginModules(targetLanguage);
+      this.clearLocalZipDataBeforeGeneration();
+      const projectId = await this.saveEntireProjectDraftToBackend(false);
+      if (!projectId) {
+        throw new Error('Project id is missing after saving the migrated draft.');
+      }
+
+      await firstValueFrom(this.projectService.generateProject(projectId));
+      this.connectProjectEvents(projectId);
+      this.refreshExploreRunHistory();
+      this.activeSection = 'explore';
+      this.exploreView = 'runs';
+      this.toastService.success(`Queued a fresh ${getProjectLanguageLabel(targetLanguage)} migration run.`);
+      await this.router.navigate([resolveProjectGenerationRoute(targetLanguage)], {
+        queryParams: {
+          projectId,
+          section: 'explore',
+          exploreView: 'runs'
+        }
+      });
+    } catch (error) {
+      this.projectSettings.language = previousLanguage;
+      this.loadTabDefinitions(previousLanguage, this.selectedDependencies);
+      await this.loadPublishedPluginModules(previousLanguage);
+      this.selectDefaultMigrationLanguage();
+      this.toastService.error(this.getProjectSaveErrorMessage(error));
+      console.error('Error migrating project language:', error);
+    } finally {
+      this.isMigratingProject = false;
+    }
   }
 
   getExploreEmptyMessage(): string {
@@ -1765,6 +2079,8 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
       const bytes = this.base64ToUint8Array(cachedEntry.zipBase64);
       this.exploreZipBlob = new Blob([bytes.buffer as ArrayBuffer], { type: 'application/zip' });
       this.exploreZipFileName = cachedEntry.fileName || `${toArtifactId(this.projectSettings.projectName || 'project')}.zip`;
+      this.activeExplorePreviewRunId = '';
+      this.isExplorePreviewOpen = false;
       if (switchToExplore) {
         this.activeSection = 'explore';
       }
@@ -1832,6 +2148,8 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
     if (!projectDetails.latestRunHasZip || !projectDetails.latestRunZipBase64) {
       this.exploreZipBlob = null;
       this.exploreZipFileName = projectDetails.latestRunZipFileName || 'project.zip';
+      this.activeExplorePreviewRunId = '';
+      this.isExplorePreviewOpen = false;
       return;
     }
 
@@ -1865,6 +2183,8 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
     this.exploreZipFileName = 'project.zip';
     this.exploreRuns = [];
     this.exploreStageEvents = [];
+    this.activeExplorePreviewRunId = '';
+    this.isExplorePreviewOpen = false;
     if (this.activeSection === 'explore') {
       this.activeSection = 'general';
     }
@@ -1943,13 +2263,13 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
       .join(' ');
   }
 
-  trackExploreRun(_index: number, run: ProjectRunSummary): string {
+  trackExploreRun = (_index: number, run: ProjectRunSummary): string => {
     return this.getRunIdentifier(run) || `${run.runNumber ?? _index}`;
-  }
+  };
 
-  trackExploreStageEvent(_index: number, event: ProjectGenerationStageEvent): string {
+  trackExploreStageEvent = (_index: number, event: ProjectGenerationStageEvent): string => {
     return event.stage;
-  }
+  };
 
   private base64ToUint8Array(base64Payload: string): Uint8Array {
     const binary = window.atob(base64Payload);
@@ -2007,8 +2327,13 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
       return;
     }
 
-    this.projectId = String(recentProjectId);
-    this.loadProject(String(recentProjectId));
+    const savedProject = this.loadProjectFromStorage(String(recentProjectId));
+    if (!savedProject) {
+      this.toastService.error('Saved project draft was not found.');
+      return;
+    }
+
+    this.resumeProjectFromLocalDraft(savedProject, String(recentProjectId));
   }
 
   cancelRecentProjectResume(): void {
@@ -3157,6 +3482,27 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
     return valid && (!projectDescription || isValidProjectDescription(projectDescription)) && this.isDraftBackedSection(this.activeSection);
   }
 
+  private resolveRequestedSection(section: string | null | undefined): string {
+    const normalized = trimmed(section).toLowerCase();
+    return normalized || 'general';
+  }
+
+  private resolveRequestedExploreView(view: string | null | undefined): 'runs' | 'migrate' {
+    return trimmed(view).toLowerCase() === 'migrate' ? 'migrate' : 'runs';
+  }
+
+  private selectDefaultMigrationLanguage(): void {
+    const availableTargets = this.getMigrationTargetLanguageOptions();
+    if (!availableTargets.length) {
+      this.selectedMigrationLanguage = null;
+      return;
+    }
+    if (this.selectedMigrationLanguage && availableTargets.some((option) => option.value === this.selectedMigrationLanguage)) {
+      return;
+    }
+    this.selectedMigrationLanguage = availableTargets[0].value;
+  }
+
   private isDraftBackedSection(section: string): boolean {
     return section !== 'explore' && section !== 'collaborate';
   }
@@ -3191,8 +3537,61 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
       return;
     }
 
-    this.recentProjectToResume = { id: Number(latestProject.id) };
+    this.recentProjectToResume = { id: String(latestProject.id) };
     this.showRecentProjectPrompt = true;
+  }
+
+  private resumeProjectFromLocalDraft(savedProject: any, localProjectId: string): void {
+    this.resetLazyLoadedDraftSections();
+    this.resetDraftBackedState();
+    this.closeProjectEventsSource();
+    this.backendProjectId = null;
+    this.projectOwnerId = null;
+    this.projectCanManageContributors = false;
+    this.projectContributors = [];
+    this.collaborationInviteToken = null;
+    this.collaborationRequests = [];
+    this.projectId = localProjectId;
+    this.draftVersion = 1;
+
+    this.projectSettings = {
+      ...this.projectSettings,
+      ...(savedProject?.settings || {})
+    };
+    this.databaseSettings = {
+      ...this.databaseSettings,
+      ...(savedProject?.database || {})
+    };
+    this.databaseSettings.dbType = resolveDatabaseType(this.databaseSettings.dbType, this.databaseSettings.database);
+    this.databaseSettings.database = toDatabaseCode(this.databaseSettings.database);
+    this.ensureDatabaseSelectionForType();
+    this.previousDatabaseSelection = this.databaseSettings.database;
+    this.previousDatabaseType = this.databaseSettings.dbType;
+    this.developerPreferences = {
+      ...this.developerPreferences,
+      ...(savedProject?.preferences || {}),
+      profiles: Array.isArray(savedProject?.preferences?.profiles) ? savedProject.preferences.profiles : []
+    };
+    this.dependencies = typeof savedProject?.dependencies === 'string' ? savedProject.dependencies : '';
+    this.selectedDependencies = Array.isArray(savedProject?.selectedDependencies) ? savedProject.selectedDependencies : [];
+    this.entities = Array.isArray(savedProject?.entities) ? savedProject.entities : [];
+    this.dataObjects = Array.isArray(savedProject?.dataObjects) ? savedProject.dataObjects : [];
+    this.relations = Array.isArray(savedProject?.relations) ? savedProject.relations : [];
+    this.enums = Array.isArray(savedProject?.enums) ? savedProject.enums : [];
+    this.mappers = Array.isArray(savedProject?.mappers) ? savedProject.mappers : [];
+    this.moduleConfigs = savedProject?.moduleConfigs && typeof savedProject.moduleConfigs === 'object'
+      ? savedProject.moduleConfigs
+      : {};
+    this.controllersConfigEnabled = savedProject?.controllers?.enabled === undefined
+      ? true
+      : Boolean(savedProject.controllers.enabled);
+    this.controllersConfig = this.specMapper.parseControllersConfig(savedProject?.controllers?.config);
+    this.syncActuatorConfigurationsWithProfiles();
+    this.syncActuatorStateStore();
+    this.loadTabDefinitions(this.projectSettings.language, this.selectedDependencies);
+    this.activeSection = 'general';
+    this.refreshSavedProjectStateSnapshot();
+    this.toastService.success('Project loaded successfully');
   }
 
   private getSavedProjects(): any[] {

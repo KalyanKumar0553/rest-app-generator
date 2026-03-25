@@ -2,6 +2,7 @@
 
 import java.util.List;
 
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -20,7 +21,7 @@ import com.src.main.service.ConfigMetadataService;
 import lombok.AllArgsConstructor;
 
 @RestController
-@RequestMapping("/api/config")
+@RequestMapping(value = "/api/config", produces = MediaType.APPLICATION_JSON_VALUE)
 @AllArgsConstructor
 public class ConfigMetadataController {
 
@@ -42,13 +43,13 @@ public class ConfigMetadataController {
 	}
 
 	@GetMapping("/features")
-	@PreAuthorize("hasRole('SUPER_ADMIN')")
+	@PreAuthorize("hasAuthority('config.feature.read')")
 	public ResponseEntity<List<ConfigPropertyResponseDTO>> getFeatureProperties() {
 		return ResponseEntity.ok(configMetadataService.getPropertiesByCategory("FEATURES"));
 	}
 
 	@PutMapping("/features/value")
-	@PreAuthorize("hasRole('SUPER_ADMIN')")
+	@PreAuthorize("hasAuthority('config.feature.manage')")
 	public ResponseEntity<ConfigPropertyResponseDTO> updateFeatureValue(@RequestBody SingleConfigEntryRequestDTO request) {
 		return ResponseEntity.ok(configMetadataService.updateCurrentValue(request));
 	}

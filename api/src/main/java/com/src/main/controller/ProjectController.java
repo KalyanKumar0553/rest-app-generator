@@ -34,6 +34,9 @@ import com.src.main.dto.ProjectCollaborationRequestDTO;
 import com.src.main.dto.ProjectCollaborationRequestReviewDTO;
 import com.src.main.dto.ProjectCollaborationStateDTO;
 import com.src.main.dto.ProjectDraftResponseDTO;
+import com.src.main.dto.ProjectDraftVersionDetailsDTO;
+import com.src.main.dto.ProjectDraftVersionDiffDTO;
+import com.src.main.dto.ProjectDraftVersionSummaryDTO;
 import com.src.main.dto.ProjectDraftTabDataDTO;
 import com.src.main.dto.ProjectDraftTabPatchRequestDTO;
 import com.src.main.dto.ProjectDraftUpsertRequestDTO;
@@ -110,6 +113,34 @@ public class ProjectController {
 			@RequestParam("tabKey") String tabKey,
 			Principal principal) {
 		return service.getDraftTabData(projectId, tabKey, currentUserId(principal));
+	}
+
+	@GetMapping("/{projectId}/draft-versions")
+	public List<ProjectDraftVersionSummaryDTO> getDraftVersions(@PathVariable("projectId") UUID projectId,
+			Principal principal) {
+		return service.getDraftVersions(projectId, currentUserId(principal));
+	}
+
+	@GetMapping("/{projectId}/draft-versions/{versionId}")
+	public ProjectDraftVersionDetailsDTO getDraftVersion(@PathVariable("projectId") UUID projectId,
+			@PathVariable("versionId") UUID versionId,
+			Principal principal) {
+		return service.getDraftVersion(projectId, versionId, currentUserId(principal));
+	}
+
+	@GetMapping("/{projectId}/draft-versions/{versionId}/diff")
+	public ProjectDraftVersionDiffDTO diffDraftVersion(@PathVariable("projectId") UUID projectId,
+			@PathVariable("versionId") UUID versionId,
+			@RequestParam(value = "compareToVersionId", required = false) UUID compareToVersionId,
+			Principal principal) {
+		return service.diffDraftVersion(projectId, versionId, compareToVersionId, currentUserId(principal));
+	}
+
+	@PostMapping("/{projectId}/draft-versions/{versionId}/restore")
+	public ProjectDraftResponseDTO restoreDraftVersion(@PathVariable("projectId") UUID projectId,
+			@PathVariable("versionId") UUID versionId,
+			Principal principal) {
+		return service.restoreDraftVersion(projectId, versionId, currentUserId(principal));
 	}
 
 	@GetMapping("/tab-details")

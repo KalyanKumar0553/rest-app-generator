@@ -13,4 +13,5 @@ public interface PricingService {
 	PlanPriceResponse updatePrice(Long id, PlanPriceRequest request);
 	List<PlanPriceResponse> getPlanPrices(Long planId);
 	ResolvedPriceResponse resolvePrice(String planCode, BillingCycle cycle, String currencyCode, LocalDateTime asOf);
+	ResolvedPriceResponse resolvePrice(String planCode, BillingCycle cycle, String currencyCode, String couponCode, Long tenantId, LocalDateTime asOf);
 }

@@ -1,0 +1,221 @@
+<div class="content-body" id="collaborate">
+  <div class="sticky-header">
+    <div class="top-actions">
+      <button class="back-btn-desktop" (click)="host.handleHome()" aria-label="Go to home" mat-stroked-button>
+        <i class="bi bi-house-door"></i>
+        Home
+      </button>
+      <span class="active-editors-badge" *ngIf="host.shouldShowActiveEditorsBadge()">{{ host.activeEditorsBadgeLabel }}</span>
+    </div>
+
+    <app-info-banner storageKey="collaborate-info">
+      <span>
+        Share a collaboration URL, review access requests, and control contributor permissions.
+      </span>
+    </app-info-banner>
+  </div>
+
+  <div class="scrollable-content collaborate-scrollable-content">
+    <div class="collaboration-panel" *ngIf="host.backendProjectId; else collaborateSaveFirst">
+      <div class="collaboration-card">
+        <div class="collaboration-title-row">
+          <h3>Invite collaborators</h3>
+          <button
+            type="button"
+            class="collaboration-help-btn"
+            matTooltip="Share this URL with authenticated users so they can request access to this project."
+            aria-label="Invite collaborators help">
+            <mat-icon>help_outline</mat-icon>
+          </button>
+        </div>
+        <div class="collaboration-link-row">
+          <mat-form-field appearance="fill" class="full-width">
+            <mat-label>Collaboration invite URL</mat-label>
+            <input matInput [value]="host.collaborationInviteUrl" readonly />
+          </mat-form-field>
+          <button mat-raised-button color="primary" type="button" (click)="host.copyCollaborationInviteUrl()">
+            Copy URL
+          </button>
+        </div>
+      </div>
+
+      <div class="collaboration-card">
+        <h3>Pending requests</h3>
+        <p *ngIf="!host.canManageContributors()">Only project owners or collaborators with manage access can review requests.</p>
+        <p *ngIf="host.canManageContributors() && host.collaborationRequests.length === 0">No collaboration requests yet.</p>
+
+        <table mat-table [dataSource]="host.collaborationRequests" class="collaboration-table" *ngIf="host.canManageContributors() && host.collaborationRequests.length > 0">
+          <ng-container matColumnDef="requester">
+            <th mat-header-cell *matHeaderCellDef>Requester</th>
+            <td mat-cell *matCellDef="let request">{{ request.requesterId }}</td>
+          </ng-container>
+
+          <ng-container matColumnDef="requested">
+            <th mat-header-cell *matHeaderCellDef>Requested</th>
+            <td mat-cell *matCellDef="let request">{{ host.formatPermissionsLabel(request.requestedPermissions) }}</td>
+          </ng-container>
+
+          <ng-container matColumnDef="granted">
+            <th mat-header-cell *matHeaderCellDef>Grant</th>
+            <td mat-cell *matCellDef="let request">
+              <div class="permission-toggle-group">
+                <mat-checkbox [(ngModel)]="request.grantedPermissions.canEditDraft">Edit</mat-checkbox>
+                <mat-checkbox [(ngModel)]="request.grantedPermissions.canGenerate">Generate</mat-checkbox>
+                <mat-checkbox [(ngModel)]="request.grantedPermissions.canManageCollaboration">Manage</mat-checkbox>
+              </div>
+            </td>
+          </ng-container>
+
+          <ng-container matColumnDef="status">
+            <th mat-header-cell *matHeaderCellDef>Status</th>
+            <td mat-cell *matCellDef="let request">{{ request.status }}</td>
+          </ng-container>
+
+          <ng-container matColumnDef="actions">
+            <th mat-header-cell *matHeaderCellDef>Actions</th>
+            <td mat-cell *matCellDef="let request">
+              <div class="table-actions" *ngIf="request.status === 'PENDING'; else reviewedRequest">
+                <button mat-icon-button type="button" color="primary" (click)="host.approveCollaborationRequest(request)" matTooltip="Approve request">
+                  <mat-icon>check_circle</mat-icon>
+                </button>
+                <button mat-icon-button type="button" color="warn" (click)="host.rejectCollaborationRequest(request)" matTooltip="Reject request">
+                  <mat-icon>cancel</mat-icon>
+                </button>
+              </div>
+              <ng-template #reviewedRequest>
+                <span>{{ request.reviewedBy || 'Reviewed' }}</span>
+              </ng-template>
+            </td>
+          </ng-container>
+
+          <tr mat-header-row *matHeaderRowDef="host.collaborationRequestColumns"></tr>
+          <tr mat-row *matRowDef="let row; columns: host.collaborationRequestColumns;"></tr>
+        </table>
+      </div>
+
+      <div class="collaboration-card">
+        <div class="collaboration-title-row">
+          <div class="collaboration-card-header collaboration-card-header-right">
+            <h3>Contributors</h3>
+            <button
+              *ngIf="host.canManageContributors()"
+              mat-raised-button
+              color="primary"
+              type="button"
+              (click)="host.openAddContributorModal()">
+              <mat-icon>person_add</mat-icon>
+              Add contributor
+            </button>
+          </div>
+          <button
+            *ngIf="host.canDetachFromProject()"
+            mat-stroked-button
+            type="button"
+            class="detach-collaboration-btn"
+            (click)="host.detachFromProject()"
+            [disabled]="host.isContributorSaving">
+            Archive My Access
+          </button>
+        </div>
+        <p *ngIf="host.projectContributors.length === 0">No contributors added yet.</p>
+
+        <div class="collaboration-mobile-list" *ngIf="host.projectContributors.length > 0 && host.isMobileViewport">
+          <article class="collaboration-mobile-item" *ngFor="let contributor of host.projectContributors">
+            <div class="collaboration-mobile-copy">
+              <strong>{{ contributor.userId }}</strong>
+              <span>{{ host.formatPermissionsLabel(contributor) }}</span>
+            </div>
+            <div class="table-actions">
+              <button
+                *ngIf="host.canManageContributors()"
+                mat-icon-button
+                type="button"
+                class="table-action-btn"
+                (click)="host.openContributorPermissionsModal(contributor)"
+                [disabled]="!host.canManageContributors()"
+                matTooltip="Edit permissions">
+                <mat-icon>edit</mat-icon>
+              </button>
+              <button
+                *ngIf="host.canManageContributors()"
+                mat-icon-button
+                type="button"
+                color="warn"
+                (click)="host.removeContributor(contributor.userId)"
+                [disabled]="!host.canManageContributors()"
+                matTooltip="Remove contributor">
+                <mat-icon>person_remove</mat-icon>
+              </button>
+            </div>
+          </article>
+        </div>
+
+        <table mat-table [dataSource]="host.projectContributors" class="collaboration-table desktop-collaboration-table" *ngIf="host.projectContributors.length > 0">
+          <ng-container matColumnDef="userId">
+            <th mat-header-cell *matHeaderCellDef>User</th>
+            <td mat-cell *matCellDef="let contributor">{{ contributor.userId }}</td>
+          </ng-container>
+
+          <ng-container matColumnDef="edit">
+            <th mat-header-cell *matHeaderCellDef>Edit spec</th>
+            <td mat-cell *matCellDef="let contributor">
+              <mat-checkbox [(ngModel)]="contributor.canEditDraft" [disabled]="!host.canManageContributors()"></mat-checkbox>
+            </td>
+          </ng-container>
+
+          <ng-container matColumnDef="generate">
+            <th mat-header-cell *matHeaderCellDef>Generate</th>
+            <td mat-cell *matCellDef="let contributor">
+              <mat-checkbox [(ngModel)]="contributor.canGenerate" [disabled]="!host.canManageContributors()"></mat-checkbox>
+            </td>
+          </ng-container>
+
+          <ng-container matColumnDef="manage">
+            <th mat-header-cell *matHeaderCellDef>Manage collaboration</th>
+            <td mat-cell *matCellDef="let contributor">
+              <mat-checkbox [(ngModel)]="contributor.canManageCollaboration" [disabled]="!host.canManageContributors()"></mat-checkbox>
+            </td>
+          </ng-container>
+
+          <ng-container matColumnDef="actions">
+            <th mat-header-cell *matHeaderCellDef>Actions</th>
+            <td mat-cell *matCellDef="let contributor">
+              <div class="table-actions">
+                <button
+                  *ngIf="host.canManageContributors()"
+                  mat-icon-button
+                  type="button"
+                  class="table-action-btn table-action-btn-save"
+                  (click)="host.updateContributorPermissions(contributor)"
+                  [disabled]="!host.canManageContributors()"
+                  matTooltip="Save permissions">
+                  <i class="bi bi-check2-circle" aria-hidden="true"></i>
+                </button>
+                <button
+                  *ngIf="host.canManageContributors()"
+                  mat-icon-button
+                  type="button"
+                  color="warn"
+                  (click)="host.removeContributor(contributor.userId)"
+                  [disabled]="!host.canManageContributors()"
+                  matTooltip="Remove contributor">
+                  <mat-icon>person_remove</mat-icon>
+                </button>
+              </div>
+            </td>
+          </ng-container>
+
+          <tr mat-header-row *matHeaderRowDef="host.contributorPermissionColumns"></tr>
+          <tr mat-row *matRowDef="let row; columns: host.contributorPermissionColumns;"></tr>
+        </table>
+      </div>
+    </div>
+
+    <ng-template #collaborateSaveFirst>
+      <div class="collaboration-card">
+        <h3>Save project first</h3>
+        <p>Create the saved project draft first. Then you can share a collaboration link and review requests here.</p>
+      </div>
+    </ng-template>
+  </div>
+</div>

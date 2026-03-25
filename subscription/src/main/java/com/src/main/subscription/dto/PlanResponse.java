@@ -1,6 +1,7 @@
 package com.src.main.subscription.dto;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 import com.src.main.subscription.enums.PlanType;
 import com.src.main.subscription.enums.PlanVisibility;
@@ -24,6 +25,7 @@ public class PlanResponse {
 	private Integer maxUsers;
 	private Integer maxProjects;
 	private Integer maxStorageMb;
+	private List<String> roleNames;
 	private String metadataJson;
 	private LocalDateTime createdAt;
 	private LocalDateTime updatedAt;

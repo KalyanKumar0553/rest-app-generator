@@ -24,10 +24,13 @@ import lombok.extern.slf4j.Slf4j;
 public class NewsletterSubscriptionServiceImpl implements NewsletterSubscriptionService {
 
     private static final Pattern EMAIL_PATTERN = Pattern.compile(AppConstants.EMAIL_REGEX);
+    private static final String NEWSLETTER_MAX_RETRY_FEATURE_KEY = "app.newsletter.max-email-retry-attempts";
+    private static final int DEFAULT_MAX_EMAIL_RETRY_ATTEMPTS = 3;
 
     private final NewsletterSubscriptionRepository newsletterSubscriptionRepository;
     private final MsgService msgService;
     private final DataEncryptionService dataEncryptionService;
+    private final ConfigMetadataService configMetadataService;
 
     @Value("${app.newsletter.email.from:no-reply@bootrid.io}")
     private String emailFrom;
@@ -67,8 +70,11 @@ public class NewsletterSubscriptionServiceImpl implements NewsletterSubscription
     @Override
     @Scheduled(fixedDelayString = "${app.newsletter.scheduler.fixed-delay-ms:180000}")
     public void processPendingWelcomeEmails() {
-        List<NewsletterSubscriptionEntity> pending = newsletterSubscriptionRepository
-                .findTop50ByWelcomeEmailSentFalseAndSendingInProgressFalseOrderBySubscribedAtAsc();
+        int maxRetryAttempts = getMaxEmailRetryAttempts();
+        List<NewsletterSubscriptionEntity> pending = maxRetryAttempts < 0
+                ? newsletterSubscriptionRepository.findTop50ByWelcomeEmailSentFalseAndSendingInProgressFalseOrderBySubscribedAtAsc()
+                : newsletterSubscriptionRepository
+                        .findTop50ByWelcomeEmailSentFalseAndSendingInProgressFalseAndSendAttemptCountLessThanOrderBySubscribedAtAsc(maxRetryAttempts);
 
         for (NewsletterSubscriptionEntity subscription : pending) {
             Long id = subscription.getId();
@@ -92,7 +98,7 @@ public class NewsletterSubscriptionServiceImpl implements NewsletterSubscription
             } catch (Exception ex) {
                 String error = ex.getMessage() == null ? "Email send failed" : ex.getMessage();
                 markFailed(id, abbreviate(error, 800));
-                log.warn("Failed to send newsletter welcome email for subscription id={}", id, ex);
+                log.warn("Failed to send newsletter welcome email for subscription id={}: {}", id, error);
             }
         }
     }
@@ -146,5 +152,11 @@ public class NewsletterSubscriptionServiceImpl implements NewsletterSubscription
             return value;
         }
         return value.substring(0, maxLength);
+    }
+
+    private int getMaxEmailRetryAttempts() {
+        return configMetadataService.getPropertyCurrentIntValue(NEWSLETTER_MAX_RETRY_FEATURE_KEY)
+                .filter(value -> value >= -1)
+                .orElse(DEFAULT_MAX_EMAIL_RETRY_ATTEMPTS);
     }
 }

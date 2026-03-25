@@ -25,6 +25,7 @@ export class ProjectViewComponent implements OnChanges {
   @Input() isSyncing = false;
   @Input() zipBlob: Blob | null = null;
   @Input() zipFileName = 'project.zip';
+  @Input() showCloseButton = false;
   @Output() close = new EventEmitter<void>();
   @Output() reload = new EventEmitter<void>();
 

@@ -2,6 +2,8 @@ package com.src.main.workflow.generation;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 
 import org.springframework.http.HttpStatus;
@@ -18,6 +20,7 @@ import com.src.main.util.ProjectMetaDataConstants;
 import com.src.main.util.ProjectRunStatus;
 import com.src.main.workflow.ProjectArchiveService;
 import com.src.main.workflow.engine.WorkflowEngineService;
+import com.src.main.service.PluginModuleService;
 
 @Component
 public class DatabaseWorkflowProjectGenerationStrategy implements ProjectGenerationStrategy {
@@ -26,16 +29,19 @@ public class DatabaseWorkflowProjectGenerationStrategy implements ProjectGenerat
 	private final ProjectRunRepository runRepository;
 	private final ProjectEventStreamService projectEventStreamService;
 	private final ProjectArchiveService projectArchiveService;
+	private final PluginModuleService pluginModuleService;
 
 	public DatabaseWorkflowProjectGenerationStrategy(
 			WorkflowEngineService workflowEngineService,
 			ProjectRunRepository runRepository,
 			ProjectEventStreamService projectEventStreamService,
-			ProjectArchiveService projectArchiveService) {
+			ProjectArchiveService projectArchiveService,
+			PluginModuleService pluginModuleService) {
 		this.workflowEngineService = workflowEngineService;
 		this.runRepository = runRepository;
 		this.projectEventStreamService = projectEventStreamService;
 		this.projectArchiveService = projectArchiveService;
+		this.pluginModuleService = pluginModuleService;
 	}
 
 	@Override
@@ -51,6 +57,7 @@ public class DatabaseWorkflowProjectGenerationStrategy implements ProjectGenerat
 			DefaultExtendedState state = new DefaultExtendedState();
 			populatePreviewVariables(state.getVariables(), tempDir, yaml, app);
 			workflowEngineService.execute(resolveLanguage(yaml), state, null);
+			pluginModuleService.applyPluginsToProject(tempDir, resolveSelectedPlugins(yaml, app));
 			return projectArchiveService.zipDirectory(tempDir);
 		} catch (GenericException ex) {
 			throw ex;
@@ -69,6 +76,7 @@ public class DatabaseWorkflowProjectGenerationStrategy implements ProjectGenerat
 			DefaultExtendedState state = new DefaultExtendedState();
 			populateProjectVariables(state.getVariables(), tempDir, project, yaml);
 			workflowEngineService.execute(resolveLanguage(yaml), state, run);
+			pluginModuleService.applyPluginsToProject(tempDir, resolveSelectedPlugins(yaml, project));
 			byte[] zipData = projectArchiveService.zipDirectory(tempDir);
 			run.setZip(zipData);
 			run.setStatus(ProjectRunStatus.SUCCESS);
@@ -138,5 +146,48 @@ public class DatabaseWorkflowProjectGenerationStrategy implements ProjectGenerat
 		variables.put(ProjectMetaDataConstants.NAME, project.getName());
 		variables.put(ProjectMetaDataConstants.DESCRIPTION, project.getDescription());
 		variables.put(ProjectMetaDataConstants.JDK_VERSION, project.getJdkVersion());
+	}
+
+	@SuppressWarnings("unchecked")
+	private List<Map<String, Object>> resolveSelectedPlugins(Map<String, Object> yaml, Object source) {
+		Object fromSpec = yaml == null ? null : ((Map<String, Object>) ((Map<String, Object>) yaml.getOrDefault("core", Collections.emptyMap())))
+				.get("modules");
+		if (fromSpec instanceof Map<?, ?> modules) {
+			Object plugins = ((Map<String, Object>) modules).get("plugins");
+			if (plugins instanceof List<?> pluginList) {
+				return pluginList.stream()
+						.filter(Map.class::isInstance)
+						.map(plugin -> (Map<String, Object>) plugin)
+						.toList();
+			}
+		}
+		if (source instanceof Map<?, ?> previewApp) {
+			Object plugins = ((Map<String, Object>) previewApp).get("selectedPlugins");
+			if (plugins instanceof List<?> pluginList) {
+				return pluginList.stream()
+						.filter(Map.class::isInstance)
+						.map(plugin -> (Map<String, Object>) plugin)
+						.toList();
+			}
+		}
+		if (source instanceof ProjectEntity project) {
+			String draftData = project.getDraftData();
+			if (draftData != null && draftData.contains("\"selectedPlugins\"")) {
+				try {
+					com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+					Map<String, Object> draft = mapper.readerForMapOf(Object.class).readValue(draftData);
+					Object plugins = draft.get("selectedPlugins");
+					if (plugins instanceof List<?> pluginList) {
+						return pluginList.stream()
+								.filter(Map.class::isInstance)
+								.map(plugin -> (Map<String, Object>) plugin)
+								.toList();
+					}
+				} catch (Exception ignored) {
+					return Collections.emptyList();
+				}
+			}
+		}
+		return Collections.emptyList();
 	}
 }

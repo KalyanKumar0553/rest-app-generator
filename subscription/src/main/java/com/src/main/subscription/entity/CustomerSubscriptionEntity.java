@@ -34,6 +34,9 @@ public class CustomerSubscriptionEntity extends BaseSubscriptionEntity {
 	@Column(name = "tenant_id", nullable = false)
 	private Long tenantId;
 
+	@Column(name = "subscriber_user_id")
+	private String subscriberUserId;
+
 	@ManyToOne(fetch = FetchType.LAZY, optional = false)
 	@JoinColumn(name = "plan_id", nullable = false)
 	private SubscriptionPlanEntity plan;
@@ -66,6 +69,22 @@ public class CustomerSubscriptionEntity extends BaseSubscriptionEntity {
 
 	@Column(name = "currency_code", length = 10)
 	private String currencyCode;
+
+	@ManyToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "applied_coupon_id")
+	private SubscriptionCouponEntity appliedCoupon;
+
+	@Column(name = "applied_coupon_code", length = 100)
+	private String appliedCouponCode;
+
+	@Column(name = "applied_discount_type", length = 50)
+	private String appliedDiscountType;
+
+	@Column(name = "applied_discount_value", precision = 19, scale = 4)
+	private BigDecimal appliedDiscountValue;
+
+	@Column(name = "applied_discount_amount", precision = 19, scale = 2)
+	private BigDecimal appliedDiscountAmount;
 
 	@Column(name = "plan_code_snapshot", nullable = false, length = 100)
 	private String planCodeSnapshot;

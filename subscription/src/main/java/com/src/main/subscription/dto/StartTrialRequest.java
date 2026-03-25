@@ -7,6 +7,7 @@ import lombok.Data;
 public class StartTrialRequest {
 	@NotNull
 	private Long tenantId;
+	private String userId;
 	private String planCode;
 	private String reason;
 }

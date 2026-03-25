@@ -7,9 +7,11 @@ import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -32,6 +34,9 @@ import com.src.main.dto.ProjectContributorPermissionUpdateDTO;
 import com.src.main.dto.ProjectContributorPermissionsDTO;
 import com.src.main.dto.ProjectContributorUpsertRequestDTO;
 import com.src.main.dto.ProjectDraftResponseDTO;
+import com.src.main.dto.ProjectDraftVersionDetailsDTO;
+import com.src.main.dto.ProjectDraftVersionDiffDTO;
+import com.src.main.dto.ProjectDraftVersionSummaryDTO;
 import com.src.main.dto.ProjectDraftTabDataDTO;
 import com.src.main.dto.ProjectDraftTabPatchRequestDTO;
 import com.src.main.dto.ProjectDraftUpsertRequestDTO;
@@ -42,10 +47,13 @@ import com.src.main.dto.ProjectTabDefinitionDTO;
 import com.src.main.exception.GenericException;
 import com.src.main.model.ProjectCollaborationRequestEntity;
 import com.src.main.model.ProjectContributorEntity;
+import com.src.main.model.ProjectDraftVersionEntity;
 import com.src.main.model.ProjectEntity;
 import com.src.main.model.ProjectRunEntity;
 import com.src.main.repository.ProjectCollaborationRequestRepository;
 import com.src.main.repository.ProjectContributorRepository;
+import com.src.main.repository.ProjectDraftVersionRepository;
+import com.src.main.repository.PluginModuleRepository;
 import com.src.main.repository.ProjectRepository;
 import com.src.main.repository.ProjectRunRepository;
 import com.src.main.util.ProjectMetaDataConstants;
@@ -67,11 +75,14 @@ public class ProjectServiceImpl implements ProjectService {
 	private static final String REQUEST_STATUS_ACCEPTED = "ACCEPTED";
 	private static final String REQUEST_STATUS_REJECTED = "REJECTED";
 	private static final String REQUEST_STATUS_ARCHIVED = "ARCHIVED";
+	private static final Set<String> SHIPPABLE_MODULE_KEYS = Set.of("rbac", "auth", "state-machine", "subscription");
 
 	private final ProjectRepository repo;
 	private final ProjectRunRepository projectRunRepository;
 	private final ProjectCollaborationRequestRepository projectCollaborationRequestRepository;
 	private final ProjectContributorRepository projectContributorRepository;
+	private final ProjectDraftVersionRepository projectDraftVersionRepository;
+	private final PluginModuleRepository pluginModuleRepository;
 	private final ProjectUserIdentityService projectUserIdentityService;
 	private final ProjectYamlService projectYamlService;
 	private final ProjectDraftService projectDraftService;
@@ -137,6 +148,12 @@ public class ProjectServiceImpl implements ProjectService {
 			this.springBootVersion = springBootVersion;
 			this.jdkVersion = jdkVersion;
 		}
+	}
+
+	private record DraftDiffResult(
+			List<String> addedPaths,
+			List<String> removedPaths,
+			List<String> changedPaths) {
 	}
 
 	@Override
@@ -227,6 +244,7 @@ public class ProjectServiceImpl implements ProjectService {
 			p.setCreatedAt(OffsetDateTime.now());
 			p.setUpdatedAt(OffsetDateTime.now());
 			ProjectEntity savedProject = repo.saveAndFlush(p);
+			saveDraftSnapshot(savedProject, currentUser.userId(), null);
 			return new ProjectDraftResponseDTO(savedProject.getId().toString(), savedProject.getDraftVersion());
 		} catch (GenericException e) {
 			throw e;
@@ -259,6 +277,7 @@ public class ProjectServiceImpl implements ProjectService {
 		applyResolvedProjectDraft(project, resolvedDraft, currentDraftVersion + 1);
 		project.setUpdatedAt(OffsetDateTime.now());
 		ProjectEntity savedProject = repo.saveAndFlush(project);
+		saveDraftSnapshot(savedProject, currentUser.userId(), null);
 		return new ProjectDraftResponseDTO(savedProject.getId().toString(), savedProject.getDraftVersion());
 	}
 
@@ -465,7 +484,8 @@ public class ProjectServiceImpl implements ProjectService {
 		Map<String, Object> draftData = projectDraftService.deserialize(project.getDraftData());
 		List<ProjectTabDefinitionDTO> tabDetails = projectDraftService.getTabDetails(
 				projectDraftService.resolveGenerator(draftData, project.getGenerator()),
-				projectDraftService.resolveSelectedDependencies(draftData));
+				projectDraftService.resolveSelectedDependencies(draftData),
+				resolveConfigEnabledShippableModuleKeys());
 		return new ProjectDetailsDTO(
 				project.getId().toString(),
 				project.getId(),
@@ -505,7 +525,85 @@ public class ProjectServiceImpl implements ProjectService {
 
 	@Override
 	public List<ProjectTabDefinitionDTO> getTabDetails(String generator, List<String> dependencies) {
-		return projectDraftService.getTabDetails(generator, dependencies);
+		return projectDraftService.getTabDetails(generator, dependencies, resolveConfigEnabledShippableModuleKeys());
+	}
+
+	private Set<String> resolveConfigEnabledShippableModuleKeys() {
+		List<com.src.main.model.PluginModuleEntity> modules = pluginModuleRepository.findAllByOrderByNameAsc();
+		return (modules == null ? List.<com.src.main.model.PluginModuleEntity>of() : modules).stream()
+				.filter(module -> module != null && module.isEnabled() && module.isEnableConfig())
+				.map(module -> module.getCode() == null ? "" : module.getCode().trim().toLowerCase())
+				.filter(SHIPPABLE_MODULE_KEYS::contains)
+				.collect(Collectors.toCollection(LinkedHashSet::new));
+	}
+
+	@Override
+	@Transactional(readOnly = true)
+	public List<ProjectDraftVersionSummaryDTO> getDraftVersions(UUID projectId, String userId) {
+		ProjectUserIdentityService.ResolvedProjectUser currentUser = projectUserIdentityService.resolve(userId);
+		getAccessibleProject(projectId, currentUser);
+		return projectDraftVersionRepository.findByProjectIdOrderByDraftVersionDesc(projectId).stream()
+				.map(this::toDraftVersionSummary)
+				.toList();
+	}
+
+	@Override
+	@Transactional(readOnly = true)
+	public ProjectDraftVersionDetailsDTO getDraftVersion(UUID projectId, UUID versionId, String userId) {
+		ProjectUserIdentityService.ResolvedProjectUser currentUser = projectUserIdentityService.resolve(userId);
+		getAccessibleProject(projectId, currentUser);
+		ProjectDraftVersionEntity version = getDraftVersionEntity(projectId, versionId);
+		return toDraftVersionDetails(version);
+	}
+
+	@Override
+	@Transactional(readOnly = true)
+	public ProjectDraftVersionDiffDTO diffDraftVersion(UUID projectId, UUID versionId, UUID compareToVersionId, String userId) {
+		ProjectUserIdentityService.ResolvedProjectUser currentUser = projectUserIdentityService.resolve(userId);
+		ProjectEntity project = getAccessibleProject(projectId, currentUser);
+		ProjectDraftVersionEntity targetVersion = getDraftVersionEntity(projectId, versionId);
+		ProjectDraftVersionEntity baseVersion = compareToVersionId == null ? null : getDraftVersionEntity(projectId, compareToVersionId);
+		Map<String, Object> baseDraft = baseVersion == null
+				? projectDraftService.deserialize(project.getDraftData())
+				: projectDraftService.deserialize(baseVersion.getDraftData());
+		Map<String, Object> targetDraft = projectDraftService.deserialize(targetVersion.getDraftData());
+		DraftDiffResult diff = diffDraftData(baseDraft, targetDraft);
+		return new ProjectDraftVersionDiffDTO(
+				baseVersion == null ? null : baseVersion.getId(),
+				baseVersion == null ? project.getDraftVersion() : baseVersion.getDraftVersion(),
+				targetVersion.getId(),
+				targetVersion.getDraftVersion(),
+				diff.addedPaths(),
+				diff.removedPaths(),
+				diff.changedPaths());
+	}
+
+	@Override
+	@Transactional
+	public ProjectDraftResponseDTO restoreDraftVersion(UUID projectId, UUID versionId, String userId) {
+		if (!rbacService.currentUserHasPermission("project.update")) {
+			throw new SecurityException("User not allowed to update projects");
+		}
+		ProjectUserIdentityService.ResolvedProjectUser currentUser = projectUserIdentityService.resolve(userId);
+		ProjectEntity project = getProjectForDraftUpdate(projectId, currentUser, true);
+		ProjectDraftVersionEntity version = getDraftVersionEntity(projectId, versionId);
+		Map<String, Object> draftData = projectDraftService.deserialize(version.getDraftData());
+		ProjectDraftUpsertRequestDTO request = new ProjectDraftUpsertRequestDTO();
+		request.setDraftData(draftData);
+		ResolvedProjectDraft resolvedDraft = resolveProjectDraft(request, project.getGenerator());
+		String updatedProjectName = resolvedDraft.name;
+		String currentProjectName = project.getName() == null ? "" : project.getName().trim();
+		String normalizedUpdatedProjectName = updatedProjectName == null ? "" : updatedProjectName.trim();
+		if (!currentProjectName.equalsIgnoreCase(normalizedUpdatedProjectName)) {
+			projectNameValidationService.ensureUniqueProjectName(updatedProjectName, currentUser, projectId);
+		}
+		project.setOwnerId(currentUser.userId());
+		Integer currentDraftVersion = project.getDraftVersion() == null ? 1 : project.getDraftVersion();
+		applyResolvedProjectDraft(project, resolvedDraft, currentDraftVersion + 1);
+		project.setUpdatedAt(OffsetDateTime.now());
+		ProjectEntity savedProject = repo.saveAndFlush(project);
+		saveDraftSnapshot(savedProject, currentUser.userId(), version.getId());
+		return new ProjectDraftResponseDTO(savedProject.getId().toString(), savedProject.getDraftVersion());
 	}
 
 	private String encodeZipBase64(ProjectRunEntity run) {
@@ -520,6 +618,101 @@ public class ProjectServiceImpl implements ProjectService {
 			return "project.zip";
 		}
 		return project.getArtifact().trim() + ".zip";
+	}
+
+	private void saveDraftSnapshot(ProjectEntity project, String userId, UUID restoredFromVersionId) {
+		if (project == null || project.getId() == null || project.getDraftVersion() == null) {
+			return;
+		}
+		ProjectDraftVersionEntity snapshot = new ProjectDraftVersionEntity();
+		snapshot.setProject(project);
+		snapshot.setDraftVersion(project.getDraftVersion());
+		snapshot.setDraftData(project.getDraftData() == null ? "{}" : project.getDraftData());
+		snapshot.setYaml(project.getYaml() == null ? "" : project.getYaml());
+		snapshot.setGenerator(project.getGenerator());
+		snapshot.setCreatedByUserId(userId == null || userId.isBlank() ? "system" : userId.trim());
+		snapshot.setRestoredFromVersionId(restoredFromVersionId);
+		snapshot.setCreatedAt(OffsetDateTime.now());
+		projectDraftVersionRepository.save(snapshot);
+	}
+
+	private ProjectDraftVersionEntity getDraftVersionEntity(UUID projectId, UUID versionId) {
+		return projectDraftVersionRepository.findByIdAndProjectId(versionId, projectId)
+				.orElseThrow(() -> new IllegalArgumentException("Draft version not found"));
+	}
+
+	private ProjectDraftVersionSummaryDTO toDraftVersionSummary(ProjectDraftVersionEntity version) {
+		return new ProjectDraftVersionSummaryDTO(
+				version.getId(),
+				version.getDraftVersion(),
+				version.getGenerator(),
+				version.getCreatedByUserId(),
+				version.getRestoredFromVersionId(),
+				version.getCreatedAt());
+	}
+
+	private ProjectDraftVersionDetailsDTO toDraftVersionDetails(ProjectDraftVersionEntity version) {
+		return new ProjectDraftVersionDetailsDTO(
+				version.getId(),
+				version.getDraftVersion(),
+				version.getGenerator(),
+				version.getCreatedByUserId(),
+				version.getRestoredFromVersionId(),
+				version.getCreatedAt(),
+				version.getYaml(),
+				projectDraftService.deserialize(version.getDraftData()));
+	}
+
+	private DraftDiffResult diffDraftData(Map<String, Object> baseDraft, Map<String, Object> targetDraft) {
+		Set<String> addedPaths = new LinkedHashSet<>();
+		Set<String> removedPaths = new LinkedHashSet<>();
+		Set<String> changedPaths = new LinkedHashSet<>();
+		compareNodes("", baseDraft, targetDraft, addedPaths, removedPaths, changedPaths);
+		return new DraftDiffResult(
+				List.copyOf(addedPaths),
+				List.copyOf(removedPaths),
+				List.copyOf(changedPaths));
+	}
+
+	@SuppressWarnings("unchecked")
+	private void compareNodes(String path, Object baseValue, Object targetValue,
+			Set<String> addedPaths, Set<String> removedPaths, Set<String> changedPaths) {
+		if (baseValue == null && targetValue == null) {
+			return;
+		}
+		String normalizedPath = path == null || path.isBlank() ? "$" : path;
+		if (baseValue == null) {
+			addedPaths.add(normalizedPath);
+			return;
+		}
+		if (targetValue == null) {
+			removedPaths.add(normalizedPath);
+			return;
+		}
+		if (baseValue instanceof Map<?, ?> baseMap && targetValue instanceof Map<?, ?> targetMap) {
+			Set<String> keys = new LinkedHashSet<>();
+			baseMap.keySet().forEach(key -> keys.add(String.valueOf(key)));
+			targetMap.keySet().forEach(key -> keys.add(String.valueOf(key)));
+			for (String key : keys) {
+				String childPath = "$".equals(normalizedPath) ? key : normalizedPath + "." + key;
+				compareNodes(childPath, ((Map<String, Object>) baseMap).get(key), ((Map<String, Object>) targetMap).get(key),
+						addedPaths, removedPaths, changedPaths);
+			}
+			return;
+		}
+		if (baseValue instanceof List<?> baseList && targetValue instanceof List<?> targetList) {
+			int maxSize = Math.max(baseList.size(), targetList.size());
+			for (int index = 0; index < maxSize; index++) {
+				Object baseItem = index < baseList.size() ? baseList.get(index) : null;
+				Object targetItem = index < targetList.size() ? targetList.get(index) : null;
+				String childPath = normalizedPath + "[" + index + "]";
+				compareNodes(childPath, baseItem, targetItem, addedPaths, removedPaths, changedPaths);
+			}
+			return;
+		}
+		if (!java.util.Objects.equals(baseValue, targetValue)) {
+			changedPaths.add(normalizedPath);
+		}
 	}
 
 	@Override

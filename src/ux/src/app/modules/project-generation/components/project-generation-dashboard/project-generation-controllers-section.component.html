@@ -1,0 +1,72 @@
+<div class="content-body" id="controllers">
+  <div class="sticky-header">
+    <div class="top-actions">
+      <button class="back-btn-desktop" (click)="host.handleHome()" aria-label="Go to home" mat-stroked-button>
+        <i class="bi bi-house-door"></i>
+        Home
+      </button>
+      <span class="active-editors-badge" *ngIf="host.shouldShowActiveEditorsBadge()">{{ host.activeEditorsBadgeLabel }}</span>
+    </div>
+
+    <app-info-banner storageKey="controllers-info">
+      <span>
+        Configure API controller behavior for your project. <a href="#" class="info-link" (click)="host.openDocumentation($event, 'controllers')">Explained here</a>.
+      </span>
+    </app-info-banner>
+  </div>
+
+  <div class="scrollable-content">
+    <ng-container *ngIf="host.showControllersConfigEditor; else controllersRestSpecTable">
+      <app-rest-config
+        #controllersRestConfigComponent
+        [config]="host.isControllersSpecEditMode ? host.controllersEditingSpecConfig : (host.isControllersSpecCreateMode ? null : host.controllersConfig)"
+        [entityFields]="host.controllersEntityFields"
+        [fieldTypeOptions]="host.controllersFieldTypeOptions"
+        [availableModels]="host.entities"
+        [existingRestConfigNames]="host.isControllersSpecEditMode ? host.controllersEditModeExistingNames : host.configuredEntityRestSpecNames"
+        [dtoObjects]="host.controllersDtoObjects"
+        [enumTypes]="host.controllersEnumTypes"
+        [javaVersion]="host.developerPreferences.javaVersion"
+        [softDeleteEnabled]="false"
+        (save)="host.onControllersEditorSave($event)"
+        (cancel)="host.onControllersEditorCancel()">
+      </app-rest-config>
+    </ng-container>
+
+    <ng-template #controllersRestSpecTable>
+      <app-controllers-spec-table
+        [rows]="host.controllerRestSpecRows"
+        (create)="host.startNewControllerRestSpec()"
+        (edit)="host.editControllerRestSpec($event)"
+        (delete)="host.requestDeleteControllerRestSpec($event)">
+      </app-controllers-spec-table>
+    </ng-template>
+  </div>
+
+  <div class="sticky-footer" *ngIf="!host.isLoading">
+    <div class="action-section">
+      <button
+        *ngIf="host.showControllersConfigEditor; else saveProjectCta"
+        mat-raised-button
+        type="button"
+        (click)="host.saveControllersConfiguration()"
+        [disabled]="host.isGeneratingFromDtoSave">
+        Save Configuration
+      </button>
+      <button
+        *ngIf="host.showControllersConfigEditor"
+        mat-raised-button
+        class="controllers-cancel-btn"
+        type="button"
+        (click)="host.requestCancelControllersConfiguration()"
+        [disabled]="host.isGeneratingFromDtoSave">
+        Cancel
+      </button>
+      <ng-template #saveProjectCta>
+        <button mat-raised-button type="button" (click)="host.saveProjectAndInvokeApi()" [disabled]="host.isGeneratingFromDtoSave">
+          Save Project
+        </button>
+      </ng-template>
+    </div>
+  </div>
+</div>

@@ -229,6 +229,10 @@ public class ProjectDraftSpecMapperService {
 		if (moduleConfigs instanceof Map<?, ?> configs && !configs.isEmpty()) {
 			modules.put("config", configs);
 		}
+		Object selectedPlugins = project.get("selectedPlugins");
+		if (selectedPlugins instanceof List<?> plugins && !plugins.isEmpty()) {
+			modules.put("plugins", plugins);
+		}
 		core.put("modules", modules);
 
 		return core;

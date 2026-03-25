@@ -1,5 +1,7 @@
 package com.src.main.subscription.dto;
 
+import java.util.List;
+
 import com.src.main.subscription.enums.PlanType;
 import com.src.main.subscription.enums.PlanVisibility;
 
@@ -25,5 +27,6 @@ public class PlanRequest {
 	private Integer maxUsers;
 	private Integer maxProjects;
 	private Integer maxStorageMb;
+	private List<String> roleNames;
 	private String metadataJson;
 }

@@ -143,6 +143,7 @@
   --theme-neutral-text: var(--color-text-muted);
   --theme-neutral-border: var(--color-border);
   --theme-neutral-bg: var(--color-background-muted);
+  --theme-explore-switcher-active-text: #836767;
 
   --theme-plain-text: var(--color-text-inverse);
 

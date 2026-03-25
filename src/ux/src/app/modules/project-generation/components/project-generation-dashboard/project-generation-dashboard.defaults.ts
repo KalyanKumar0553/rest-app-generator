@@ -11,8 +11,8 @@ export const BASE_NAV_ITEMS: NavItem[] = [
   { icon: 'storage', label: 'Entities', value: 'entities' },
   { icon: 'category', label: 'Data Objects', value: 'data-objects' },
   { icon: 'widgets', label: 'Modules', value: 'modules' },
-  { icon: 'groups', label: 'Collaborate', value: 'collaborate' },
   { icon: 'search', label: 'Explore', value: 'explore' },
+  { icon: 'groups', label: 'Collaborate', value: 'collaborate' },
 ];
 
 export const ACTUATOR_NAV_ITEM: NavItem = { icon: 'device_hub', label: 'Actuator', value: 'actuator' };

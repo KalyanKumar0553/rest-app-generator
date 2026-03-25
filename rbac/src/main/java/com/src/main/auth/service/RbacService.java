@@ -45,6 +45,7 @@ public class RbacService {
 	private final UserRoleRepository userRoleRepository;
 	private final JdbcTemplate jdbcTemplate;
 	private final RoleCatalogService roleCatalogService;
+	private final List<AccessProfileRoleProvider> accessProfileRoleProviders;
 
 	public RbacService(
 			RoleRepository roleRepository,
@@ -52,22 +53,31 @@ public class RbacService {
 			RolePermissionRepository rolePermissionRepository,
 			UserRoleRepository userRoleRepository,
 			JdbcTemplate jdbcTemplate,
-			RoleCatalogService roleCatalogService) {
+			RoleCatalogService roleCatalogService,
+			List<AccessProfileRoleProvider> accessProfileRoleProviders) {
 		this.roleRepository = roleRepository;
 		this.permissionRepository = permissionRepository;
 		this.rolePermissionRepository = rolePermissionRepository;
 		this.userRoleRepository = userRoleRepository;
 		this.jdbcTemplate = jdbcTemplate;
 		this.roleCatalogService = roleCatalogService;
+		this.accessProfileRoleProviders = accessProfileRoleProviders == null ? List.of() : List.copyOf(accessProfileRoleProviders);
 	}
 
 	@Transactional(readOnly = true)
 	@Cacheable(cacheNames = "rbacAccessProfile", key = "#userId", sync = true)
 	public AccessProfile getAccessProfile(String userId) {
-		List<String> roles = roleRepository.findActiveRoleNamesByUserId(userId);
-		if (roles.isEmpty()) {
-			roles = List.of(roleCatalogService.getDefaultAuthRoleName());
+		LinkedHashSet<String> resolvedRoles = new LinkedHashSet<>(roleRepository.findActiveRoleNamesByUserId(userId));
+		for (AccessProfileRoleProvider provider : accessProfileRoleProviders) {
+			List<String> additionalRoles = provider.getAdditionalRoles(userId);
+			if (additionalRoles != null) {
+				resolvedRoles.addAll(additionalRoles);
+			}
 		}
+		if (resolvedRoles.isEmpty()) {
+			resolvedRoles.add(roleCatalogService.getDefaultAuthRoleName());
+		}
+		List<String> roles = List.copyOf(resolvedRoles);
 		List<String> permissions = rolePermissionRepository.findActivePermissionNamesByRoleNames(roles);
 		LinkedHashSet<String> authorities = new LinkedHashSet<>();
 		authorities.addAll(roles);

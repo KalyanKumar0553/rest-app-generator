@@ -7,12 +7,14 @@ import java.time.ZoneOffset;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.src.main.auth.dto.response.TokenPairResponseDto;
 import com.src.main.auth.dto.response.AuthenticatedUserResponseDto;
 import com.src.main.auth.dto.request.UpdateUserProfileRequestDto;
+import com.src.main.auth.dto.response.UserSearchResponseDto;
 import com.src.main.auth.dto.response.UserProfileResponseDto;
 import com.src.main.auth.model.IdentifierType;
 import com.src.main.auth.model.OtpPurpose;
@@ -49,7 +51,6 @@ public class AuthService {
 	private final CaptchaService captchaService;
 	private final RoleCatalogService roleCatalogService;
 	private final RbacService rbacService;
-	private final IdentifierLookupHashService identifierLookupHashService;
 
 	private final long accessTtl;
 	private final long refreshTtl;
@@ -72,7 +73,6 @@ public class AuthService {
 			CaptchaService captchaService,
 			RoleCatalogService roleCatalogService,
 			RbacService rbacService,
-			IdentifierLookupHashService identifierLookupHashService,
 			@Value("${jwt.access.ttl.seconds:900}") long accessTtl,
 			@Value("${jwt.refresh.ttl.seconds:604800}") long refreshTtl,
 			@Value("${otp.ttl.seconds:300}") long otpTtl,
@@ -92,7 +92,6 @@ public class AuthService {
 		this.captchaService = captchaService;
 		this.roleCatalogService = roleCatalogService;
 		this.rbacService = rbacService;
-		this.identifierLookupHashService = identifierLookupHashService;
 		this.accessTtl = accessTtl;
 		this.refreshTtl = refreshTtl;
 		this.otpTtl = otpTtl;
@@ -119,7 +118,6 @@ public class AuthService {
 		}
 		User user = new User();
 		user.setIdentifier(normalized);
-		user.setIdentifierHash(hashIdentifier(normalized));
 		user.setIdentifierType(type);
 		user.setPasswordHash(CryptoUtils.hashPassword(password));
 		user.setStatus(UserStatus.PENDING_VERIFICATION);
@@ -220,6 +218,44 @@ public class AuthService {
 				lastName,
 				profile == null ? null : profile.getAvatarUrl(),
 				profile == null ? null : profile.getTimeZoneId());
+	}
+
+	@Transactional(readOnly = true)
+	public List<UserSearchResponseDto> searchUsers(String query) {
+		String normalizedQuery = query == null ? "" : query.trim();
+		if (normalizedQuery.length() < 2) {
+			return List.of();
+		}
+		java.util.LinkedHashMap<String, UserSearchResponseDto> results = new java.util.LinkedHashMap<>();
+		findUserByNormalizedIdentifierSafe(normalizedQuery)
+				.filter(user -> user.getStatus() == UserStatus.ACTIVE)
+				.ifPresent(user -> results.put(user.getId(), toUserSearchResponse(user)));
+		userRepository.searchActiveUsersByProfile(normalizedQuery, UserStatus.ACTIVE, PageRequest.of(0, 10))
+				.stream()
+				.sorted((left, right) -> Integer.compare(userSearchRank(left, normalizedQuery), userSearchRank(right, normalizedQuery)))
+				.map(this::toUserSearchResponse)
+				.forEach(dto -> results.putIfAbsent(dto.getUserId(), dto));
+		return results.values().stream().limit(10).toList();
+	}
+
+	private int userSearchRank(User user, String query) {
+		String normalizedQuery = query == null ? "" : query.trim().toLowerCase();
+		UserProfile profile = userProfileRepository.findById(user.getId()).orElse(null);
+		String firstName = profile == null || profile.getFirstName() == null ? "" : profile.getFirstName().trim().toLowerCase();
+		String lastName = profile == null || profile.getLastName() == null ? "" : profile.getLastName().trim().toLowerCase();
+		String fullName = (firstName + " " + lastName).trim();
+		if (!normalizedQuery.isEmpty()) {
+			if (fullName.equals(normalizedQuery)) {
+				return 0;
+			}
+			if (firstName.equals(normalizedQuery)) {
+				return 1;
+			}
+			if (lastName.equals(normalizedQuery)) {
+				return 2;
+			}
+		}
+		return 3;
 	}
 
 	@Transactional
@@ -468,28 +504,27 @@ public class AuthService {
 	}
 
 	private java.util.Optional<User> findUserByNormalizedIdentifier(String normalizedIdentifier) {
-		String identifierHash = hashIdentifier(normalizedIdentifier);
-		java.util.Optional<User> user = userRepository.findFirstByIdentifierHashOrIdentifier(identifierHash, normalizedIdentifier);
-		user.ifPresent(found -> ensureIdentifierHash(found, normalizedIdentifier, identifierHash));
-		return user;
+		return userRepository.findByIdentifier(normalizedIdentifier);
 	}
 
-	private void ensureIdentifierHash(User user, String normalizedIdentifier, String identifierHash) {
-		if (user == null) {
-			return;
+	private java.util.Optional<User> findUserByNormalizedIdentifierSafe(String identifier) {
+		try {
+			String normalized = IdentifierUtils.normalizeIdentifier(identifier);
+			return findUserByNormalizedIdentifier(normalized);
+		} catch (IllegalArgumentException ex) {
+			return java.util.Optional.empty();
 		}
-		if (user.getIdentifierHash() != null && !user.getIdentifierHash().isBlank()) {
-			return;
-		}
-		if (!normalizedIdentifier.equals(user.getIdentifier())) {
-			return;
-		}
-		user.setIdentifierHash(identifierHash);
-		userRepository.save(user);
 	}
 
-	private String hashIdentifier(String identifier) {
-		return identifierLookupHashService.hash(identifier);
+	private UserSearchResponseDto toUserSearchResponse(User user) {
+		UserProfile profile = userProfileRepository.findById(user.getId()).orElse(null);
+		String identifier = user.getIdentifier();
+		String displayName = buildDisplayName(user, profile);
+		return new UserSearchResponseDto(
+				user.getId(),
+				displayName,
+				identifier,
+				profile == null ? null : profile.getAvatarUrl());
 	}
 
 	private AuthenticatedUserResponseDto buildAuthenticatedUser(String userId, List<String> roles, List<String> permissions) {

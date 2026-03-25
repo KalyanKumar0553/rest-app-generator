@@ -3,7 +3,7 @@ export interface ProjectSettings {
   projectName: string;
   projectDescription: string;
   buildType: 'gradle' | 'maven';
-  language: 'java' | 'kotlin';
+  language: 'java' | 'kotlin' | 'node' | 'python';
   frontend: string;
 }
 

@@ -1,0 +1,17 @@
+<div class="content-body" [attr.id]="moduleKey">
+  <div class="sticky-header">
+    <div class="top-actions">
+      <button class="back-btn-desktop" (click)="host.handleHome()" aria-label="Go to home" mat-stroked-button>
+        <i class="bi bi-house-door"></i>
+        Home
+      </button>
+      <span class="active-editors-badge" *ngIf="host.shouldShowActiveEditorsBadge()">{{ host.activeEditorsBadgeLabel }}</span>
+    </div>
+  </div>
+  <div class="scrollable-content">
+    <app-rbac-module-tab *ngIf="moduleKey === 'rbac'"></app-rbac-module-tab>
+    <app-auth-module-tab *ngIf="moduleKey === 'auth'"></app-auth-module-tab>
+    <app-state-machine-module-tab *ngIf="moduleKey === 'state-machine'"></app-state-machine-module-tab>
+    <app-subscription-module-tab *ngIf="moduleKey === 'subscription'"></app-subscription-module-tab>
+  </div>
+</div>
