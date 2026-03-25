@@ -27,7 +27,8 @@ export const API_ENDPOINTS = {
   USER: {
     PROFILE: '/api/user/profile',
     UPDATE_PROFILE: '/api/user/profile/update',
-    CHANGE_PASSWORD: '/api/user/password/change'
+    CHANGE_PASSWORD: '/api/user/password/change',
+    SEARCH: '/api/users/search'
   },
   ADMIN: {
     DATA_ENCRYPTION_RULES: '/api/admin/data-encryption-rules',

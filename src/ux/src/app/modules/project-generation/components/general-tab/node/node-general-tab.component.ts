@@ -45,11 +45,6 @@ export class NodeGeneralTabComponent {
   @Input() projectDescriptionError = '';
   @Input({ required: true }) dbTypeOptions!: Array<'SQL' | 'NOSQL' | 'NONE'>;
   @Input({ required: true }) filteredDatabaseOptions!: Array<{ value: string; label: string; type: 'SQL' | 'NOSQL' }>;
-  @Input() backendProjectId: string | null = null;
-  @Input() contributorUserId = '';
-  @Input() projectContributors: Array<{ userId: string }> = [];
-  @Input() isContributorSaving = false;
-  @Input() canManageContributors = false;
   @Input() dependencyInput = '';
   @Input() filteredDependencies: string[] = [];
   @Input() selectedDependencies: string[] = [];
@@ -63,19 +58,12 @@ export class NodeGeneralTabComponent {
   @Output() addProfile = new EventEmitter<void>();
   @Output() removeProfile = new EventEmitter<string>();
   @Output() configureApiChange = new EventEmitter<MatCheckboxChange>();
-  @Output() contributorUserIdChange = new EventEmitter<string>();
-  @Output() addContributor = new EventEmitter<void>();
-  @Output() removeContributor = new EventEmitter<string>();
   @Output() dependencyInputChange = new EventEmitter<string>();
   @Output() dependencySearchChange = new EventEmitter<string>();
   @Output() dependencySelected = new EventEmitter<MatAutocompleteSelectedEvent>();
   @Output() dependencyRemoved = new EventEmitter<string>();
 
   readonly packageManagerOptions = ['npm', 'pnpm', 'yarn'];
-
-  onContributorUserIdChange(value: string): void {
-    this.contributorUserIdChange.emit(value);
-  }
 
   onDependencyInputChange(value: string): void {
     this.dependencyInputChange.emit(value);

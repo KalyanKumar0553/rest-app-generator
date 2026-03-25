@@ -40,6 +40,8 @@ import {
 } from '../../../../services/project.service';
 import type { ProjectDetails } from '../../../../services/project.service';
 import { ToastService } from '../../../../services/toast.service';
+import { UserService, UserSearchResult } from '../../../../services/user.service';
+import { SearchableSelectComponent, SelectOption } from '../../../../components/searchable-select/searchable-select.component';
 import { HttpClient } from '@angular/common/http';
 import { API_CONFIG, API_ENDPOINTS, STORAGE_KEYS } from '../../../../constants/api.constants';
 import { InfoBannerComponent } from '../../../../components/info-banner/info-banner.component';
@@ -138,7 +140,8 @@ import { buildProjectDashboardNavConfig } from '../../utils/project-tab-definiti
     ModulesSelectionComponent,
     SidenavComponent,
     InfoBannerComponent,
-    LoadingOverlayComponent
+    LoadingOverlayComponent,
+    SearchableSelectComponent
   ],
   templateUrl: './project-generation-dashboard.component.html',
   styleUrls: ['./project-generation-dashboard.component.css']
@@ -220,6 +223,11 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
   contributorPermissionColumns: string[] = ['userId', 'edit', 'generate', 'manage', 'actions'];
   contributorUserId = '';
   isContributorSaving = false;
+  showAddContributorModal = false;
+  contributorSearchResults: SelectOption[] = [];
+  isContributorSearching = false;
+  selectedContributorItems: SelectOption[] = [];
+  isAddingContributors = false;
   private projectEventsSource: WebSocket | null = null;
   private pendingGenerationYamlSpec: string | null = null;
   private generationGuestSubscription: Subscription | null = null;
@@ -299,6 +307,7 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
     private authService: AuthService,
     private projectService: ProjectService,
     private toastService: ToastService,
+    private userService: UserService,
     private http: HttpClient,
     private validatorService: ValidatorService,
     private localStorageService: LocalStorageService,
@@ -727,6 +736,74 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
       console.error('Error removing contributor:', error);
     } finally {
       this.isContributorSaving = false;
+    }
+  }
+
+  openAddContributorModal(): void {
+    this.showAddContributorModal = true;
+    this.contributorSearchResults = [];
+    this.selectedContributorItems = [];
+    this.isContributorSearching = false;
+  }
+
+  closeAddContributorModal(): void {
+    this.showAddContributorModal = false;
+    this.contributorSearchResults = [];
+    this.selectedContributorItems = [];
+  }
+
+  onContributorSearch(query: string): void {
+    if (!query || query.length < 2) {
+      this.contributorSearchResults = [];
+      this.isContributorSearching = false;
+      return;
+    }
+    this.isContributorSearching = true;
+    this.userService.searchUsers(query)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (results: UserSearchResult[]) => {
+          this.contributorSearchResults = results.map((user) => ({
+            id: user.userId,
+            label: user.name || user.userId,
+            subtitle: user.email,
+            avatarUrl: user.avatarUrl
+          }));
+          this.isContributorSearching = false;
+        },
+        error: () => {
+          this.contributorSearchResults = [];
+          this.isContributorSearching = false;
+        }
+      });
+  }
+
+  get existingContributorIds(): string[] {
+    return this.projectContributors.map((c) => c.userId);
+  }
+
+  async submitAddContributors(): Promise<void> {
+    const projectId = this.backendProjectId?.trim();
+    if (!projectId) {
+      this.toastService.error('Save project first before managing contributors.');
+      return;
+    }
+    if (this.selectedContributorItems.length === 0) {
+      this.toastService.error('Select at least one user to add.');
+      return;
+    }
+    this.isAddingContributors = true;
+    try {
+      for (const item of this.selectedContributorItems) {
+        this.projectContributors = await firstValueFrom(this.projectService.addProjectContributor(projectId, item.id));
+      }
+      this.toastService.success('Contributors added successfully.');
+      this.closeAddContributorModal();
+    } catch (error) {
+      this.toastService.error('Failed to add contributors.');
+      console.error('Error adding contributors:', error);
+    } finally {
+      this.isAddingContributors = false;
     }
   }
 

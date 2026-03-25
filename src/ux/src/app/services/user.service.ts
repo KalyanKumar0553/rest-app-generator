@@ -31,6 +31,13 @@ export interface ChangePasswordPayload {
   newPassword: string;
 }
 
+export interface UserSearchResult {
+  userId: string;
+  name: string;
+  email: string;
+  avatarUrl?: string | null;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -68,5 +75,10 @@ export class UserService {
   changePassword(payload: ChangePasswordPayload): Observable<void> {
     const url = `${API_CONFIG.BASE_URL}${API_ENDPOINTS.USER.CHANGE_PASSWORD}`;
     return this.http.post<any>(url, payload).pipe(map(() => void 0));
+  }
+
+  searchUsers(query: string): Observable<UserSearchResult[]> {
+    const url = `${API_CONFIG.BASE_URL}${API_ENDPOINTS.USER.SEARCH}?query=${encodeURIComponent(query)}`;
+    return this.http.get<any>(url).pipe(map((response: any) => response.data || response));
   }
 }
