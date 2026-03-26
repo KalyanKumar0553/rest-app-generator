@@ -2,11 +2,9 @@ package com.src.main.subscription.service.impl;
 
 import java.time.LocalDateTime;
 import java.util.List;
-
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
 import com.src.main.auth.service.AccessProfileRoleProvider;
 import com.src.main.subscription.entity.CustomerSubscriptionEntity;
 import com.src.main.subscription.entity.SubscriptionPlanRoleMappingEntity;
@@ -16,12 +14,8 @@ import com.src.main.subscription.repository.SubscriptionPlanRoleMappingRepositor
 import com.src.main.subscription.repository.SubscriptionRoleAssignmentRepository;
 import com.src.main.subscription.service.SubscriptionRoleAssignmentService;
 
-import lombok.RequiredArgsConstructor;
-
 @Service
-@RequiredArgsConstructor
 public class SubscriptionRoleAssignmentServiceImpl implements SubscriptionRoleAssignmentService, AccessProfileRoleProvider {
-
 	private final SubscriptionPlanRoleMappingRepository planRoleMappingRepository;
 	private final SubscriptionRoleAssignmentRepository roleAssignmentRepository;
 
@@ -36,10 +30,7 @@ public class SubscriptionRoleAssignmentServiceImpl implements SubscriptionRoleAs
 		if (!isRoleGrantingStatus(subscription.getStatus())) {
 			return;
 		}
-		List<String> roleNames = planRoleMappingRepository.findAllByPlan_IdAndDeletedFalse(subscription.getPlan().getId()).stream()
-				.map(SubscriptionPlanRoleMappingEntity::getRoleName)
-				.distinct()
-				.toList();
+		List<String> roleNames = planRoleMappingRepository.findAllByPlan_IdAndDeletedFalse(subscription.getPlan().getId()).stream().map(SubscriptionPlanRoleMappingEntity::getRoleName).distinct().toList();
 		if (roleNames.isEmpty()) {
 			return;
 		}
@@ -70,8 +61,11 @@ public class SubscriptionRoleAssignmentServiceImpl implements SubscriptionRoleAs
 	}
 
 	private boolean isRoleGrantingStatus(SubscriptionStatus status) {
-		return status == SubscriptionStatus.ACTIVE
-				|| status == SubscriptionStatus.TRIAL
-				|| status == SubscriptionStatus.PAYMENT_PENDING;
+		return status == SubscriptionStatus.ACTIVE || status == SubscriptionStatus.TRIAL || status == SubscriptionStatus.PAYMENT_PENDING;
+	}
+
+	public SubscriptionRoleAssignmentServiceImpl(final SubscriptionPlanRoleMappingRepository planRoleMappingRepository, final SubscriptionRoleAssignmentRepository roleAssignmentRepository) {
+		this.planRoleMappingRepository = planRoleMappingRepository;
+		this.roleAssignmentRepository = roleAssignmentRepository;
 	}
 }

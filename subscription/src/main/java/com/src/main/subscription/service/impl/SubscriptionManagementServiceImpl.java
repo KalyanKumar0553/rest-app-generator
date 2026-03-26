@@ -3,13 +3,11 @@ package com.src.main.subscription.service.impl;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
-
 import org.springframework.cache.annotation.Caching;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
 import com.src.main.subscription.config.SubscriptionModuleProperties;
 import com.src.main.subscription.dto.CancelSubscriptionRequest;
 import com.src.main.subscription.dto.DowngradeSubscriptionRequest;
@@ -41,12 +39,8 @@ import com.src.main.subscription.service.SubscriptionManagementService;
 import com.src.main.subscription.service.SubscriptionRoleAssignmentService;
 import com.src.main.subscription.util.SubscriptionMapperUtil;
 
-import lombok.RequiredArgsConstructor;
-
 @Service
-@RequiredArgsConstructor
 public class SubscriptionManagementServiceImpl implements SubscriptionManagementService {
-
 	private final CustomerSubscriptionRepository customerSubscriptionRepository;
 	private final SubscriptionLookupService lookupService;
 	private final PricingService pricingService;
@@ -58,10 +52,7 @@ public class SubscriptionManagementServiceImpl implements SubscriptionManagement
 
 	@Override
 	@Transactional
-	@Caching(evict = {
-			@CacheEvict(cacheNames = "activeSubscriptionByTenant", key = "#tenantId"),
-			@CacheEvict(cacheNames = "entitlementsByTenant", key = "#tenantId")
-	})
+	@Caching(evict = {@CacheEvict(cacheNames = "activeSubscriptionByTenant", key = "#tenantId"), @CacheEvict(cacheNames = "entitlementsByTenant", key = "#tenantId")})
 	public SubscriptionResponse assignDefaultPlan(Long tenantId) {
 		CustomerSubscriptionEntity existing = lookupService.findActiveSubscription(tenantId);
 		if (existing != null) {
@@ -89,17 +80,12 @@ public class SubscriptionManagementServiceImpl implements SubscriptionManagement
 
 	@Override
 	@Transactional
-	@Caching(evict = {
-			@CacheEvict(cacheNames = "activeSubscriptionByTenant", key = "#request.tenantId"),
-			@CacheEvict(cacheNames = "entitlementsByTenant", key = "#request.tenantId")
-	})
+	@Caching(evict = {@CacheEvict(cacheNames = "activeSubscriptionByTenant", key = "#request.tenantId"), @CacheEvict(cacheNames = "entitlementsByTenant", key = "#request.tenantId")})
 	public SubscriptionResponse startTrial(StartTrialRequest request) {
 		if (lookupService.findActiveSubscription(request.getTenantId()) != null) {
 			throw new InvalidSubscriptionOperationException("Tenant already has an active subscription");
 		}
-		SubscriptionPlanEntity plan = request.getPlanCode() == null || request.getPlanCode().isBlank()
-				? lookupService.getDefaultPlan()
-				: lookupService.getPlanByCode(request.getPlanCode());
+		SubscriptionPlanEntity plan = request.getPlanCode() == null || request.getPlanCode().isBlank() ? lookupService.getDefaultPlan() : lookupService.getPlanByCode(request.getPlanCode());
 		int trialDays = plan.getTrialDays() == null ? 14 : plan.getTrialDays();
 		LocalDateTime now = LocalDateTime.now();
 		CustomerSubscriptionEntity entity = new CustomerSubscriptionEntity();
@@ -125,29 +111,13 @@ public class SubscriptionManagementServiceImpl implements SubscriptionManagement
 
 	@Override
 	@Transactional
-	@Caching(evict = {
-			@CacheEvict(cacheNames = "activeSubscriptionByTenant", key = "#request.tenantId"),
-			@CacheEvict(cacheNames = "entitlementsByTenant", key = "#request.tenantId")
-	})
+	@Caching(evict = {@CacheEvict(cacheNames = "activeSubscriptionByTenant", key = "#request.tenantId"), @CacheEvict(cacheNames = "entitlementsByTenant", key = "#request.tenantId")})
 	public SubscriptionResponse subscribe(SubscriptionRequest request) {
 		SubscriptionPlanEntity plan = lookupService.getPlanByCode(request.getPlanCode());
 		LocalDateTime startAt = request.getStartAt() == null ? LocalDateTime.now() : request.getStartAt();
 		closeCurrentSubscription(request.getTenantId(), startAt, "Replaced by new subscription");
 		ResolvedPriceResponse price = resolvePriceForPlan(plan, request.getBillingCycle(), request.getCurrencyCode(), request.getCouponCode(), request.getTenantId(), startAt);
-		CustomerSubscriptionEntity entity = buildSubscriptionEntity(
-				request.getTenantId(),
-				resolveSubscriberUserId(request.getUserId()),
-				plan,
-				request.getBillingCycle(),
-				startAt,
-				request.getAutoRenew(),
-				price == null ? BigDecimal.ZERO : price.getAmount(),
-				price == null ? normalizeCurrency(request.getCurrencyCode()) : price.getCurrencyCode(),
-				price == null ? null : price.getCouponCode(),
-				price == null ? null : price.getCouponDiscountAmount(),
-				request.getSource(),
-				request.getExternalReference(),
-				request.getMetadataJson());
+		CustomerSubscriptionEntity entity = buildSubscriptionEntity(request.getTenantId(), resolveSubscriberUserId(request.getUserId()), plan, request.getBillingCycle(), startAt, request.getAutoRenew(), price == null ? BigDecimal.ZERO : price.getAmount(), price == null ? normalizeCurrency(request.getCurrencyCode()) : price.getCurrencyCode(), price == null ? null : price.getCouponCode(), price == null ? null : price.getCouponDiscountAmount(), request.getSource(), request.getExternalReference(), request.getMetadataJson());
 		CustomerSubscriptionEntity saved = customerSubscriptionRepository.save(entity);
 		saveCouponRedemption(saved);
 		subscriptionRoleAssignmentService.syncAssignments(saved);
@@ -157,10 +127,7 @@ public class SubscriptionManagementServiceImpl implements SubscriptionManagement
 
 	@Override
 	@Transactional
-	@Caching(evict = {
-			@CacheEvict(cacheNames = "activeSubscriptionByTenant", key = "#request.tenantId"),
-			@CacheEvict(cacheNames = "entitlementsByTenant", key = "#request.tenantId")
-	})
+	@Caching(evict = {@CacheEvict(cacheNames = "activeSubscriptionByTenant", key = "#request.tenantId"), @CacheEvict(cacheNames = "entitlementsByTenant", key = "#request.tenantId")})
 	public SubscriptionResponse upgrade(UpgradeSubscriptionRequest request) {
 		CustomerSubscriptionEntity current = requireCurrent(request.getTenantId());
 		SubscriptionRequest subscribeRequest = new SubscriptionRequest();
@@ -181,10 +148,7 @@ public class SubscriptionManagementServiceImpl implements SubscriptionManagement
 
 	@Override
 	@Transactional
-	@Caching(evict = {
-			@CacheEvict(cacheNames = "activeSubscriptionByTenant", key = "#request.tenantId"),
-			@CacheEvict(cacheNames = "entitlementsByTenant", key = "#request.tenantId")
-	})
+	@Caching(evict = {@CacheEvict(cacheNames = "activeSubscriptionByTenant", key = "#request.tenantId"), @CacheEvict(cacheNames = "entitlementsByTenant", key = "#request.tenantId")})
 	public SubscriptionResponse scheduleDowngrade(DowngradeSubscriptionRequest request) {
 		CustomerSubscriptionEntity current = requireCurrent(request.getTenantId());
 		SubscriptionPlanEntity targetPlan = lookupService.getPlanByCode(request.getTargetPlanCode());
@@ -199,10 +163,7 @@ public class SubscriptionManagementServiceImpl implements SubscriptionManagement
 
 	@Override
 	@Transactional
-	@Caching(evict = {
-			@CacheEvict(cacheNames = "activeSubscriptionByTenant", key = "#request.tenantId"),
-			@CacheEvict(cacheNames = "entitlementsByTenant", key = "#request.tenantId")
-	})
+	@Caching(evict = {@CacheEvict(cacheNames = "activeSubscriptionByTenant", key = "#request.tenantId"), @CacheEvict(cacheNames = "entitlementsByTenant", key = "#request.tenantId")})
 	public SubscriptionResponse cancel(CancelSubscriptionRequest request) {
 		CustomerSubscriptionEntity current = requireCurrent(request.getTenantId());
 		current.setAutoRenew(Boolean.FALSE);
@@ -220,10 +181,7 @@ public class SubscriptionManagementServiceImpl implements SubscriptionManagement
 
 	@Override
 	@Transactional
-	@Caching(evict = {
-			@CacheEvict(cacheNames = "activeSubscriptionByTenant", key = "#request.tenantId"),
-			@CacheEvict(cacheNames = "entitlementsByTenant", key = "#request.tenantId")
-	})
+	@Caching(evict = {@CacheEvict(cacheNames = "activeSubscriptionByTenant", key = "#request.tenantId"), @CacheEvict(cacheNames = "entitlementsByTenant", key = "#request.tenantId")})
 	public SubscriptionResponse renew(RenewSubscriptionRequest request) {
 		CustomerSubscriptionEntity current = requireCurrent(request.getTenantId());
 		if (current.getEndAt() == null) {
@@ -250,27 +208,8 @@ public class SubscriptionManagementServiceImpl implements SubscriptionManagement
 			current.setEndAt(now);
 			customerSubscriptionRepository.save(current);
 			subscriptionRoleAssignmentService.syncAssignments(current);
-			ResolvedPriceResponse price = resolvePriceForPlan(
-					targetPlan,
-					current.getScheduledTargetBillingCycle(),
-					current.getScheduledTargetCurrencyCode(),
-					null,
-					current.getTenantId(),
-					now);
-			CustomerSubscriptionEntity replacement = buildSubscriptionEntity(
-					current.getTenantId(),
-					current.getSubscriberUserId(),
-					targetPlan,
-					current.getScheduledTargetBillingCycle(),
-					now,
-					Boolean.TRUE,
-					price == null ? BigDecimal.ZERO : price.getAmount(),
-					price == null ? current.getScheduledTargetCurrencyCode() : price.getCurrencyCode(),
-					price == null ? null : price.getCouponCode(),
-					price == null ? null : price.getCouponDiscountAmount(),
-					SubscriptionSource.SYSTEM,
-					null,
-					null);
+			ResolvedPriceResponse price = resolvePriceForPlan(targetPlan, current.getScheduledTargetBillingCycle(), current.getScheduledTargetCurrencyCode(), null, current.getTenantId(), now);
+			CustomerSubscriptionEntity replacement = buildSubscriptionEntity(current.getTenantId(), current.getSubscriberUserId(), targetPlan, current.getScheduledTargetBillingCycle(), now, Boolean.TRUE, price == null ? BigDecimal.ZERO : price.getAmount(), price == null ? current.getScheduledTargetCurrencyCode() : price.getCurrencyCode(), price == null ? null : price.getCouponCode(), price == null ? null : price.getCouponDiscountAmount(), SubscriptionSource.SYSTEM, null, null);
 			CustomerSubscriptionEntity savedReplacement = customerSubscriptionRepository.save(replacement);
 			saveCouponRedemption(savedReplacement);
 			subscriptionRoleAssignmentService.syncAssignments(savedReplacement);
@@ -298,9 +237,7 @@ public class SubscriptionManagementServiceImpl implements SubscriptionManagement
 	@Override
 	@Transactional(readOnly = true)
 	public List<SubscriptionResponse> getSubscriptionHistory(Long tenantId) {
-		return customerSubscriptionRepository.findAllByTenantIdAndDeletedFalseOrderByCreatedAtDesc(tenantId).stream()
-				.map(SubscriptionMapperUtil::toSubscriptionResponse)
-				.toList();
+		return customerSubscriptionRepository.findAllByTenantIdAndDeletedFalseOrderByCreatedAtDesc(tenantId).stream().map(SubscriptionMapperUtil::toSubscriptionResponse).toList();
 	}
 
 	private CustomerSubscriptionEntity requireCurrent(Long tenantId) {
@@ -325,20 +262,7 @@ public class SubscriptionManagementServiceImpl implements SubscriptionManagement
 		logEvent(current, "CANCELLED", current.getPlan(), current.getPlan(), SubscriptionStatus.ACTIVE, SubscriptionStatus.CANCELLED, reason);
 	}
 
-	private CustomerSubscriptionEntity buildSubscriptionEntity(
-			Long tenantId,
-			String subscriberUserId,
-			SubscriptionPlanEntity plan,
-			BillingCycle billingCycle,
-			LocalDateTime startAt,
-			Boolean autoRenew,
-			BigDecimal priceSnapshot,
-			String currencyCode,
-			String couponCode,
-			BigDecimal couponDiscountAmount,
-			SubscriptionSource source,
-			String externalReference,
-			String metadataJson) {
+	private CustomerSubscriptionEntity buildSubscriptionEntity(Long tenantId, String subscriberUserId, SubscriptionPlanEntity plan, BillingCycle billingCycle, LocalDateTime startAt, Boolean autoRenew, BigDecimal priceSnapshot, String currencyCode, String couponCode, BigDecimal couponDiscountAmount, SubscriptionSource source, String externalReference, String metadataJson) {
 		CustomerSubscriptionEntity entity = new CustomerSubscriptionEntity();
 		entity.setTenantId(tenantId);
 		entity.setSubscriberUserId(subscriberUserId);
@@ -351,8 +275,7 @@ public class SubscriptionManagementServiceImpl implements SubscriptionManagement
 		entity.setPriceSnapshot(priceSnapshot);
 		entity.setCurrencyCode(normalizeCurrency(currencyCode));
 		if (couponCode != null) {
-			SubscriptionCouponEntity coupon = subscriptionCouponRepository.findByCodeAndDeletedFalse(couponCode)
-					.orElseThrow(() -> new InvalidSubscriptionOperationException("Coupon not found: " + couponCode));
+			SubscriptionCouponEntity coupon = subscriptionCouponRepository.findByCodeAndDeletedFalse(couponCode).orElseThrow(() -> new InvalidSubscriptionOperationException("Coupon not found: " + couponCode));
 			entity.setAppliedCoupon(coupon);
 			entity.setAppliedCouponCode(coupon.getCode());
 			entity.setAppliedDiscountType(coupon.getDiscountType().name());
@@ -370,13 +293,7 @@ public class SubscriptionManagementServiceImpl implements SubscriptionManagement
 		return resolvePriceForPlan(plan, cycle, currencyCode, null, null, asOf);
 	}
 
-	private ResolvedPriceResponse resolvePriceForPlan(
-			SubscriptionPlanEntity plan,
-			BillingCycle cycle,
-			String currencyCode,
-			String couponCode,
-			Long tenantId,
-			LocalDateTime asOf) {
+	private ResolvedPriceResponse resolvePriceForPlan(SubscriptionPlanEntity plan, BillingCycle cycle, String currencyCode, String couponCode, Long tenantId, LocalDateTime asOf) {
 		if (plan.getPlanType() == PlanType.FREE) {
 			return null;
 		}
@@ -391,26 +308,8 @@ public class SubscriptionManagementServiceImpl implements SubscriptionManagement
 		};
 	}
 
-	private void logEvent(
-			CustomerSubscriptionEntity subscription,
-			String eventType,
-			SubscriptionPlanEntity oldPlan,
-			SubscriptionPlanEntity newPlan,
-			SubscriptionStatus oldStatus,
-			SubscriptionStatus newStatus,
-			String reason) {
-		auditService.logEvent(SubscriptionAuditCommand.builder()
-				.tenantId(subscription.getTenantId())
-				.subscription(subscription)
-				.eventType(eventType)
-				.oldPlan(oldPlan)
-				.newPlan(newPlan)
-				.oldStatus(oldStatus)
-				.newStatus(newStatus)
-				.actorType(AuditActorType.SYSTEM)
-				.actorId("SYSTEM")
-				.reason(reason)
-				.build());
+	private void logEvent(CustomerSubscriptionEntity subscription, String eventType, SubscriptionPlanEntity oldPlan, SubscriptionPlanEntity newPlan, SubscriptionStatus oldStatus, SubscriptionStatus newStatus, String reason) {
+		auditService.logEvent(SubscriptionAuditCommand.builder().tenantId(subscription.getTenantId()).subscription(subscription).eventType(eventType).oldPlan(oldPlan).newPlan(newPlan).oldStatus(oldStatus).newStatus(newStatus).actorType(AuditActorType.SYSTEM).actorId("SYSTEM").reason(reason).build());
 	}
 
 	private String resolveSubscriberUserId(String requestedUserId) {
@@ -453,5 +352,16 @@ public class SubscriptionManagementServiceImpl implements SubscriptionManagement
 			return properties.getDefaultCurrency();
 		}
 		return currencyCode.trim().toUpperCase();
+	}
+
+	public SubscriptionManagementServiceImpl(final CustomerSubscriptionRepository customerSubscriptionRepository, final SubscriptionLookupService lookupService, final PricingService pricingService, final SubscriptionAuditService auditService, final SubscriptionRoleAssignmentService subscriptionRoleAssignmentService, final SubscriptionCouponRepository subscriptionCouponRepository, final SubscriptionCouponRedemptionRepository subscriptionCouponRedemptionRepository, final SubscriptionModuleProperties properties) {
+		this.customerSubscriptionRepository = customerSubscriptionRepository;
+		this.lookupService = lookupService;
+		this.pricingService = pricingService;
+		this.auditService = auditService;
+		this.subscriptionRoleAssignmentService = subscriptionRoleAssignmentService;
+		this.subscriptionCouponRepository = subscriptionCouponRepository;
+		this.subscriptionCouponRedemptionRepository = subscriptionCouponRedemptionRepository;
+		this.properties = properties;
 	}
 }

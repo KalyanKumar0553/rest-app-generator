@@ -134,13 +134,6 @@ public class InitializrGradleGenerator {
 			build.dependencies().add("kotlin-reflect",
 					Dependency.withCoordinates("org.jetbrains.kotlin", "kotlin-reflect").scope(DependencyScope.COMPILE));
 		}
-		if (includeLombok) {
-			build.dependencies().add("lombok",
-					Dependency.withCoordinates("org.projectlombok", "lombok").scope(DependencyScope.COMPILE_ONLY));
-			build.dependencies().add("lombok-ap",
-					Dependency.withCoordinates("org.projectlombok", "lombok").scope(DependencyScope.ANNOTATION_PROCESSOR));
-		}
-
 		if (includeJpa) {
 			// Jakarta Persistence API
 			build.dependencies().add("jakarta-persistence-api",

@@ -3,38 +3,28 @@ package com.src.main.service;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.regex.Pattern;
-
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
 import com.src.main.communication.service.MsgService;
 import com.src.main.model.NewsletterSubscriptionEntity;
 import com.src.main.repository.NewsletterSubscriptionRepository;
 import com.src.main.util.AppConstants;
 
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-
 @Service
-@RequiredArgsConstructor
-@Slf4j
 public class NewsletterSubscriptionServiceImpl implements NewsletterSubscriptionService {
-
+    private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(NewsletterSubscriptionServiceImpl.class);
     private static final Pattern EMAIL_PATTERN = Pattern.compile(AppConstants.EMAIL_REGEX);
     private static final String NEWSLETTER_MAX_RETRY_FEATURE_KEY = "app.newsletter.max-email-retry-attempts";
     private static final int DEFAULT_MAX_EMAIL_RETRY_ATTEMPTS = 3;
-
     private final NewsletterSubscriptionRepository newsletterSubscriptionRepository;
     private final MsgService msgService;
     private final DataEncryptionService dataEncryptionService;
     private final ConfigMetadataService configMetadataService;
-
     @Value("${app.newsletter.email.from:no-reply@bootrid.io}")
     private String emailFrom;
-
     @Value("${app.newsletter.email.subject:Welcome to BootRid updates}")
     private String emailSubject;
 
@@ -71,22 +61,16 @@ public class NewsletterSubscriptionServiceImpl implements NewsletterSubscription
     @Scheduled(fixedDelayString = "${app.newsletter.scheduler.fixed-delay-ms:180000}")
     public void processPendingWelcomeEmails() {
         int maxRetryAttempts = getMaxEmailRetryAttempts();
-        List<NewsletterSubscriptionEntity> pending = maxRetryAttempts < 0
-                ? newsletterSubscriptionRepository.findTop50ByWelcomeEmailSentFalseAndSendingInProgressFalseOrderBySubscribedAtAsc()
-                : newsletterSubscriptionRepository
-                        .findTop50ByWelcomeEmailSentFalseAndSendingInProgressFalseAndSendAttemptCountLessThanOrderBySubscribedAtAsc(maxRetryAttempts);
-
+        List<NewsletterSubscriptionEntity> pending = maxRetryAttempts < 0 ? newsletterSubscriptionRepository.findTop50ByWelcomeEmailSentFalseAndSendingInProgressFalseOrderBySubscribedAtAsc() : newsletterSubscriptionRepository.findTop50ByWelcomeEmailSentFalseAndSendingInProgressFalseAndSendAttemptCountLessThanOrderBySubscribedAtAsc(maxRetryAttempts);
         for (NewsletterSubscriptionEntity subscription : pending) {
             Long id = subscription.getId();
             if (id == null) {
                 continue;
             }
-
             int claimed = claimForSending(id);
             if (claimed == 0) {
                 continue;
             }
-
             try {
                 String decryptedEmail = dataEncryptionService.decrypt(subscription.getEmail());
                 if (decryptedEmail == null || decryptedEmail.isBlank()) {
@@ -138,13 +122,13 @@ public class NewsletterSubscriptionServiceImpl implements NewsletterSubscription
     private String buildWelcomeHtml(String recipient) {
         String safeRecipient = recipient == null ? "" : recipient;
         return """
-                <div style=\"font-family:Arial,sans-serif;line-height:1.6;color:#333;\">
-                  <h2 style=\"margin:0 0 12px;\">Welcome to BootRid updates</h2>
-                  <p style=\"margin:0 0 10px;\">Hi %s,</p>
-                  <p style=\"margin:0 0 10px;\">Thanks for subscribing to BootRid product updates.</p>
-                  <p style=\"margin:0;\">We will share important releases and improvements with you.</p>
-                </div>
-                """.formatted(safeRecipient);
+            <div style=\"font-family:Arial,sans-serif;line-height:1.6;color:#333;\">
+              <h2 style=\"margin:0 0 12px;\">Welcome to BootRid updates</h2>
+              <p style=\"margin:0 0 10px;\">Hi %s,</p>
+              <p style=\"margin:0 0 10px;\">Thanks for subscribing to BootRid product updates.</p>
+              <p style=\"margin:0;\">We will share important releases and improvements with you.</p>
+            </div>
+            """.formatted(safeRecipient);
     }
 
     private String abbreviate(String value, int maxLength) {
@@ -155,8 +139,13 @@ public class NewsletterSubscriptionServiceImpl implements NewsletterSubscription
     }
 
     private int getMaxEmailRetryAttempts() {
-        return configMetadataService.getPropertyCurrentIntValue(NEWSLETTER_MAX_RETRY_FEATURE_KEY)
-                .filter(value -> value >= -1)
-                .orElse(DEFAULT_MAX_EMAIL_RETRY_ATTEMPTS);
+        return configMetadataService.getPropertyCurrentIntValue(NEWSLETTER_MAX_RETRY_FEATURE_KEY).filter(value -> value >= -1).orElse(DEFAULT_MAX_EMAIL_RETRY_ATTEMPTS);
+    }
+
+    public NewsletterSubscriptionServiceImpl(final NewsletterSubscriptionRepository newsletterSubscriptionRepository, final MsgService msgService, final DataEncryptionService dataEncryptionService, final ConfigMetadataService configMetadataService) {
+        this.newsletterSubscriptionRepository = newsletterSubscriptionRepository;
+        this.msgService = msgService;
+        this.dataEncryptionService = dataEncryptionService;
+        this.configMetadataService = configMetadataService;
     }
 }

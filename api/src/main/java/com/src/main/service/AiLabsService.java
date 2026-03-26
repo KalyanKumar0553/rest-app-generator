@@ -12,7 +12,6 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.ai.chat.client.ChatClient;
@@ -24,7 +23,6 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.yaml.snakeyaml.Yaml;
-
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.src.main.dto.AiLabsGenerateResponseDTO;
@@ -34,13 +32,9 @@ import com.src.main.dto.ProjectDraftResponseDTO;
 import com.src.main.dto.ProjectDraftUpsertRequestDTO;
 import com.src.main.exception.GenericException;
 
-import lombok.RequiredArgsConstructor;
-
 @Service
-@RequiredArgsConstructor
 public class AiLabsService {
 	private static final String AI_LABS_FEATURE_KEY = "app.feature.ai-labs.enabled";
-
 	private static final Pattern YAML_FENCE_PATTERN = Pattern.compile("```(?:yaml|yml)?\\s*(.*?)```", Pattern.DOTALL | Pattern.CASE_INSENSITIVE);
 	private static final Pattern JSON_FENCE_PATTERN = Pattern.compile("```(?:json)?\\s*(.*?)```", Pattern.DOTALL | Pattern.CASE_INSENSITIVE);
 	private static final String GENERIC_AI_GENERATION_ERROR = "Error while generating the Project. Please try again";
@@ -50,10 +44,7 @@ public class AiLabsService {
 	private static final String STATUS_FAILED = "FAILED";
 	private static final TypeReference<Map<String, Object>> MAP_TYPE = new TypeReference<>() {
 	};
-	private static final ResponseFormat AI_DRAFT_RESPONSE_FORMAT = ResponseFormat.builder()
-			.type(ResponseFormat.Type.JSON_OBJECT)
-			.build();
-
+	private static final ResponseFormat AI_DRAFT_RESPONSE_FORMAT = ResponseFormat.builder().type(ResponseFormat.Type.JSON_OBJECT).build();
 	private final AiLabsEventStreamService eventStreamService;
 	private final ProjectService projectService;
 	private final ProjectDraftSpecMapperService projectDraftSpecMapperService;
@@ -63,13 +54,10 @@ public class AiLabsService {
 	private final AiLabsQuotaService aiLabsQuotaService;
 	private final ChatClient.Builder chatClientBuilder;
 	private final ObjectMapper objectMapper;
-
 	@Value("${app.ai.openai.enabled:false}")
 	private boolean openAiEnabled;
-
 	@Value("${app.ai.openai.model:gpt-4o-mini}")
 	private String openAiModel;
-
 	private final ConcurrentMap<UUID, JobState> jobs = new ConcurrentHashMap<>();
 
 	public AiLabsGenerateResponseDTO createJob(String prompt, String ownerId) {
@@ -116,15 +104,12 @@ public class AiLabsService {
 			updateStep(state, "contact_openai", STATUS_IN_PROGRESS, "Opening Spring AI stream to OpenAI.");
 			Map<String, Object> draftData = requestDraftFromOpenAi(state);
 			updateStep(state, "contact_openai", STATUS_COMPLETED, "Received a complete streamed project plan from OpenAI.");
-
 			updateStep(state, "build_spec", STATUS_IN_PROGRESS, "Normalizing the generated project draft.");
 			Map<String, Object> normalizedDraft = normalizeDraftData(draftData, state.prompt(), ownerId);
 			updateStep(state, "build_spec", STATUS_COMPLETED, "Prepared project draft data.");
-
 			updateStep(state, "validate_spec", STATUS_IN_PROGRESS, "Validating the generated project spec.");
 			projectDraftSpecMapperService.buildSpec(normalizedDraft);
 			updateStep(state, "validate_spec", STATUS_COMPLETED, "Validated the generated project spec.");
-
 			updateStep(state, "save_project", STATUS_IN_PROGRESS, "Saving your generated project.");
 			ProjectDraftUpsertRequestDTO request = new ProjectDraftUpsertRequestDTO();
 			request.setDraftData(normalizedDraft);
@@ -142,68 +127,55 @@ public class AiLabsService {
 	}
 
 	private Map<String, Object> requestDraftFromOpenAi(JobState state) throws Exception {
-		ChatClient chatClient = chatClientBuilder
-				.defaultOptions(OpenAiChatOptions.builder()
-						.model(openAiModel)
-						.temperature(0.1d)
-						.responseFormat(AI_DRAFT_RESPONSE_FORMAT)
-						.build())
-				.build();
+		ChatClient chatClient = chatClientBuilder.defaultOptions(OpenAiChatOptions.builder().model(openAiModel).temperature(0.1).responseFormat(AI_DRAFT_RESPONSE_FORMAT).build()).build();
 		StringBuilder contentBuffer = new StringBuilder();
 		AtomicInteger chunkCounter = new AtomicInteger();
-		chatClient.prompt()
-				.system(systemPrompt())
-				.user(state.prompt())
-				.stream()
-				.content()
-				.doOnNext(chunk -> {
-					if (chunk == null || chunk.isBlank()) {
-						return;
-					}
-					contentBuffer.append(chunk);
-					state.updateStreamPreview(contentBuffer.toString());
-					int index = chunkCounter.incrementAndGet();
-					if (index == 1 || index % 12 == 0) {
-						updateStep(state, "contact_openai", STATUS_IN_PROGRESS,
-								"Streaming AI response... " + contentBuffer.length() + " characters received.");
-					}
-				})
-				.blockLast();
+		chatClient.prompt().system(systemPrompt()).user(state.prompt()).stream().content().doOnNext(chunk -> {
+			if (chunk == null || chunk.isBlank()) {
+				return;
+			}
+			contentBuffer.append(chunk);
+			state.updateStreamPreview(contentBuffer.toString());
+			int index = chunkCounter.incrementAndGet();
+			if (index == 1 || index % 12 == 0) {
+				updateStep(state, "contact_openai", STATUS_IN_PROGRESS, "Streaming AI response... " + contentBuffer.length() + " characters received.");
+			}
+		}).blockLast();
 		String text = contentBuffer.toString();
 		return parseDraftPayload(text);
 	}
 
 	private String systemPrompt() {
 		return """
-				Return only JSON that matches the provided schema. No prose. No markdown fences unless required by the client.
-				Use only these top keys when needed: settings, database, preferences, selectedDependencies, entities, relations, dataObjects, enums, mappers, controllers.
-				Default language is java unless node or python is explicitly requested.
-				Omit empty sections and default values.
-				Prefer short lists and only essential fields.
-				If the request is ambiguous, choose a safe, minimal starter project.
-				At minimum include:
-				settings:
-				  language: java|node|python
-				  projectName: concise project name
-				  projectGroup: io.bootrid
-				  projectDescription: short description
-				For entities use:
-				entities:
-				  - name: Customer
-				    addRestEndpoints: true
-				    addCrudOperations: true
-				    fields:
-				      - name: id
-				        type: Long
-				        primaryKey: true
-				        generationType: IDENTITY
-				      - name: email
-				        type: String
-				        required: true
-				        unique: true
-				For node projects packageManager may be npm or pnpm.
-				For python projects prefer fastapi.
-				""";
+			Return only JSON that matches the provided schema. No prose. No markdown fences unless required by the client.
+			Use only these top keys when needed: settings, database, preferences, selectedDependencies, entities, relations, dataObjects, enums, mappers, controllers.
+			Default language is java unless node or python is explicitly requested.
+			Omit empty sections and default values.
+			Prefer short lists and only essential fields.
+			If the request is ambiguous, choose a safe, minimal starter project.
+			At minimum include:
+			settings:
+			  language: java|node|python
+			  projectName: concise project name
+			  projectGroup: io.bootrid
+			  projectDescription: short description
+			For entities use:
+			entities:
+			  - name: Customer
+			    addRestEndpoints: true
+			    addCrudOperations: true
+			    fields:
+			      - name: id
+			        type: Long
+			        primaryKey: true
+			        generationType: IDENTITY
+			      - name: email
+			        type: String
+			        required: true
+			        unique: true
+			For node projects packageManager may be npm or pnpm.
+			For python projects prefer fastapi.
+			""";
 	}
 
 	private Map<String, Object> parseDraftPayload(String text) {
@@ -219,10 +191,10 @@ public class AiLabsService {
 				try {
 					return objectMapper.readValue(jsonMatcher.group(1).trim(), MAP_TYPE);
 				} catch (Exception innerIgnored) {
-					// Fall through to YAML compatibility parsing.
 				}
 			}
 		}
+		// Fall through to YAML compatibility parsing.
 		try {
 			String yamlText = trimmed;
 			Matcher yamlMatcher = YAML_FENCE_PATTERN.matcher(trimmed);
@@ -246,12 +218,7 @@ public class AiLabsService {
 			return genericException.getMessage();
 		}
 		String message = ex == null ? "" : String.valueOf(ex.getMessage()).trim();
-		if (message.contains("empty project draft")
-				|| message.contains("invalid structured draft output")
-				|| message.contains("invalid json")
-				|| message.contains("invalid yaml")
-				|| message.contains("must be a JSON or YAML object")
-				|| message.contains("must be a YAML object")) {
+		if (message.contains("empty project draft") || message.contains("invalid structured draft output") || message.contains("invalid json") || message.contains("invalid yaml") || message.contains("must be a JSON or YAML object") || message.contains("must be a YAML object")) {
 			return GENERIC_AI_GENERATION_ERROR;
 		}
 		return "Failed to generate project from AI prompt.";
@@ -260,9 +227,7 @@ public class AiLabsService {
 	@SuppressWarnings("unchecked")
 	private Map<String, Object> normalizeDraftData(Map<String, Object> draftData, String prompt, String ownerId) {
 		Map<String, Object> normalized = draftData == null ? new LinkedHashMap<>() : new LinkedHashMap<>(draftData);
-		Map<String, Object> settings = normalized.get("settings") instanceof Map<?, ?> map
-				? new LinkedHashMap<>((Map<String, Object>) map)
-				: new LinkedHashMap<>();
+		Map<String, Object> settings = normalized.get("settings") instanceof Map<?, ?> map ? new LinkedHashMap<>((Map<String, Object>) map) : new LinkedHashMap<>();
 		String language = stringValue(settings.get("language"));
 		if (language.isBlank()) {
 			String promptText = prompt == null ? "" : prompt.toLowerCase();
@@ -295,7 +260,6 @@ public class AiLabsService {
 		}
 		settings.put("projectName", uniqueProjectName(stringValue(settings.get("projectName")), ownerId));
 		normalized.put("settings", settings);
-
 		normalized.computeIfAbsent("database", ignored -> new LinkedHashMap<>());
 		normalized.computeIfAbsent("preferences", ignored -> new LinkedHashMap<>());
 		normalized.computeIfAbsent("entities", ignored -> new ArrayList<>());
@@ -375,12 +339,9 @@ public class AiLabsService {
 	}
 
 	private String findCurrentStepKey(JobState state) {
-		return state.steps().stream()
-				.filter(step -> STATUS_IN_PROGRESS.equals(step.getStatus()))
-				.map(AiLabsStepDTO::getKey)
-				.findFirst()
-				.orElse("save_project");
+		return state.steps().stream().filter(step -> STATUS_IN_PROGRESS.equals(step.getStatus())).map(AiLabsStepDTO::getKey).findFirst().orElse("save_project");
 	}
+
 
 	private static final class JobState {
 		private final UUID jobId;
@@ -394,8 +355,7 @@ public class AiLabsService {
 		private String generator;
 		private String errorMessage;
 
-		private JobState(UUID jobId, String prompt, List<AiLabsStepDTO> steps, OffsetDateTime createdAt, OffsetDateTime updatedAt,
-				String status, String streamPreview, String projectId, String generator, String errorMessage) {
+		private JobState(UUID jobId, String prompt, List<AiLabsStepDTO> steps, OffsetDateTime createdAt, OffsetDateTime updatedAt, String status, String streamPreview, String projectId, String generator, String errorMessage) {
 			this.jobId = jobId;
 			this.prompt = prompt;
 			this.steps = steps;
@@ -449,9 +409,7 @@ public class AiLabsService {
 		}
 
 		private AiLabsJobStatusDTO snapshot() {
-			List<AiLabsStepDTO> stepCopies = steps.stream()
-					.map(step -> new AiLabsStepDTO(step.getKey(), step.getLabel(), step.getStatus(), step.getMessage(), step.getUpdatedAt()))
-					.toList();
+			List<AiLabsStepDTO> stepCopies = steps.stream().map(step -> new AiLabsStepDTO(step.getKey(), step.getLabel(), step.getStatus(), step.getMessage(), step.getUpdatedAt())).toList();
 			return new AiLabsJobStatusDTO(jobId, status, prompt, stepCopies, streamPreview, projectId, generator, errorMessage, createdAt, updatedAt);
 		}
 
@@ -478,5 +436,17 @@ public class AiLabsService {
 			this.streamPreview = text.length() > 4000 ? text.substring(0, 4000) : text;
 			this.updatedAt = OffsetDateTime.now();
 		}
+	}
+
+	public AiLabsService(final AiLabsEventStreamService eventStreamService, final ProjectService projectService, final ProjectDraftSpecMapperService projectDraftSpecMapperService, final ProjectNameValidationService projectNameValidationService, final ProjectUserIdentityService projectUserIdentityService, final ConfigMetadataService configMetadataService, final AiLabsQuotaService aiLabsQuotaService, final ChatClient.Builder chatClientBuilder, final ObjectMapper objectMapper) {
+		this.eventStreamService = eventStreamService;
+		this.projectService = projectService;
+		this.projectDraftSpecMapperService = projectDraftSpecMapperService;
+		this.projectNameValidationService = projectNameValidationService;
+		this.projectUserIdentityService = projectUserIdentityService;
+		this.configMetadataService = configMetadataService;
+		this.aiLabsQuotaService = aiLabsQuotaService;
+		this.chatClientBuilder = chatClientBuilder;
+		this.objectMapper = objectMapper;
 	}
 }

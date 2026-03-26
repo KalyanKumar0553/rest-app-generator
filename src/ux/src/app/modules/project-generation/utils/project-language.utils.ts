@@ -65,5 +65,5 @@ export function getProjectLanguageOption(value: string | null | undefined): Proj
 
 export function getMigrationTargetLanguageOptions(currentLanguage: string | null | undefined): ProjectLanguageOption[] {
   const normalizedCurrent = normalizeProjectLanguage(currentLanguage);
-  return LANGUAGE_OPTIONS.filter((option) => option.value !== normalizedCurrent && option.value !== 'kotlin');
+  return LANGUAGE_OPTIONS.filter((option) => option.value !== normalizedCurrent);
 }

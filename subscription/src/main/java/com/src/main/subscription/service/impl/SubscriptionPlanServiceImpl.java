@@ -4,12 +4,10 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 import java.util.stream.Collectors;
-
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Caching;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
 import com.src.main.auth.model.Role;
 import com.src.main.auth.repository.RoleRepository;
 import com.src.main.subscription.dto.PlanRequest;
@@ -23,12 +21,8 @@ import com.src.main.subscription.repository.SubscriptionPlanRoleMappingRepositor
 import com.src.main.subscription.service.SubscriptionPlanService;
 import com.src.main.subscription.util.SubscriptionMapperUtil;
 
-import lombok.RequiredArgsConstructor;
-
 @Service
-@RequiredArgsConstructor
 public class SubscriptionPlanServiceImpl implements SubscriptionPlanService {
-
 	private final SubscriptionPlanRepository planRepository;
 	private final RoleRepository roleRepository;
 	private final SubscriptionPlanRoleMappingRepository planRoleMappingRepository;
@@ -36,10 +30,7 @@ public class SubscriptionPlanServiceImpl implements SubscriptionPlanService {
 
 	@Override
 	@Transactional
-	@Caching(evict = {
-			@CacheEvict(cacheNames = "subscriptionPlanByCode", allEntries = true),
-			@CacheEvict(cacheNames = "entitlementsByTenant", allEntries = true)
-	})
+	@Caching(evict = {@CacheEvict(cacheNames = "subscriptionPlanByCode", allEntries = true), @CacheEvict(cacheNames = "entitlementsByTenant", allEntries = true)})
 	public PlanResponse createPlan(PlanRequest request) {
 		String code = normalizeCode(request.getCode());
 		if (planRepository.existsByCodeIgnoreCaseAndDeletedFalse(code)) {
@@ -57,14 +48,9 @@ public class SubscriptionPlanServiceImpl implements SubscriptionPlanService {
 
 	@Override
 	@Transactional
-	@Caching(evict = {
-			@CacheEvict(cacheNames = "subscriptionPlanByCode", allEntries = true),
-			@CacheEvict(cacheNames = "entitlementsByTenant", allEntries = true)
-	})
+	@Caching(evict = {@CacheEvict(cacheNames = "subscriptionPlanByCode", allEntries = true), @CacheEvict(cacheNames = "entitlementsByTenant", allEntries = true)})
 	public PlanResponse updatePlan(Long id, PlanRequest request) {
-		SubscriptionPlanEntity entity = planRepository.findById(id)
-				.filter(plan -> Boolean.FALSE.equals(plan.getDeleted()))
-				.orElseThrow(() -> new PlanNotFoundException(String.valueOf(id)));
+		SubscriptionPlanEntity entity = planRepository.findById(id).filter(plan -> Boolean.FALSE.equals(plan.getDeleted())).orElseThrow(() -> new PlanNotFoundException(String.valueOf(id)));
 		String code = normalizeCode(request.getCode());
 		if (!entity.getCode().equalsIgnoreCase(code) && planRepository.existsByCodeIgnoreCaseAndDeletedFalse(code)) {
 			throw new InvalidSubscriptionOperationException("Plan code already exists: " + code);
@@ -80,10 +66,7 @@ public class SubscriptionPlanServiceImpl implements SubscriptionPlanService {
 
 	@Override
 	@Transactional
-	@Caching(evict = {
-			@CacheEvict(cacheNames = "subscriptionPlanByCode", allEntries = true),
-			@CacheEvict(cacheNames = "entitlementsByTenant", allEntries = true)
-	})
+	@Caching(evict = {@CacheEvict(cacheNames = "subscriptionPlanByCode", allEntries = true), @CacheEvict(cacheNames = "entitlementsByTenant", allEntries = true)})
 	public void activatePlan(Long id) {
 		SubscriptionPlanEntity entity = getEntity(id);
 		entity.setIsActive(Boolean.TRUE);
@@ -92,10 +75,7 @@ public class SubscriptionPlanServiceImpl implements SubscriptionPlanService {
 
 	@Override
 	@Transactional
-	@Caching(evict = {
-			@CacheEvict(cacheNames = "subscriptionPlanByCode", allEntries = true),
-			@CacheEvict(cacheNames = "entitlementsByTenant", allEntries = true)
-	})
+	@Caching(evict = {@CacheEvict(cacheNames = "subscriptionPlanByCode", allEntries = true), @CacheEvict(cacheNames = "entitlementsByTenant", allEntries = true)})
 	public void deactivatePlan(Long id) {
 		SubscriptionPlanEntity entity = getEntity(id);
 		if (Boolean.TRUE.equals(entity.getIsDefault())) {
@@ -107,10 +87,7 @@ public class SubscriptionPlanServiceImpl implements SubscriptionPlanService {
 
 	@Override
 	@Transactional
-	@Caching(evict = {
-			@CacheEvict(cacheNames = "subscriptionPlanByCode", allEntries = true),
-			@CacheEvict(cacheNames = "entitlementsByTenant", allEntries = true)
-	})
+	@Caching(evict = {@CacheEvict(cacheNames = "subscriptionPlanByCode", allEntries = true), @CacheEvict(cacheNames = "entitlementsByTenant", allEntries = true)})
 	public void setDefaultPlan(Long id) {
 		SubscriptionPlanEntity entity = getEntity(id);
 		entity.setIsActive(Boolean.TRUE);
@@ -128,25 +105,18 @@ public class SubscriptionPlanServiceImpl implements SubscriptionPlanService {
 	@Override
 	@Transactional(readOnly = true)
 	public List<PlanResponse> getAllPlans(Boolean activeOnly) {
-		List<SubscriptionPlanEntity> entities = Boolean.TRUE.equals(activeOnly)
-				? planRepository.findAllByIsActiveTrueAndDeletedFalseOrderBySortOrderAscNameAsc()
-				: planRepository.findAllByDeletedFalseOrderBySortOrderAscNameAsc();
+		List<SubscriptionPlanEntity> entities = Boolean.TRUE.equals(activeOnly) ? planRepository.findAllByIsActiveTrueAndDeletedFalseOrderBySortOrderAscNameAsc() : planRepository.findAllByDeletedFalseOrderBySortOrderAscNameAsc();
 		return entities.stream().map(this::toPlanResponse).toList();
 	}
 
 	@Override
 	@Transactional(readOnly = true)
 	public List<String> getPlanRoleNames(Long planId) {
-		return planRoleMappingRepository.findAllByPlan_IdAndDeletedFalse(planId).stream()
-				.map(SubscriptionPlanRoleMappingEntity::getRoleName)
-				.sorted()
-				.toList();
+		return planRoleMappingRepository.findAllByPlan_IdAndDeletedFalse(planId).stream().map(SubscriptionPlanRoleMappingEntity::getRoleName).sorted().toList();
 	}
 
 	private SubscriptionPlanEntity getEntity(Long id) {
-		return planRepository.findById(id)
-				.filter(plan -> Boolean.FALSE.equals(plan.getDeleted()))
-				.orElseThrow(() -> new PlanNotFoundException(String.valueOf(id)));
+		return planRepository.findById(id).filter(plan -> Boolean.FALSE.equals(plan.getDeleted())).orElseThrow(() -> new PlanNotFoundException(String.valueOf(id)));
 	}
 
 	private void clearDefaultPlan() {
@@ -201,21 +171,14 @@ public class SubscriptionPlanServiceImpl implements SubscriptionPlanService {
 	}
 
 	private String normalizeCode(String value) {
-		return requireText(value, "Plan code is required")
-				.toUpperCase(Locale.ROOT)
-				.replace('-', '_')
-				.replace(' ', '_');
+		return requireText(value, "Plan code is required").toUpperCase(Locale.ROOT).replace('-', '_').replace(' ', '_');
 	}
 
 	private Set<String> normalizeRoleNames(List<String> roleNames) {
 		if (roleNames == null) {
 			return Set.of();
 		}
-		return roleNames.stream()
-				.filter(value -> value != null && !value.isBlank())
-				.map(value -> value.trim().toUpperCase(Locale.ROOT).replace('-', '_').replace(' ', '_'))
-				.map(value -> value.startsWith("ROLE_") ? value : "ROLE_" + value)
-				.collect(Collectors.toCollection(java.util.LinkedHashSet::new));
+		return roleNames.stream().filter(value -> value != null && !value.isBlank()).map(value -> value.trim().toUpperCase(Locale.ROOT).replace('-', '_').replace(' ', '_')).map(value -> value.startsWith("ROLE_") ? value : "ROLE_" + value).collect(Collectors.toCollection(java.util.LinkedHashSet::new));
 	}
 
 	private String requireText(String value, String message) {
@@ -227,5 +190,12 @@ public class SubscriptionPlanServiceImpl implements SubscriptionPlanService {
 
 	private String trimToNull(String value) {
 		return value == null || value.isBlank() ? null : value.trim();
+	}
+
+	public SubscriptionPlanServiceImpl(final SubscriptionPlanRepository planRepository, final RoleRepository roleRepository, final SubscriptionPlanRoleMappingRepository planRoleMappingRepository, final SubscriptionLookupService lookupService) {
+		this.planRepository = planRepository;
+		this.roleRepository = roleRepository;
+		this.planRoleMappingRepository = planRoleMappingRepository;
+		this.lookupService = lookupService;
 	}
 }

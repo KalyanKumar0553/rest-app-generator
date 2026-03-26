@@ -44,12 +44,7 @@ public record MavenDependencyDTO(String groupId, String artifactId, String versi
 		case "test" -> "testImplementation(\"" + gav + "\")";
 		case "runtime", "runtimeonly" -> "runtimeOnly(\"" + gav + "\")";
 		case "provided", "providedruntime" -> "providedRuntime(\"" + gav + "\")";
-		default -> {
-			if ("org.projectlombok".equals(groupId) && "lombok".equals(artifactId)) {
-				yield "compileOnly(\"org.projectlombok:lombok\")\n    annotationProcessor(\"org.projectlombok:lombok\")";
-			}
-			yield "implementation(\"" + gav + "\")";
-		}
+		default -> "implementation(\"" + gav + "\")";
 		};
 	}
 

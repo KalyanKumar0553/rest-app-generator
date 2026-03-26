@@ -43,9 +43,7 @@ public final class ShippableModuleSupport {
 								dependency("com.fasterxml.jackson.core", "jackson-databind"),
 								dependency("com.fasterxml.jackson.dataformat", "jackson-dataformat-yaml", JACKSON_YAML_VERSION),
 								dependency("com.fasterxml.jackson.dataformat", "jackson-dataformat-xml"),
-								dependency("com.fasterxml.jackson.dataformat", "jackson-dataformat-csv"),
-								optionalCompileOnly("org.projectlombok", "lombok", LOMBOK_VERSION),
-								annotationProcessor("org.projectlombok", "lombok", LOMBOK_VERSION)))
+								dependency("com.fasterxml.jackson.dataformat", "jackson-dataformat-csv")))
 						.build())
 				.build());
 
@@ -67,9 +65,7 @@ public final class ShippableModuleSupport {
 								dependency("org.springframework.boot", "spring-boot-starter-web"),
 								dependency("org.springframework.boot", "spring-boot-starter-validation"),
 								dependency("org.springframework.boot", "spring-boot-starter-data-jpa"),
-								dependency("org.springframework.boot", "spring-boot-starter-security"),
-								optionalCompileOnly("org.projectlombok", "lombok", LOMBOK_VERSION),
-								annotationProcessor("org.projectlombok", "lombok", LOMBOK_VERSION)))
+								dependency("org.springframework.boot", "spring-boot-starter-security")))
 						.includesFlywayMigrations(true)
 						.build())
 				.nodeVariant(VariantDefinition.builder()
@@ -88,9 +84,7 @@ public final class ShippableModuleSupport {
 								dependency("org.springframework.boot", "spring-boot-starter-data-jpa"),
 								dependency("org.springframework.boot", "spring-boot-starter-security"),
 								dependency("org.springframework.boot", "spring-boot-starter-cache"),
-								dependency("org.springframework.boot", "spring-boot-starter-aop"),
-								optionalCompileOnly("org.projectlombok", "lombok", LOMBOK_VERSION),
-								annotationProcessor("org.projectlombok", "lombok", LOMBOK_VERSION)))
+								dependency("org.springframework.boot", "spring-boot-starter-aop")))
 						.includesFlywayMigrations(true)
 						.build())
 				.nodeVariant(VariantDefinition.builder()
@@ -119,9 +113,7 @@ public final class ShippableModuleSupport {
 								dependency("com.google.auth", "google-auth-library-oauth2-http", GOOGLE_AUTH_VERSION),
 								dependency("com.google.api-client", "google-api-client", GOOGLE_API_CLIENT_VERSION),
 								dependency("com.google.http-client", "google-http-client-jackson2", GOOGLE_HTTP_JACKSON_VERSION),
-								dependency("com.nimbusds", "nimbus-jose-jwt", NIMBUS_VERSION),
-								optionalCompileOnly("org.projectlombok", "lombok", LOMBOK_VERSION),
-								annotationProcessor("org.projectlombok", "lombok", LOMBOK_VERSION)))
+								dependency("com.nimbusds", "nimbus-jose-jwt", NIMBUS_VERSION)))
 						.includesFlywayMigrations(true)
 						.build())
 				.nodeVariant(VariantDefinition.builder()
@@ -151,9 +143,7 @@ public final class ShippableModuleSupport {
 								dependency("com.github.spullara.mustache.java", "compiler", MUSTACHE_VERSION),
 								dependency("org.json", "json", JSON_VERSION),
 								dependency("org.apache.commons", "commons-lang3"),
-								dependency("com.fasterxml.jackson.dataformat", "jackson-dataformat-yaml", JACKSON_YAML_VERSION),
-								optionalCompileOnly("org.projectlombok", "lombok", LOMBOK_VERSION),
-								annotationProcessor("org.projectlombok", "lombok", LOMBOK_VERSION)))
+								dependency("com.fasterxml.jackson.dataformat", "jackson-dataformat-yaml", JACKSON_YAML_VERSION)))
 						.build())
 				.nodeVariant(VariantDefinition.builder()
 						.nodePackageDependencies(List.of())

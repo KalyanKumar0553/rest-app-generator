@@ -4,12 +4,10 @@ import java.time.LocalDateTime;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
 import com.src.main.subscription.dto.EntitlementValueResponse;
 import com.src.main.subscription.dto.SubscriptionContextResponse;
 import com.src.main.subscription.entity.CustomerFeatureOverrideEntity;
@@ -29,12 +27,8 @@ import com.src.main.subscription.service.EntitlementService;
 import com.src.main.subscription.util.SubscriptionMapperUtil;
 import com.src.main.subscription.util.SubscriptionPeriodUtil;
 
-import lombok.RequiredArgsConstructor;
-
 @Service
-@RequiredArgsConstructor
 public class EntitlementServiceImpl implements EntitlementService {
-
 	private final SubscriptionLookupService lookupService;
 	private final SubscriptionFeatureRepository featureRepository;
 	private final PlanFeatureMappingRepository planFeatureRepository;
@@ -76,8 +70,7 @@ public class EntitlementServiceImpl implements EntitlementService {
 		Map<Long, PlanFeatureMappingEntity> planFeatureByFeatureId = new LinkedHashMap<>();
 		planFeatures.forEach(mapping -> planFeatureByFeatureId.put(mapping.getFeature().getId(), mapping));
 		Map<Long, CustomerFeatureOverrideEntity> overrideByFeatureId = new LinkedHashMap<>();
-		overrideRepository.findAllActiveOverrides(tenantId, LocalDateTime.now())
-				.forEach(override -> overrideByFeatureId.put(override.getFeature().getId(), override));
+		overrideRepository.findAllActiveOverrides(tenantId, LocalDateTime.now()).forEach(override -> overrideByFeatureId.put(override.getFeature().getId(), override));
 		Map<String, EntitlementValueResponse> response = new LinkedHashMap<>();
 		for (SubscriptionFeatureEntity feature : featureRepository.findAllByIsActiveTrueAndDeletedFalseOrderByNameAsc()) {
 			PlanFeatureMappingEntity mapping = planFeatureByFeatureId.get(feature.getId());
@@ -102,12 +95,7 @@ public class EntitlementServiceImpl implements EntitlementService {
 		lookupService.evictActiveSubscription(tenantId);
 	}
 
-	private EntitlementValueResponse resolveEntitlement(
-			SubscriptionFeatureEntity feature,
-			PlanFeatureMappingEntity mapping,
-			CustomerFeatureOverrideEntity override,
-			Long tenantId,
-			String baseSource) {
+	private EntitlementValueResponse resolveEntitlement(SubscriptionFeatureEntity feature, PlanFeatureMappingEntity mapping, CustomerFeatureOverrideEntity override, Long tenantId, String baseSource) {
 		boolean enabled = mapping != null && Boolean.TRUE.equals(mapping.getIsEnabled());
 		Long limitValue = mapping == null ? 0L : mapping.getLimitValue();
 		String source = baseSource;
@@ -136,13 +124,7 @@ public class EntitlementServiceImpl implements EntitlementService {
 			}
 		}
 		if (feature.getFeatureType() == FeatureType.BOOLEAN) {
-			return EntitlementValueResponse.builder()
-					.featureCode(feature.getCode())
-					.featureType(feature.getFeatureType())
-					.enabled(enabled)
-					.unit(feature.getUnit())
-					.source(source)
-					.build();
+			return EntitlementValueResponse.builder().featureCode(feature.getCode()).featureType(feature.getFeatureType()).enabled(enabled).unit(feature.getUnit()).source(source).build();
 		}
 		if (limitValue == null) {
 			limitValue = 0L;
@@ -151,24 +133,21 @@ public class EntitlementServiceImpl implements EntitlementService {
 		Long remainingValue = null;
 		if (feature.getFeatureType() == FeatureType.QUOTA) {
 			SubscriptionPeriodUtil.PeriodWindow window = SubscriptionPeriodUtil.resolveWindow(feature, LocalDateTime.now());
-			FeatureUsageEntity usage = featureUsageRepository
-					.findByTenantIdAndFeature_IdAndPeriodKey(tenantId, feature.getId(), window.key())
-					.orElse(null);
+			FeatureUsageEntity usage = featureUsageRepository.findByTenantIdAndFeature_IdAndPeriodKey(tenantId, feature.getId(), window.key()).orElse(null);
 			usedValue = usage == null ? 0L : usage.getUsedValue();
 			remainingValue = Math.max(0L, limitValue - usedValue);
 			enabled = enabled && limitValue > 0;
 		} else {
 			enabled = enabled && limitValue >= 0;
 		}
-		return EntitlementValueResponse.builder()
-				.featureCode(feature.getCode())
-				.featureType(feature.getFeatureType())
-				.enabled(enabled)
-				.limitValue(limitValue)
-				.usedValue(usedValue)
-				.remainingValue(remainingValue)
-				.unit(feature.getUnit())
-				.source(source)
-				.build();
+		return EntitlementValueResponse.builder().featureCode(feature.getCode()).featureType(feature.getFeatureType()).enabled(enabled).limitValue(limitValue).usedValue(usedValue).remainingValue(remainingValue).unit(feature.getUnit()).source(source).build();
+	}
+
+	public EntitlementServiceImpl(final SubscriptionLookupService lookupService, final SubscriptionFeatureRepository featureRepository, final PlanFeatureMappingRepository planFeatureRepository, final CustomerFeatureOverrideRepository overrideRepository, final FeatureUsageRepository featureUsageRepository) {
+		this.lookupService = lookupService;
+		this.featureRepository = featureRepository;
+		this.planFeatureRepository = planFeatureRepository;
+		this.overrideRepository = overrideRepository;
+		this.featureUsageRepository = featureUsageRepository;
 	}
 }

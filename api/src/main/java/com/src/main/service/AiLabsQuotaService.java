@@ -3,19 +3,13 @@ package com.src.main.service;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
 import com.src.main.exception.GenericException;
 import com.src.main.repository.AiLabsUsageRepository;
 
-import lombok.RequiredArgsConstructor;
-
 @Service
-@RequiredArgsConstructor
 public class AiLabsQuotaService {
-
 	public static final String AI_LABS_USAGE_LIMIT_KEY = "app.feature.ai-labs.usage-limit";
 	public static final String LIMIT_REACHED_MESSAGE = "Limit reached please subscribe for more Usage";
-
 	private final ConfigMetadataService configMetadataService;
 	private final AiLabsUsageRepository aiLabsUsageRepository;
 
@@ -30,9 +24,7 @@ public class AiLabsQuotaService {
 	public AiLabsQuotaSnapshot reserveUsage(String ownerUserId) {
 		int limit = resolveUsageLimit();
 		aiLabsUsageRepository.insertIfAbsent(ownerUserId);
-		int updatedRows = limit < 0
-				? aiLabsUsageRepository.incrementUsage(ownerUserId)
-				: aiLabsUsageRepository.incrementUsageIfBelowLimit(ownerUserId, limit);
+		int updatedRows = limit < 0 ? aiLabsUsageRepository.incrementUsage(ownerUserId) : aiLabsUsageRepository.incrementUsageIfBelowLimit(ownerUserId, limit);
 		if (updatedRows == 0) {
 			throw new GenericException(HttpStatus.BAD_REQUEST, LIMIT_REACHED_MESSAGE);
 		}
@@ -51,10 +43,9 @@ public class AiLabsQuotaService {
 	}
 
 	private int resolveUsageCount(String ownerUserId) {
-		return aiLabsUsageRepository.findById(ownerUserId)
-				.map(entity -> Math.max(entity.getUsageCount(), 0))
-				.orElse(0);
+		return aiLabsUsageRepository.findById(ownerUserId).map(entity -> Math.max(entity.getUsageCount(), 0)).orElse(0);
 	}
+
 
 	public record AiLabsQuotaSnapshot(int usageLimit, int usedCount, int remainingCount, boolean unlimited, boolean limitReached) {
 		public Integer usageLimitValue() {
@@ -64,5 +55,10 @@ public class AiLabsQuotaService {
 		public Integer remainingCountValue() {
 			return unlimited ? null : remainingCount;
 		}
+	}
+
+	public AiLabsQuotaService(final ConfigMetadataService configMetadataService, final AiLabsUsageRepository aiLabsUsageRepository) {
+		this.configMetadataService = configMetadataService;
+		this.aiLabsUsageRepository = aiLabsUsageRepository;
 	}
 }

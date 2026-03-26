@@ -1,7 +1,6 @@
-	package com.src.main.controller;
+package com.src.main.controller;
 
 import java.util.List;
-
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -12,19 +11,14 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-
 import com.src.main.dto.ConfigPropertyResponseDTO;
 import com.src.main.dto.ConfigPropertySaveRequestDTO;
 import com.src.main.dto.SingleConfigEntryRequestDTO;
 import com.src.main.service.ConfigMetadataService;
 
-import lombok.AllArgsConstructor;
-
 @RestController
 @RequestMapping(value = "/api/config", produces = MediaType.APPLICATION_JSON_VALUE)
-@AllArgsConstructor
 public class ConfigMetadataController {
-
 	private final ConfigMetadataService configMetadataService;
 
 	@PostMapping
@@ -43,21 +37,25 @@ public class ConfigMetadataController {
 	}
 
 	@GetMapping("/features")
-	@PreAuthorize("hasAuthority('config.feature.read')")
+	@PreAuthorize("hasAuthority(\'config.feature.read\')")
 	public ResponseEntity<List<ConfigPropertyResponseDTO>> getFeatureProperties() {
 		return ResponseEntity.ok(configMetadataService.getPropertiesByCategory("FEATURES"));
 	}
 
 	@PutMapping("/features/value")
-	@PreAuthorize("hasAuthority('config.feature.manage')")
+	@PreAuthorize("hasAuthority(\'config.feature.manage\')")
 	public ResponseEntity<ConfigPropertyResponseDTO> updateFeatureValue(@RequestBody SingleConfigEntryRequestDTO request) {
 		return ResponseEntity.ok(configMetadataService.updateCurrentValue(request));
 	}
-	
+
 	@PostMapping("/reload")
-    @PreAuthorize("hasAuthority('config.reload')")
-    public ResponseEntity<Void> reloadDefaults() {
+	@PreAuthorize("hasAuthority(\'config.reload\')")
+	public ResponseEntity<Void> reloadDefaults() {
 		configMetadataService.reloadDefaults();
-        return ResponseEntity.noContent().build();
-    }
+		return ResponseEntity.noContent().build();
+	}
+
+	public ConfigMetadataController(final ConfigMetadataService configMetadataService) {
+		this.configMetadataService = configMetadataService;
+	}
 }

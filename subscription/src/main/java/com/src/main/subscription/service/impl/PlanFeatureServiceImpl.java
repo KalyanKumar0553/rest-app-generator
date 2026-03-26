@@ -1,12 +1,10 @@
 package com.src.main.subscription.service.impl;
 
 import java.util.List;
-
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Caching;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
 import com.src.main.subscription.dto.PlanFeatureResponse;
 import com.src.main.subscription.dto.PlanFeatureUpsertRequest;
 import com.src.main.subscription.entity.PlanFeatureMappingEntity;
@@ -18,28 +16,20 @@ import com.src.main.subscription.repository.PlanFeatureMappingRepository;
 import com.src.main.subscription.service.PlanFeatureService;
 import com.src.main.subscription.util.SubscriptionMapperUtil;
 
-import lombok.RequiredArgsConstructor;
-
 @Service
-@RequiredArgsConstructor
 public class PlanFeatureServiceImpl implements PlanFeatureService {
-
 	private final PlanFeatureMappingRepository planFeatureRepository;
 	private final SubscriptionLookupService lookupService;
 
 	@Override
 	@Transactional(readOnly = true)
 	public List<PlanFeatureResponse> getPlanFeatures(Long planId) {
-		return planFeatureRepository.findAllByPlan_IdAndDeletedFalse(planId).stream()
-				.map(SubscriptionMapperUtil::toPlanFeatureResponse)
-				.toList();
+		return planFeatureRepository.findAllByPlan_IdAndDeletedFalse(planId).stream().map(SubscriptionMapperUtil::toPlanFeatureResponse).toList();
 	}
 
 	@Override
 	@Transactional
-	@Caching(evict = {
-			@CacheEvict(cacheNames = "entitlementsByTenant", allEntries = true)
-	})
+	@Caching(evict = {@CacheEvict(cacheNames = "entitlementsByTenant", allEntries = true)})
 	public List<PlanFeatureResponse> replacePlanFeatures(Long planId, List<PlanFeatureUpsertRequest> requests) {
 		List<PlanFeatureMappingEntity> existingMappings = planFeatureRepository.findAllByPlan_IdAndDeletedFalse(planId);
 		existingMappings.forEach(mapping -> mapping.setDeleted(Boolean.TRUE));
@@ -54,16 +44,12 @@ public class PlanFeatureServiceImpl implements PlanFeatureService {
 
 	@Override
 	@Transactional
-	@Caching(evict = {
-			@CacheEvict(cacheNames = "entitlementsByTenant", allEntries = true)
-	})
+	@Caching(evict = {@CacheEvict(cacheNames = "entitlementsByTenant", allEntries = true)})
 	public PlanFeatureResponse upsertPlanFeature(Long planId, PlanFeatureUpsertRequest request) {
 		SubscriptionPlanEntity plan = lookupService.getPlanById(planId);
 		SubscriptionFeatureEntity feature = lookupService.getFeatureByCode(request.getFeatureCode());
 		validateRequest(feature, request);
-		PlanFeatureMappingEntity entity = planFeatureRepository
-				.findByPlan_IdAndFeature_IdAndDeletedFalse(planId, feature.getId())
-				.orElseGet(PlanFeatureMappingEntity::new);
+		PlanFeatureMappingEntity entity = planFeatureRepository.findByPlan_IdAndFeature_IdAndDeletedFalse(planId, feature.getId()).orElseGet(PlanFeatureMappingEntity::new);
 		entity.setPlan(plan);
 		entity.setFeature(feature);
 		entity.setDeleted(Boolean.FALSE);
@@ -77,12 +63,9 @@ public class PlanFeatureServiceImpl implements PlanFeatureService {
 
 	@Override
 	@Transactional
-	@Caching(evict = {
-			@CacheEvict(cacheNames = "entitlementsByTenant", allEntries = true)
-	})
+	@Caching(evict = {@CacheEvict(cacheNames = "entitlementsByTenant", allEntries = true)})
 	public void removePlanFeature(Long planId, Long featureId) {
-		PlanFeatureMappingEntity entity = planFeatureRepository.findByPlan_IdAndFeature_IdAndDeletedFalse(planId, featureId)
-				.orElseThrow(() -> new InvalidSubscriptionOperationException("Plan feature mapping not found"));
+		PlanFeatureMappingEntity entity = planFeatureRepository.findByPlan_IdAndFeature_IdAndDeletedFalse(planId, featureId).orElseThrow(() -> new InvalidSubscriptionOperationException("Plan feature mapping not found"));
 		entity.setDeleted(Boolean.TRUE);
 		planFeatureRepository.save(entity);
 	}
@@ -91,14 +74,17 @@ public class PlanFeatureServiceImpl implements PlanFeatureService {
 		if (feature.getFeatureType() == FeatureType.BOOLEAN && request.getIsEnabled() == null) {
 			throw new InvalidSubscriptionOperationException("Boolean feature requires isEnabled");
 		}
-		if ((feature.getFeatureType() == FeatureType.LIMIT || feature.getFeatureType() == FeatureType.QUOTA)
-				&& request.getLimitValue() != null
-				&& request.getLimitValue() < 0) {
+		if ((feature.getFeatureType() == FeatureType.LIMIT || feature.getFeatureType() == FeatureType.QUOTA) && request.getLimitValue() != null && request.getLimitValue() < 0) {
 			throw new InvalidSubscriptionOperationException("Limit value must be non-negative");
 		}
 	}
 
 	private String trimToNull(String value) {
 		return value == null || value.isBlank() ? null : value.trim();
+	}
+
+	public PlanFeatureServiceImpl(final PlanFeatureMappingRepository planFeatureRepository, final SubscriptionLookupService lookupService) {
+		this.planFeatureRepository = planFeatureRepository;
+		this.lookupService = lookupService;
 	}
 }

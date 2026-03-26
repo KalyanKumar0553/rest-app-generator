@@ -2,11 +2,9 @@ package com.src.main.subscription.service.impl;
 
 import java.time.LocalDateTime;
 import java.util.List;
-
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
 import com.src.main.subscription.dto.SubscriptionOverrideRequest;
 import com.src.main.subscription.dto.SubscriptionOverrideResponse;
 import com.src.main.subscription.entity.CustomerFeatureOverrideEntity;
@@ -16,12 +14,8 @@ import com.src.main.subscription.repository.CustomerFeatureOverrideRepository;
 import com.src.main.subscription.service.SubscriptionOverrideService;
 import com.src.main.subscription.util.SubscriptionMapperUtil;
 
-import lombok.RequiredArgsConstructor;
-
 @Service
-@RequiredArgsConstructor
 public class SubscriptionOverrideServiceImpl implements SubscriptionOverrideService {
-
 	private final CustomerFeatureOverrideRepository overrideRepository;
 	private final SubscriptionLookupService lookupService;
 
@@ -38,9 +32,7 @@ public class SubscriptionOverrideServiceImpl implements SubscriptionOverrideServ
 	@Transactional
 	@CacheEvict(cacheNames = "entitlementsByTenant", key = "#tenantId")
 	public SubscriptionOverrideResponse updateOverride(Long tenantId, Long overrideId, SubscriptionOverrideRequest request) {
-		CustomerFeatureOverrideEntity entity = overrideRepository.findById(overrideId)
-				.filter(existing -> Boolean.FALSE.equals(existing.getDeleted()) && tenantId.equals(existing.getTenantId()))
-				.orElseThrow(() -> new InvalidSubscriptionOperationException("Subscription override not found: " + overrideId));
+		CustomerFeatureOverrideEntity entity = overrideRepository.findById(overrideId).filter(existing -> Boolean.FALSE.equals(existing.getDeleted()) && tenantId.equals(existing.getTenantId())).orElseThrow(() -> new InvalidSubscriptionOperationException("Subscription override not found: " + overrideId));
 		apply(entity, tenantId, request);
 		return SubscriptionMapperUtil.toOverrideResponse(overrideRepository.save(entity));
 	}
@@ -48,18 +40,14 @@ public class SubscriptionOverrideServiceImpl implements SubscriptionOverrideServ
 	@Override
 	@Transactional(readOnly = true)
 	public List<SubscriptionOverrideResponse> getOverrides(Long tenantId) {
-		return overrideRepository.findAllByTenantIdAndDeletedFalseOrderByEffectiveFromDesc(tenantId).stream()
-				.map(SubscriptionMapperUtil::toOverrideResponse)
-				.toList();
+		return overrideRepository.findAllByTenantIdAndDeletedFalseOrderByEffectiveFromDesc(tenantId).stream().map(SubscriptionMapperUtil::toOverrideResponse).toList();
 	}
 
 	@Override
 	@Transactional
 	@CacheEvict(cacheNames = "entitlementsByTenant", key = "#tenantId")
 	public void deleteOverride(Long tenantId, Long overrideId) {
-		CustomerFeatureOverrideEntity entity = overrideRepository.findById(overrideId)
-				.filter(existing -> Boolean.FALSE.equals(existing.getDeleted()) && tenantId.equals(existing.getTenantId()))
-				.orElseThrow(() -> new InvalidSubscriptionOperationException("Subscription override not found: " + overrideId));
+		CustomerFeatureOverrideEntity entity = overrideRepository.findById(overrideId).filter(existing -> Boolean.FALSE.equals(existing.getDeleted()) && tenantId.equals(existing.getTenantId())).orElseThrow(() -> new InvalidSubscriptionOperationException("Subscription override not found: " + overrideId));
 		entity.setDeleted(Boolean.TRUE);
 		overrideRepository.save(entity);
 	}
@@ -86,5 +74,10 @@ public class SubscriptionOverrideServiceImpl implements SubscriptionOverrideServ
 
 	private String trimToNull(String value) {
 		return value == null || value.isBlank() ? null : value.trim();
+	}
+
+	public SubscriptionOverrideServiceImpl(final CustomerFeatureOverrideRepository overrideRepository, final SubscriptionLookupService lookupService) {
+		this.overrideRepository = overrideRepository;
+		this.lookupService = lookupService;
 	}
 }

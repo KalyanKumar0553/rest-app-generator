@@ -38,8 +38,6 @@ public class DefaultDependencyResolver implements DependencyResolver {
 		LOGICAL.put("postgres", new MavenDependencyDTO("org.postgresql", "postgresql", "runtime", false));
 		LOGICAL.put("mysql", new MavenDependencyDTO("com.mysql", "mysql-connector-j", "runtime", false));
 
-		LOGICAL.put("lombok", new MavenDependencyDTO("org.projectlombok", "lombok", "compile_only", true));
-
 		LOGICAL.put("mapstruct", new MavenDependencyDTO("org.mapstruct", "mapstruct", null, false));
 		LOGICAL.put("mapstruct-processor",
 				new MavenDependencyDTO("org.mapstruct", "mapstruct-processor", "annotation_processor", false));
@@ -120,13 +118,7 @@ public class DefaultDependencyResolver implements DependencyResolver {
 		case "test", "test_compile" -> List.of("testImplementation(\"" + gav + "\")");
 		case "runtime", "runtimeonly" -> List.of("runtimeOnly(\"" + gav + "\")");
 		case "provided", "providedruntime", "provided_runtime" -> List.of("providedRuntime(\"" + gav + "\")");
-		case "compile_only", "compile-only" -> {
-			if ("org.projectlombok".equals(d.groupId()) && "lombok".equals(d.artifactId())) {
-				yield List.of("compileOnly(\"org.projectlombok:lombok\")",
-						"annotationProcessor(\"org.projectlombok:lombok\")");
-			}
-			yield List.of("compileOnly(\"" + gav + "\")");
-		}
+		case "compile_only", "compile-only" -> List.of("compileOnly(\"" + gav + "\")");
 		case "annotation_processor", "annotation-processor" -> List.of("annotationProcessor(\"" + gav + "\")");
 		default -> {
 			// MapStruct special: add processor pair

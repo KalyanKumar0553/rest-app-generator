@@ -4,11 +4,9 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.List;
-
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
 import com.src.main.subscription.dto.PlanPriceRequest;
 import com.src.main.subscription.dto.PlanPriceResponse;
 import com.src.main.subscription.dto.ResolvedPriceResponse;
@@ -30,12 +28,8 @@ import com.src.main.subscription.repository.SubscriptionCouponRepository;
 import com.src.main.subscription.service.PricingService;
 import com.src.main.subscription.util.SubscriptionMapperUtil;
 
-import lombok.RequiredArgsConstructor;
-
 @Service
-@RequiredArgsConstructor
 public class PricingServiceImpl implements PricingService {
-
 	private final PlanPriceRepository planPriceRepository;
 	private final SubscriptionLookupService lookupService;
 	private final SubscriptionCouponRepository couponRepository;
@@ -59,9 +53,7 @@ public class PricingServiceImpl implements PricingService {
 	@Transactional
 	@CacheEvict(cacheNames = "entitlementsByTenant", allEntries = true)
 	public PlanPriceResponse updatePrice(Long id, PlanPriceRequest request) {
-		PlanPriceEntity entity = planPriceRepository.findById(id)
-				.filter(price -> Boolean.FALSE.equals(price.getDeleted()))
-				.orElseThrow(() -> new InvalidSubscriptionOperationException("Plan price not found: " + id));
+		PlanPriceEntity entity = planPriceRepository.findById(id).filter(price -> Boolean.FALSE.equals(price.getDeleted())).orElseThrow(() -> new InvalidSubscriptionOperationException("Plan price not found: " + id));
 		validatePriceRequest(entity.getPlan(), request, id);
 		apply(entity, request);
 		return SubscriptionMapperUtil.toPlanPriceResponse(planPriceRepository.save(entity));
@@ -70,9 +62,7 @@ public class PricingServiceImpl implements PricingService {
 	@Override
 	@Transactional(readOnly = true)
 	public List<PlanPriceResponse> getPlanPrices(Long planId) {
-		return planPriceRepository.findAllByPlan_IdAndDeletedFalseOrderByEffectiveFromDesc(planId).stream()
-				.map(SubscriptionMapperUtil::toPlanPriceResponse)
-				.toList();
+		return planPriceRepository.findAllByPlan_IdAndDeletedFalseOrderByEffectiveFromDesc(planId).stream().map(SubscriptionMapperUtil::toPlanPriceResponse).toList();
 	}
 
 	@Override
@@ -83,81 +73,37 @@ public class PricingServiceImpl implements PricingService {
 
 	@Override
 	@Transactional(readOnly = true)
-	public ResolvedPriceResponse resolvePrice(
-			String planCode,
-			BillingCycle cycle,
-			String currencyCode,
-			String couponCode,
-			Long tenantId,
-			LocalDateTime asOf) {
+	public ResolvedPriceResponse resolvePrice(String planCode, BillingCycle cycle, String currencyCode, String couponCode, Long tenantId, LocalDateTime asOf) {
 		LocalDateTime effectiveAt = asOf == null ? LocalDateTime.now() : asOf;
 		PlanPriceEntity entity = resolvePlanPrice(planCode, cycle, currencyCode, effectiveAt);
 		BigDecimal baseAmount = entity.getAmount();
 		BigDecimal planAdjustedAmount = applyPlanDiscount(baseAmount, entity.getDiscountPercent());
 		CouponResolution couponResolution = resolveCoupon(entity.getPlan(), normalizeCouponCode(couponCode), tenantId, effectiveAt, planAdjustedAmount, entity.getCurrencyCode());
 		BigDecimal finalAmount = planAdjustedAmount.subtract(couponResolution.discountAmount()).max(BigDecimal.ZERO).setScale(2, RoundingMode.HALF_UP);
-		return ResolvedPriceResponse.builder()
-				.planCode(entity.getPlan().getCode())
-				.billingCycle(entity.getBillingCycle())
-				.currencyCode(entity.getCurrencyCode())
-				.baseAmount(baseAmount)
-				.amount(finalAmount)
-				.discountPercent(entity.getDiscountPercent())
-				.couponCode(couponResolution.couponCode())
-				.couponDiscountAmount(couponResolution.discountAmount())
-				.displayLabel(entity.getDisplayLabel())
-				.effectiveFrom(entity.getEffectiveFrom())
-				.build();
+		return ResolvedPriceResponse.builder().planCode(entity.getPlan().getCode()).billingCycle(entity.getBillingCycle()).currencyCode(entity.getCurrencyCode()).baseAmount(baseAmount).amount(finalAmount).discountPercent(entity.getDiscountPercent()).couponCode(couponResolution.couponCode()).couponDiscountAmount(couponResolution.discountAmount()).displayLabel(entity.getDisplayLabel()).effectiveFrom(entity.getEffectiveFrom()).build();
 	}
 
 	private PlanPriceEntity resolvePlanPrice(String planCode, BillingCycle cycle, String currencyCode, LocalDateTime effectiveAt) {
 		String normalizedPlanCode = planCode == null ? null : planCode.trim().toUpperCase();
 		String normalizedCurrencyCode = normalizeCurrency(currencyCode);
-		return planPriceRepository
-				.findTopByPlan_CodeAndBillingCycleAndCurrencyCodeAndIsActiveTrueAndDeletedFalseAndEffectiveFromLessThanEqualAndEffectiveToIsNullOrderByEffectiveFromDesc(
-						normalizedPlanCode,
-						cycle,
-						normalizedCurrencyCode,
-						effectiveAt)
-				.or(() -> planPriceRepository
-						.findTopByPlan_CodeAndBillingCycleAndCurrencyCodeAndIsActiveTrueAndDeletedFalseAndEffectiveFromLessThanEqualAndEffectiveToGreaterThanEqualOrderByEffectiveFromDesc(
-								normalizedPlanCode,
-								cycle,
-								normalizedCurrencyCode,
-								effectiveAt,
-								effectiveAt))
-				.orElseThrow(() -> new PriceNotConfiguredException(planCode, cycle, currencyCode));
+		return planPriceRepository.findTopByPlan_CodeAndBillingCycleAndCurrencyCodeAndIsActiveTrueAndDeletedFalseAndEffectiveFromLessThanEqualAndEffectiveToIsNullOrderByEffectiveFromDesc(normalizedPlanCode, cycle, normalizedCurrencyCode, effectiveAt).or(() -> planPriceRepository.findTopByPlan_CodeAndBillingCycleAndCurrencyCodeAndIsActiveTrueAndDeletedFalseAndEffectiveFromLessThanEqualAndEffectiveToGreaterThanEqualOrderByEffectiveFromDesc(normalizedPlanCode, cycle, normalizedCurrencyCode, effectiveAt, effectiveAt)).orElseThrow(() -> new PriceNotConfiguredException(planCode, cycle, currencyCode));
 	}
 
-	private CouponResolution resolveCoupon(
-			SubscriptionPlanEntity plan,
-			String couponCode,
-			Long tenantId,
-			LocalDateTime effectiveAt,
-			BigDecimal planAdjustedAmount,
-			String currencyCode) {
+	private CouponResolution resolveCoupon(SubscriptionPlanEntity plan, String couponCode, Long tenantId, LocalDateTime effectiveAt, BigDecimal planAdjustedAmount, String currencyCode) {
 		if (couponCode == null) {
 			return new CouponResolution(null, BigDecimal.ZERO);
 		}
-		SubscriptionCouponEntity coupon = couponRepository.findByCodeAndDeletedFalse(couponCode)
-				.orElseThrow(() -> new InvalidSubscriptionOperationException("Coupon not found: " + couponCode));
+		SubscriptionCouponEntity coupon = couponRepository.findByCodeAndDeletedFalse(couponCode).orElseThrow(() -> new InvalidSubscriptionOperationException("Coupon not found: " + couponCode));
 		validateCoupon(coupon, plan, tenantId, effectiveAt, currencyCode);
 		BigDecimal discountAmount = calculateCouponDiscount(coupon, planAdjustedAmount);
 		return new CouponResolution(coupon.getCode(), discountAmount);
 	}
 
-	private void validateCoupon(
-			SubscriptionCouponEntity coupon,
-			SubscriptionPlanEntity plan,
-			Long tenantId,
-			LocalDateTime effectiveAt,
-			String currencyCode) {
+	private void validateCoupon(SubscriptionCouponEntity coupon, SubscriptionPlanEntity plan, Long tenantId, LocalDateTime effectiveAt, String currencyCode) {
 		if (!Boolean.TRUE.equals(coupon.getIsActive())) {
 			throw new InvalidSubscriptionOperationException("Coupon is not active: " + coupon.getCode());
 		}
-		boolean validWindow = coupon.getValidTo() == null
-				? couponRepository.countByIdAndDeletedFalseAndIsActiveTrueAndValidFromLessThanEqualAndValidToIsNull(coupon.getId(), effectiveAt) > 0
-				: couponRepository.countByIdAndDeletedFalseAndIsActiveTrueAndValidFromLessThanEqualAndValidToGreaterThanEqual(coupon.getId(), effectiveAt, effectiveAt) > 0;
+		boolean validWindow = coupon.getValidTo() == null ? couponRepository.countByIdAndDeletedFalseAndIsActiveTrueAndValidFromLessThanEqualAndValidToIsNull(coupon.getId(), effectiveAt) > 0 : couponRepository.countByIdAndDeletedFalseAndIsActiveTrueAndValidFromLessThanEqualAndValidToGreaterThanEqual(coupon.getId(), effectiveAt, effectiveAt) > 0;
 		if (!validWindow) {
 			throw new InvalidSubscriptionOperationException("Coupon is not valid at the requested time: " + coupon.getCode());
 		}
@@ -165,20 +111,16 @@ public class PricingServiceImpl implements PricingService {
 		if (!applicablePlans.isEmpty() && applicablePlans.stream().noneMatch(mapping -> mapping.getPlan().getId().equals(plan.getId()))) {
 			throw new InvalidSubscriptionOperationException("Coupon is not applicable to plan: " + plan.getCode());
 		}
-		if (coupon.getDiscountType() == DiscountType.FIXED_AMOUNT && coupon.getCurrencyCode() != null
-				&& !coupon.getCurrencyCode().equalsIgnoreCase(currencyCode)) {
+		if (coupon.getDiscountType() == DiscountType.FIXED_AMOUNT && coupon.getCurrencyCode() != null && !coupon.getCurrencyCode().equalsIgnoreCase(currencyCode)) {
 			throw new InvalidSubscriptionOperationException("Coupon currency does not match price currency");
 		}
-		if (coupon.getMaxRedemptions() != null
-				&& couponRedemptionRepository.countByCoupon_IdAndDeletedFalse(coupon.getId()) >= coupon.getMaxRedemptions()) {
+		if (coupon.getMaxRedemptions() != null && couponRedemptionRepository.countByCoupon_IdAndDeletedFalse(coupon.getId()) >= coupon.getMaxRedemptions()) {
 			throw new InvalidSubscriptionOperationException("Coupon redemption limit reached");
 		}
-		if (tenantId != null && coupon.getMaxRedemptionsPerTenant() != null
-				&& couponRedemptionRepository.countByCoupon_IdAndTenantIdAndDeletedFalse(coupon.getId(), tenantId) >= coupon.getMaxRedemptionsPerTenant()) {
+		if (tenantId != null && coupon.getMaxRedemptionsPerTenant() != null && couponRedemptionRepository.countByCoupon_IdAndTenantIdAndDeletedFalse(coupon.getId(), tenantId) >= coupon.getMaxRedemptionsPerTenant()) {
 			throw new InvalidSubscriptionOperationException("Coupon redemption limit reached for tenant");
 		}
-		if (tenantId != null && Boolean.TRUE.equals(coupon.getFirstSubscriptionOnly())
-				&& customerSubscriptionRepository.countByTenantIdAndDeletedFalse(tenantId) > 0) {
+		if (tenantId != null && Boolean.TRUE.equals(coupon.getFirstSubscriptionOnly()) && customerSubscriptionRepository.countByTenantIdAndDeletedFalse(tenantId) > 0) {
 			throw new InvalidSubscriptionOperationException("Coupon is only valid for a first subscription");
 		}
 	}
@@ -198,8 +140,7 @@ public class PricingServiceImpl implements PricingService {
 	}
 
 	private BigDecimal percentageDiscount(BigDecimal amount, BigDecimal percent) {
-		return amount.multiply(percent)
-				.divide(new BigDecimal("100"), 2, RoundingMode.HALF_UP);
+		return amount.multiply(percent).divide(new BigDecimal("100"), 2, RoundingMode.HALF_UP);
 	}
 
 	private void validatePriceRequest(SubscriptionPlanEntity plan, PlanPriceRequest request, Long currentId) {
@@ -210,11 +151,7 @@ public class PricingServiceImpl implements PricingService {
 			throw new InvalidSubscriptionOperationException("Paid plans must have a positive price");
 		}
 		List<PlanPriceEntity> existing = planPriceRepository.findAllByPlan_IdAndDeletedFalseOrderByEffectiveFromDesc(plan.getId());
-		boolean overlapping = existing.stream()
-				.filter(price -> currentId == null || !price.getId().equals(currentId))
-				.filter(price -> price.getBillingCycle() == request.getBillingCycle())
-				.filter(price -> price.getCurrencyCode().equalsIgnoreCase(request.getCurrencyCode()))
-				.anyMatch(price -> overlaps(price.getEffectiveFrom(), price.getEffectiveTo(), request.getEffectiveFrom(), request.getEffectiveTo()));
+		boolean overlapping = existing.stream().filter(price -> currentId == null || !price.getId().equals(currentId)).filter(price -> price.getBillingCycle() == request.getBillingCycle()).filter(price -> price.getCurrencyCode().equalsIgnoreCase(request.getCurrencyCode())).anyMatch(price -> overlaps(price.getEffectiveFrom(), price.getEffectiveTo(), request.getEffectiveFrom(), request.getEffectiveTo()));
 		if (overlapping) {
 			throw new OverlappingPriceWindowException();
 		}
@@ -252,6 +189,16 @@ public class PricingServiceImpl implements PricingService {
 		return couponCode.trim().toUpperCase();
 	}
 
+
 	private record CouponResolution(String couponCode, BigDecimal discountAmount) {
+	}
+
+	public PricingServiceImpl(final PlanPriceRepository planPriceRepository, final SubscriptionLookupService lookupService, final SubscriptionCouponRepository couponRepository, final SubscriptionCouponPlanMappingRepository couponPlanMappingRepository, final SubscriptionCouponRedemptionRepository couponRedemptionRepository, final CustomerSubscriptionRepository customerSubscriptionRepository) {
+		this.planPriceRepository = planPriceRepository;
+		this.lookupService = lookupService;
+		this.couponRepository = couponRepository;
+		this.couponPlanMappingRepository = couponPlanMappingRepository;
+		this.couponRedemptionRepository = couponRedemptionRepository;
+		this.customerSubscriptionRepository = customerSubscriptionRepository;
 	}
 }

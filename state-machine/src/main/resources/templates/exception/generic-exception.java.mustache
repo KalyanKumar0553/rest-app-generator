@@ -1,24 +1,13 @@
 package {{packageName}};
 
 import org.springframework.http.HttpStatus;
-{{#useLombok}}
-import lombok.Data;
-import lombok.NoArgsConstructor;
-{{/useLombok}}
-
-{{#useLombok}}
-@Data
-@NoArgsConstructor
-{{/useLombok}}
 public class GenericException extends RuntimeException {
 
 	private HttpStatus status;
 	private String errorMsg;
 
-{{^useLombok}}
 	public GenericException() {
 	}
-{{/useLombok}}
 
 	public GenericException(HttpStatus status, String errorMsg) {
 		super(errorMsg);
@@ -26,7 +15,6 @@ public class GenericException extends RuntimeException {
 		this.errorMsg = errorMsg;
 	}
 
-{{^useLombok}}
 	public HttpStatus getStatus() {
 		return status;
 	}
@@ -42,5 +30,4 @@ public class GenericException extends RuntimeException {
 	public void setErrorMsg(String errorMsg) {
 		this.errorMsg = errorMsg;
 	}
-{{/useLombok}}
 }

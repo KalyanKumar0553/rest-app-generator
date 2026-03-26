@@ -2,12 +2,10 @@ package com.src.main.subscription.service.impl;
 
 import java.util.List;
 import java.util.Locale;
-
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Caching;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
 import com.src.main.subscription.dto.FeatureRequest;
 import com.src.main.subscription.dto.FeatureResponse;
 import com.src.main.subscription.entity.SubscriptionFeatureEntity;
@@ -18,20 +16,13 @@ import com.src.main.subscription.repository.SubscriptionFeatureRepository;
 import com.src.main.subscription.service.SubscriptionFeatureService;
 import com.src.main.subscription.util.SubscriptionMapperUtil;
 
-import lombok.RequiredArgsConstructor;
-
 @Service
-@RequiredArgsConstructor
 public class SubscriptionFeatureServiceImpl implements SubscriptionFeatureService {
-
 	private final SubscriptionFeatureRepository featureRepository;
 
 	@Override
 	@Transactional
-	@Caching(evict = {
-			@CacheEvict(cacheNames = "subscriptionFeatureByCode", allEntries = true),
-			@CacheEvict(cacheNames = "entitlementsByTenant", allEntries = true)
-	})
+	@Caching(evict = {@CacheEvict(cacheNames = "subscriptionFeatureByCode", allEntries = true), @CacheEvict(cacheNames = "entitlementsByTenant", allEntries = true)})
 	public FeatureResponse createFeature(FeatureRequest request) {
 		String code = normalizeCode(request.getCode());
 		if (featureRepository.findByCodeAndDeletedFalse(code).isPresent()) {
@@ -44,20 +35,13 @@ public class SubscriptionFeatureServiceImpl implements SubscriptionFeatureServic
 
 	@Override
 	@Transactional
-	@Caching(evict = {
-			@CacheEvict(cacheNames = "subscriptionFeatureByCode", allEntries = true),
-			@CacheEvict(cacheNames = "entitlementsByTenant", allEntries = true)
-	})
+	@Caching(evict = {@CacheEvict(cacheNames = "subscriptionFeatureByCode", allEntries = true), @CacheEvict(cacheNames = "entitlementsByTenant", allEntries = true)})
 	public FeatureResponse updateFeature(Long id, FeatureRequest request) {
-		SubscriptionFeatureEntity entity = featureRepository.findById(id)
-				.filter(feature -> Boolean.FALSE.equals(feature.getDeleted()))
-				.orElseThrow(() -> new FeatureNotFoundException(String.valueOf(id)));
+		SubscriptionFeatureEntity entity = featureRepository.findById(id).filter(feature -> Boolean.FALSE.equals(feature.getDeleted())).orElseThrow(() -> new FeatureNotFoundException(String.valueOf(id)));
 		String code = normalizeCode(request.getCode());
-		featureRepository.findByCodeAndDeletedFalse(code)
-				.filter(existing -> !existing.getId().equals(id))
-				.ifPresent(existing -> {
-					throw new InvalidSubscriptionOperationException("Feature code already exists: " + code);
-				});
+		featureRepository.findByCodeAndDeletedFalse(code).filter(existing -> !existing.getId().equals(id)).ifPresent(existing -> {
+			throw new InvalidSubscriptionOperationException("Feature code already exists: " + code);
+		});
 		apply(entity, request, code);
 		return SubscriptionMapperUtil.toFeatureResponse(featureRepository.save(entity));
 	}
@@ -65,17 +49,14 @@ public class SubscriptionFeatureServiceImpl implements SubscriptionFeatureServic
 	@Override
 	@Transactional(readOnly = true)
 	public List<FeatureResponse> getAllFeatures(Boolean activeOnly) {
-		List<SubscriptionFeatureEntity> entities = Boolean.TRUE.equals(activeOnly)
-				? featureRepository.findAllByIsActiveTrueAndDeletedFalseOrderByNameAsc()
-				: featureRepository.findAllByDeletedFalseOrderByNameAsc();
+		List<SubscriptionFeatureEntity> entities = Boolean.TRUE.equals(activeOnly) ? featureRepository.findAllByIsActiveTrueAndDeletedFalseOrderByNameAsc() : featureRepository.findAllByDeletedFalseOrderByNameAsc();
 		return entities.stream().map(SubscriptionMapperUtil::toFeatureResponse).toList();
 	}
 
 	@Override
 	@Transactional(readOnly = true)
 	public FeatureResponse getFeatureByCode(String code) {
-		return SubscriptionMapperUtil.toFeatureResponse(featureRepository.findByCodeAndDeletedFalse(normalizeCode(code))
-				.orElseThrow(() -> new FeatureNotFoundException(code)));
+		return SubscriptionMapperUtil.toFeatureResponse(featureRepository.findByCodeAndDeletedFalse(normalizeCode(code)).orElseThrow(() -> new FeatureNotFoundException(code)));
 	}
 
 	private void apply(SubscriptionFeatureEntity entity, FeatureRequest request, String code) {
@@ -95,10 +76,7 @@ public class SubscriptionFeatureServiceImpl implements SubscriptionFeatureServic
 	}
 
 	private String normalizeCode(String value) {
-		return requireText(value, "Feature code is required")
-				.toUpperCase(Locale.ROOT)
-				.replace('-', '_')
-				.replace(' ', '_');
+		return requireText(value, "Feature code is required").toUpperCase(Locale.ROOT).replace('-', '_').replace(' ', '_');
 	}
 
 	private String requireText(String value, String message) {
@@ -110,5 +88,9 @@ public class SubscriptionFeatureServiceImpl implements SubscriptionFeatureServic
 
 	private String trimToNull(String value) {
 		return value == null || value.isBlank() ? null : value.trim();
+	}
+
+	public SubscriptionFeatureServiceImpl(final SubscriptionFeatureRepository featureRepository) {
+		this.featureRepository = featureRepository;
 	}
 }

@@ -4,10 +4,8 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Locale;
-
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
 import com.src.main.subscription.dto.SubscriptionCouponRequest;
 import com.src.main.subscription.dto.SubscriptionCouponResponse;
 import com.src.main.subscription.entity.SubscriptionCouponEntity;
@@ -22,12 +20,8 @@ import com.src.main.subscription.repository.SubscriptionPlanRepository;
 import com.src.main.subscription.service.SubscriptionCouponService;
 import com.src.main.subscription.util.SubscriptionMapperUtil;
 
-import lombok.RequiredArgsConstructor;
-
 @Service
-@RequiredArgsConstructor
 public class SubscriptionCouponServiceImpl implements SubscriptionCouponService {
-
 	private final SubscriptionCouponRepository couponRepository;
 	private final SubscriptionCouponPlanMappingRepository couponPlanMappingRepository;
 	private final SubscriptionPlanRepository planRepository;
@@ -69,10 +63,7 @@ public class SubscriptionCouponServiceImpl implements SubscriptionCouponService 
 	@Override
 	@Transactional(readOnly = true)
 	public List<SubscriptionCouponResponse> getAllCoupons(Boolean activeOnly) {
-		return couponRepository.findAllByDeletedFalseOrderByCreatedAtDesc().stream()
-				.filter(coupon -> !Boolean.TRUE.equals(activeOnly) || Boolean.TRUE.equals(coupon.getIsActive()))
-				.map(this::toResponse)
-				.toList();
+		return couponRepository.findAllByDeletedFalseOrderByCreatedAtDesc().stream().filter(coupon -> !Boolean.TRUE.equals(activeOnly) || Boolean.TRUE.equals(coupon.getIsActive())).map(this::toResponse).toList();
 	}
 
 	@Override
@@ -92,9 +83,7 @@ public class SubscriptionCouponServiceImpl implements SubscriptionCouponService 
 	}
 
 	private SubscriptionCouponEntity getEntity(Long id) {
-		return couponRepository.findById(id)
-				.filter(coupon -> Boolean.FALSE.equals(coupon.getDeleted()))
-				.orElseThrow(() -> new InvalidSubscriptionOperationException("Coupon not found: " + id));
+		return couponRepository.findById(id).filter(coupon -> Boolean.FALSE.equals(coupon.getDeleted())).orElseThrow(() -> new InvalidSubscriptionOperationException("Coupon not found: " + id));
 	}
 
 	private SubscriptionCouponResponse toResponse(SubscriptionCouponEntity entity) {
@@ -106,9 +95,7 @@ public class SubscriptionCouponServiceImpl implements SubscriptionCouponService 
 		if (applicablePlanIds == null || applicablePlanIds.isEmpty()) {
 			return;
 		}
-		List<SubscriptionPlanEntity> plans = planRepository.findAllById(applicablePlanIds).stream()
-				.filter(plan -> Boolean.FALSE.equals(plan.getDeleted()))
-				.toList();
+		List<SubscriptionPlanEntity> plans = planRepository.findAllById(applicablePlanIds).stream().filter(plan -> Boolean.FALSE.equals(plan.getDeleted())).toList();
 		if (plans.size() != applicablePlanIds.size()) {
 			throw new PlanNotFoundException("One or more applicable plans do not exist");
 		}
@@ -142,12 +129,10 @@ public class SubscriptionCouponServiceImpl implements SubscriptionCouponService 
 		if (request.getDiscountValue() == null || request.getDiscountValue().signum() <= 0) {
 			throw new InvalidSubscriptionOperationException("Coupon discount value must be positive");
 		}
-		if (request.getDiscountType() == DiscountType.PERCENTAGE
-				&& request.getDiscountValue().compareTo(new BigDecimal("100")) > 0) {
+		if (request.getDiscountType() == DiscountType.PERCENTAGE && request.getDiscountValue().compareTo(new BigDecimal("100")) > 0) {
 			throw new InvalidSubscriptionOperationException("Percentage coupon cannot exceed 100");
 		}
-		if (request.getDiscountType() == DiscountType.FIXED_AMOUNT
-				&& (request.getCurrencyCode() == null || request.getCurrencyCode().isBlank())) {
+		if (request.getDiscountType() == DiscountType.FIXED_AMOUNT && (request.getCurrencyCode() == null || request.getCurrencyCode().isBlank())) {
 			throw new InvalidSubscriptionOperationException("Fixed amount coupons require a currency code");
 		}
 		LocalDateTime validFrom = request.getValidFrom();
@@ -158,10 +143,7 @@ public class SubscriptionCouponServiceImpl implements SubscriptionCouponService 
 	}
 
 	private String normalizeCode(String value) {
-		return requireText(value, "Coupon code is required")
-				.toUpperCase(Locale.ROOT)
-				.replace('-', '_')
-				.replace(' ', '_');
+		return requireText(value, "Coupon code is required").toUpperCase(Locale.ROOT).replace('-', '_').replace(' ', '_');
 	}
 
 	private String requireText(String value, String message) {
@@ -173,5 +155,11 @@ public class SubscriptionCouponServiceImpl implements SubscriptionCouponService 
 
 	private String trimToNull(String value) {
 		return value == null || value.isBlank() ? null : value.trim();
+	}
+
+	public SubscriptionCouponServiceImpl(final SubscriptionCouponRepository couponRepository, final SubscriptionCouponPlanMappingRepository couponPlanMappingRepository, final SubscriptionPlanRepository planRepository) {
+		this.couponRepository = couponRepository;
+		this.couponPlanMappingRepository = couponPlanMappingRepository;
+		this.planRepository = planRepository;
 	}
 }

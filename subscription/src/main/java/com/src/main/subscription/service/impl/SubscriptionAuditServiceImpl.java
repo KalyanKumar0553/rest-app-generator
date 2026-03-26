@@ -1,10 +1,8 @@
 package com.src.main.subscription.service.impl;
 
 import java.util.List;
-
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
 import com.src.main.subscription.dto.SubscriptionAuditCommand;
 import com.src.main.subscription.dto.SubscriptionAuditResponse;
 import com.src.main.subscription.entity.SubscriptionAuditLogEntity;
@@ -12,12 +10,8 @@ import com.src.main.subscription.repository.SubscriptionAuditLogRepository;
 import com.src.main.subscription.service.SubscriptionAuditService;
 import com.src.main.subscription.util.SubscriptionMapperUtil;
 
-import lombok.RequiredArgsConstructor;
-
 @Service
-@RequiredArgsConstructor
 public class SubscriptionAuditServiceImpl implements SubscriptionAuditService {
-
 	private final SubscriptionAuditLogRepository auditLogRepository;
 
 	@Override
@@ -41,8 +35,10 @@ public class SubscriptionAuditServiceImpl implements SubscriptionAuditService {
 	@Override
 	@Transactional(readOnly = true)
 	public List<SubscriptionAuditResponse> getAuditHistory(Long tenantId) {
-		return auditLogRepository.findAllByTenantIdOrderByCreatedAtDesc(tenantId).stream()
-				.map(SubscriptionMapperUtil::toAuditResponse)
-				.toList();
+		return auditLogRepository.findAllByTenantIdOrderByCreatedAtDesc(tenantId).stream().map(SubscriptionMapperUtil::toAuditResponse).toList();
+	}
+
+	public SubscriptionAuditServiceImpl(final SubscriptionAuditLogRepository auditLogRepository) {
+		this.auditLogRepository = auditLogRepository;
 	}
 }

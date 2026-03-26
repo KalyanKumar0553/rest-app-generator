@@ -4,24 +4,17 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.OffsetDateTime;
-
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
 import com.src.main.model.UniqueVisitEntity;
 import com.src.main.repository.UniqueVisitRepository;
-
 import jakarta.servlet.http.HttpServletRequest;
-import lombok.RequiredArgsConstructor;
 
 @Service
-@RequiredArgsConstructor
 public class VisitTrackingServiceImpl implements VisitTrackingService {
-
     private final UniqueVisitRepository uniqueVisitRepository;
-
     @Value("${app.analytics.visit.salt:rest-app-generator-visit-salt}")
     private String visitSalt;
 
@@ -32,18 +25,15 @@ public class VisitTrackingServiceImpl implements VisitTrackingService {
         if (clientIp.isBlank()) {
             return;
         }
-
         String ipHash = hashIp(clientIp);
         OffsetDateTime now = OffsetDateTime.now();
-        UniqueVisitEntity visit = uniqueVisitRepository.findByIpHash(ipHash)
-                .orElseGet(() -> createVisit(ipHash, now));
+        UniqueVisitEntity visit = uniqueVisitRepository.findByIpHash(ipHash).orElseGet(() -> createVisit(ipHash, now));
         visit.setLastSeenAt(now);
         visit.setHitCount(visit.getHitCount() + 1);
         try {
             uniqueVisitRepository.save(visit);
         } catch (DataIntegrityViolationException ex) {
-            UniqueVisitEntity existing = uniqueVisitRepository.findByIpHash(ipHash)
-                    .orElseThrow(() -> ex);
+            UniqueVisitEntity existing = uniqueVisitRepository.findByIpHash(ipHash).orElseThrow(() -> ex);
             existing.setLastSeenAt(now);
             existing.setHitCount(existing.getHitCount() + 1);
             uniqueVisitRepository.save(existing);
@@ -67,12 +57,10 @@ public class VisitTrackingServiceImpl implements VisitTrackingService {
                 return parts[0].trim();
             }
         }
-
         String realIp = request.getHeader("X-Real-IP");
         if (realIp != null && !realIp.isBlank()) {
             return realIp.trim();
         }
-
         String remoteAddr = request.getRemoteAddr();
         return remoteAddr == null ? "" : remoteAddr.trim();
     }
@@ -93,5 +81,9 @@ public class VisitTrackingServiceImpl implements VisitTrackingService {
             builder.append(String.format("%02x", b));
         }
         return builder.toString();
+    }
+
+    public VisitTrackingServiceImpl(final UniqueVisitRepository uniqueVisitRepository) {
+        this.uniqueVisitRepository = uniqueVisitRepository;
     }
 }

@@ -57,10 +57,6 @@ public class InitializrPomGenerator {
 					});
 		}
 		boolean includeJpa = hasJpaDependency(deps);
-		if (model.isIncludeLombok()) {
-			build.dependencies().add("lombok", Dependency.withCoordinates("org.projectlombok", "lombok")
-					.scope(DependencyScope.ANNOTATION_PROCESSOR).build());
-		}
 		if (includeJpa) {
 			build.dependencies().add("jakarta-persistence-api", Dependency
 					.withCoordinates("jakarta.persistence", "jakarta.persistence-api").scope(DependencyScope.COMPILE_ONLY));
