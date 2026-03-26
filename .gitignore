@@ -65,6 +65,7 @@ src/ux/www/*
 Thumbs.db
 # Java / Maven
 target/
+*.class
 *.jar
 *.war
 *.ear
