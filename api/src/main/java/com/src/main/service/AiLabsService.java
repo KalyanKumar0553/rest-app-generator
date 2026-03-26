@@ -22,15 +22,19 @@ import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
 import org.yaml.snakeyaml.Yaml;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.src.main.dto.AiLabsGenerateResponseDTO;
 import com.src.main.dto.AiLabsJobStatusDTO;
+import com.src.main.dto.AiLabsJobSummaryDTO;
 import com.src.main.dto.AiLabsStepDTO;
 import com.src.main.dto.ProjectDraftResponseDTO;
 import com.src.main.dto.ProjectDraftUpsertRequestDTO;
 import com.src.main.exception.GenericException;
+import com.src.main.model.AiLabsJobHistoryEntity;
+import com.src.main.repository.AiLabsJobHistoryRepository;
 
 @Service
 public class AiLabsService {
@@ -52,6 +56,7 @@ public class AiLabsService {
 	private final ProjectUserIdentityService projectUserIdentityService;
 	private final ConfigMetadataService configMetadataService;
 	private final AiLabsQuotaService aiLabsQuotaService;
+	private final AiLabsJobHistoryRepository aiLabsJobHistoryRepository;
 	private final ChatClient.Builder chatClientBuilder;
 	private final ObjectMapper objectMapper;
 	@Value("${app.ai.openai.enabled:false}")
@@ -66,7 +71,7 @@ public class AiLabsService {
 		}
 		aiLabsQuotaService.reserveUsage(ownerId);
 		UUID jobId = UUID.randomUUID();
-		JobState state = JobState.create(jobId, prompt);
+		JobState state = JobState.create(jobId, prompt, ownerId);
 		jobs.put(jobId, state);
 		publish(state);
 		SecurityContext securityContext = snapshotSecurityContext();
@@ -74,16 +79,31 @@ public class AiLabsService {
 		return new AiLabsGenerateResponseDTO(jobId, state.status());
 	}
 
-	public AiLabsJobStatusDTO getJob(UUID jobId) {
+	public AiLabsJobStatusDTO getJob(UUID jobId, String requesterUserId) {
 		JobState state = jobs.get(jobId);
-		if (state == null) {
-			throw new IllegalArgumentException("AI Labs job not found: " + jobId);
+		if (state != null && state.isOwnedBy(requesterUserId)) {
+			return state.snapshot();
 		}
-		return state.snapshot();
+		return aiLabsJobHistoryRepository.findByIdAndOwnerUserId(jobId, requesterUserId)
+				.map(this::toJobStatusDTO)
+				.orElseThrow(() -> new IllegalArgumentException("AI Labs job not found: " + jobId));
 	}
 
-	public org.springframework.web.servlet.mvc.method.annotation.SseEmitter subscribe(UUID jobId) {
-		return eventStreamService.subscribe(jobId, getJob(jobId));
+	public List<AiLabsJobSummaryDTO> listJobs(String requesterUserId) {
+		return aiLabsJobHistoryRepository.findByOwnerUserIdOrderByCreatedAtDesc(requesterUserId).stream()
+				.map(job -> new AiLabsJobSummaryDTO(
+						job.getId(),
+						job.getOwnerUserId(),
+						job.getStatus(),
+						job.getGenerator(),
+						job.getProjectId() == null ? null : job.getProjectId().toString(),
+						job.getCreatedAt(),
+						job.getUpdatedAt()))
+				.toList();
+	}
+
+	public org.springframework.web.servlet.mvc.method.annotation.SseEmitter subscribe(UUID jobId, String requesterUserId) {
+		return eventStreamService.subscribe(jobId, getJob(jobId, requesterUserId));
 	}
 
 	private void runJobWithSecurityContext(JobState state, String ownerId, SecurityContext securityContext) {
@@ -217,7 +237,17 @@ public class AiLabsService {
 		if (ex instanceof GenericException genericException) {
 			return genericException.getMessage();
 		}
+		if (ex instanceof WebClientResponseException.TooManyRequests) {
+			return "AI Labs is receiving too many requests right now. Please wait a moment and try again.";
+		}
+		if (ex instanceof WebClientResponseException webClientResponseException
+				&& webClientResponseException.getStatusCode() == HttpStatus.TOO_MANY_REQUESTS) {
+			return "AI Labs is receiving too many requests right now. Please wait a moment and try again.";
+		}
 		String message = ex == null ? "" : String.valueOf(ex.getMessage()).trim();
+		if (message.contains("429") || message.toLowerCase().contains("too many requests")) {
+			return "AI Labs is receiving too many requests right now. Please wait a moment and try again.";
+		}
 		if (message.contains("empty project draft") || message.contains("invalid structured draft output") || message.contains("invalid json") || message.contains("invalid yaml") || message.contains("must be a JSON or YAML object") || message.contains("must be a YAML object")) {
 			return GENERIC_AI_GENERATION_ERROR;
 		}
@@ -335,7 +365,55 @@ public class AiLabsService {
 	}
 
 	private void publish(JobState state) {
+		persistState(state);
 		eventStreamService.publish(state.jobId(), state.snapshot());
+	}
+
+	private void persistState(JobState state) {
+		AiLabsJobHistoryEntity entity = aiLabsJobHistoryRepository.findById(state.jobId()).orElseGet(AiLabsJobHistoryEntity::new);
+		entity.setId(state.jobId());
+		entity.setOwnerUserId(state.ownerUserId());
+		entity.setStatus(state.status());
+		entity.setPrompt(state.prompt());
+		entity.setGenerator(state.generator());
+		entity.setProjectId(state.projectId());
+		entity.setStreamPreview(state.streamPreview());
+		entity.setErrorMessage(state.errorMessage());
+		entity.setCreatedAt(state.createdAt());
+		entity.setUpdatedAt(state.updatedAt());
+		entity.setStepsJson(writeStepsJson(state.steps()));
+		aiLabsJobHistoryRepository.save(entity);
+	}
+
+	private String writeStepsJson(List<AiLabsStepDTO> steps) {
+		try {
+			return objectMapper.writeValueAsString(steps);
+		} catch (Exception ex) {
+			throw new IllegalStateException("Failed to serialize AI Labs job steps", ex);
+		}
+	}
+
+	private List<AiLabsStepDTO> readStepsJson(String stepsJson) {
+		try {
+			return objectMapper.readValue(stepsJson, new TypeReference<List<AiLabsStepDTO>>() {
+			});
+		} catch (Exception ex) {
+			throw new IllegalStateException("Failed to parse AI Labs job steps", ex);
+		}
+	}
+
+	private AiLabsJobStatusDTO toJobStatusDTO(AiLabsJobHistoryEntity entity) {
+		return new AiLabsJobStatusDTO(
+				entity.getId(),
+				entity.getStatus(),
+				entity.getPrompt(),
+				readStepsJson(entity.getStepsJson()),
+				entity.getStreamPreview(),
+				entity.getProjectId() == null ? null : entity.getProjectId().toString(),
+				entity.getGenerator(),
+				entity.getErrorMessage(),
+				entity.getCreatedAt(),
+				entity.getUpdatedAt());
 	}
 
 	private String findCurrentStepKey(JobState state) {
@@ -346,6 +424,7 @@ public class AiLabsService {
 	private static final class JobState {
 		private final UUID jobId;
 		private final String prompt;
+		private final String ownerUserId;
 		private final List<AiLabsStepDTO> steps;
 		private final OffsetDateTime createdAt;
 		private OffsetDateTime updatedAt;
@@ -355,9 +434,10 @@ public class AiLabsService {
 		private String generator;
 		private String errorMessage;
 
-		private JobState(UUID jobId, String prompt, List<AiLabsStepDTO> steps, OffsetDateTime createdAt, OffsetDateTime updatedAt, String status, String streamPreview, String projectId, String generator, String errorMessage) {
+		private JobState(UUID jobId, String prompt, String ownerUserId, List<AiLabsStepDTO> steps, OffsetDateTime createdAt, OffsetDateTime updatedAt, String status, String streamPreview, String projectId, String generator, String errorMessage) {
 			this.jobId = jobId;
 			this.prompt = prompt;
+			this.ownerUserId = ownerUserId;
 			this.steps = steps;
 			this.createdAt = createdAt;
 			this.updatedAt = updatedAt;
@@ -368,14 +448,14 @@ public class AiLabsService {
 			this.errorMessage = errorMessage;
 		}
 
-		private static JobState create(UUID jobId, String prompt) {
+		private static JobState create(UUID jobId, String prompt, String ownerUserId) {
 			OffsetDateTime now = OffsetDateTime.now();
 			List<AiLabsStepDTO> steps = new ArrayList<>();
 			steps.add(new AiLabsStepDTO("contact_openai", "Contact OpenAI", STATUS_PENDING, "Waiting to start.", now));
 			steps.add(new AiLabsStepDTO("build_spec", "Build Draft", STATUS_PENDING, "Waiting to start.", now));
 			steps.add(new AiLabsStepDTO("validate_spec", "Validate Spec", STATUS_PENDING, "Waiting to start.", now));
 			steps.add(new AiLabsStepDTO("save_project", "Save Project", STATUS_PENDING, "Waiting to start.", now));
-			return new JobState(jobId, prompt, steps, now, now, STATUS_IN_PROGRESS, "", null, null, null);
+			return new JobState(jobId, prompt, ownerUserId, steps, now, now, STATUS_IN_PROGRESS, "", null, null, null);
 		}
 
 		private void updateStep(String stepKey, String status, String message) {
@@ -417,6 +497,14 @@ public class AiLabsService {
 			return jobId;
 		}
 
+		private String ownerUserId() {
+			return ownerUserId;
+		}
+
+		private boolean isOwnedBy(String requesterUserId) {
+			return ownerUserId != null && ownerUserId.equals(requesterUserId);
+		}
+
 		private String prompt() {
 			return prompt;
 		}
@@ -429,6 +517,30 @@ public class AiLabsService {
 			return status;
 		}
 
+		private OffsetDateTime createdAt() {
+			return createdAt;
+		}
+
+		private OffsetDateTime updatedAt() {
+			return updatedAt;
+		}
+
+		private UUID projectId() {
+			return projectId == null ? null : UUID.fromString(projectId);
+		}
+
+		private String generator() {
+			return generator;
+		}
+
+		private String streamPreview() {
+			return streamPreview;
+		}
+
+		private String errorMessage() {
+			return errorMessage;
+		}
+
 		private void updateStreamPreview(String text) {
 			if (text == null) {
 				return;
@@ -438,7 +550,7 @@ public class AiLabsService {
 		}
 	}
 
-	public AiLabsService(final AiLabsEventStreamService eventStreamService, final ProjectService projectService, final ProjectDraftSpecMapperService projectDraftSpecMapperService, final ProjectNameValidationService projectNameValidationService, final ProjectUserIdentityService projectUserIdentityService, final ConfigMetadataService configMetadataService, final AiLabsQuotaService aiLabsQuotaService, final ChatClient.Builder chatClientBuilder, final ObjectMapper objectMapper) {
+	public AiLabsService(final AiLabsEventStreamService eventStreamService, final ProjectService projectService, final ProjectDraftSpecMapperService projectDraftSpecMapperService, final ProjectNameValidationService projectNameValidationService, final ProjectUserIdentityService projectUserIdentityService, final ConfigMetadataService configMetadataService, final AiLabsQuotaService aiLabsQuotaService, final AiLabsJobHistoryRepository aiLabsJobHistoryRepository, final ChatClient.Builder chatClientBuilder, final ObjectMapper objectMapper) {
 		this.eventStreamService = eventStreamService;
 		this.projectService = projectService;
 		this.projectDraftSpecMapperService = projectDraftSpecMapperService;
@@ -446,6 +558,7 @@ public class AiLabsService {
 		this.projectUserIdentityService = projectUserIdentityService;
 		this.configMetadataService = configMetadataService;
 		this.aiLabsQuotaService = aiLabsQuotaService;
+		this.aiLabsJobHistoryRepository = aiLabsJobHistoryRepository;
 		this.chatClientBuilder = chatClientBuilder;
 		this.objectMapper = objectMapper;
 	}

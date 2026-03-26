@@ -1,8 +1,10 @@
 package com.src.main.exception;
 
+import java.io.IOException;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+import org.apache.catalina.connector.ClientAbortException;
 import org.hibernate.LazyInitializationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -10,6 +12,7 @@ import org.springframework.dao.DataAccessException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotWritableException;
 import org.springframework.orm.jpa.JpaSystemException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -100,6 +103,34 @@ public class GlobalExceptionHandler {
 		return error(HttpStatus.valueOf(ex.getStatusCode().value()), message);
 	}
 
+	@ExceptionHandler(ClientAbortException.class)
+	public ResponseEntity<Map<String, Object>> onClientAbort(ClientAbortException ex) {
+		log.warn("Client connection closed before response completed: {}", summarizeIoMessage(ex));
+		return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
+	}
+
+	@ExceptionHandler(IOException.class)
+	public ResponseEntity<Map<String, Object>> onIoException(IOException ex) throws IOException {
+		if (isClientDisconnect(ex)) {
+			log.warn("Client I/O disconnected before response completed: {}", summarizeIoMessage(ex));
+			return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
+		}
+		throw ex;
+	}
+
+	@ExceptionHandler(HttpMessageNotWritableException.class)
+	public ResponseEntity<Void> onHttpMessageNotWritable(HttpMessageNotWritableException ex) {
+		String message = ex.getMessage() == null || ex.getMessage().isBlank()
+				? ex.getClass().getSimpleName()
+				: ex.getMessage();
+		if (message.contains("text/event-stream")) {
+			log.warn("SSE response could not be written because the stream was no longer writable: {}", message);
+			return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
+		}
+		log.error("Response write error handled: type={}, message={}", ex.getClass().getSimpleName(), message);
+		return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+	}
+
 	@ExceptionHandler({
 			LazyInitializationException.class,
 			JpaSystemException.class,
@@ -128,5 +159,15 @@ public class GlobalExceptionHandler {
 		body.put("errorCode", status.value());
 		body.put("errorMsg", message == null || message.isBlank() ? status.getReasonPhrase() : message);
 		return ResponseEntity.status(status).body(body);
+	}
+
+	private boolean isClientDisconnect(IOException ex) {
+		String message = summarizeIoMessage(ex).toLowerCase();
+		return message.contains("broken pipe") || message.contains("connection reset by peer");
+	}
+
+	private String summarizeIoMessage(IOException ex) {
+		String message = ex == null ? "" : ex.getMessage();
+		return message == null || message.isBlank() ? ex.getClass().getSimpleName() : message;
 	}
 }

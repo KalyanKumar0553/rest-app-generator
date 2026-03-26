@@ -1,6 +1,7 @@
 package com.src.main.controller;
 
 import java.security.Principal;
+import java.util.List;
 import java.util.UUID;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -13,6 +14,7 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import com.src.main.dto.AiLabsGenerateRequestDTO;
 import com.src.main.dto.AiLabsGenerateResponseDTO;
 import com.src.main.dto.AiLabsJobStatusDTO;
+import com.src.main.dto.AiLabsJobSummaryDTO;
 import com.src.main.service.AiLabsService;
 import com.src.main.service.ProjectUserIdentityService;
 import jakarta.validation.Valid;
@@ -28,14 +30,19 @@ public class AiLabsController {
 		return aiLabsService.createJob(request.getPrompt(), projectUserIdentityService.currentUserId(principal));
 	}
 
+	@GetMapping("/jobs")
+	public List<AiLabsJobSummaryDTO> listJobs(Principal principal) {
+		return aiLabsService.listJobs(projectUserIdentityService.currentUserId(principal));
+	}
+
 	@GetMapping("/jobs/{jobId}")
-	public AiLabsJobStatusDTO getJob(@PathVariable("jobId") UUID jobId) {
-		return aiLabsService.getJob(jobId);
+	public AiLabsJobStatusDTO getJob(@PathVariable("jobId") UUID jobId, Principal principal) {
+		return aiLabsService.getJob(jobId, projectUserIdentityService.currentUserId(principal));
 	}
 
 	@GetMapping(value = "/jobs/{jobId}/events", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-	public SseEmitter streamJob(@PathVariable("jobId") UUID jobId) {
-		return aiLabsService.subscribe(jobId);
+	public SseEmitter streamJob(@PathVariable("jobId") UUID jobId, Principal principal) {
+		return aiLabsService.subscribe(jobId, projectUserIdentityService.currentUserId(principal));
 	}
 
 	public AiLabsController(final AiLabsService aiLabsService, final ProjectUserIdentityService projectUserIdentityService) {

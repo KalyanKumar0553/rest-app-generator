@@ -25,6 +25,16 @@ export interface AiLabsJobStatus {
   updatedAt?: string;
 }
 
+export interface AiLabsJobSummary {
+  jobId: string;
+  generatedBy: string;
+  status: string;
+  generator?: string;
+  projectId?: string;
+  generatedOn?: string;
+  updatedAt?: string;
+}
+
 export interface AiLabsGenerateResponse {
   jobId: string;
   status: string;
@@ -60,6 +70,11 @@ export class AiLabsService {
   getJob(jobId: string): Observable<AiLabsJobStatus> {
     const url = `${API_CONFIG.BASE_URL}${API_ENDPOINTS.AI_LABS.JOB(jobId)}`;
     return this.http.get<AiLabsJobStatus>(url);
+  }
+
+  listJobs(): Observable<AiLabsJobSummary[]> {
+    const url = `${API_CONFIG.BASE_URL}${API_ENDPOINTS.AI_LABS.JOBS}`;
+    return this.http.get<AiLabsJobSummary[]>(url);
   }
 
   getJobEventsUrl(jobId: string): string {

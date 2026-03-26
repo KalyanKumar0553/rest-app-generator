@@ -17,6 +17,13 @@
   color: var(--color-text-primary);
 }
 
+.section-subtitle {
+  margin: 10px 0 0;
+  max-width: 780px;
+  color: var(--color-text-secondary);
+  line-height: 1.6;
+}
+
 .section-title-row {
   display: flex;
   align-items: center;
@@ -43,42 +50,114 @@
   border-color: var(--color-primary);
 }
 
+.section-help-btn-inline {
+  width: 28px;
+  height: 28px;
+  background-color: var(--color-background-white);
+}
+
+.ai-labs-accordion {
+  display: block;
+}
+
+.ai-labs-accordion ::ng-deep .mat-expansion-panel {
+  margin-bottom: 20px;
+  border-radius: 18px;
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-sm);
+  background-color: var(--color-background-white);
+  overflow: hidden;
+}
+
+.ai-labs-accordion ::ng-deep .mat-expansion-panel-header {
+  min-height: 76px;
+  padding: 0 24px;
+  background: linear-gradient(135deg, var(--color-background-white), var(--color-background-secondary));
+}
+
+.ai-labs-accordion ::ng-deep .mat-expansion-panel-header-title,
+.ai-labs-accordion ::ng-deep .mat-expansion-panel-header-description {
+  color: var(--color-text-primary);
+}
+
 .panel-card {
   background-color: var(--color-background-white);
-  border: 1px solid var(--color-border);
-  border-radius: 16px;
   padding: 24px;
-  box-shadow: var(--shadow-sm);
-  margin-bottom: 24px;
 }
 
-.field-label {
-  display: inline-block;
-  margin-bottom: 8px;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--color-text-secondary);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-
-.usage-header {
+.panel-banner {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 16px;
-  margin-bottom: 8px;
+  gap: 20px;
+  margin-bottom: 20px;
 }
 
-.usage-summary {
-  margin: 4px 0 0;
-  color: var(--color-text-muted);
-  line-height: 1.5;
+.panel-kicker-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.panel-kicker {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 0 12px;
+  border-radius: 999px;
+  background-color: var(--theme-neutral-bg);
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.panel-title {
+  margin: 0;
+  color: var(--color-text-primary);
+}
+
+.panel-copy {
+  margin: 10px 0 0;
+  color: var(--color-text-secondary);
+  line-height: 1.6;
+  max-width: 720px;
+}
+
+.usage-summary-card {
+  min-width: 220px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 18px;
+  border: 1px solid var(--color-border);
+  border-radius: 18px;
+  background: linear-gradient(180deg, var(--color-background-white), var(--color-background-secondary));
+}
+
+.usage-summary-label,
+.job-detail-label,
+.field-label {
+  display: inline-block;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.usage-summary-value {
+  color: var(--color-text-primary);
+  font-size: 15px;
+  line-height: 1.6;
 }
 
 .usage-pill {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   min-height: 36px;
   padding: 0 14px;
   border-radius: 999px;
@@ -100,8 +179,8 @@
   min-height: 220px;
   resize: vertical;
   border: 1px solid var(--color-border);
-  border-radius: 16px;
-  padding: 16px 18px;
+  border-radius: 18px;
+  padding: 18px;
   font: inherit;
   color: var(--color-text-primary);
   background-color: var(--color-background-secondary);
@@ -117,7 +196,7 @@
   align-items: center;
   justify-content: flex-end;
   gap: 14px;
-  margin-top: 16px;
+  margin-top: 18px;
 }
 
 .action-feedback {
@@ -153,7 +232,7 @@
   border: none;
   border-radius: 24px;
   font-size: 15px;
-  font-weight: 500;
+  font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
 }
@@ -172,6 +251,16 @@
   opacity: 0.7;
 }
 
+.active-job-card,
+.history-table-shell,
+.job-details-modal {
+  margin-top: 22px;
+  padding: 20px;
+  border: 1px solid var(--color-border);
+  border-radius: 18px;
+  background-color: var(--color-background-secondary);
+}
+
 .panel-header {
   display: flex;
   justify-content: space-between;
@@ -180,6 +269,34 @@
   margin-bottom: 16px;
 }
 
+.history-refresh-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 0 16px;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  background-color: var(--color-background-white);
+  color: var(--color-text-primary);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+
+.history-refresh-btn:hover:not(:disabled) {
+  background-color: var(--color-background-secondary);
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.history-refresh-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.panel-header h3,
 .panel-header h2 {
   margin: 0;
   color: var(--color-text-primary);
@@ -187,12 +304,13 @@
 
 .panel-header p {
   margin: 8px 0 0;
-  color: var(--color-text-muted);
+  color: var(--color-text-secondary);
 }
 
 .status-badge {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   border-radius: 999px;
   padding: 6px 12px;
   font-size: 12px;
@@ -202,36 +320,105 @@
   border: 1px solid var(--color-border);
 }
 
+.status-badge[data-status='COMPLETED'] {
+  background-color: var(--theme-success-bg);
+  color: var(--theme-success-text);
+  border-color: var(--color-success);
+}
+
+.status-badge[data-status='FAILED'] {
+  background-color: var(--theme-danger-bg);
+  color: var(--theme-danger-text);
+  border-color: var(--color-danger);
+}
+
+.status-badge[data-status='IN_PROGRESS'] {
+  background-color: var(--theme-warning-bg);
+  color: var(--theme-warning-text);
+  border-color: var(--color-warning);
+}
+
 .dashboard-table {
   width: 100%;
   background-color: transparent;
 }
 
+.dashboard-table ::ng-deep th.mat-mdc-header-cell {
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.dashboard-table ::ng-deep td.mat-mdc-cell,
+.dashboard-table ::ng-deep th.mat-mdc-header-cell {
+  border-bottom-color: var(--color-border);
+}
+
+.dashboard-table ::ng-deep td.mat-mdc-cell {
+  color: var(--color-text-primary);
+}
+
+.history-link {
+  border: none;
+  background: none;
+  padding: 0;
+  color: var(--color-primary);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.history-link:hover {
+  color: var(--theme-primary-btn-hover-bg);
+}
+
+.history-state {
+  padding: 16px 0;
+  color: var(--color-text-secondary);
+}
+
+.job-details-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  margin-bottom: 20px;
+}
+
+.job-detail-tile {
+  padding: 16px;
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+  background-color: var(--color-background-white);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
 .stream-preview {
-  margin-top: 20px;
+  margin: 0 0 20px;
 }
 
 .stream-preview-content {
-  background-color: var(--color-background-secondary);
+  background-color: var(--color-background-white);
   border: 1px solid var(--color-border);
   border-radius: 12px;
   padding: 16px;
   white-space: pre-wrap;
   word-break: break-word;
   color: var(--color-text-primary);
-  margin: 0;
+  margin: 8px 0 0;
 }
 
 .ai-job-summary {
-  margin-top: 16px;
+  margin: 0 0 20px;
 }
 
 .summary-error {
   color: var(--theme-danger-text);
-}
-
-.summary-success {
-  color: var(--theme-success-text);
 }
 
 @media (max-width: 1024px) {
@@ -242,9 +429,18 @@
   .content-body {
     padding: 24px 16px 32px;
   }
+
+  .panel-banner {
+    flex-direction: column;
+  }
+
+  .usage-summary-card {
+    min-width: 0;
+    width: 100%;
+  }
 }
 
-@media (max-width: 480px) {
+@media (max-width: 640px) {
   .content-header {
     padding: 20px 16px 0;
   }
@@ -253,21 +449,28 @@
     padding: 16px 16px 24px;
   }
 
+  .ai-labs-accordion ::ng-deep .mat-expansion-panel-header {
+    padding: 0 16px;
+  }
+
   .panel-card {
-    padding: 20px;
+    padding: 16px;
   }
 
-  .panel-header {
-    flex-direction: column;
-  }
-
-  .usage-header,
   .panel-actions {
     flex-direction: column;
     align-items: stretch;
   }
 
-  .panel-actions .btn {
-    width: 100%;
+  .action-feedback {
+    justify-content: center;
+  }
+
+  .job-details-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .history-table-shell {
+    overflow-x: auto;
   }
 }

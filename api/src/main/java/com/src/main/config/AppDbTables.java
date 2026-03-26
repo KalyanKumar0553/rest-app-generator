@@ -8,6 +8,7 @@ public final class AppDbTables {
 	public static final String PROJECT_COLLABORATION_REQUESTS = "project_collaboration_requests";
 	public static final String PROJECT_TAB_DEFINITIONS = "project_tab_definition";
 	public static final String AI_LABS_USAGE = "ai_labs_usage";
+	public static final String AI_LABS_JOB_HISTORY = "ai_labs_job_history";
 	public static final String ARTIFACT_APPS = "artifact_app";
 	public static final String ARTIFACT_APP_VERSIONS = "artifact_app_version";
 	public static final String PLUGIN_MODULES = "plugin_module";

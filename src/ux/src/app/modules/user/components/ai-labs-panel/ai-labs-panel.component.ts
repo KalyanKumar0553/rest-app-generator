@@ -1,11 +1,13 @@
-import { Component, OnDestroy } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
+import { MatExpansionModule } from '@angular/material/expansion';
 import { MatIconModule } from '@angular/material/icon';
 import { MatTableModule } from '@angular/material/table';
 import { MatTooltipModule } from '@angular/material/tooltip';
-import { AiLabsAvailability, AiLabsJobStatus, AiLabsService } from '../../../../services/ai-labs.service';
+import { AiLabsAvailability, AiLabsJobStatus, AiLabsJobSummary, AiLabsService } from '../../../../services/ai-labs.service';
+import { ModalComponent } from '../../../../components/modal/modal.component';
 import { NoDataStateComponent } from '../../../../components/shared/no-data-state/no-data-state.component';
 import { ToastService } from '../../../../services/toast.service';
 import { resolveProjectGenerationRoute } from '../../../project-generation/utils/project-generation-route.utils';
@@ -13,13 +15,15 @@ import { resolveProjectGenerationRoute } from '../../../project-generation/utils
 @Component({
   selector: 'app-ai-labs-panel',
   standalone: true,
-  imports: [CommonModule, FormsModule, MatIconModule, MatTableModule, MatTooltipModule, NoDataStateComponent],
+  imports: [CommonModule, FormsModule, MatExpansionModule, MatIconModule, MatTableModule, MatTooltipModule, ModalComponent, NoDataStateComponent],
   templateUrl: './ai-labs-panel.component.html',
   styleUrls: ['./ai-labs-panel.component.css']
 })
-export class AiLabsPanelComponent implements OnDestroy {
+export class AiLabsPanelComponent implements OnInit, OnDestroy {
   aiPrompt = '';
   readonly aiLabsHelpText = 'Turn a product idea into a saved project draft using AI-assisted project planning.';
+  readonly ideationHelpText = 'Describe the product idea, target users, and core capabilities you want BootRid to turn into a saved project draft.';
+  readonly historyHelpText = 'Review every AI Labs generation, inspect its backend stages, and reopen details when you need to troubleshoot or confirm what was created.';
   isAiLabsEnabled = true;
   aiLabsAvailability: AiLabsAvailability = {
     enabled: true,
@@ -29,8 +33,13 @@ export class AiLabsPanelComponent implements OnDestroy {
     limitReached: false
   };
   isStartingAiJob = false;
+  isLoadingHistory = false;
   aiJob: AiLabsJobStatus | null = null;
+  aiHistory: AiLabsJobSummary[] = [];
   aiJobColumns: string[] = ['label', 'status', 'message', 'updatedAt'];
+  aiHistoryColumns: string[] = ['jobId', 'generatedOn', 'generatedBy', 'status', 'action'];
+  isJobDetailsModalOpen = false;
+  selectedHistoryJob: AiLabsJobStatus | null = null;
   private aiJobEventsSource: EventSource | null = null;
 
   constructor(
@@ -54,6 +63,9 @@ export class AiLabsPanelComponent implements OnDestroy {
           limitReached: !!response?.limitReached
         };
         this.isAiLabsEnabled = this.aiLabsAvailability.enabled;
+        if (this.isAiLabsEnabled) {
+          this.loadHistory();
+        }
       },
       error: () => {
         this.isAiLabsEnabled = false;
@@ -90,6 +102,7 @@ export class AiLabsPanelComponent implements OnDestroy {
         this.isStartingAiJob = false;
         this.applyUsageConsumption();
         this.subscribeToAiJob(response.jobId);
+        this.loadHistory();
       },
       error: (error) => {
         this.isStartingAiJob = false;
@@ -146,10 +159,51 @@ export class AiLabsPanelComponent implements OnDestroy {
     }).replace(',', '');
   }
 
+  openJobDetails(jobId: string): void {
+    this.aiLabsService.getJob(jobId).subscribe({
+      next: (job) => {
+        this.selectedHistoryJob = job;
+        this.isJobDetailsModalOpen = true;
+      },
+      error: () => {
+        this.toastService.error('Failed to load AI Labs job details.');
+      }
+    });
+  }
+
+  closeJobDetails(): void {
+    this.isJobDetailsModalOpen = false;
+    this.selectedHistoryJob = null;
+  }
+
+  refreshHistory(): void {
+    this.loadHistory(true);
+  }
+
+  trackByJobId(_: number, job: AiLabsJobSummary): string {
+    return job.jobId;
+  }
+
+  get hasHistory(): boolean {
+    return this.aiHistory.length > 0;
+  }
+
+  get activeJobSummaryText(): string {
+    if (!this.aiJob) {
+      return 'No AI generation is running right now.';
+    }
+    return this.aiJob.status === 'COMPLETED'
+      ? 'Latest generation completed and the saved project is ready.'
+      : this.aiJob.status === 'FAILED'
+        ? 'Latest generation stopped before the project could be completed.'
+        : 'Latest generation is still in progress.';
+  }
+
   private subscribeToAiJob(jobId: string): void {
     this.aiLabsService.getJob(jobId).subscribe({
       next: (job) => {
         this.aiJob = job;
+        this.syncHistoryItem(job);
         if (job.status === 'FAILED') {
           this.toastService.error(job.errorMessage || 'AI project generation failed.');
           this.closeAiJobEvents();
@@ -165,7 +219,9 @@ export class AiLabsPanelComponent implements OnDestroy {
       try {
         const payload = JSON.parse(event.data) as AiLabsJobStatus;
         this.aiJob = payload;
+        this.syncHistoryItem(payload);
         if (payload.status === 'COMPLETED' && payload.projectId) {
+          this.loadHistory();
           this.closeAiJobEvents();
           this.toastService.success('AI project generated successfully.');
           const route = resolveProjectGenerationRoute(payload.generator);
@@ -173,6 +229,7 @@ export class AiLabsPanelComponent implements OnDestroy {
           return;
         }
         if (payload.status === 'FAILED') {
+          this.loadHistory();
           this.toastService.error(payload.errorMessage || 'Error while generating the Project. Please try again');
           this.closeAiJobEvents();
         }
@@ -193,6 +250,46 @@ export class AiLabsPanelComponent implements OnDestroy {
   private closeAiJobEvents(): void {
     this.aiJobEventsSource?.close();
     this.aiJobEventsSource = null;
+  }
+
+  private loadHistory(showToast = false): void {
+    this.isLoadingHistory = true;
+    this.aiLabsService.listJobs().subscribe({
+      next: (jobs) => {
+        this.aiHistory = jobs ?? [];
+        this.isLoadingHistory = false;
+        if (showToast) {
+          this.toastService.success('AI Labs history refreshed.');
+        }
+      },
+      error: () => {
+        this.isLoadingHistory = false;
+        this.toastService.error('Failed to load AI Labs generation history.');
+      }
+    });
+  }
+
+  private syncHistoryItem(job: AiLabsJobStatus): void {
+    const existingIndex = this.aiHistory.findIndex((item) => item.jobId === job.jobId);
+    const summary: AiLabsJobSummary = {
+      jobId: job.jobId,
+      generatedBy: 'You',
+      status: job.status,
+      generator: job.generator,
+      projectId: job.projectId,
+      generatedOn: job.createdAt,
+      updatedAt: job.updatedAt
+    };
+    if (existingIndex === -1) {
+      this.aiHistory = [summary, ...this.aiHistory];
+      return;
+    }
+    const nextHistory = [...this.aiHistory];
+    nextHistory[existingIndex] = {
+      ...nextHistory[existingIndex],
+      ...summary
+    };
+    this.aiHistory = nextHistory;
   }
 
   private applyUsageConsumption(): void {

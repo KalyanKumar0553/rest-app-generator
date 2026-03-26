@@ -11,6 +11,7 @@
           <mat-icon>help_outline</mat-icon>
         </button>
       </div>
+      <p class="section-subtitle">Move from idea to saved draft, then review every AI-assisted generation in one place.</p>
     </div>
   </div>
 
@@ -21,83 +22,241 @@
       [message]="'AI Labs is not configured for this environment.'">
     </app-no-data-state>
 
-    <section class="panel-card ai-labs-panel" *ngIf="isAiLabsEnabled">
-      <div class="usage-header">
-        <div>
-          <label class="field-label" for="aiPrompt">Idea brief</label>
-          <p class="usage-summary">{{ usageSummaryText }}</p>
-        </div>
-        <span class="usage-pill" [class.usage-pill-warning]="aiLabsAvailability.limitReached">{{ usagePillText }}</span>
-      </div>
-      <textarea
-        id="aiPrompt"
-        class="idea-textarea"
-        [(ngModel)]="aiPrompt"
-        rows="10"
-        placeholder="Place your idea to generate the project."
-      ></textarea>
-      <div class="panel-actions">
-        <div class="action-feedback" *ngIf="aiLabsAvailability.limitReached">
-          <span class="limit-warning-text">{{ limitReachedMessage }}</span>
-          <button
-            type="button"
-            class="warning-help-btn"
-            [matTooltip]="limitReachedHelpText"
-            aria-label="AI Labs usage warning details">
-            <mat-icon>warning_amber</mat-icon>
-          </button>
-        </div>
-        <button class="btn btn-primary" (click)="startAiProjectGeneration()" [disabled]="!canGenerateCode">
-          {{ isStartingAiJob ? 'Starting...' : 'Generate Code' }}
-        </button>
-      </div>
-    </section>
+    <mat-accordion class="ai-labs-accordion" multi *ngIf="isAiLabsEnabled">
+      <mat-expansion-panel [expanded]="true">
+        <mat-expansion-panel-header>
+          <mat-panel-title>Ideation</mat-panel-title>
+          <mat-panel-description>Draft a new project from a product idea.</mat-panel-description>
+        </mat-expansion-panel-header>
 
-    <section class="panel-card" *ngIf="isAiLabsEnabled && aiJob">
-      <div class="panel-header">
-        <div>
-          <h2>Backend Progress</h2>
-          <p>Track each backend stage while AI Labs builds and saves the project.</p>
-        </div>
-        <span class="status-badge" [attr.data-status]="aiJob.status">{{ aiJob.status }}</span>
-      </div>
+        <section class="panel-card ai-labs-panel">
+          <div class="panel-banner">
+            <div>
+              <div class="panel-kicker-row">
+                <span class="panel-kicker">AI-assisted drafting</span>
+                <button
+                  type="button"
+                  class="section-help-btn section-help-btn-inline"
+                  [matTooltip]="ideationHelpText"
+                  aria-label="Ideation help">
+                  <mat-icon>help_outline</mat-icon>
+                </button>
+              </div>
+              <h2 class="panel-title">Turn an idea into a saved project draft</h2>
+              <p class="panel-copy">Describe the product, target users, and the core flows you want BootRid to scaffold.</p>
+            </div>
+            <div class="usage-summary-card">
+              <span class="usage-summary-label">Usage</span>
+              <strong class="usage-summary-value">{{ usageSummaryText }}</strong>
+              <span class="usage-pill" [class.usage-pill-warning]="aiLabsAvailability.limitReached">{{ usagePillText }}</span>
+            </div>
+          </div>
 
-      <table mat-table [dataSource]="aiJob.steps" class="dashboard-table">
-        <ng-container matColumnDef="label">
-          <th mat-header-cell *matHeaderCellDef>Stage</th>
-          <td mat-cell *matCellDef="let step">{{ step.label }}</td>
-        </ng-container>
+          <label class="field-label" for="aiPrompt">Project brief</label>
+          <textarea
+            id="aiPrompt"
+            class="idea-textarea"
+            [(ngModel)]="aiPrompt"
+            rows="10"
+            placeholder="Example: Build a CRM for sales teams with customer management, activity tracking, role-based access, and analytics dashboards."></textarea>
 
-        <ng-container matColumnDef="status">
-          <th mat-header-cell *matHeaderCellDef>Status</th>
-          <td mat-cell *matCellDef="let step">
-            <span class="status-badge" [attr.data-status]="step.status">{{ step.status }}</span>
-          </td>
-        </ng-container>
+          <div class="panel-actions">
+            <div class="action-feedback" *ngIf="aiLabsAvailability.limitReached">
+              <span class="limit-warning-text">{{ limitReachedMessage }}</span>
+              <button
+                type="button"
+                class="warning-help-btn"
+                [matTooltip]="limitReachedHelpText"
+                aria-label="AI Labs usage warning details">
+                <mat-icon>warning_amber</mat-icon>
+              </button>
+            </div>
+            <button class="btn btn-primary" (click)="startAiProjectGeneration()" [disabled]="!canGenerateCode">
+              {{ isStartingAiJob ? 'Starting...' : 'Generate Code' }}
+            </button>
+          </div>
 
-        <ng-container matColumnDef="message">
-          <th mat-header-cell *matHeaderCellDef>Message</th>
-          <td mat-cell *matCellDef="let step">{{ step.message || 'Waiting to start.' }}</td>
-        </ng-container>
+          <div class="active-job-card" *ngIf="aiJob">
+            <div class="panel-header">
+              <div>
+                <h3>Latest generation</h3>
+                <p>{{ activeJobSummaryText }}</p>
+              </div>
+              <span class="status-badge" [attr.data-status]="aiJob.status">{{ aiJob.status }}</span>
+            </div>
 
-        <ng-container matColumnDef="updatedAt">
-          <th mat-header-cell *matHeaderCellDef>Updated</th>
-          <td mat-cell *matCellDef="let step">{{ step.updatedAt ? formatDate(step.updatedAt) : '-' }}</td>
-        </ng-container>
+            <table mat-table [dataSource]="aiJob.steps" class="dashboard-table">
+              <ng-container matColumnDef="label">
+                <th mat-header-cell *matHeaderCellDef>Stage</th>
+                <td mat-cell *matCellDef="let step">{{ step.label }}</td>
+              </ng-container>
 
-        <tr mat-header-row *matHeaderRowDef="aiJobColumns"></tr>
-        <tr mat-row *matRowDef="let row; columns: aiJobColumns;"></tr>
-      </table>
+              <ng-container matColumnDef="status">
+                <th mat-header-cell *matHeaderCellDef>Status</th>
+                <td mat-cell *matCellDef="let step">
+                  <span class="status-badge" [attr.data-status]="step.status">{{ step.status }}</span>
+                </td>
+              </ng-container>
 
-      <div class="stream-preview" *ngIf="aiJob.streamPreview">
-        <span class="field-label">Live AI output</span>
-        <pre class="stream-preview-content">{{ aiJob.streamPreview }}</pre>
-      </div>
+              <ng-container matColumnDef="message">
+                <th mat-header-cell *matHeaderCellDef>Message</th>
+                <td mat-cell *matCellDef="let step">{{ step.message || 'Waiting to start.' }}</td>
+              </ng-container>
 
-      <div class="ai-job-summary" *ngIf="aiJob.errorMessage || aiJob.projectId">
-        <p *ngIf="aiJob.errorMessage" class="summary-error">{{ aiJob.errorMessage }}</p>
-        <p *ngIf="aiJob.projectId" class="summary-success">Project created. Opening the editor now.</p>
-      </div>
-    </section>
+              <ng-container matColumnDef="updatedAt">
+                <th mat-header-cell *matHeaderCellDef>Updated</th>
+                <td mat-cell *matCellDef="let step">{{ step.updatedAt ? formatDate(step.updatedAt) : '-' }}</td>
+              </ng-container>
+
+              <tr mat-header-row *matHeaderRowDef="aiJobColumns"></tr>
+              <tr mat-row *matRowDef="let row; columns: aiJobColumns;"></tr>
+            </table>
+          </div>
+        </section>
+      </mat-expansion-panel>
+
+      <mat-expansion-panel [expanded]="true">
+        <mat-expansion-panel-header>
+          <mat-panel-title>Generation History</mat-panel-title>
+          <mat-panel-description>Review saved AI Labs runs and inspect their details.</mat-panel-description>
+        </mat-expansion-panel-header>
+
+        <section class="panel-card history-panel">
+          <div class="panel-header">
+            <div>
+              <div class="panel-kicker-row">
+                <span class="panel-kicker">History</span>
+                <button
+                  type="button"
+                  class="section-help-btn section-help-btn-inline"
+                  [matTooltip]="historyHelpText"
+                  aria-label="Generation history help">
+                  <mat-icon>help_outline</mat-icon>
+                </button>
+              </div>
+              <h2 class="panel-title">Track every AI Labs generation</h2>
+              <p class="panel-copy">Use the history table to inspect job progress, troubleshoot failures, or reopen the latest run details.</p>
+            </div>
+            <button
+              type="button"
+              class="history-refresh-btn"
+              (click)="refreshHistory()"
+              [disabled]="isLoadingHistory"
+              aria-label="Refresh AI Labs history">
+              <mat-icon>refresh</mat-icon>
+              <span>{{ isLoadingHistory ? 'Refreshing...' : 'Refresh' }}</span>
+            </button>
+          </div>
+
+          <div class="history-state" *ngIf="isLoadingHistory">Loading history...</div>
+
+          <app-no-data-state
+            *ngIf="!isLoadingHistory && !hasHistory"
+            [title]="'No generation history yet'"
+            [message]="'Start your first AI Labs generation to see job history here.'">
+          </app-no-data-state>
+
+          <div class="history-table-shell" *ngIf="!isLoadingHistory && hasHistory">
+            <table mat-table [dataSource]="aiHistory" class="dashboard-table ai-history-table">
+              <ng-container matColumnDef="jobId">
+                <th mat-header-cell *matHeaderCellDef>Job Id</th>
+                <td mat-cell *matCellDef="let job">{{ job.jobId }}</td>
+              </ng-container>
+
+              <ng-container matColumnDef="generatedOn">
+                <th mat-header-cell *matHeaderCellDef>Generated On</th>
+                <td mat-cell *matCellDef="let job">{{ job.generatedOn ? formatDate(job.generatedOn) : '-' }}</td>
+              </ng-container>
+
+              <ng-container matColumnDef="generatedBy">
+                <th mat-header-cell *matHeaderCellDef>Generated By</th>
+                <td mat-cell *matCellDef="let job">{{ job.generatedBy || '-' }}</td>
+              </ng-container>
+
+              <ng-container matColumnDef="status">
+                <th mat-header-cell *matHeaderCellDef>Status</th>
+                <td mat-cell *matCellDef="let job">
+                  <span class="status-badge" [attr.data-status]="job.status">{{ job.status }}</span>
+                </td>
+              </ng-container>
+
+              <ng-container matColumnDef="action">
+                <th mat-header-cell *matHeaderCellDef>Details</th>
+                <td mat-cell *matCellDef="let job">
+                  <button type="button" class="history-link" (click)="openJobDetails(job.jobId)">View details</button>
+                </td>
+              </ng-container>
+
+              <tr mat-header-row *matHeaderRowDef="aiHistoryColumns"></tr>
+              <tr mat-row *matRowDef="let row; columns: aiHistoryColumns; trackBy: trackByJobId"></tr>
+            </table>
+          </div>
+        </section>
+      </mat-expansion-panel>
+    </mat-accordion>
   </div>
 </section>
+
+<app-modal
+  [isOpen]="isJobDetailsModalOpen"
+  [title]="'AI Labs Job Details'"
+  [size]="'large'"
+  [showFooter]="false"
+  (close)="closeJobDetails()">
+  <div class="job-details-modal" *ngIf="selectedHistoryJob">
+    <div class="job-details-grid">
+      <div class="job-detail-tile">
+        <span class="job-detail-label">Job Id</span>
+        <strong>{{ selectedHistoryJob.jobId }}</strong>
+      </div>
+      <div class="job-detail-tile">
+        <span class="job-detail-label">Status</span>
+        <span class="status-badge" [attr.data-status]="selectedHistoryJob.status">{{ selectedHistoryJob.status }}</span>
+      </div>
+      <div class="job-detail-tile">
+        <span class="job-detail-label">Generated On</span>
+        <strong>{{ selectedHistoryJob.createdAt ? formatDate(selectedHistoryJob.createdAt) : '-' }}</strong>
+      </div>
+      <div class="job-detail-tile">
+        <span class="job-detail-label">Project Id</span>
+        <strong>{{ selectedHistoryJob.projectId || '-' }}</strong>
+      </div>
+    </div>
+
+    <div class="stream-preview" *ngIf="selectedHistoryJob.streamPreview">
+      <span class="field-label">Live AI output</span>
+      <pre class="stream-preview-content">{{ selectedHistoryJob.streamPreview }}</pre>
+    </div>
+
+    <div class="ai-job-summary" *ngIf="selectedHistoryJob.errorMessage">
+      <p class="summary-error">{{ selectedHistoryJob.errorMessage }}</p>
+    </div>
+
+    <table mat-table [dataSource]="selectedHistoryJob.steps" class="dashboard-table">
+      <ng-container matColumnDef="label">
+        <th mat-header-cell *matHeaderCellDef>Stage</th>
+        <td mat-cell *matCellDef="let step">{{ step.label }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="status">
+        <th mat-header-cell *matHeaderCellDef>Status</th>
+        <td mat-cell *matCellDef="let step">
+          <span class="status-badge" [attr.data-status]="step.status">{{ step.status }}</span>
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="message">
+        <th mat-header-cell *matHeaderCellDef>Message</th>
+        <td mat-cell *matCellDef="let step">{{ step.message || 'Waiting to start.' }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="updatedAt">
+        <th mat-header-cell *matHeaderCellDef>Updated</th>
+        <td mat-cell *matCellDef="let step">{{ step.updatedAt ? formatDate(step.updatedAt) : '-' }}</td>
+      </ng-container>
+
+      <tr mat-header-row *matHeaderRowDef="aiJobColumns"></tr>
+      <tr mat-row *matRowDef="let row; columns: aiJobColumns;"></tr>
+    </table>
+  </div>
+</app-modal>
