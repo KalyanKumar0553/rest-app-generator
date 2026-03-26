@@ -32,7 +32,7 @@ public class RestAppGeneratorSecurityConfig {
 			RbacService rbacService) throws Exception {
 		AuthenticationEntryPoint unauthorizedEntryPoint = new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED);
 		http.securityMatcher("/api/projects/**", "/api/runs/**", "/api/openapi/**", "/api/project-view/**",
-				"/api/analytics/**", "/api/newsletter/**")
+				"/api/analytics/**", "/api/newsletter/**", "/api/agent/**")
 				.authorizeHttpRequests(authorize -> authorize
 						.requestMatchers(HttpMethod.OPTIONS, "/api/**").permitAll()
 						.requestMatchers(HttpMethod.POST, "/api/project-view/generate-zip").permitAll()

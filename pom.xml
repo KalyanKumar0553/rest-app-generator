@@ -43,6 +43,10 @@
 			<artifactId>swagger</artifactId>
 		</dependency>
 		<dependency>
+			<groupId>com.src</groupId>
+			<artifactId>agent</artifactId>
+		</dependency>
+		<dependency>
 			<groupId>io.spring.initializr</groupId>
 			<artifactId>initializr-generator-spring</artifactId>
 		</dependency>
