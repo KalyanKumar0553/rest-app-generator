@@ -17,6 +17,7 @@
 		<module>../auth</module>
 		<module>../state-machine</module>
 		<module>../swagger</module>
+		<module>../agent</module>
 		<module>..</module>
 	</modules>
 
@@ -96,6 +97,11 @@
 			<dependency>
 				<groupId>com.src</groupId>
 				<artifactId>swagger</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>com.src</groupId>
+				<artifactId>agent</artifactId>
 				<version>${project.version}</version>
 			</dependency>
 			<dependency>
