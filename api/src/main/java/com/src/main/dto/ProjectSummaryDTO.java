@@ -19,4 +19,6 @@ public class ProjectSummaryDTO {
 	private String generator;
 	private OffsetDateTime createdAt;
 	private OffsetDateTime updatedAt;
+	private String ownerId;
+	private boolean contributorAccess;
 }

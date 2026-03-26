@@ -7,10 +7,20 @@ import { BehaviorSubject } from 'rxjs';
 export class RequestLoadingService {
   private readonly visibleSubject = new BehaviorSubject<boolean>(false);
   readonly visible$ = this.visibleSubject.asObservable();
+  private readonly routeEnabledSubject = new BehaviorSubject<boolean>(false);
+  readonly routeEnabled$ = this.routeEnabledSubject.asObservable();
 
   private activeRequests = 0;
   private showTimer: ReturnType<typeof setTimeout> | null = null;
   private hideTimer: ReturnType<typeof setTimeout> | null = null;
+
+  setRouteEnabled(enabled: boolean): void {
+    this.routeEnabledSubject.next(Boolean(enabled));
+  }
+
+  isRouteEnabled(): boolean {
+    return this.routeEnabledSubject.value;
+  }
 
   begin(): void {
     this.activeRequests += 1;

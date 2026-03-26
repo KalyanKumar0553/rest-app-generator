@@ -11,6 +11,8 @@ import { resolveProjectGenerationRoute } from '../../../project-generation/utils
 import { ModalComponent } from '../../../../components/modal/modal.component';
 import { LoadingOverlayComponent } from '../../../../components/shared/loading-overlay/loading-overlay.component';
 import { NoDataStateComponent } from '../../../../components/shared/no-data-state/no-data-state.component';
+import { HelpPopoverComponent } from '../../../../components/help-popover/help-popover.component';
+import { AuthService } from '../../../../services/auth.service';
 
 export interface Project extends ProjectSummary {
   name: string;
@@ -22,7 +24,7 @@ export interface Project extends ProjectSummary {
 @Component({
   selector: 'app-projects-panel',
   standalone: true,
-  imports: [CommonModule, FormsModule, ConfirmationModalComponent, SearchSortComponent, ModalComponent, LoadingOverlayComponent, NoDataStateComponent],
+  imports: [CommonModule, FormsModule, ConfirmationModalComponent, SearchSortComponent, ModalComponent, LoadingOverlayComponent, NoDataStateComponent, HelpPopoverComponent],
   templateUrl: './projects-panel.component.html',
   styleUrls: ['./projects-panel.component.css']
 })
@@ -40,6 +42,8 @@ export class ProjectsPanelComponent implements OnInit {
   importProjectUrl = '';
   importProjectValidationMessage = '';
   private currentSearchSortEvent: SearchSortEvent = { searchTerm: '', sortOption: null };
+  private readonly currentUserId: string;
+  private readonly currentUserEmail: string;
 
   readonly searchConfig: SearchConfig = {
     placeholder: 'Search projects by name or description...',
@@ -80,8 +84,13 @@ export class ProjectsPanelComponent implements OnInit {
     private router: Router,
     private projectService: ProjectService,
     private localStorageService: LocalStorageService,
-    private toastService: ToastService
-  ) {}
+    private toastService: ToastService,
+    private authService: AuthService
+  ) {
+    const currentUser = this.authService.currentUserValue;
+    this.currentUserId = String(currentUser?.id ?? '').trim();
+    this.currentUserEmail = String(currentUser?.email ?? '').trim().toLowerCase();
+  }
 
   ngOnInit(): void {
     this.loadProjects();
@@ -268,6 +277,18 @@ export class ProjectsPanelComponent implements OnInit {
       default:
         return normalizedGenerator ? normalizedGenerator.toUpperCase() : 'Unknown';
     }
+  }
+
+  isProjectOwner(project: Project | null | undefined): boolean {
+    const ownerId = String(project?.ownerId ?? '').trim();
+    if (!ownerId) {
+      return !project?.contributorAccess;
+    }
+    return ownerId === this.currentUserId || (!!this.currentUserEmail && ownerId.toLowerCase() === this.currentUserEmail);
+  }
+
+  getProjectAccessLabel(project: Project | null | undefined): string {
+    return this.isProjectOwner(project) ? 'Owner' : 'Collaborator';
   }
 
   private navigateToProject(projectId: string, generator?: string): void {

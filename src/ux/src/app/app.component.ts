@@ -1,5 +1,5 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
-import { RouterOutlet, Router, NavigationEnd } from '@angular/router';
+import { RouterOutlet, Router, NavigationEnd, ActivatedRouteSnapshot } from '@angular/router';
 import { IonApp } from '@ionic/angular/standalone';
 import { HeaderComponent } from './components/header/header.component';
 import { FooterComponent } from './components/footer/footer.component';
@@ -51,6 +51,7 @@ export class AppComponent implements OnInit, OnDestroy {
       this.isNavigating = true;
       this.isDashboardRoute = event.urlAfterRedirects.includes('/user/dashboard');
       this.isProjectGenerationRoute = event.urlAfterRedirects.includes('/project-generation');
+      this.requestLoadingService.setRouteEnabled(this.isRequestOverlayEnabledForCurrentRoute());
 
       // Hide loading after a short delay to ensure smooth transition
       setTimeout(() => {
@@ -64,6 +65,7 @@ export class AppComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.checkTokenExpiration();
     this.themeService.getCurrentTheme();
+    this.requestLoadingService.setRouteEnabled(this.isRequestOverlayEnabledForCurrentRoute());
     this.sessionActivityService.start();
     this.sessionWarningSubscription = this.sessionActivityService.warningState$.subscribe((state) => {
       this.showSessionWarning = state.visible;
@@ -103,6 +105,28 @@ export class AppComponent implements OnInit, OnDestroy {
         mainContent.scrollTo({ top: 0, behavior: 'smooth' });
       }
     }
+  }
+
+  private isRequestOverlayEnabledForCurrentRoute(): boolean {
+    return this.resolveRequestOverlayForRoute(this.router.routerState.snapshot.root, false);
+  }
+
+  private resolveRequestOverlayForRoute(snapshot: ActivatedRouteSnapshot | null, inheritedEnabled: boolean): boolean {
+    if (!snapshot) {
+      return inheritedEnabled;
+    }
+
+    const explicitFlag = snapshot.data?.['requestLoadingOverlay'];
+    const localEnabled = typeof explicitFlag === 'boolean' ? explicitFlag : inheritedEnabled;
+    const applyAll = snapshot.data?.['requestLoadingOverlayApplyAll'] === true;
+    const nextInheritedEnabled = applyAll ? localEnabled : false;
+    const primaryChild = snapshot.children.find((child) => child.outlet === 'primary') ?? null;
+
+    if (!primaryChild) {
+      return localEnabled;
+    }
+
+    return this.resolveRequestOverlayForRoute(primaryChild, nextInheritedEnabled);
   }
 
   get sessionWarningMessages(): string[] {

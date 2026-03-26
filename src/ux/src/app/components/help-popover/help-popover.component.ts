@@ -1,5 +1,11 @@
 import { CommonModule } from '@angular/common';
-import { Component, ElementRef, HostListener, Input } from '@angular/core';
+import { Component, ContentChild, Directive, ElementRef, HostListener, Input } from '@angular/core';
+
+@Directive({
+  selector: '[appHelpPopoverTrigger]',
+  standalone: true
+})
+export class HelpPopoverTriggerDirective {}
 
 @Component({
   selector: 'app-help-popover',
@@ -11,6 +17,7 @@ import { Component, ElementRef, HostListener, Input } from '@angular/core';
 export class HelpPopoverComponent {
   @Input() ariaLabel = 'Show help';
   @Input() placement: 'left' | 'top' | 'bottom' = 'left';
+  @ContentChild(HelpPopoverTriggerDirective) customTrigger?: HelpPopoverTriggerDirective;
 
   isOpen = false;
 

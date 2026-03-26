@@ -89,6 +89,8 @@ export interface ProjectSummary {
   generator?: string;
   createdAt?: string;
   updatedAt?: string;
+  ownerId?: string;
+  contributorAccess?: boolean;
 }
 
 export interface ProjectContributor {

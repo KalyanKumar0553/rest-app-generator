@@ -640,6 +640,7 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
       this.applyTabDefinitions(this.tabDefinitions);
       this.selectDefaultMigrationLanguage();
       this.hydrateExploreStateFromProjectDetails(projectDetails);
+      this.refreshExploreRunHistory();
       this.connectProjectEvents(this.backendProjectId);
       this.initializeProjectCollaboration(this.backendProjectId);
       void this.loadPublishedPluginModules(this.projectSettings.language);

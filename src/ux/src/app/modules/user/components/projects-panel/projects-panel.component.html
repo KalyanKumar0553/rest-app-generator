@@ -81,7 +81,22 @@
         <div class="project-title">
           <div class="project-title-row">
             <h3>{{ project.name }}</h3>
-            <span class="project-date">{{ formatDate(project.createdAt) }}</span>
+            <div class="project-title-meta">
+              <span class="project-access-badge project-access-badge-desktop">{{ getProjectAccessLabel(project) }}</span>
+              <app-help-popover class="project-access-help" [ariaLabel]="'Show project access details'" placement="bottom">
+                <div class="project-access-help-content">
+                  <div class="project-access-help-row">
+                    <strong>Access:</strong>
+                    <span>{{ getProjectAccessLabel(project) }}</span>
+                  </div>
+                  <div class="project-access-help-row" *ngIf="project.ownerId">
+                    <strong>Owner:</strong>
+                    <span>{{ project.ownerId }}</span>
+                  </div>
+                </div>
+              </app-help-popover>
+              <span class="project-date">{{ formatDate(project.createdAt) }}</span>
+            </div>
           </div>
           <p class="project-description">{{ project.description }}</p>
         </div>

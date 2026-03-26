@@ -951,6 +951,12 @@
   gap: 12px;
 }
 
+.collaboration-add-btn {
+  display: inline-flex !important;
+  align-items: center;
+  gap: 8px;
+}
+
 @media (max-width: 768px) {
   .desktop-collaboration-table {
     display: none;
@@ -974,6 +980,12 @@
 
   .collaboration-link-row button {
     width: 100%;
+  }
+
+  .collaboration-add-btn {
+    min-width: 44px;
+    width: auto !important;
+    padding-inline: 12px !important;
   }
 
   .sidebar {

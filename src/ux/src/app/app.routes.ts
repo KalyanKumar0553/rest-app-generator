@@ -18,21 +18,37 @@ export const routes: Routes = [
   },
   {
     path: 'user',
+    data: {
+      requestLoadingOverlay: true,
+      requestLoadingOverlayApplyAll: true
+    },
     loadChildren: () => import('./modules/user/user.routes').then(m => m.USER_ROUTES)
   },
   {
     path: 'project-generation',
+    data: {
+      requestLoadingOverlay: true,
+      requestLoadingOverlayApplyAll: true
+    },
     loadChildren: () => import('./modules/project-generation/project-generation.routes').then(m => m.PROJECT_GENERATION_ROUTES)
   },
   {
     path: 'project-generation-node',
-    data: { language: 'node' },
+    data: {
+      language: 'node',
+      requestLoadingOverlay: true,
+      requestLoadingOverlayApplyAll: true
+    },
     loadComponent: () => import('./modules/project-generation/components/node-project-generation-dashboard/node-project-generation-dashboard.component')
       .then(m => m.NodeProjectGenerationDashboardComponent)
   },
   {
     path: 'project-generation-python',
-    data: { language: 'python' },
+    data: {
+      language: 'python',
+      requestLoadingOverlay: true,
+      requestLoadingOverlayApplyAll: true
+    },
     loadComponent: () => import('./modules/project-generation/components/node-project-generation-dashboard/node-project-generation-dashboard.component')
       .then(m => m.NodeProjectGenerationDashboardComponent)
   },

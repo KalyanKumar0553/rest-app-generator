@@ -56,7 +56,21 @@
         <span class="explore-meta-pill">{{ host.backendProjectId ? 'Saved project' : 'Local preview' }}</span>
         <span class="explore-meta-pill" *ngIf="host.projectSettings.projectGroup">{{ host.projectSettings.projectGroup }}</span>
         <span class="explore-meta-pill">{{ host.getCurrentProjectLanguageLabel() }}</span>
-        <span class="explore-meta-pill" *ngIf="host.getExploreEventCount()">{{ host.getExploreEventCount() }} event{{ host.getExploreEventCount() === 1 ? '' : 's' }}</span>
+        <app-help-popover class="explore-events-help" *ngIf="host.getExploreEventCount()" [ariaLabel]="'Show event details'" placement="bottom">
+          <span appHelpPopoverTrigger class="explore-meta-pill explore-meta-pill-interactive">
+            {{ host.getExploreEventCount() }} event{{ host.getExploreEventCount() === 1 ? '' : 's' }}
+          </span>
+          <div class="explore-events-help-content">
+            <div class="explore-events-help-title">Recent events</div>
+            <div class="explore-events-help-row" *ngFor="let event of host.exploreStageEvents.slice(0, 4)">
+              <strong>{{ event.stepName || host.formatExploreStageLabel(event.stage) }}</strong>
+              <span>{{ event.status || 'UNKNOWN' }}</span>
+            </div>
+            <div class="explore-events-help-message" *ngIf="host.exploreStageEvents.length === 0">
+              Run history is available below. Generation stage events will appear here while a run is active.
+            </div>
+          </div>
+        </app-help-popover>
       </div>
       <div class="explore-status-section" *ngIf="host.exploreStageEvents.length || host.exploreRuns.length; else noExploreRuns">
         <div class="explore-stage-table-wrapper" *ngIf="host.isGenerationInProgress() && host.getExploreStageRows().length; else exploreRunHistory">
@@ -121,27 +135,63 @@
               <p class="explore-status-body" *ngIf="event.message">{{ event.message }}</p>
             </article>
             <article class="explore-status-item" *ngFor="let run of host.exploreRuns; trackBy: host.trackExploreRun">
-              <div class="explore-status-topline">
-                <span class="explore-status-badge" [ngClass]="host.getExploreRunStatusClass(run.status)">
-                  {{ run.status || 'UNKNOWN' }}
-                </span>
-                <span class="explore-status-run-label">Run {{ run.runNumber || '—' }}</span>
-                <div class="explore-status-trailing">
-                  <span class="explore-status-time">{{ (run.updatedAt || run.createdAt) | date:'medium' }}</span>
-                  <button
-                    *ngIf="host.canOpenExploreRunPreview(run)"
-                    class="explore-preview-open-btn"
-                    type="button"
-                    (click)="host.openExploreRunPreview(run)"
-                    aria-label="Open project run preview">
-                    <mat-icon>open_in_full</mat-icon>
-                  </button>
+              <ng-container *ngIf="host.isMobileViewport; else desktopExploreRunCard">
+                <div class="explore-status-topline explore-status-topline-mobile">
+                  <div class="explore-status-mobile-summary">
+                    <span class="explore-status-badge" [ngClass]="host.getExploreRunStatusClass(run.status)">
+                      {{ run.status || 'UNKNOWN' }}
+                    </span>
+                    <span class="explore-status-run-label">Run {{ run.runNumber || '—' }}</span>
+                  </div>
+                  <div class="explore-status-trailing explore-status-trailing-mobile">
+                    <app-help-popover class="explore-run-help" [ariaLabel]="'Show run details'" placement="bottom">
+                      <div class="explore-run-help-content">
+                        <div class="explore-run-help-row"><strong>Status:</strong> <span>{{ run.status || 'UNKNOWN' }}</span></div>
+                        <div class="explore-run-help-row" *ngIf="run.updatedAt || run.createdAt"><strong>Generated on:</strong> <span>{{ (run.updatedAt || run.createdAt) | date:'medium' }}</span></div>
+                        <div class="explore-run-help-row" *ngIf="run.createdAt"><strong>Created:</strong> <span>{{ run.createdAt | date:'medium' }}</span></div>
+                        <div class="explore-run-help-row" *ngIf="run.ownerId"><strong>Created by:</strong> <span>{{ run.ownerId }}</span></div>
+                        <div class="explore-run-help-row"><strong>Zip:</strong> <span>{{ run.hasZip ? 'Available' : 'Pending' }}</span></div>
+                        <div class="explore-run-help-message" *ngIf="run.errorMessage">Failed to Generate Project</div>
+                        <div class="explore-run-help-message" *ngIf="!run.errorMessage">
+                          {{ run.hasZip ? 'Generated zip is available for this run.' : 'Waiting for a generated zip from this run.' }}
+                        </div>
+                      </div>
+                    </app-help-popover>
+                    <button
+                      *ngIf="host.canOpenExploreRunPreview(run)"
+                      class="explore-preview-open-btn"
+                      type="button"
+                      (click)="host.openExploreRunPreview(run)"
+                      aria-label="Open project run preview">
+                      <mat-icon>open_in_full</mat-icon>
+                    </button>
+                  </div>
                 </div>
-              </div>
-              <p class="explore-status-body" *ngIf="run.errorMessage">{{ run.errorMessage }}</p>
-              <p class="explore-status-body" *ngIf="!run.errorMessage">
-                {{ run.hasZip ? 'Generated zip is available for this run.' : 'Waiting for a generated zip from this run.' }}
-              </p>
+              </ng-container>
+              <ng-template #desktopExploreRunCard>
+                <div class="explore-status-topline">
+                  <span class="explore-status-badge" [ngClass]="host.getExploreRunStatusClass(run.status)">
+                    {{ run.status || 'UNKNOWN' }}
+                  </span>
+                  <span class="explore-status-run-label">Run {{ run.runNumber || '—' }}</span>
+                  <div class="explore-status-trailing">
+                    <span class="explore-status-time">Generated on {{ (run.updatedAt || run.createdAt) | date:'medium' }}</span>
+                    <button
+                      *ngIf="host.canOpenExploreRunPreview(run)"
+                      class="explore-preview-open-btn"
+                      type="button"
+                      (click)="host.openExploreRunPreview(run)"
+                      aria-label="Open project run preview">
+                      <mat-icon>open_in_full</mat-icon>
+                    </button>
+                  </div>
+                </div>
+                <p class="explore-status-body explore-status-body-meta" *ngIf="run.ownerId">Created by {{ run.ownerId }}</p>
+                <p class="explore-status-body" *ngIf="run.errorMessage">Failed to Generate Project</p>
+                <p class="explore-status-body" *ngIf="!run.errorMessage">
+                  {{ run.hasZip ? 'Generated zip is available for this run.' : 'Waiting for a generated zip from this run.' }}
+                </p>
+              </ng-template>
             </article>
           </div>
         </ng-template>

@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
-import { map } from 'rxjs/operators';
+import { Observable, of } from 'rxjs';
+import { map, tap } from 'rxjs/operators';
 import { API_CONFIG, API_ENDPOINTS } from '../constants/api.constants';
 import { AuthService } from './auth.service';
 
@@ -37,10 +37,18 @@ export interface UserSearchResult {
   avatarUrl?: string | null;
 }
 
+interface UserSearchCacheEntry {
+  cachedAt: number;
+  results: UserSearchResult[];
+}
+
 @Injectable({
   providedIn: 'root'
 })
 export class UserService {
+  private static readonly USER_SEARCH_CACHE_TTL_MS = 30_000;
+  private readonly userSearchCache = new Map<string, UserSearchCacheEntry>();
+
   constructor(
     private http: HttpClient,
     private authService: AuthService
@@ -76,7 +84,26 @@ export class UserService {
   }
 
   searchUsers(query: string): Observable<UserSearchResult[]> {
+    const normalizedQuery = query.trim().toLowerCase();
+    if (!normalizedQuery) {
+      return of([]);
+    }
+
+    const cached = this.userSearchCache.get(normalizedQuery);
+    const now = Date.now();
+    if (cached && (now - cached.cachedAt) < UserService.USER_SEARCH_CACHE_TTL_MS) {
+      return of(cached.results);
+    }
+
     const url = `${API_CONFIG.BASE_URL}${API_ENDPOINTS.USER.SEARCH}?query=${encodeURIComponent(query)}`;
-    return this.http.get<any>(url).pipe(map((response: any) => response.data || response));
+    return this.http.get<any>(url).pipe(
+      map((response: any) => response.data || response),
+      tap((results: UserSearchResult[]) => {
+        this.userSearchCache.set(normalizedQuery, {
+          cachedAt: now,
+          results: Array.isArray(results) ? results : []
+        });
+      })
+    );
   }
 }

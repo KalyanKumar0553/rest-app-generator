@@ -397,7 +397,7 @@ public class ProjectServiceImpl implements ProjectService {
 		log.debug("Matched accessible projects for resolved user: userId='{}', count={}", currentUser.userId(), all.size());
 		List<ProjectSummaryDTO> out = new ArrayList<>();
 		for (ProjectEntity p : all) {
-			out.add(toSummary(p));
+			out.add(toSummary(p, currentUser));
 		}
 		return out;
 	}
@@ -937,12 +937,12 @@ public class ProjectServiceImpl implements ProjectService {
 		ProjectUserIdentityService.ResolvedProjectUser currentUser = projectUserIdentityService.resolve(userId);
 		ProjectEntity project = getProjectByInviteToken(extractInviteToken(request == null ? null : request.getProjectUrl()));
 		if (currentUser.keys().contains(project.getOwnerId())) {
-			return toSummary(project);
+			return toSummary(project, currentUser);
 		}
 		if (findContributorAccess(project.getId(), currentUser).isEmpty()) {
 			throw new SecurityException("You do not have contributor access to this project.");
 		}
-		return toSummary(project);
+		return toSummary(project, currentUser);
 	}
 
 	@Override
@@ -1189,7 +1189,8 @@ public class ProjectServiceImpl implements ProjectService {
 				});
 	}
 
-	private ProjectSummaryDTO toSummary(ProjectEntity project) {
+	private ProjectSummaryDTO toSummary(ProjectEntity project, ProjectUserIdentityService.ResolvedProjectUser currentUser) {
+		boolean contributorAccess = findContributorAccess(project.getId(), currentUser).isPresent();
 		return new ProjectSummaryDTO(
 				project.getId().toString(),
 				project.getArtifact(),
@@ -1198,6 +1199,8 @@ public class ProjectServiceImpl implements ProjectService {
 				project.getDescription(),
 				project.getGenerator(),
 				project.getCreatedAt(),
-				project.getUpdatedAt());
+				project.getUpdatedAt(),
+				project.getOwnerId(),
+				contributorAccess);
 	}
 }

@@ -230,12 +230,12 @@ public class AuthService {
 		findUserByNormalizedIdentifierSafe(normalizedQuery)
 				.filter(user -> user.getStatus() == UserStatus.ACTIVE)
 				.ifPresent(user -> results.put(user.getId(), toUserSearchResponse(user)));
-		userRepository.searchActiveUsersByProfile(normalizedQuery, UserStatus.ACTIVE, PageRequest.of(0, 10))
+		userRepository.searchActiveUsersByProfile(normalizedQuery, UserStatus.ACTIVE, PageRequest.of(0, 5))
 				.stream()
 				.sorted((left, right) -> Integer.compare(userSearchRank(left, normalizedQuery), userSearchRank(right, normalizedQuery)))
 				.map(this::toUserSearchResponse)
 				.forEach(dto -> results.putIfAbsent(dto.getUserId(), dto));
-		return results.values().stream().limit(10).toList();
+		return results.values().stream().limit(5).toList();
 	}
 
 	private int userSearchRank(User user, String query) {

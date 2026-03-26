@@ -12,7 +12,7 @@
       [message]="(oauthProgressService.state$ | async)?.message || 'Request in progress.'"
     ></app-loading-overlay>
     <app-loading-overlay
-      [visible]="((oauthProgressService.state$ | async)?.visible !== true) && (isNavigating || (requestLoadingService.visible$ | async) === true)"
+      [visible]="((oauthProgressService.state$ | async)?.visible !== true) && (isNavigating || (((requestLoadingService.routeEnabled$ | async) === true) && (requestLoadingService.visible$ | async) === true))"
       title="Request in progress"
       message=""
     ></app-loading-overlay>

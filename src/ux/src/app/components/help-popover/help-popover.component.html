@@ -1,5 +1,6 @@
 <div class="help-popover">
   <button
+    *ngIf="!customTrigger"
     type="button"
     class="help-trigger"
     [attr.aria-label]="ariaLabel"
@@ -10,6 +11,19 @@
     (focus)="onTriggerFocus($event)"
     (blur)="onPointerLeave()">
     <i class="bi bi-question-circle"></i>
+  </button>
+  <button
+    *ngIf="customTrigger"
+    type="button"
+    class="help-trigger help-trigger-custom"
+    [attr.aria-label]="ariaLabel"
+    (click)="onTriggerClick($event)"
+    (touchstart)="onTriggerTouchStart($event)"
+    (mouseenter)="onPointerEnter($event)"
+    (mouseleave)="onPointerLeave()"
+    (focus)="onTriggerFocus($event)"
+    (blur)="onPointerLeave()">
+    <ng-content select="[appHelpPopoverTrigger]"></ng-content>
   </button>
   <div
     *ngIf="isOpen"

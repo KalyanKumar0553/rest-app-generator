@@ -562,10 +562,13 @@
                 *ngIf="canManageContributors()"
                 mat-raised-button
                 color="primary"
+                class="collaboration-add-btn"
+                [attr.aria-label]="isMobileViewport ? 'Add contributor' : null"
+                [matTooltip]="isMobileViewport ? 'Add contributor' : null"
                 type="button"
                 (click)="openAddContributorModal()">
                 <mat-icon>person_add</mat-icon>
-                Add contributor
+                <span *ngIf="!isMobileViewport">Add contributor</span>
               </button>
               <button
                 *ngIf="canDetachFromProject()"

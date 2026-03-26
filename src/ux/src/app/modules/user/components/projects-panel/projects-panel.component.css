@@ -89,6 +89,13 @@
   gap: 16px;
 }
 
+.project-title-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
 .project-title h3 {
   font-size: 18px;
   font-weight: 600;
@@ -104,6 +111,48 @@
   white-space: nowrap;
   flex-shrink: 0;
   padding-top: 4px;
+}
+
+.project-access-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 4px 10px;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  background-color: var(--color-background-muted);
+  color: var(--color-text-primary);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.project-access-help {
+  display: none;
+}
+
+.project-access-help-content {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.project-access-help-row {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.project-access-help-row strong {
+  color: var(--color-text-primary);
+}
+
+.project-access-help-row span {
+  color: var(--color-text-secondary);
+  text-align: right;
+  overflow-wrap: anywhere;
 }
 
 .project-title-row + .project-description {
@@ -283,12 +332,24 @@
   }
 
   .project-title-row {
-    flex-direction: column;
-    gap: 6px;
+    gap: 10px;
   }
 
   .project-date {
     padding-top: 0;
+  }
+
+  .project-title-meta {
+    gap: 8px;
+    margin-left: auto;
+  }
+
+  .project-access-badge-desktop {
+    display: none;
+  }
+
+  .project-access-help {
+    display: inline-flex;
   }
 
   .project-footer {

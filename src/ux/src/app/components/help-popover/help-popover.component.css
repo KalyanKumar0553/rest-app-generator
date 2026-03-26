@@ -23,6 +23,14 @@
   line-height: 1;
 }
 
+.help-trigger-custom {
+  width: auto;
+  height: auto;
+  padding: 0;
+  background-color: transparent;
+  border-radius: 0;
+}
+
 .help-content {
   position: absolute;
   display: inline-flex;

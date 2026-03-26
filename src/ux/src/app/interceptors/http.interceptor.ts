@@ -92,6 +92,10 @@ export class HttpRequestInterceptor implements HttpInterceptor {
       return false;
     }
 
+    if (!this.requestLoadingService.isRouteEnabled()) {
+      return false;
+    }
+
     const nonBlockingPaths = [
       '/api/analytics/visits/home'
     ];

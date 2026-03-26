@@ -101,10 +101,13 @@
               *ngIf="host.canManageContributors()"
               mat-raised-button
               color="primary"
+              class="collaboration-add-btn"
+              [attr.aria-label]="host.isMobileViewport ? 'Add contributor' : null"
+              [matTooltip]="host.isMobileViewport ? 'Add contributor' : null"
               type="button"
               (click)="host.openAddContributorModal()">
               <mat-icon>person_add</mat-icon>
-              Add contributor
+              <span *ngIf="!host.isMobileViewport">Add contributor</span>
             </button>
           </div>
           <button

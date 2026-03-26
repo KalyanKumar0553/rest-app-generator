@@ -30,6 +30,83 @@
   color: var(--theme-explore-switcher-active-text);
 }
 
+.explore-meta-pill-interactive {
+  cursor: pointer;
+}
+
+.explore-events-help-content {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.explore-events-help-title {
+  font-weight: 700;
+  color: var(--color-text-primary);
+}
+
+.explore-events-help-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.explore-events-help-row strong {
+  color: var(--color-text-primary);
+}
+
+.explore-events-help-row span,
+.explore-events-help-message {
+  color: var(--color-text-secondary);
+}
+
+.explore-status-topline-mobile {
+  align-items: flex-start;
+}
+
+.explore-status-mobile-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.explore-status-trailing-mobile {
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.explore-run-help-content {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.explore-run-help-row {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.explore-run-help-row strong {
+  color: var(--color-text-primary);
+}
+
+.explore-run-help-row span {
+  color: var(--color-text-secondary);
+  text-align: right;
+}
+
+.explore-run-help-message {
+  color: var(--color-text-secondary);
+  line-height: 1.5;
+}
+
+.explore-status-body-meta {
+  font-weight: 600;
+}
+
 @media (max-width: 640px) {
   .explore-view-switcher {
     width: 100%;
