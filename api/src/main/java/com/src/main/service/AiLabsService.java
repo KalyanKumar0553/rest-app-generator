@@ -65,7 +65,7 @@ public class AiLabsService {
 	private final ConfigMetadataService configMetadataService;
 	private final AiLabsQuotaService aiLabsQuotaService;
 	private final AiLabsJobHistoryRepository aiLabsJobHistoryRepository;
-	private final ChatClient.Builder chatClientBuilder;
+	private final ObjectProvider<ChatClient.Builder> chatClientBuilderProvider;
 	private final ObjectMapper objectMapper;
 	@Value("${app.ai.openai.enabled:false}")
 	private boolean openAiEnabled;
@@ -181,6 +181,7 @@ public class AiLabsService {
 	}
 
 	private Map<String, Object> requestDraftFromOpenAi(JobState state) throws Exception {
+		ChatClient.Builder chatClientBuilder = chatClientBuilderProvider.getIfAvailable();
 		if (chatClientBuilder == null) {
 			throw new GenericException(HttpStatus.BAD_REQUEST, "AI Labs is disabled.");
 		}
@@ -598,7 +599,7 @@ public class AiLabsService {
 		this.configMetadataService = configMetadataService;
 		this.aiLabsQuotaService = aiLabsQuotaService;
 		this.aiLabsJobHistoryRepository = aiLabsJobHistoryRepository;
-		this.chatClientBuilder = chatClientBuilderProvider.getIfAvailable();
+		this.chatClientBuilderProvider = chatClientBuilderProvider;
 		this.objectMapper = objectMapper;
 	}
 }

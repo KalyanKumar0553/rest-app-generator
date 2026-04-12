@@ -8,6 +8,7 @@ JAVA_17_HOME="/Library/Java/JavaVirtualMachines/temurin-17.jdk/Contents/Home"
 export JAVA_HOME="${JAVA_HOME:-$JAVA_17_HOME}"
 export PATH="$JAVA_HOME/bin:$PATH"
 APP_PORT="${SERVER_PORT:-8080}"
+APP_PROPERTIES_FILE="$ROOT_DIR/api/src/main/resources/application.properties"
 
 if ! command -v java >/dev/null 2>&1; then
   echo "Java 17 is required. Set JAVA_HOME to a Java 17 installation."
@@ -18,6 +19,36 @@ java_version="$(java -version 2>&1 | head -n 1)"
 if ! echo "$java_version" | grep -E -q '"17| 17'; then
   echo "Java 17 is required. Set JAVA_HOME to a Java 17 installation."
   exit 1
+fi
+
+resolve_spring_property_default() {
+  local key="$1"
+  local line value
+  line="$(grep -E "^${key}=" "$APP_PROPERTIES_FILE" | tail -n 1 || true)"
+  if [[ -z "$line" ]]; then
+    return 1
+  fi
+  value="${line#*=}"
+  if [[ "$value" =~ ^\$\{[^:]+:(.*)\}$ ]]; then
+    printf '%s' "${BASH_REMATCH[1]}"
+    return 0
+  fi
+  printf '%s' "$value"
+}
+
+if [[ -z "${SPRING_DATASOURCE_URL:-}" ]]; then
+  SPRING_DATASOURCE_URL="$(resolve_spring_property_default "spring.datasource.url")"
+  export SPRING_DATASOURCE_URL
+fi
+
+if [[ -z "${SPRING_DATASOURCE_USERNAME:-}" ]]; then
+  SPRING_DATASOURCE_USERNAME="$(resolve_spring_property_default "spring.datasource.username")"
+  export SPRING_DATASOURCE_USERNAME
+fi
+
+if [[ -z "${SPRING_DATASOURCE_PASSWORD:-}" ]]; then
+  SPRING_DATASOURCE_PASSWORD="$(resolve_spring_property_default "spring.datasource.password")"
+  export SPRING_DATASOURCE_PASSWORD
 fi
 
 if command -v lsof >/dev/null 2>&1; then

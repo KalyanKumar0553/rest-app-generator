@@ -1,6 +1,7 @@
 package com.src.main.auth.config;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -52,6 +53,9 @@ public class OAuth2ClientConfig {
 			registrations.put(keycloakRegistration.getRegistrationId(), keycloakRegistration);
 		});
 
+		if (registrations.isEmpty()) {
+			return new EmptyClientRegistrationRepository();
+		}
 		return new InMemoryClientRegistrationRepository(List.copyOf(registrations.values()));
 	}
 
@@ -70,5 +74,17 @@ public class OAuth2ClientConfig {
 
 	private boolean hasText(String value) {
 		return value != null && !value.trim().isEmpty();
+	}
+
+	private static final class EmptyClientRegistrationRepository implements ClientRegistrationRepository, Iterable<ClientRegistration> {
+		@Override
+		public ClientRegistration findByRegistrationId(String registrationId) {
+			return null;
+		}
+
+		@Override
+		public java.util.Iterator<ClientRegistration> iterator() {
+			return Collections.emptyIterator();
+		}
 	}
 }
