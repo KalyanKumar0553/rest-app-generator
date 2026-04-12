@@ -17,6 +17,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.src.main.dto.SingleConfigEntryRequestDTO;
+import com.src.main.mapper.ConfigMetadataMapper;
 import com.src.main.model.ConfigProperty;
 import com.src.main.model.ConfigPropertyValue;
 import com.src.main.repository.ConfigPropertyRepository;
@@ -30,8 +31,11 @@ class ConfigMetadataServiceTest {
 	@Mock
 	private DataSource dataSource;
 
+	@Mock
+	private ConfigMetadataMapper configMetadataMapper;
+
 	@InjectMocks
-	private ConfigMetadataService service;
+	private ConfigMetadataServiceImpl service;
 
 	@Test
 	void updateCurrentValue_acceptsConfiguredBooleanValueKey() {
@@ -53,6 +57,7 @@ class ConfigMetadataServiceTest {
 		when(configPropertyRepository.findByPropertyKey("app.feature.ai-labs.enabled"))
 				.thenReturn(Optional.of(property));
 		when(configPropertyRepository.save(property)).thenReturn(property);
+		when(configMetadataMapper.toResponseDTO(property)).thenReturn(null);
 
 		SingleConfigEntryRequestDTO request = new SingleConfigEntryRequestDTO(
 				"FEATURES",

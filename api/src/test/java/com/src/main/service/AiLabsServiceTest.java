@@ -9,6 +9,7 @@ import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
@@ -44,6 +45,7 @@ class AiLabsServiceTest {
 				aiLabsJobHistoryRepository,
 				chatClientBuilderProvider,
 				new ObjectMapper().registerModule(new JavaTimeModule()));
+		ReflectionTestUtils.setField(service, "openAiEnabled", true);
 
 		UUID jobId = service.createJob("build a crm", "owner-user").getJobId();
 
