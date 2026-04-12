@@ -32,13 +32,14 @@ public class NodeScaffoldExecutor implements StepExecutor {
 			NodeProjectContext context = NodeGenerationSupport.resolveContext(state);
 			Map<String, Object> yaml = (Map<String, Object>) state.getVariables().get("yaml");
 			List<String> selectedModules = NodeGenerationSupport.extractSelectedShippedModules(yaml);
-			boolean includePrisma = ShippableModuleSupport.requiresNodePrisma(selectedModules);
+			boolean includePrisma = "prisma".equals(context.orm()) || ShippableModuleSupport.requiresNodePrisma(selectedModules);
+			boolean useSequelize = "sequelize".equals(context.orm());
 
 			NodeGenerationSupport.writeFile(context.root(), "package.json",
-					renderPackageJson(context, selectedModules, includePrisma));
+					renderPackageJson(context, selectedModules, includePrisma, useSequelize));
 			NodeGenerationSupport.writeFile(context.root(), "tsconfig.json", renderTsConfig(selectedModules));
 			NodeGenerationSupport.writeFile(context.root(), ".gitignore", renderGitIgnore());
-			NodeGenerationSupport.writeFile(context.root(), "README.md", renderReadme(context, selectedModules, includePrisma));
+			NodeGenerationSupport.writeFile(context.root(), "README.md", renderReadme(context, selectedModules, includePrisma, useSequelize));
 			copyShippedModules(context.root(), selectedModules);
 			return NodeGenerationSupport.success("Node scaffold generated");
 		} catch (Exception ex) {
@@ -46,7 +47,7 @@ public class NodeScaffoldExecutor implements StepExecutor {
 		}
 	}
 
-	private String renderPackageJson(NodeProjectContext context, List<String> selectedModules, boolean includePrisma) {
+	private String renderPackageJson(NodeProjectContext context, List<String> selectedModules, boolean includePrisma, boolean useSequelize) {
 		Map<String, String> dependencies = new LinkedHashMap<>();
 		dependencies.put("cors", "^2.8.5");
 		dependencies.put("dotenv", "^16.4.7");
@@ -62,6 +63,10 @@ public class NodeScaffoldExecutor implements StepExecutor {
 		if (includePrisma) {
 			dependencies.putIfAbsent("@prisma/client", "^6.5.0");
 			devDependencies.putIfAbsent("prisma", "^6.5.0");
+		}
+		if (useSequelize) {
+			dependencies.putIfAbsent("sequelize", "^6.37.5");
+			dependencies.putIfAbsent("pg", "^8.13.1");
 		}
 
 		for (ShippableModuleSupport.NodePackageDependency dependency : ShippableModuleSupport
@@ -81,6 +86,11 @@ public class NodeScaffoldExecutor implements StepExecutor {
 				    "prisma:migrate": "prisma migrate dev",
 				"""
 				: "";
+		String sequelizeScripts = useSequelize
+				? """
+				    "db:sync": "tsx src/scripts/sync-db.ts",
+				"""
+				: "";
 		return """
 				{
 				  "name": "%s",
@@ -90,7 +100,7 @@ public class NodeScaffoldExecutor implements StepExecutor {
 				  "scripts": {
 				    "dev": "tsx watch src/main.ts",
 				    "start": "tsx src/main.ts",
-				%s    "build": "tsc -p tsconfig.json"
+				%s%s    "build": "tsc -p tsconfig.json"
 				  },
 				  "dependencies": {
 				%s
@@ -100,7 +110,7 @@ public class NodeScaffoldExecutor implements StepExecutor {
 				  }
 				}
 				""".formatted(escapeJson(context.artifactId()), escapeJson(context.version()),
-				escapeJson(context.description()), prismaScripts, dependenciesJson, devDependenciesJson);
+				escapeJson(context.description()), prismaScripts, sequelizeScripts, dependenciesJson, devDependenciesJson);
 	}
 
 	private String renderTsConfig(List<String> selectedModules) {
@@ -140,7 +150,7 @@ public class NodeScaffoldExecutor implements StepExecutor {
 				""";
 	}
 
-	private String renderReadme(NodeProjectContext context, List<String> selectedModules, boolean includePrisma) {
+	private String renderReadme(NodeProjectContext context, List<String> selectedModules, boolean includePrisma, boolean useSequelize) {
 		String modulesSection = selectedModules.isEmpty()
 				? ""
 				: """
@@ -164,6 +174,18 @@ public class NodeScaffoldExecutor implements StepExecutor {
 				"""
 						.formatted(context.packageManager(), context.packageManager())
 				: "";
+		String sequelizeSection = useSequelize
+				? """
+
+				## Database
+
+				```bash
+				cp .env.example .env
+				%s db:sync
+				```
+				"""
+						.formatted(context.packageManager())
+				: "";
 		return """
 				# %s
 				
@@ -176,9 +198,9 @@ public class NodeScaffoldExecutor implements StepExecutor {
 				%s start
 				```
 				
-				The server starts on port `%d`.%s%s
+				The server starts on port `%d`.%s%s%s
 				""".formatted(context.appName(), context.description(), context.packageManager(), context.packageManager(),
-				context.port(), modulesSection, prismaSection);
+				context.port(), modulesSection, prismaSection, sequelizeSection);
 	}
 
 	private void copyShippedModules(Path root, List<String> selectedModules) throws Exception {

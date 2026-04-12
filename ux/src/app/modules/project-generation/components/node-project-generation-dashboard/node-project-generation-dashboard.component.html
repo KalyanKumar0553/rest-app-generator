@@ -1,0 +1,735 @@
+<app-confirmation-modal
+  *ngIf="showBackConfirmation"
+  [title]="backConfirmationConfig.title"
+  [message]="backConfirmationConfig.message"
+  [buttons]="backConfirmationConfig.buttons"
+  (confirm)="confirmBack()"
+  (cancel)="cancelBack()"
+></app-confirmation-modal>
+
+<app-confirmation-modal
+  *ngIf="showRecentProjectPrompt"
+  [title]="recentProjectPromptConfig.title"
+  [message]="recentProjectPromptConfig.message"
+  [buttons]="recentProjectPromptConfig.buttons"
+  (confirm)="confirmRecentProjectResume()"
+  (cancel)="cancelRecentProjectResume()"
+></app-confirmation-modal>
+
+<app-confirmation-modal
+  *ngIf="showEntitiesDeleteConfirmation"
+  [title]="entitiesDeleteConfirmationConfig.title"
+  [message]="entitiesDeleteConfirmationConfig.message"
+  [buttons]="entitiesDeleteConfirmationConfig.buttons"
+  (confirm)="confirmEntitiesDelete()"
+  (cancel)="cancelEntitiesDelete()"
+></app-confirmation-modal>
+
+<app-confirmation-modal
+  *ngIf="showRestSpecDeleteConfirmation"
+  [title]="restSpecDeleteConfirmationConfig.title"
+  [message]="restSpecDeleteConfirmationConfig.message"
+  [buttons]="restSpecDeleteConfirmationConfig.buttons"
+  (confirm)="confirmDeleteControllerRestSpec()"
+  (cancel)="cancelDeleteControllerRestSpec()"
+></app-confirmation-modal>
+
+<app-confirmation-modal
+  *ngIf="showConfigureApiDisableConfirmation"
+  [title]="configureApiDisableConfirmationConfig.title"
+  [message]="configureApiDisableConfirmationConfig.message"
+  [buttons]="configureApiDisableConfirmationConfig.buttons"
+  (confirm)="confirmDisableConfigureApi()"
+  (cancel)="cancelDisableConfigureApi()"
+></app-confirmation-modal>
+
+<app-confirmation-modal
+  *ngIf="showControllersConfigDiscardConfirmation"
+  [title]="controllersConfigDiscardConfirmationConfig.title"
+  [message]="controllersConfigDiscardConfirmationConfig.message"
+  [buttons]="controllersConfigDiscardConfirmationConfig.buttons"
+  (confirm)="confirmCancelControllersConfiguration()"
+  (cancel)="cancelCancelControllersConfiguration()"
+></app-confirmation-modal>
+
+<app-confirmation-modal
+  *ngIf="showGenerationCancelConfirmation"
+  [title]="generationCancelConfirmationConfig.title"
+  [message]="generationCancelConfirmationConfig.message"
+  [buttons]="generationCancelConfirmationConfig.buttons"
+  (confirm)="confirmCancelGenerationRequest()"
+  (cancel)="cancelCancelGenerationRequest()"
+></app-confirmation-modal>
+
+<app-modal
+  [isOpen]="showAddContributorModal"
+  title="Add contributors"
+  size="medium"
+  (close)="closeAddContributorModal()">
+  <app-searchable-select
+    label="Search users"
+    placeholder="Search by name or email"
+    [searchResults]="contributorSearchResults"
+    [isSearching]="isContributorSearching"
+    [selectedItems]="selectedContributorItems"
+    [excludeIds]="existingContributorIds"
+    emptyMessage="No users found."
+    (searchChange)="onContributorSearch($event)"
+    (selectedItemsChange)="selectedContributorItems = $event">
+  </app-searchable-select>
+  <div modal-footer class="project-modal-footer">
+    <button mat-stroked-button type="button" (click)="closeAddContributorModal()">Cancel</button>
+    <button mat-raised-button color="primary" type="button" (click)="submitAddContributors()" [disabled]="isAddingContributors || selectedContributorItems.length === 0">
+      <span *ngIf="!isAddingContributors">Submit</span>
+      <span *ngIf="isAddingContributors">Adding...</span>
+    </button>
+  </div>
+</app-modal>
+
+<div class="mobile-header">
+  <div class="container">
+    <div class="header-content">
+      <div class="logo" (click)="handleHome()">
+        <span class="logo-icon">&lt;/&gt;</span>
+        <span class="logo-text">{{ appSettings.appName }}</span>
+      </div>
+      <div class="spacer"></div>
+      <button class="menu-toggle" (click)="toggleSidebar()" aria-label="Toggle menu">
+        <i class="bi bi-list"></i>
+      </button>
+    </div>
+  </div>
+</div>
+
+<div class="sidebar-overlay" [class.show]="isSidebarOpen" (click)="closeSidebar()"></div>
+
+<div class="project-dashboard-container">
+  <aside class="sidebar" [class.open]="isSidebarOpen">
+    <div class="sidebar-header">
+      <div class="logo" (click)="handleHome()">
+        <span class="logo-icon">&lt;/&gt;</span>
+        <span class="logo-text">{{ appSettings.appName }}</span>
+      </div>
+    </div>
+
+    <app-sidenav
+      [navItems]="visibleNavItems"
+      [activeItem]="activeSection"
+      (itemClick)="navigateToSection($event)">
+    </app-sidenav>
+  </aside>
+
+  <main class="main-content">
+    <div class="content-body" *ngIf="activeSection === 'general'" id="general">
+      <div class="sticky-header">
+        <div class="top-actions">
+          <!-- <button class="back-btn-desktop" (click)="openYamlPreviewModal()" aria-label="Preview YAML spec" mat-stroked-button>
+            <i class="bi bi-eye"></i>
+          </button> -->
+          <button class="back-btn-desktop" (click)="handleHome()" aria-label="Go to home" mat-stroked-button>
+            <i class="bi bi-house-door"></i>
+            Home
+          </button>
+          <span class="active-editors-badge" *ngIf="shouldShowActiveEditorsBadge()">{{ activeEditorsBadgeLabel }}</span>
+        </div>
+
+        <app-info-banner storageKey="general-info">
+          <span>
+            Define global project settings. Learn <a href="#" class="info-link" (click)="openDocumentation($event, 'general')">in the docs</a>.
+          </span>
+        </app-info-banner>
+      </div>
+
+      <div class="scrollable-content">
+        <app-node-general-tab
+          [runtimeLabel]="runtimeLabel"
+          [apiFrameworkLabel]="apiFrameworkLabel"
+          [showPackageManager]="showPackageManager"
+          [projectSettings]="projectSettings"
+          [databaseSettings]="databaseSettings"
+          [developerPreferences]="developerPreferences"
+          [projectGroupError]="projectGroupError"
+          [projectNameError]="projectNameError"
+          [projectDescriptionError]="projectDescriptionError"
+          [dbTypeOptions]="dbTypeOptions"
+          [filteredDatabaseOptions]="filteredDatabaseOptions"
+          [dependencyInput]="dependencyInput"
+          [filteredDependencies]="filteredDependencies"
+          [selectedDependencies]="selectedDependencies"
+          [dependencyTooltipMessage]="appSettings.websiteName + ' already adds required dependencies. Add your custom dependencies here.'"
+          (projectGroupChange)="onProjectGroupChange()"
+          (projectNameChange)="onProjectNameChange()"
+          (projectDescriptionChange)="onProjectDescriptionChange()"
+          (databaseTypeChange)="onDatabaseTypeChange($event)"
+          (databaseSelectionChange)="onDatabaseSelectionChange($event)"
+          (addProfile)="onAddProfileClick()"
+          (removeProfile)="removeProfile($event)"
+          (configureApiChange)="onEnableConfigureApiChange($event)"
+          (dependencyInputChange)="dependencyInput = $event"
+          (dependencySearchChange)="filterDependencies($event)"
+          (dependencySelected)="addDependency($event)"
+          (dependencyRemoved)="removeDependency($event)">
+        </app-node-general-tab>
+      </div>
+
+      <div class="sticky-footer" *ngIf="!isLoading">
+        <div class="action-section">
+          <button mat-raised-button color="primary" type="button" (click)="handleGeneralPrimaryAction()">
+            {{ getGeneralPrimaryActionLabel() }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="content-body" *ngIf="activeSection === 'entities'" id="entities">
+      <div class="sticky-header">
+        <div class="top-actions">
+          <!-- <button class="back-btn-desktop" (click)="openYamlPreviewModal()" aria-label="Preview YAML spec" mat-stroked-button>
+            <i class="bi bi-eye"></i>
+          </button> -->
+          <button class="back-btn-desktop" (click)="handleHome()" aria-label="Go to home" mat-stroked-button>
+            <i class="bi bi-house-door"></i>
+            Home
+          </button>
+          <span class="active-editors-badge" *ngIf="shouldShowActiveEditorsBadge()">{{ activeEditorsBadgeLabel }}</span>
+        </div>
+      </div>
+
+      <div class="scrollable-content">
+        <app-node-entities
+          [entities]="entities"
+          [relations]="relations"
+          [enums]="enums"
+          [dataObjects]="dataObjects"
+          [javaVersion]="developerPreferences.javaVersion"
+          (entitiesChange)="onEntitiesChange($event)">
+        </app-node-entities>
+      </div>
+
+      <div class="sticky-footer" *ngIf="!isLoading">
+        <div class="action-section">
+          <button mat-raised-button color="primary" type="button" (click)="setupDataObjects()">
+            Setup Data Objects
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="content-body" *ngIf="activeSection === 'data-objects'" id="data-objects">
+      <div class="sticky-header">
+        <div class="top-actions">
+          <!-- <button class="back-btn-desktop" (click)="openYamlPreviewModal()" aria-label="Preview YAML spec" mat-stroked-button>
+            <i class="bi bi-eye"></i>
+          </button> -->
+          <button class="back-btn-desktop" (click)="handleHome()" aria-label="Go to home" mat-stroked-button>
+            <i class="bi bi-house-door"></i>
+            Home
+          </button>
+          <span class="active-editors-badge" *ngIf="shouldShowActiveEditorsBadge()">{{ activeEditorsBadgeLabel }}</span>
+        </div>
+      </div>
+
+      <div class="scrollable-content">
+        <app-node-data-objects
+          [dataObjects]="dataObjects"
+          [entities]="entities"
+          [enums]="enums"
+          [mappers]="mappers"
+          [javaVersion]="developerPreferences.javaVersion"
+          [defaultTab]="'dataObjects'"
+          (dataObjectsChange)="onDataObjectsChange($event)"
+          (entitiesChange)="onEntitiesFromDataObjectsChange($event)"
+          (enumsChange)="onEnumsChange($event)"
+          (mappersChange)="onMappersChange($event)"
+          (activeTabChange)="onDataObjectsActiveTabChange($event)">
+        </app-node-data-objects>
+      </div>
+
+      <div class="sticky-footer" *ngIf="!isLoading">
+        <div class="action-section">
+          <button mat-raised-button type="button" (click)="handleDataObjectsPrimaryAction()" [disabled]="isGeneratingFromDtoSave">
+            {{ getDataObjectsPrimaryActionLabel() }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="content-body" *ngIf="activeSection === 'mappers'" id="mappers">
+      <div class="sticky-header">
+        <div class="top-actions">
+          <!-- <button class="back-btn-desktop" (click)="openYamlPreviewModal()" aria-label="Preview YAML spec" mat-stroked-button>
+            <i class="bi bi-eye"></i>
+          </button> -->
+          <button class="back-btn-desktop" (click)="handleHome()" aria-label="Go to home" mat-stroked-button>
+            <i class="bi bi-house-door"></i>
+            Home
+          </button>
+          <span class="active-editors-badge" *ngIf="shouldShowActiveEditorsBadge()">{{ activeEditorsBadgeLabel }}</span>
+        </div>
+      </div>
+
+      <div class="scrollable-content">
+        <app-node-data-objects
+          [dataObjects]="dataObjects"
+          [entities]="entities"
+          [enums]="enums"
+          [mappers]="mappers"
+          [javaVersion]="developerPreferences.javaVersion"
+          [defaultTab]="'mappers'"
+          (dataObjectsChange)="onDataObjectsChange($event)"
+          (entitiesChange)="onEntitiesFromDataObjectsChange($event)"
+          (enumsChange)="onEnumsChange($event)"
+          (mappersChange)="onMappersChange($event)"
+          (activeTabChange)="onDataObjectsActiveTabChange($event)">
+        </app-node-data-objects>
+      </div>
+
+      <div class="sticky-footer" *ngIf="!isLoading">
+        <div class="action-section">
+          <button mat-raised-button type="button" (click)="handleMappersPrimaryAction()" [disabled]="isGeneratingFromDtoSave">
+            {{ getMappersPrimaryActionLabel() }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="content-body" *ngIf="activeSection === 'controllers' && developerPreferences.configureApi" id="controllers">
+      <div class="sticky-header">
+        <div class="top-actions">
+          <!-- <button class="back-btn-desktop" (click)="openYamlPreviewModal()" aria-label="Preview YAML spec" mat-stroked-button>
+            <i class="bi bi-eye"></i>
+          </button> -->
+          <button class="back-btn-desktop" (click)="handleHome()" aria-label="Go to home" mat-stroked-button>
+            <i class="bi bi-house-door"></i>
+            Home
+          </button>
+          <span class="active-editors-badge" *ngIf="shouldShowActiveEditorsBadge()">{{ activeEditorsBadgeLabel }}</span>
+        </div>
+
+        <app-info-banner storageKey="controllers-info">
+          <span>
+            Configure API controller behavior for your project. <a href="#" class="info-link" (click)="openDocumentation($event, 'controllers')">Explained here</a>.
+          </span>
+        </app-info-banner>
+      </div>
+
+      <div class="scrollable-content">
+        <ng-container *ngIf="showControllersConfigEditor; else controllersRestSpecTable">
+          <app-node-rest-config
+            #controllersRestConfigComponent
+            [config]="isControllersSpecEditMode ? controllersEditingSpecConfig : (isControllersSpecCreateMode ? null : controllersConfig)"
+            [entityFields]="controllersEntityFields"
+            [fieldTypeOptions]="controllersFieldTypeOptions"
+            [availableModels]="entities"
+            [existingRestConfigNames]="isControllersSpecEditMode ? controllersEditModeExistingNames : configuredEntityRestSpecNames"
+            [dtoObjects]="controllersDtoObjects"
+            [enumTypes]="controllersEnumTypes"
+            [javaVersion]="developerPreferences.javaVersion"
+            [softDeleteEnabled]="false"
+            (save)="onControllersEditorSave($event)"
+            (cancel)="onControllersEditorCancel()">
+          </app-node-rest-config>
+        </ng-container>
+
+        <ng-template #controllersRestSpecTable>
+          <app-node-controllers-spec-table
+            [rows]="controllerRestSpecRows"
+            (create)="startNewControllerRestSpec()"
+            (edit)="editControllerRestSpec($event)"
+            (delete)="requestDeleteControllerRestSpec($event)">
+          </app-node-controllers-spec-table>
+        </ng-template>
+      </div>
+
+      <div class="sticky-footer" *ngIf="!isLoading">
+        <div class="action-section">
+          <button
+            *ngIf="showControllersConfigEditor; else saveProjectCta"
+            mat-raised-button
+            type="button"
+            (click)="saveControllersConfiguration()"
+            [disabled]="isGeneratingFromDtoSave">
+            Save Configuration
+          </button>
+          <button
+            *ngIf="showControllersConfigEditor"
+            mat-raised-button
+            class="controllers-cancel-btn"
+            type="button"
+            (click)="requestCancelControllersConfiguration()"
+            [disabled]="isGeneratingFromDtoSave">
+            Cancel
+          </button>
+          <ng-template #saveProjectCta>
+            <button mat-raised-button type="button" (click)="saveProjectAndInvokeApi()" [disabled]="isGeneratingFromDtoSave">
+              Save Project
+            </button>
+          </ng-template>
+        </div>
+      </div>
+    </div>
+
+    <div class="content-body" *ngIf="activeSection === 'modules'" id="modules">
+      <div class="sticky-header">
+        <div class="top-actions">
+          <button class="back-btn-desktop" (click)="handleHome()" aria-label="Go to home" mat-stroked-button>
+            <i class="bi bi-house-door"></i>
+            Home
+          </button>
+          <span class="active-editors-badge" *ngIf="shouldShowActiveEditorsBadge()">{{ activeEditorsBadgeLabel }}</span>
+        </div>
+      </div>
+
+      <div class="scrollable-content">
+        <app-modules-selection
+          [modules]="shippableModuleCards"
+          [selectedModuleKeys]="selectedShippableModules"
+          [pluginModules]="publishedPluginModules"
+          [selectedPlugins]="selectedPlugins"
+          (selectedModuleKeysChange)="onSelectedShippableModulesChange($event)"
+          (selectedPluginsChange)="onSelectedPluginsChange($event)">
+        </app-modules-selection>
+      </div>
+
+      <div class="sticky-footer" *ngIf="!isLoading">
+        <div class="action-section">
+          <button mat-raised-button type="button" (click)="handleModulesPrimaryAction()" [disabled]="isGeneratingFromDtoSave">
+            {{ getModulesPrimaryActionLabel() }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="content-body" *ngIf="isModuleSectionActive('rbac')" id="rbac">
+      <div class="sticky-header">
+        <div class="top-actions">
+          <button class="back-btn-desktop" (click)="handleHome()" aria-label="Go to home" mat-stroked-button>
+            <i class="bi bi-house-door"></i>
+            Home
+          </button>
+          <span class="active-editors-badge" *ngIf="shouldShowActiveEditorsBadge()">{{ activeEditorsBadgeLabel }}</span>
+        </div>
+      </div>
+      <div class="scrollable-content">
+        <app-rbac-module-tab></app-rbac-module-tab>
+      </div>
+    </div>
+
+    <div class="content-body" *ngIf="isModuleSectionActive('auth')" id="auth">
+      <div class="sticky-header">
+        <div class="top-actions">
+          <button class="back-btn-desktop" (click)="handleHome()" aria-label="Go to home" mat-stroked-button>
+            <i class="bi bi-house-door"></i>
+            Home
+          </button>
+          <span class="active-editors-badge" *ngIf="shouldShowActiveEditorsBadge()">{{ activeEditorsBadgeLabel }}</span>
+        </div>
+      </div>
+      <div class="scrollable-content">
+        <app-auth-module-tab></app-auth-module-tab>
+      </div>
+    </div>
+
+    <div class="content-body" *ngIf="isModuleSectionActive('state-machine')" id="state-machine">
+      <div class="sticky-header">
+        <div class="top-actions">
+          <button class="back-btn-desktop" (click)="handleHome()" aria-label="Go to home" mat-stroked-button>
+            <i class="bi bi-house-door"></i>
+            Home
+          </button>
+          <span class="active-editors-badge" *ngIf="shouldShowActiveEditorsBadge()">{{ activeEditorsBadgeLabel }}</span>
+        </div>
+      </div>
+      <div class="scrollable-content">
+        <app-state-machine-module-tab></app-state-machine-module-tab>
+      </div>
+    </div>
+
+    <div class="content-body" *ngIf="isModuleSectionActive('subscription')" id="subscription">
+      <div class="sticky-header">
+        <div class="top-actions">
+          <button class="back-btn-desktop" (click)="handleHome()" aria-label="Go to home" mat-stroked-button>
+            <i class="bi bi-house-door"></i>
+            Home
+          </button>
+          <span class="active-editors-badge" *ngIf="shouldShowActiveEditorsBadge()">{{ activeEditorsBadgeLabel }}</span>
+        </div>
+      </div>
+      <div class="scrollable-content">
+        <app-subscription-module-tab></app-subscription-module-tab>
+      </div>
+    </div>
+
+    <div class="content-body" *ngIf="activeSection === 'collaborate'" id="collaborate">
+      <div class="sticky-header">
+        <div class="top-actions">
+          <button class="back-btn-desktop" (click)="handleHome()" aria-label="Go to home" mat-stroked-button>
+            <i class="bi bi-house-door"></i>
+            Home
+          </button>
+          <span class="active-editors-badge" *ngIf="shouldShowActiveEditorsBadge()">{{ activeEditorsBadgeLabel }}</span>
+        </div>
+
+        <app-info-banner storageKey="collaborate-info">
+          <span>
+            Share a collaboration URL, review access requests, and control contributor permissions.
+          </span>
+        </app-info-banner>
+      </div>
+
+      <div class="scrollable-content collaborate-scrollable-content">
+        <div class="collaboration-panel" *ngIf="backendProjectId; else collaborateSaveFirst">
+          <div class="collaboration-card">
+            <div class="collaboration-title-row">
+              <h3>Invite collaborators</h3>
+              <button
+                type="button"
+                class="collaboration-help-btn"
+                matTooltip="Share this URL with authenticated users so they can request access to this project."
+                aria-label="Invite collaborators help">
+                <mat-icon>help_outline</mat-icon>
+              </button>
+            </div>
+            <div class="collaboration-link-row">
+              <mat-form-field appearance="fill" class="full-width">
+                <mat-label>Collaboration invite URL</mat-label>
+                <input matInput [value]="collaborationInviteUrl" readonly />
+              </mat-form-field>
+              <button mat-raised-button color="primary" type="button" (click)="copyCollaborationInviteUrl()">
+                Copy URL
+              </button>
+            </div>
+          </div>
+
+          <div class="collaboration-card">
+            <h3>Pending requests</h3>
+            <p *ngIf="!canManageContributors()">Only project owners or collaborators with manage access can review requests.</p>
+            <p *ngIf="canManageContributors() && collaborationRequests.length === 0">No collaboration requests yet.</p>
+
+            <table mat-table [dataSource]="collaborationRequests" class="collaboration-table" *ngIf="canManageContributors() && collaborationRequests.length > 0">
+              <ng-container matColumnDef="requester">
+                <th mat-header-cell *matHeaderCellDef>Requester</th>
+                <td mat-cell *matCellDef="let request">{{ request.requesterId }}</td>
+              </ng-container>
+
+              <ng-container matColumnDef="requested">
+                <th mat-header-cell *matHeaderCellDef>Requested</th>
+                <td mat-cell *matCellDef="let request">{{ formatPermissionsLabel(request.requestedPermissions) }}</td>
+              </ng-container>
+
+              <ng-container matColumnDef="granted">
+                <th mat-header-cell *matHeaderCellDef>Grant</th>
+                <td mat-cell *matCellDef="let request">
+                  <div class="permission-toggle-group">
+                    <mat-checkbox [(ngModel)]="request.grantedPermissions.canEditDraft">Edit</mat-checkbox>
+                    <mat-checkbox [(ngModel)]="request.grantedPermissions.canGenerate">Generate</mat-checkbox>
+                    <mat-checkbox [(ngModel)]="request.grantedPermissions.canManageCollaboration">Manage</mat-checkbox>
+                  </div>
+                </td>
+              </ng-container>
+
+              <ng-container matColumnDef="status">
+                <th mat-header-cell *matHeaderCellDef>Status</th>
+                <td mat-cell *matCellDef="let request">{{ request.status }}</td>
+              </ng-container>
+
+              <ng-container matColumnDef="actions">
+                <th mat-header-cell *matHeaderCellDef>Actions</th>
+                <td mat-cell *matCellDef="let request">
+                  <div class="table-actions" *ngIf="request.status === 'PENDING'; else reviewedRequest">
+                    <button mat-icon-button type="button" color="primary" (click)="approveCollaborationRequest(request)" matTooltip="Approve request">
+                      <mat-icon>check_circle</mat-icon>
+                    </button>
+                    <button mat-icon-button type="button" color="warn" (click)="rejectCollaborationRequest(request)" matTooltip="Reject request">
+                      <mat-icon>cancel</mat-icon>
+                    </button>
+                  </div>
+                  <ng-template #reviewedRequest>
+                    <span>{{ request.reviewedBy || 'Reviewed' }}</span>
+                  </ng-template>
+                </td>
+              </ng-container>
+
+              <tr mat-header-row *matHeaderRowDef="collaborationRequestColumns"></tr>
+              <tr mat-row *matRowDef="let row; columns: collaborationRequestColumns;"></tr>
+            </table>
+          </div>
+
+          <div class="collaboration-card">
+            <div class="collaboration-title-row">
+              <div class="collaboration-card-header collaboration-card-header-right">
+              <h3>Contributors</h3>
+              <button
+                *ngIf="canManageContributors()"
+                mat-raised-button
+                color="primary"
+                class="collaboration-add-btn"
+                [attr.aria-label]="isMobileViewport ? 'Add contributor' : null"
+                [matTooltip]="isMobileViewport ? 'Add contributor' : null"
+                type="button"
+                (click)="openAddContributorModal()">
+                <mat-icon>person_add</mat-icon>
+                <span *ngIf="!isMobileViewport">Add contributor</span>
+              </button>
+              <button
+                *ngIf="canDetachFromProject()"
+                mat-stroked-button
+                type="button"
+                class="detach-collaboration-btn"
+                (click)="detachFromProject()"
+                [disabled]="isContributorSaving">
+                Archive My Access
+              </button>
+            </div>
+            </div>
+            <p *ngIf="projectContributors.length === 0">No contributors added yet.</p>
+
+            <div class="collaboration-mobile-list" *ngIf="projectContributors.length > 0 && isMobileViewport">
+              <article class="collaboration-mobile-item" *ngFor="let contributor of projectContributors">
+                <div class="collaboration-mobile-copy">
+                  <strong>{{ contributor.userId }}</strong>
+                  <span>{{ formatPermissionsLabel(contributor) }}</span>
+                </div>
+                <div class="table-actions">
+                  <button
+                    *ngIf="canManageContributors()"
+                    mat-icon-button
+                    type="button"
+                    class="table-action-btn"
+                    (click)="openContributorPermissionsModal(contributor)"
+                    [disabled]="!canManageContributors()"
+                    matTooltip="Edit permissions">
+                    <mat-icon>edit</mat-icon>
+                  </button>
+                  <button
+                    *ngIf="canManageContributors()"
+                    mat-icon-button
+                    type="button"
+                    color="warn"
+                    (click)="removeContributor(contributor.userId)"
+                    [disabled]="!canManageContributors()"
+                    matTooltip="Remove contributor">
+                    <mat-icon>person_remove</mat-icon>
+                  </button>
+                </div>
+              </article>
+            </div>
+
+            <table mat-table [dataSource]="projectContributors" class="collaboration-table desktop-collaboration-table" *ngIf="projectContributors.length > 0">
+              <ng-container matColumnDef="userId">
+                <th mat-header-cell *matHeaderCellDef>User</th>
+                <td mat-cell *matCellDef="let contributor">{{ contributor.userId }}</td>
+              </ng-container>
+
+              <ng-container matColumnDef="edit">
+                <th mat-header-cell *matHeaderCellDef>Edit spec</th>
+                <td mat-cell *matCellDef="let contributor">
+                  <mat-checkbox [(ngModel)]="contributor.canEditDraft" [disabled]="!canManageContributors()"></mat-checkbox>
+                </td>
+              </ng-container>
+
+              <ng-container matColumnDef="generate">
+                <th mat-header-cell *matHeaderCellDef>Generate</th>
+                <td mat-cell *matCellDef="let contributor">
+                  <mat-checkbox [(ngModel)]="contributor.canGenerate" [disabled]="!canManageContributors()"></mat-checkbox>
+                </td>
+              </ng-container>
+
+              <ng-container matColumnDef="manage">
+                <th mat-header-cell *matHeaderCellDef>Manage collaboration</th>
+                <td mat-cell *matCellDef="let contributor">
+                  <mat-checkbox [(ngModel)]="contributor.canManageCollaboration" [disabled]="!canManageContributors()"></mat-checkbox>
+                </td>
+              </ng-container>
+
+              <ng-container matColumnDef="actions">
+                <th mat-header-cell *matHeaderCellDef>Actions</th>
+                <td mat-cell *matCellDef="let contributor">
+                  <div class="table-actions">
+                    <button
+                      *ngIf="canManageContributors()"
+                      mat-icon-button
+                      type="button"
+                      class="table-action-btn table-action-btn-save"
+                      (click)="updateContributorPermissions(contributor)"
+                      [disabled]="!canManageContributors()"
+                      matTooltip="Save permissions">
+                      <i class="bi bi-check2-circle" aria-hidden="true"></i>
+                    </button>
+                    <button
+                      *ngIf="canManageContributors()"
+                      mat-icon-button
+                      type="button"
+                      color="warn"
+                      (click)="removeContributor(contributor.userId)"
+                      [disabled]="!canManageContributors()"
+                      matTooltip="Remove contributor">
+                      <mat-icon>person_remove</mat-icon>
+                    </button>
+                  </div>
+                </td>
+              </ng-container>
+
+              <tr mat-header-row *matHeaderRowDef="contributorPermissionColumns"></tr>
+              <tr mat-row *matRowDef="let row; columns: contributorPermissionColumns;"></tr>
+            </table>
+          </div>
+        </div>
+
+        <ng-template #collaborateSaveFirst>
+          <div class="collaboration-card">
+            <h3>Save project first</h3>
+            <p>Create the saved project draft first. Then you can share a collaboration link and review requests here.</p>
+          </div>
+        </ng-template>
+      </div>
+    </div>
+
+    <app-node-project-generation-explore-section *ngIf="activeSection === 'explore'" [host]="this"></app-node-project-generation-explore-section>
+  </main>
+</div>
+
+<app-modal
+  [isOpen]="showProfileModal"
+  [title]="'Add Profiles'"
+  [size]="'medium'"
+  [showFooter]="false"
+  (close)="closeProfileModal()">
+  <app-add-profile
+    [isOpen]="showProfileModal"
+    [profiles]="developerPreferences.profiles"
+    (save)="onProfilesSave($event)"
+    (cancel)="closeProfileModal()">
+  </app-add-profile>
+</app-modal>
+
+<app-modal
+  [isOpen]="showYamlPreviewModal"
+  [title]="'YAML Preview'"
+  [size]="'large'"
+  [showFooter]="false"
+  (close)="closeYamlPreviewModal()">
+  <app-node-project-spec [spec]="yamlPreviewContent"></app-node-project-spec>
+</app-modal>
+
+<app-modal
+  [isOpen]="showContributorPermissionsModal"
+  [title]="'Edit permissions'"
+  [size]="'medium'"
+  [showFooter]="true"
+  (close)="closeContributorPermissionsModal()">
+  <div class="mobile-contributor-permissions-modal" *ngIf="selectedContributorForMobileEdit">
+    <p class="mobile-contributor-permissions-user">{{ selectedContributorForMobileEdit.userId }}</p>
+    <div class="mobile-contributor-permissions-options">
+      <mat-checkbox [(ngModel)]="selectedContributorForMobileEdit.canEditDraft">Edit spec</mat-checkbox>
+      <mat-checkbox [(ngModel)]="selectedContributorForMobileEdit.canGenerate">Generate</mat-checkbox>
+      <mat-checkbox [(ngModel)]="selectedContributorForMobileEdit.canManageCollaboration">Manage collaboration</mat-checkbox>
+    </div>
+  </div>
+  <div modal-footer>
+    <button mat-stroked-button type="button" (click)="closeContributorPermissionsModal()">Cancel</button>
+    <button mat-raised-button type="button" (click)="saveContributorPermissionsFromModal()" [disabled]="!canManageContributors()">
+      Save
+    </button>
+  </div>
+</app-modal>

@@ -15,7 +15,11 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotWritableException;
 import org.springframework.orm.jpa.JpaSystemException;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.web.HttpMediaTypeNotAcceptableException;
+import org.springframework.web.HttpMediaTypeNotSupportedException;
+import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
@@ -32,7 +36,6 @@ public class GlobalExceptionHandler {
 
 	@ExceptionHandler(ConstraintViolationException.class)
 	public ResponseEntity<Map<String, Object>> onConstraintViolation(ConstraintViolationException ex) {
-		//ex.printStackTrace();
 		String firstError = ex.getConstraintViolations()
 				.stream()
 				.findFirst()
@@ -43,7 +46,6 @@ public class GlobalExceptionHandler {
 
 	@ExceptionHandler(MethodArgumentNotValidException.class)
 	public ResponseEntity<Map<String, Object>> onMethodArgInvalid(MethodArgumentNotValidException ex) {
-		//ex.printStackTrace();
 		String firstError = ex.getBindingResult()
 				.getFieldErrors()
 				.stream()
@@ -55,25 +57,46 @@ public class GlobalExceptionHandler {
 
 	@ExceptionHandler(MethodArgumentTypeMismatchException.class)
 	public ResponseEntity<Map<String, Object>> onMethodArgumentTypeMismatch(MethodArgumentTypeMismatchException ex) {
-		//ex.printStackTrace();
 		return error(HttpStatus.BAD_REQUEST, "Invalid value for parameter: " + ex.getName());
+	}
+
+	@ExceptionHandler(MissingServletRequestParameterException.class)
+	public ResponseEntity<Map<String, Object>> onMissingRequestParam(MissingServletRequestParameterException ex) {
+		return error(HttpStatus.BAD_REQUEST, "Missing required parameter: " + ex.getParameterName());
+	}
+
+	@ExceptionHandler(HttpRequestMethodNotSupportedException.class)
+	public ResponseEntity<Map<String, Object>> onMethodNotSupported(HttpRequestMethodNotSupportedException ex) {
+		return error(HttpStatus.METHOD_NOT_ALLOWED, ex.getMessage());
+	}
+
+	@ExceptionHandler(HttpMediaTypeNotSupportedException.class)
+	public ResponseEntity<Map<String, Object>> onMediaTypeNotSupported(HttpMediaTypeNotSupportedException ex) {
+		return error(HttpStatus.UNSUPPORTED_MEDIA_TYPE, ex.getMessage());
+	}
+
+	@ExceptionHandler(HttpMediaTypeNotAcceptableException.class)
+	public ResponseEntity<Map<String, Object>> onMediaTypeNotAcceptable(HttpMediaTypeNotAcceptableException ex) {
+		return error(HttpStatus.NOT_ACCEPTABLE, ex.getMessage());
 	}
 
 	@ExceptionHandler(IllegalArgumentException.class)
 	public ResponseEntity<Map<String, Object>> onIllegalArgument(IllegalArgumentException ex) {
-		//ex.printStackTrace();
 		return error(HttpStatus.BAD_REQUEST, ex.getMessage());
 	}
 
 	@ExceptionHandler(GenericException.class)
 	public ResponseEntity<Map<String, Object>> onGeneric(GenericException ex) {
-		log.warn("Application error handled: status={}, message={}", ex.getStatus().value(), ex.getErrorMsg());
+		if (ex.getCause() != null) {
+			log.warn("Application error handled: status={}, message={}, cause={}", ex.getStatus().value(), ex.getErrorMsg(), ex.getCause().getMessage());
+		} else {
+			log.warn("Application error handled: status={}, message={}", ex.getStatus().value(), ex.getErrorMsg());
+		}
 		return error(ex.getStatus(), ex.getErrorMsg());
 	}
 
 	@ExceptionHandler({ SecurityException.class, AccessDeniedException.class })
 	public ResponseEntity<Map<String, Object>> onSecurity(RuntimeException ex) {
-		//ex.printStackTrace();
 		return error(HttpStatus.FORBIDDEN, ex.getMessage());
 	}
 
@@ -90,13 +113,11 @@ public class GlobalExceptionHandler {
 
 	@ExceptionHandler(EntityNotFoundException.class)
 	public ResponseEntity<Map<String, Object>> onEntityNotFound(EntityNotFoundException ex) {
-		//ex.printStackTrace();
 		return error(HttpStatus.NOT_FOUND, ex.getMessage());
 	}
 
 	@ExceptionHandler(ResponseStatusException.class)
 	public ResponseEntity<Map<String, Object>> onResponseStatus(ResponseStatusException ex) {
-		//ex.printStackTrace();
 		String message = ex.getReason() == null || ex.getReason().isBlank()
 				? ex.getStatusCode().toString()
 				: ex.getReason();

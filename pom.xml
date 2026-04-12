@@ -36,6 +36,10 @@
 		</dependency>
 		<dependency>
 			<groupId>com.src</groupId>
+			<artifactId>azure-cdn-upload</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>com.src</groupId>
 			<artifactId>state-machine</artifactId>
 		</dependency>
 		<dependency>
@@ -185,7 +189,7 @@
 				<groupId>com.github.eirslett</groupId>
 				<artifactId>frontend-maven-plugin</artifactId>
 				<configuration>
-					<workingDirectory>src/ux</workingDirectory>
+					<workingDirectory>ux</workingDirectory>
 					<installDirectory>_ux_plugin</installDirectory>
 					<nodeVersion>v21.7.3</nodeVersion>
 				</configuration>

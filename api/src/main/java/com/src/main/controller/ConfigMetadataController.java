@@ -15,6 +15,7 @@ import com.src.main.dto.ConfigPropertyResponseDTO;
 import com.src.main.dto.ConfigPropertySaveRequestDTO;
 import com.src.main.dto.SingleConfigEntryRequestDTO;
 import com.src.main.service.ConfigMetadataService;
+import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping(value = "/api/config", produces = MediaType.APPLICATION_JSON_VALUE)
@@ -22,7 +23,7 @@ public class ConfigMetadataController {
 	private final ConfigMetadataService configMetadataService;
 
 	@PostMapping
-	public ResponseEntity<ConfigPropertyResponseDTO> saveProperty(@RequestBody ConfigPropertySaveRequestDTO request) {
+	public ResponseEntity<ConfigPropertyResponseDTO> saveProperty(@Valid @RequestBody ConfigPropertySaveRequestDTO request) {
 		return ResponseEntity.ok(configMetadataService.saveOrUpdateProperty(request));
 	}
 
@@ -44,7 +45,7 @@ public class ConfigMetadataController {
 
 	@PutMapping("/features/value")
 	@PreAuthorize("hasAuthority(\'config.feature.manage\')")
-	public ResponseEntity<ConfigPropertyResponseDTO> updateFeatureValue(@RequestBody SingleConfigEntryRequestDTO request) {
+	public ResponseEntity<ConfigPropertyResponseDTO> updateFeatureValue(@Valid @RequestBody SingleConfigEntryRequestDTO request) {
 		return ResponseEntity.ok(configMetadataService.updateCurrentValue(request));
 	}
 

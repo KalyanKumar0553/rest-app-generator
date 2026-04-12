@@ -23,9 +23,10 @@ public class NodeApplicationFilesExecutor implements StepExecutor {
 			Map<String, Object> yaml = (Map<String, Object>) state.getVariables().get("yaml");
 			List<String> selectedModules = NodeGenerationSupport.extractSelectedShippedModules(yaml);
 			Map<String, Object> moduleConfigs = NodeGenerationSupport.extractModuleConfigs(yaml);
-			boolean includePrisma = ShippableModuleSupport.requiresNodePrisma(selectedModules);
+			boolean includePrisma = "prisma".equals(context.orm()) || ShippableModuleSupport.requiresNodePrisma(selectedModules);
+			boolean useSequelize = "sequelize".equals(context.orm());
 
-			NodeGenerationSupport.writeFile(context.root(), "src/config/node-config.ts", renderConfig(context, includePrisma));
+			NodeGenerationSupport.writeFile(context.root(), "src/config/node-config.ts", renderConfig(context, includePrisma, useSequelize));
 			NodeGenerationSupport.writeFile(context.root(), "src/middleware/validate-request.ts", renderValidationMiddleware());
 			NodeGenerationSupport.writeFile(context.root(), "src/generated/module-manifest.json",
 					renderModuleManifest(selectedModules, moduleConfigs));
@@ -34,21 +35,37 @@ public class NodeApplicationFilesExecutor implements StepExecutor {
 			if (includePrisma) {
 				NodeGenerationSupport.writeFile(context.root(), ".env.example", renderPrismaEnvExample());
 				NodeGenerationSupport.writeFile(context.root(), "src/lib/prisma.ts", renderPrismaClient());
-				NodeGenerationSupport.writeFile(context.root(), "prisma/schema.prisma", renderPrismaSchema(selectedModules));
+				NodeGenerationSupport.writeFile(context.root(), "prisma/schema.prisma", renderPrismaSchema(context, selectedModules));
+			}
+			if (useSequelize) {
+				NodeGenerationSupport.writeFile(context.root(), ".env.example", renderSequelizeEnvExample(context));
+				NodeGenerationSupport.writeFile(context.root(), "src/lib/sequelize.ts", renderSequelizeClient(context));
+				NodeGenerationSupport.writeFile(context.root(), "src/scripts/sync-db.ts", renderSequelizeSyncScript());
 			}
 			NodeGenerationSupport.writeFile(context.root(), "src/app.ts", renderApp(selectedModules));
-			NodeGenerationSupport.writeFile(context.root(), "src/main.ts", renderMain());
+			NodeGenerationSupport.writeFile(context.root(), "src/main.ts", renderMain(useSequelize));
 			return NodeGenerationSupport.success("Node application files generated");
 		} catch (Exception ex) {
 			return StepResult.error("NODE_APP_FILES", ex.getMessage());
 		}
 	}
 
-	private String renderConfig(NodeProjectContext context, boolean includePrisma) {
-		String databaseLine = includePrisma
-				? "  databaseUrl: process.env.DATABASE_URL || 'postgresql://postgres:postgres@localhost:5432/%s',\n"
-						.formatted(context.artifactId().replace("'", "\\'"))
-				: "";
+	private String renderConfig(NodeProjectContext context, boolean includePrisma, boolean useSequelize) {
+		String databaseLine = "";
+		if (includePrisma) {
+			databaseLine = "  databaseUrl: process.env.DATABASE_URL || 'postgresql://postgres:postgres@localhost:5432/%s',\n"
+					.formatted(context.artifactId().replace("'", "\\'"));
+		} else if (useSequelize) {
+			databaseLine = """
+				  database: {
+				    host: process.env.DB_HOST || 'localhost',
+				    port: Number(process.env.DB_PORT || 5432),
+				    name: process.env.DB_NAME || '%s',
+				    user: process.env.DB_USER || 'postgres',
+				    password: process.env.DB_PASSWORD || 'postgres'
+				  },
+				""".formatted(context.artifactId().replace("'", "\\'"));
+		}
 		return """
 				export const nodeConfig = {
 				  appName: '%s',
@@ -77,18 +94,21 @@ public class NodeApplicationFilesExecutor implements StepExecutor {
 				""".formatted(bootstrapImport, bootstrapCall);
 	}
 
-	private String renderMain() {
+	private String renderMain(boolean useSequelize) {
+		String databaseImport = useSequelize ? "\nimport { initializeDatabase } from './lib/sequelize';" : "";
+		String databaseInit = useSequelize ? "\ninitializeDatabase()\n  .then(() => {\n" : "";
+		String databaseClose = useSequelize ? "\n  })\n  .catch((error) => {\n    console.error('Database initialization failed', error);\n    process.exit(1);\n  });" : "";
 		return """
 				import 'dotenv/config';
 				
 				import { createApp } from './app';
-				import { nodeConfig } from './config/node-config';
+				import { nodeConfig } from './config/node-config';%s
 				
 				const app = createApp();
-				app.listen(nodeConfig.port, () => {
-				  console.log(`${nodeConfig.appName} listening on port ${nodeConfig.port}`);
-				});
-				""";
+				%s  app.listen(nodeConfig.port, () => {
+				    console.log(`${nodeConfig.appName} listening on port ${nodeConfig.port}`);
+				  });%s
+				""".formatted(databaseImport, databaseInit, databaseClose);
 	}
 
 	private String renderValidationMiddleware() {
@@ -123,6 +143,16 @@ public class NodeApplicationFilesExecutor implements StepExecutor {
 				""";
 	}
 
+	private String renderSequelizeEnvExample(NodeProjectContext context) {
+		return """
+				DB_HOST=localhost
+				DB_PORT=5432
+				DB_NAME=%s
+				DB_USER=postgres
+				DB_PASSWORD=postgres
+				""".formatted(context.artifactId());
+	}
+
 	private String renderPrismaClient() {
 		return """
 				import { PrismaClient } from '@prisma/client';
@@ -139,7 +169,51 @@ public class NodeApplicationFilesExecutor implements StepExecutor {
 				""";
 	}
 
-	private String renderPrismaSchema(List<String> selectedModules) {
+	private String renderSequelizeClient(NodeProjectContext context) {
+		return """
+				import { Sequelize } from 'sequelize';
+				
+				import { nodeConfig } from '../config/node-config';
+				
+				export const sequelize = new Sequelize(
+				  nodeConfig.database.name,
+				  nodeConfig.database.user,
+				  nodeConfig.database.password,
+				  {
+				    host: nodeConfig.database.host,
+				    port: nodeConfig.database.port,
+				    dialect: 'postgres',
+				    logging: false
+				  }
+				);
+				
+				export const initializeDatabase = async (): Promise<void> => {
+				  await sequelize.authenticate();
+				};
+				""";
+	}
+
+	private String renderSequelizeSyncScript() {
+		return """
+				import 'dotenv/config';
+				
+				import { sequelize } from '../lib/sequelize';
+				import '../models';
+				
+				sequelize.sync({ alter: true })
+				  .then(async () => {
+				    await sequelize.close();
+				    console.log('Database schema synchronized');
+				  })
+				  .catch(async (error) => {
+				    console.error('Failed to synchronize database schema', error);
+				    await sequelize.close();
+				    process.exitCode = 1;
+				  });
+				""";
+	}
+
+	private String renderPrismaSchema(NodeProjectContext context, List<String> selectedModules) {
 		StringBuilder builder = new StringBuilder();
 		builder.append("""
 				generator client {
@@ -254,7 +328,37 @@ public class NodeApplicationFilesExecutor implements StepExecutor {
 					
 					""");
 		}
+		for (NodeModelDefinition model : context.models()) {
+			builder.append(renderPrismaModel(model));
+		}
 		return builder.toString();
+	}
+
+	private String renderPrismaModel(NodeModelDefinition model) {
+		StringBuilder builder = new StringBuilder();
+		builder.append("model ").append(model.name()).append(" {\n");
+		for (NodeFieldDefinition field : model.fields()) {
+			builder.append("  ").append(field.name()).append(" ").append(toPrismaType(field));
+			if ("id".equals(field.name())) {
+				builder.append(" @id @default(uuid())");
+			} else if (field.optional()) {
+				builder.append("?");
+			}
+			builder.append("\n");
+		}
+		builder.append("}\n\n");
+		return builder.toString();
+	}
+
+	private String toPrismaType(NodeFieldDefinition field) {
+		String normalized = String.valueOf(field.rawType()).trim().toLowerCase();
+		return switch (normalized) {
+		case "int", "integer", "long", "short", "byte" -> "Int";
+		case "double", "float", "bigdecimal" -> "Float";
+		case "boolean" -> "Boolean";
+		case "localdate", "localdatetime", "offsetdatetime", "instant", "date" -> "DateTime";
+		default -> "String";
+		};
 	}
 
 	private String renderModuleManifest(List<String> selectedModules, Map<String, Object> moduleConfigs) {

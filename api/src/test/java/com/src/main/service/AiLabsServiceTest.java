@@ -7,11 +7,12 @@ import static org.mockito.Mockito.when;
 import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
+import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.beans.factory.ObjectProvider;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.src.main.repository.AiLabsJobHistoryRepository;
-import org.springframework.ai.chat.client.ChatClient;
 
 class AiLabsServiceTest {
 
@@ -28,6 +29,9 @@ class AiLabsServiceTest {
 		ProjectUserIdentityService projectUserIdentityService = mock(ProjectUserIdentityService.class);
 		AiLabsJobHistoryRepository aiLabsJobHistoryRepository = mock(AiLabsJobHistoryRepository.class);
 		ChatClient.Builder chatClientBuilder = mock(ChatClient.Builder.class);
+		@SuppressWarnings("unchecked")
+		ObjectProvider<ChatClient.Builder> chatClientBuilderProvider = mock(ObjectProvider.class);
+		when(chatClientBuilderProvider.getIfAvailable()).thenReturn(chatClientBuilder);
 
 		AiLabsService service = new AiLabsService(
 				eventStreamService,
@@ -38,7 +42,7 @@ class AiLabsServiceTest {
 				configMetadataService,
 				aiLabsQuotaService,
 				aiLabsJobHistoryRepository,
-				chatClientBuilder,
+				chatClientBuilderProvider,
 				new ObjectMapper().registerModule(new JavaTimeModule()));
 
 		UUID jobId = service.createJob("build a crm", "owner-user").getJobId();

@@ -104,11 +104,21 @@ public class ProjectDraftService {
 		return getTabDetails(generator, dependencies, Collections.emptySet());
 	}
 
+	public List<ProjectTabDefinitionDTO> getTabDetails(String generator, List<String> dependencies, String tabKey) {
+		return getTabDetails(generator, dependencies, Collections.emptySet(), tabKey);
+	}
+
 	public List<ProjectTabDefinitionDTO> getTabDetails(String generator, List<String> dependencies, Set<String> configEnabledModuleKeys) {
+		return getTabDetails(generator, dependencies, configEnabledModuleKeys, null);
+	}
+
+	public List<ProjectTabDefinitionDTO> getTabDetails(String generator, List<String> dependencies, Set<String> configEnabledModuleKeys, String tabKey) {
 		String normalizedGenerator = resolveGenerator(Map.of(), generator).toLowerCase(Locale.ROOT);
 		Set<String> selectedDependencies = normalizeValues(dependencies);
 		Set<String> enabledModuleKeys = normalizeValues(configEnabledModuleKeys);
+		String normalizedTabKey = normalizeTabKey(tabKey);
 		return projectTabDefinitionService.getEnabledTabs(normalizedGenerator).stream()
+				.filter(tab -> normalizedTabKey.isBlank() || normalizedTabKey.equalsIgnoreCase(tab.getKey()))
 				.filter(tab -> shouldIncludeTab(tab, selectedDependencies, enabledModuleKeys))
 				.toList();
 	}

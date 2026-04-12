@@ -36,12 +36,12 @@ public class NodeRestExecutor implements StepExecutor {
 				
 				import { %2$sService } from '../services/%1$sService';
 				
-				export const list%1$s = (_request: Request, response: Response): void => {
-				  response.json(%2$sService.list());
+				export const list%1$s = async (_request: Request, response: Response): Promise<void> => {
+				  response.json(await %2$sService.list());
 				};
 				
-				export const get%1$s = (request: Request, response: Response): void => {
-				  const item = %2$sService.getById(request.params.id);
+				export const get%1$s = async (request: Request, response: Response): Promise<void> => {
+				  const item = await %2$sService.getById(request.params.id);
 				  if (!item) {
 				    response.status(404).json({ message: '%1$s not found' });
 				    return;
@@ -49,13 +49,13 @@ public class NodeRestExecutor implements StepExecutor {
 				  response.json(item);
 				};
 				
-				export const create%1$s = (request: Request, response: Response): void => {
-				  const item = %2$sService.create(request.body ?? {});
+				export const create%1$s = async (request: Request, response: Response): Promise<void> => {
+				  const item = await %2$sService.create(request.body ?? {});
 				  response.status(201).json(item);
 				};
 				
-				export const update%1$s = (request: Request, response: Response): void => {
-				  const item = %2$sService.update(request.params.id, request.body ?? {});
+				export const update%1$s = async (request: Request, response: Response): Promise<void> => {
+				  const item = await %2$sService.update(request.params.id, request.body ?? {});
 				  if (!item) {
 				    response.status(404).json({ message: '%1$s not found' });
 				    return;
@@ -63,8 +63,8 @@ public class NodeRestExecutor implements StepExecutor {
 				  response.json(item);
 				};
 				
-				export const delete%1$s = (request: Request, response: Response): void => {
-				  const deleted = %2$sService.delete(request.params.id);
+				export const delete%1$s = async (request: Request, response: Response): Promise<void> => {
+				  const deleted = await %2$sService.delete(request.params.id);
 				  response.status(deleted ? 204 : 404).send();
 				};
 				""".formatted(name, camel);

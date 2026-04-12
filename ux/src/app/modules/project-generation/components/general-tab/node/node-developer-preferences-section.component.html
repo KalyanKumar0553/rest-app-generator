@@ -1,0 +1,60 @@
+<mat-expansion-panel>
+  <mat-expansion-panel-header>
+    <mat-panel-title>Developer Preferences</mat-panel-title>
+  </mat-expansion-panel-header>
+
+  <div class="panel-content">
+    <div class="form-row">
+      <div class="appl-format-row">
+        <label class="field-label">Config format</label>
+        <button type="button" mat-stroked-button class="profile-add-btn" (click)="addProfile.emit()">
+          <mat-icon>add</mat-icon>
+          Add profile
+        </button>
+      </div>
+      <div class="appl-format-controls">
+        <mat-radio-group [(ngModel)]="developerPreferences.applFormat" class="radio-group-horizontal">
+          <mat-radio-button value="yaml">Yaml</mat-radio-button>
+          <mat-radio-button value="properties">Properties</mat-radio-button>
+        </mat-radio-group>
+      </div>
+    </div>
+
+    <div class="form-row" *ngIf="developerPreferences.profiles.length > 0">
+      <label class="field-label">Profiles</label>
+      <div class="profile-tags">
+        <div class="profile-tag" *ngFor="let profile of developerPreferences.profiles">
+          <span>{{ profile }}</span>
+          <button type="button" class="profile-tag-remove" (click)="removeProfile.emit(profile)" aria-label="Remove profile">
+            <mat-icon>close</mat-icon>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-row">
+      <mat-form-field appearance="fill" class="full-width">
+        <mat-label>ORM</mat-label>
+        <mat-select [(ngModel)]="developerPreferences.orm">
+          <mat-option *ngFor="let option of ormOptions" [value]="option.value">{{ option.label }}</mat-option>
+        </mat-select>
+      </mat-form-field>
+    </div>
+
+    <div class="form-row">
+      <mat-checkbox [checked]="developerPreferences.configureApi" (change)="configureApiChange.emit($event)">
+        Enable {{ apiFrameworkLabel }} API configuration
+        <mat-icon class="inline-icon" [matTooltip]="'Generate route, controller, and DTO configuration for the ' + runtimeLabel + ' project'"
+          (mousedown)="onHelpIconInteraction($event)" (click)="onHelpIconInteraction($event)">info</mat-icon>
+      </mat-checkbox>
+    </div>
+
+    <div class="form-row">
+      <mat-checkbox [(ngModel)]="developerPreferences.useDockerCompose">
+        Include Docker support
+        <mat-icon class="inline-icon" [matTooltip]="'Generate Docker files for the ' + runtimeLabel + ' project'"
+          (mousedown)="onHelpIconInteraction($event)" (click)="onHelpIconInteraction($event)">info</mat-icon>
+      </mat-checkbox>
+    </div>
+  </div>
+</mat-expansion-panel>

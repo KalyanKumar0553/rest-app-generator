@@ -21,7 +21,8 @@ import org.springframework.transaction.PlatformTransactionManager;
 		basePackages = {
 				"com.src.main.repository",
 				"com.src.main.auth.repository",
-				"com.src.main.subscription.repository"
+				"com.src.main.subscription.repository",
+				"com.src.main.cdn.repository"
 		},
 		entityManagerFactoryRef = "dbEntityManager",
 		transactionManagerRef = "dbTransactionManager"
@@ -46,7 +47,8 @@ public class DBConfig {
 		em.setPackagesToScan(
 				"com.src.main.model",
 				"com.src.main.auth.model",
-				"com.src.main.subscription.entity");
+				"com.src.main.subscription.entity",
+				"com.src.main.cdn.model");
 		final HibernateJpaVendorAdapter vendorAdapter = new HibernateJpaVendorAdapter();
 		em.setJpaVendorAdapter(vendorAdapter);
 		final HashMap<String, Object> properties = new HashMap<String, Object>();

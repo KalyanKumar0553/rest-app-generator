@@ -46,12 +46,13 @@ final class NodeGenerationSupport {
 		String version = valueOrDefault(app.get(ProjectMetaDataConstants.VERSION), "1.0.0");
 		int port = parsePort(node.get("port"), 3000);
 		String packageManager = normalizePackageManager(node.get("packageManager"));
+		String orm = normalizeOrm(firstNonNull(node.get("orm"), yaml != null ? yaml.get("orm") : null));
 		boolean dockerEnabled = parseBoolean(firstNonNull(node.get("docker"), yaml != null ? yaml.get("useDockerCompose") : null), false);
 
 		List<NodeEnumDefinition> enums = extractEnums(yaml);
 		List<NodeDtoDefinition> dtos = extractDtos(yaml);
 		List<NodeModelDefinition> models = extractModels(yaml);
-		return new NodeProjectContext(root, appName, artifactId, description, version, port, packageManager, dockerEnabled, enums, dtos, models);
+		return new NodeProjectContext(root, appName, artifactId, description, version, port, packageManager, orm, dockerEnabled, enums, dtos, models);
 	}
 
 	@SuppressWarnings("unchecked")
@@ -244,6 +245,11 @@ final class NodeGenerationSupport {
 	private static String normalizePackageManager(Object raw) {
 		String packageManager = valueOrDefault(raw, "npm").trim().toLowerCase(Locale.ROOT);
 		return Set.of("npm", "pnpm", "yarn").contains(packageManager) ? packageManager : "npm";
+	}
+
+	static String normalizeOrm(Object raw) {
+		String orm = valueOrDefault(raw, "prisma").trim().toLowerCase(Locale.ROOT);
+		return "sequelize".equals(orm) ? "sequelize" : "prisma";
 	}
 
 	@SuppressWarnings("unchecked")

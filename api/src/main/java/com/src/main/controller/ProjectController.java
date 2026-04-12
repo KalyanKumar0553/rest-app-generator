@@ -123,8 +123,11 @@ public class ProjectController {
 	}
 
 	@GetMapping("/tab-details")
-	public List<ProjectTabDefinitionDTO> getTabDetails(@RequestParam(value = "generator", required = false) String generator, @RequestParam(value = "dependency", required = false) List<String> dependencies) {
-		return service.getTabDetails(generator, dependencies);
+	public List<ProjectTabDefinitionDTO> getTabDetails(
+			@RequestParam(value = "generator", required = false) String generator,
+			@RequestParam(value = "dependency", required = false) List<String> dependencies,
+			@RequestParam(value = "tabKey", required = false) String tabKey) {
+		return service.getTabDetails(generator, dependencies, tabKey);
 	}
 
 	@GetMapping("/{projectId}/contributors")
@@ -138,7 +141,7 @@ public class ProjectController {
 	}
 
 	@PatchMapping("/{projectId}/contributors/{contributorId}/permissions")
-	public List<ProjectContributorDTO> updateContributorPermissions(@PathVariable("projectId") UUID projectId, @PathVariable("contributorId") UUID contributorId, @RequestBody ProjectContributorPermissionUpdateDTO request, Principal principal) {
+	public List<ProjectContributorDTO> updateContributorPermissions(@PathVariable("projectId") UUID projectId, @PathVariable("contributorId") UUID contributorId, @jakarta.validation.Valid @RequestBody ProjectContributorPermissionUpdateDTO request, Principal principal) {
 		return service.updateContributorPermissions(projectId, contributorId, currentUserId(principal), request);
 	}
 
@@ -168,7 +171,7 @@ public class ProjectController {
 	public ResponseEntity<Void> updateSpec(@PathVariable("projectId") UUID projectId, @RequestBody String yaml, Principal principal) {
 		String userId = currentUserId(principal);
 		orchestrationService.updateSpec(projectId, userId, yaml);
-		return ResponseEntity.ok().build();
+		return ResponseEntity.noContent().build();
 	}
 
 	@PutMapping(value = "/{projectId}/draft", consumes = MediaType.APPLICATION_JSON_VALUE)

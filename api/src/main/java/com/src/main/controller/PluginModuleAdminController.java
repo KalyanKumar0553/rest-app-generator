@@ -4,6 +4,7 @@ import java.security.Principal;
 import java.util.List;
 import java.util.UUID;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -22,6 +23,7 @@ import com.src.main.dto.PluginModuleSaveRequestDTO;
 import com.src.main.dto.PluginModuleVersionSaveRequestDTO;
 import com.src.main.service.PluginModuleService;
 import com.src.main.service.ProjectUserIdentityService;
+import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/v1/admin/plugin-modules")
@@ -46,18 +48,18 @@ public class PluginModuleAdminController {
 	@PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
 	@PreAuthorize("hasAuthority('plugin.module.manage')")
 	public ResponseEntity<PluginModuleResponseDTO> create(
-			@ModelAttribute PluginModuleSaveRequestDTO module,
-			@ModelAttribute PluginModuleVersionSaveRequestDTO version,
+			@Valid @ModelAttribute PluginModuleSaveRequestDTO module,
+			@Valid @ModelAttribute PluginModuleVersionSaveRequestDTO version,
 			@RequestParam("artifact") MultipartFile artifact,
 			Principal principal) {
-		return ResponseEntity.ok(pluginModuleService.createModule(module, version, artifact, currentUserId(principal)));
+		return ResponseEntity.status(HttpStatus.CREATED).body(pluginModuleService.createModule(module, version, artifact, currentUserId(principal)));
 	}
 
 	@PutMapping("/{moduleId}")
 	@PreAuthorize("hasAuthority('plugin.module.manage')")
 	public ResponseEntity<PluginModuleResponseDTO> update(
 			@PathVariable UUID moduleId,
-			@ModelAttribute PluginModuleSaveRequestDTO request) {
+			@Valid @ModelAttribute PluginModuleSaveRequestDTO request) {
 		return ResponseEntity.ok(pluginModuleService.updateModule(moduleId, request));
 	}
 
@@ -65,10 +67,10 @@ public class PluginModuleAdminController {
 	@PreAuthorize("hasAuthority('plugin.module.manage')")
 	public ResponseEntity<PluginModuleResponseDTO> uploadVersion(
 			@PathVariable UUID moduleId,
-			@ModelAttribute PluginModuleVersionSaveRequestDTO version,
+			@Valid @ModelAttribute PluginModuleVersionSaveRequestDTO version,
 			@RequestParam("artifact") MultipartFile artifact,
 			Principal principal) {
-		return ResponseEntity.ok(pluginModuleService.uploadVersion(moduleId, version, artifact, currentUserId(principal)));
+		return ResponseEntity.status(HttpStatus.CREATED).body(pluginModuleService.uploadVersion(moduleId, version, artifact, currentUserId(principal)));
 	}
 
 	@PostMapping("/{moduleId}/versions/{versionId}/publish")

@@ -15,6 +15,7 @@
 		<module>../rbac</module>
 		<module>../subscription</module>
 		<module>../auth</module>
+		<module>../azure-cdn-upload</module>
 		<module>../state-machine</module>
 		<module>../swagger</module>
 		<module>..</module>
@@ -86,6 +87,11 @@
 			<dependency>
 				<groupId>com.src</groupId>
 				<artifactId>auth</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>com.src</groupId>
+				<artifactId>azure-cdn-upload</artifactId>
 				<version>${project.version}</version>
 			</dependency>
 			<dependency>

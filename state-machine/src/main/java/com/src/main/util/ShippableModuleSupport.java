@@ -31,6 +31,7 @@ public final class ShippableModuleSupport {
 	private static final String JJWT_VERSION = "0.11.5";
 	private static final String AZURE_EMAIL_VERSION = "1.0.0";
 	private static final String AZURE_COMMUNICATION_COMMON_VERSION = "1.2.0";
+	private static final String AZURE_STORAGE_BLOB_VERSION = "12.31.0";
 	private static final String TWILIO_VERSION = "10.3.0";
 
 	private static final Map<String, ModuleDefinition> MODULES = new LinkedHashMap<>();
@@ -148,6 +149,21 @@ public final class ShippableModuleSupport {
 				.nodeVariant(VariantDefinition.builder()
 						.nodePackageDependencies(List.of())
 						.usesNodePrisma(true)
+						.build())
+				.build());
+
+		register(ModuleDefinition.visible("azure-cdn-upload")
+				.javaVariant(VariantDefinition.builder()
+						.requires("common")
+						.externalDependencies(List.of(
+								dependency("org.springframework.boot", "spring-boot-starter"),
+								dependency("org.springframework.boot", "spring-boot-starter-web"),
+								dependency("org.springframework.boot", "spring-boot-starter-validation"),
+								dependency("org.springframework.boot", "spring-boot-starter-data-jpa"),
+								dependency("org.springframework.boot", "spring-boot-starter-security"),
+								dependency("com.azure", "azure-storage-blob", AZURE_STORAGE_BLOB_VERSION),
+								dependency("org.postgresql", "postgresql", null, "runtime", false)))
+						.includesFlywayMigrations(true)
 						.build())
 				.build());
 	}

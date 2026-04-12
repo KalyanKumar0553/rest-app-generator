@@ -12,6 +12,7 @@ record NodeProjectContext(
 		String version,
 		int port,
 		String packageManager,
+		String orm,
 		boolean dockerEnabled,
 		List<NodeEnumDefinition> enums,
 		List<NodeDtoDefinition> dtos,

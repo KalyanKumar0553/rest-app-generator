@@ -1,0 +1,12 @@
+from sqlalchemy import Boolean, Date, DateTime, Float, Integer, String
+from sqlalchemy.orm import Mapped, mapped_column
+
+from app.db import Base
+
+
+class {{modelName}}(Base):
+    __tablename__ = "{{tableName}}"
+{{#fields}}
+    {{name}}: Mapped[{{pythonType}}] = mapped_column({{sqlalchemyType}}{{#primaryKey}}, primary_key=True{{/primaryKey}}{{^primaryKey}}{{#optional}}, nullable=True{{/optional}}{{^optional}}, nullable=False{{/optional}}{{/primaryKey}})
+{{/fields}}
+

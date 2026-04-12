@@ -41,7 +41,7 @@ mvn -U -f parent/pom.xml -DskipTests \
   -pl com.src:common,com.src:communication,com.src:rbac,com.src:auth,com.src:state-machine,com.src:swagger \
   -am clean install
 
-ASSET_SOURCE_DIR="$ROOT_DIR/src/ux/src/assets"
+ASSET_SOURCE_DIR="$ROOT_DIR/ux/src/assets"
 ASSET_TARGET_ROOT="$ROOT_DIR/target/classes/static"
 rm -rf "$ASSET_TARGET_ROOT"
 while IFS= read -r asset_dir; do
@@ -53,6 +53,6 @@ while IFS= read -r asset_dir; do
   fi
 done < <(find "$ASSET_SOURCE_DIR" -type d | sort)
 
-mvn -f "$ROOT_DIR/pom.xml" -DskipTests clean process-resources compile spring-boot:run \
+mvn -f "$ROOT_DIR/pom.xml" -Dmaven.test.skip=true clean process-resources compile spring-boot:run \
   -Dspring-boot.run.jvmArguments='-Dspring.devtools.restart.enabled=false' \
   -Dspring-boot.run.arguments="--server.port=$APP_PORT"

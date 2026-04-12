@@ -3,6 +3,7 @@ package com.src.main.controller;
 import java.security.Principal;
 import java.util.List;
 import java.util.UUID;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -42,7 +43,7 @@ public class ArtifactAdminController {
 	@PostMapping
 	@PreAuthorize("hasAuthority(\'artifact.app.manage\')")
 	public ResponseEntity<ArtifactAppResponseDTO> createApp(@Valid @RequestBody ArtifactAppRequestDTO request, Principal principal) {
-		return ResponseEntity.ok(artifactAdminService.createApp(request, currentUserId(principal)));
+		return ResponseEntity.status(HttpStatus.CREATED).body(artifactAdminService.createApp(request, currentUserId(principal)));
 	}
 
 	@PutMapping("/{appId}")
@@ -60,7 +61,7 @@ public class ArtifactAdminController {
 	@PostMapping("/{appId}/versions")
 	@PreAuthorize("hasAuthority(\'artifact.app.manage\')")
 	public ResponseEntity<ArtifactAppVersionResponseDTO> createVersion(@PathVariable UUID appId, @RequestBody(required = false) ArtifactVersionCreateRequestDTO request, Principal principal) {
-		return ResponseEntity.ok(artifactAdminService.createVersion(appId, request == null ? null : request.getVersionCode(), currentUserId(principal)));
+		return ResponseEntity.status(HttpStatus.CREATED).body(artifactAdminService.createVersion(appId, request == null ? null : request.getVersionCode(), currentUserId(principal)));
 	}
 
 	@PostMapping("/{appId}/publish")

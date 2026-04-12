@@ -53,10 +53,15 @@ public class PythonGenerationExecutor implements StepExecutor {
 			}
 
 			Files.createDirectories(root.resolve("app"));
+			Files.createDirectories(root.resolve("app/models"));
 			Files.createDirectories(root.resolve("tests"));
 
 			Map<String, Object> model = new HashMap<>();
 			model.put("appName", appName);
+			String orm = resolveOrm(yaml);
+			model.put("orm", orm);
+			model.put("ormIsSqlalchemy", "sqlalchemy".equals(orm));
+			model.put("ormIsDjango", "django".equals(orm));
 			writeRendered(root.resolve("app/main.py"), PY_TEMPLATE_BASE + "main.py.mustache", model);
 			writeRendered(root.resolve("requirements.txt"), PY_TEMPLATE_BASE + "requirements.txt.mustache", model);
 			writeRendered(root.resolve("README.md"), PY_TEMPLATE_BASE + "README.md.mustache", model);
@@ -71,5 +76,36 @@ public class PythonGenerationExecutor implements StepExecutor {
 		Files.createDirectories(output.getParent());
 		String content = templateEngine.render(templatePath, model);
 		Files.writeString(output, content, UTF_8);
+	}
+
+	@SuppressWarnings("unchecked")
+	private String resolveOrm(Map<String, Object> yaml) {
+		if (yaml == null) {
+			return "sqlalchemy";
+		}
+		Object pythonRaw = yaml.get("python");
+		if (pythonRaw instanceof Map<?, ?> pythonMapRaw) {
+			Object orm = ((Map<String, Object>) pythonMapRaw).get("orm");
+			if (orm != null) {
+				return normalizeOrm(String.valueOf(orm));
+			}
+		}
+		Object runtimeRaw = yaml.get("runtime");
+		if (runtimeRaw instanceof Map<?, ?> runtimeMapRaw) {
+			Object pythonRuntimeRaw = ((Map<String, Object>) runtimeMapRaw).get("python");
+			if (pythonRuntimeRaw instanceof Map<?, ?> pythonRuntimeMapRaw) {
+				Object orm = ((Map<String, Object>) pythonRuntimeMapRaw).get("orm");
+				if (orm != null) {
+					return normalizeOrm(String.valueOf(orm));
+				}
+			}
+		}
+		Object orm = yaml.get("orm");
+		return orm == null ? "sqlalchemy" : normalizeOrm(String.valueOf(orm));
+	}
+
+	private String normalizeOrm(String raw) {
+		String normalized = raw == null ? "" : raw.trim().toLowerCase();
+		return "django".equals(normalized) ? "django" : "sqlalchemy";
 	}
 }

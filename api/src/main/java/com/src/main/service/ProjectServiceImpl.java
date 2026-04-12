@@ -69,7 +69,7 @@ public class ProjectServiceImpl implements ProjectService {
 	private static final String REQUEST_STATUS_ACCEPTED = "ACCEPTED";
 	private static final String REQUEST_STATUS_REJECTED = "REJECTED";
 	private static final String REQUEST_STATUS_ARCHIVED = "ARCHIVED";
-	private static final Set<String> SHIPPABLE_MODULE_KEYS = Set.of("rbac", "auth", "state-machine", "subscription");
+	private static final Set<String> SHIPPABLE_MODULE_KEYS = Set.of("rbac", "auth", "state-machine", "subscription", "azure-cdn-upload");
 	private final ProjectRepository repo;
 	private final ProjectRunRepository projectRunRepository;
 	private final ProjectCollaborationRequestRepository projectCollaborationRequestRepository;
@@ -86,50 +86,23 @@ public class ProjectServiceImpl implements ProjectService {
 	private final Validator validator;
 
 
-	static class Input {
-		@NotBlank
-		String yaml;
-
-		Input(String yaml) {
-			this.yaml = yaml;
-		}
-
-		public String getYaml() {
-			return yaml;
-		}
+	record Input(@NotBlank String yaml) {
 	}
 
-
-	private static final class ResolvedProjectDraft {
-		private final Map<String, Object> draftData;
-		private final Map<String, Object> spec;
-		private final String yamlText;
-		private final String artifact;
-		private final String groupId;
-		private final String version;
-		private final String buildTool;
-		private final String packaging;
-		private final String generator;
-		private final String name;
-		private final String description;
-		private final String springBootVersion;
-		private final String jdkVersion;
-
-		private ResolvedProjectDraft(Map<String, Object> draftData, Map<String, Object> spec, String yamlText, String artifact, String groupId, String version, String buildTool, String packaging, String generator, String name, String description, String springBootVersion, String jdkVersion) {
-			this.draftData = draftData;
-			this.spec = spec;
-			this.yamlText = yamlText;
-			this.artifact = artifact;
-			this.groupId = groupId;
-			this.version = version;
-			this.buildTool = buildTool;
-			this.packaging = packaging;
-			this.generator = generator;
-			this.name = name;
-			this.description = description;
-			this.springBootVersion = springBootVersion;
-			this.jdkVersion = jdkVersion;
-		}
+	private record ResolvedProjectDraft(
+			Map<String, Object> draftData,
+			Map<String, Object> spec,
+			String yamlText,
+			String artifact,
+			String groupId,
+			String version,
+			String buildTool,
+			String packaging,
+			String generator,
+			String name,
+			String description,
+			String springBootVersion,
+			String jdkVersion) {
 	}
 
 
@@ -198,9 +171,10 @@ public class ProjectServiceImpl implements ProjectService {
 		} catch (GenericException e) {
 			throw e;
 		} catch (IllegalArgumentException | ConstraintViolationException e) {
-			throw new GenericException(HttpStatus.BAD_REQUEST, e.getMessage());
+			throw new GenericException(HttpStatus.BAD_REQUEST, e.getMessage(), e);
 		} catch (Exception e) {
-			throw new GenericException(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage());
+			log.error("Unexpected error creating project", e);
+			throw new GenericException(HttpStatus.INTERNAL_SERVER_ERROR, "Failed to create project.", e);
 		}
 	}
 
@@ -213,7 +187,7 @@ public class ProjectServiceImpl implements ProjectService {
 			}
 			ResolvedProjectDraft resolvedDraft = resolveProjectDraft(request, ProjectMetaDataConstants.DEFAULT_GRADLE_GENERATOR);
 			ProjectUserIdentityService.ResolvedProjectUser currentUser = projectUserIdentityService.resolve(ownerId);
-			projectNameValidationService.ensureUniqueProjectName(resolvedDraft.name, currentUser, null);
+			projectNameValidationService.ensureUniqueProjectName(resolvedDraft.name(), currentUser, null);
 			ProjectEntity p = new ProjectEntity();
 			p.setId(UUID.randomUUID());
 			applyResolvedProjectDraft(p, resolvedDraft, request.getDraftVersion());
@@ -226,9 +200,10 @@ public class ProjectServiceImpl implements ProjectService {
 		} catch (GenericException e) {
 			throw e;
 		} catch (IllegalArgumentException | ConstraintViolationException e) {
-			throw new GenericException(HttpStatus.BAD_REQUEST, e.getMessage());
+			throw new GenericException(HttpStatus.BAD_REQUEST, e.getMessage(), e);
 		} catch (Exception e) {
-			throw new GenericException(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage());
+			log.error("Unexpected error creating project draft", e);
+			throw new GenericException(HttpStatus.INTERNAL_SERVER_ERROR, "Failed to create project draft.", e);
 		}
 	}
 
@@ -241,7 +216,7 @@ public class ProjectServiceImpl implements ProjectService {
 		ProjectUserIdentityService.ResolvedProjectUser currentUser = projectUserIdentityService.resolve(ownerId);
 		ProjectEntity project = getProjectForDraftUpdate(projectId, currentUser, true);
 		ResolvedProjectDraft resolvedDraft = resolveProjectDraft(request, project.getGenerator());
-		String updatedProjectName = resolvedDraft.name;
+		String updatedProjectName = resolvedDraft.name();
 		String currentProjectName = project.getName() == null ? "" : project.getName().trim();
 		String normalizedUpdatedProjectName = updatedProjectName == null ? "" : updatedProjectName.trim();
 		if (!currentProjectName.equalsIgnoreCase(normalizedUpdatedProjectName)) {
@@ -330,18 +305,18 @@ public class ProjectServiceImpl implements ProjectService {
 	}
 
 	private void applyResolvedProjectDraft(ProjectEntity project, ResolvedProjectDraft resolvedDraft, Integer draftVersion) {
-		project.setArtifact(resolvedDraft.artifact);
-		project.setGroupId(resolvedDraft.groupId);
-		project.setVersion(resolvedDraft.version);
-		project.setBuildTool(resolvedDraft.buildTool);
-		project.setPackaging(resolvedDraft.packaging);
-		project.setGenerator(resolvedDraft.generator);
-		project.setName(resolvedDraft.name);
-		project.setDescription(resolvedDraft.description);
-		project.setSpringBootVersion(resolvedDraft.springBootVersion);
-		project.setJdkVersion(resolvedDraft.jdkVersion);
-		project.setYaml(resolvedDraft.yamlText);
-		project.setDraftData(projectDraftService.serialize(resolvedDraft.draftData));
+		project.setArtifact(resolvedDraft.artifact());
+		project.setGroupId(resolvedDraft.groupId());
+		project.setVersion(resolvedDraft.version());
+		project.setBuildTool(resolvedDraft.buildTool());
+		project.setPackaging(resolvedDraft.packaging());
+		project.setGenerator(resolvedDraft.generator());
+		project.setName(resolvedDraft.name());
+		project.setDescription(resolvedDraft.description());
+		project.setSpringBootVersion(resolvedDraft.springBootVersion());
+		project.setJdkVersion(resolvedDraft.jdkVersion());
+		project.setYaml(resolvedDraft.yamlText());
+		project.setDraftData(projectDraftService.serialize(resolvedDraft.draftData()));
 		project.setDraftVersion(draftVersion);
 	}
 
@@ -436,8 +411,23 @@ public class ProjectServiceImpl implements ProjectService {
 			}
 		}
 		Map<String, Object> draftData = projectDraftService.deserialize(project.getDraftData());
-		List<ProjectTabDefinitionDTO> tabDetails = projectDraftService.getTabDetails(projectDraftService.resolveGenerator(draftData, project.getGenerator()), projectDraftService.resolveSelectedDependencies(draftData), resolveConfigEnabledShippableModuleKeys());
-		return new ProjectDetailsDTO(project.getId().toString(), project.getId(), project.getName(), project.getDescription(), projectDraftService.resolveGenerator(draftData, project.getGenerator()), project.getArtifact(), null, null, project.getDraftVersion(), tabDetails, project.getOwnerId(), !isOwner && !canManageAllContributors, canManageContributors, inviteToken, toContributorDtos(project.getId()), canManageContributors ? toCollaborationRequestDtos(project.getId()) : Collections.emptyList(), latestRun == null ? null : latestRun.getId(), latestRun == null || latestRun.getStatus() == null ? null : latestRun.getStatus().name(), latestRun == null ? null : latestRun.getRunNumber(), latestRunWithZip != null, encodeZipBase64(latestRunWithZip), buildZipFileName(project), project.getCreatedAt(), project.getUpdatedAt());
+		String generator = projectDraftService.resolveGenerator(draftData, project.getGenerator());
+		List<ProjectTabDefinitionDTO> tabDetails = projectDraftService.getTabDetails(
+				generator, projectDraftService.resolveSelectedDependencies(draftData), resolveConfigEnabledShippableModuleKeys());
+		boolean isContributorAccess = !isOwner && !canManageAllContributors;
+		List<ProjectCollaborationRequestDTO> collaborationRequests = canManageContributors
+				? toCollaborationRequestDtos(project.getId()) : Collections.emptyList();
+		UUID latestRunId = latestRun == null ? null : latestRun.getId();
+		String latestRunStatus = latestRun == null || latestRun.getStatus() == null ? null : latestRun.getStatus().name();
+		Integer latestRunNumber = latestRun == null ? null : latestRun.getRunNumber();
+		return new ProjectDetailsDTO(
+				project.getId().toString(), project.getId(), project.getName(), project.getDescription(),
+				generator, project.getArtifact(), null, null, project.getDraftVersion(), tabDetails,
+				project.getOwnerId(), isContributorAccess, canManageContributors, inviteToken,
+				toContributorDtos(project.getId()), collaborationRequests,
+				latestRunId, latestRunStatus, latestRunNumber,
+				latestRunWithZip != null, encodeZipBase64(latestRunWithZip), buildZipFileName(project),
+				project.getCreatedAt(), project.getUpdatedAt());
 	}
 
 	@Override
@@ -455,9 +445,21 @@ public class ProjectServiceImpl implements ProjectService {
 		return projectDraftService.getTabDetails(generator, dependencies, resolveConfigEnabledShippableModuleKeys());
 	}
 
+	@Override
+	public List<ProjectTabDefinitionDTO> getTabDetails(String generator, List<String> dependencies, String tabKey) {
+		return projectDraftService.getTabDetails(generator, dependencies, resolveConfigEnabledShippableModuleKeys(), tabKey);
+	}
+
 	private Set<String> resolveConfigEnabledShippableModuleKeys() {
 		List<com.src.main.model.PluginModuleEntity> modules = pluginModuleRepository.findAllByOrderByNameAsc();
-		return (modules == null ? List.<com.src.main.model.PluginModuleEntity>of() : modules).stream().filter(module -> module != null && module.isEnabled() && module.isEnableConfig()).map(module -> module.getCode() == null ? "" : module.getCode().trim().toLowerCase()).filter(SHIPPABLE_MODULE_KEYS::contains).collect(Collectors.toCollection(LinkedHashSet::new));
+		if (modules == null) {
+			return Set.of();
+		}
+		return modules.stream()
+				.filter(module -> module != null && module.isEnabled() && module.isEnableConfig())
+				.map(module -> module.getCode() == null ? "" : module.getCode().trim().toLowerCase())
+				.filter(SHIPPABLE_MODULE_KEYS::contains)
+				.collect(Collectors.toCollection(LinkedHashSet::new));
 	}
 
 	@Override
@@ -503,7 +505,7 @@ public class ProjectServiceImpl implements ProjectService {
 		ProjectDraftUpsertRequestDTO request = new ProjectDraftUpsertRequestDTO();
 		request.setDraftData(draftData);
 		ResolvedProjectDraft resolvedDraft = resolveProjectDraft(request, project.getGenerator());
-		String updatedProjectName = resolvedDraft.name;
+		String updatedProjectName = resolvedDraft.name();
 		String currentProjectName = project.getName() == null ? "" : project.getName().trim();
 		String normalizedUpdatedProjectName = updatedProjectName == null ? "" : updatedProjectName.trim();
 		if (!currentProjectName.equalsIgnoreCase(normalizedUpdatedProjectName)) {
@@ -697,7 +699,14 @@ public class ProjectServiceImpl implements ProjectService {
 	@Transactional(readOnly = true)
 	public List<ArchivedProjectCollaborationDTO> getArchivedCollaborations(String userId) {
 		ProjectUserIdentityService.ResolvedProjectUser currentUser = projectUserIdentityService.resolve(userId);
-		return projectContributorRepository.findByUserIdInAndDisabledTrueOrderByDisabledAtDesc(currentUser.keys()).stream().map(contributor -> new ArchivedProjectCollaborationDTO(contributor.getId(), contributor.getProject().getId(), contributor.getProject().getName(), contributor.getProject().getOwnerId(), contributor.getProject().getGenerator(), contributor.getProject().getInviteToken(), contributor.getDisabledAt())).collect(Collectors.toList());
+		return projectContributorRepository.findByUserIdInAndDisabledTrueOrderByDisabledAtDesc(currentUser.keys())
+				.stream()
+				.map(contributor -> new ArchivedProjectCollaborationDTO(
+						contributor.getId(), contributor.getProject().getId(),
+						contributor.getProject().getName(), contributor.getProject().getOwnerId(),
+						contributor.getProject().getGenerator(), contributor.getProject().getInviteToken(),
+						contributor.getDisabledAt()))
+				.collect(Collectors.toList());
 	}
 
 	@Override
@@ -992,12 +1001,29 @@ public class ProjectServiceImpl implements ProjectService {
 	}
 
 	private ProjectCollaborationRequestDTO toCollaborationRequestDto(ProjectCollaborationRequestEntity request) {
-		return new ProjectCollaborationRequestDTO(request.getId(), request.getRequesterId(), request.getStatus(), new ProjectContributorPermissionsDTO(request.isRequestedCanEditDraft(), request.isRequestedCanGenerate(), request.isRequestedCanManageCollaboration()), new ProjectContributorPermissionsDTO(request.isGrantedCanEditDraft(), request.isGrantedCanGenerate(), request.isGrantedCanManageCollaboration()), request.getReviewedBy(), request.getReviewedAt(), request.getCreatedAt(), request.getUpdatedAt());
+		ProjectContributorPermissionsDTO requestedPermissions = new ProjectContributorPermissionsDTO(
+				request.isRequestedCanEditDraft(), request.isRequestedCanGenerate(),
+				request.isRequestedCanManageCollaboration());
+		ProjectContributorPermissionsDTO grantedPermissions = new ProjectContributorPermissionsDTO(
+				request.isGrantedCanEditDraft(), request.isGrantedCanGenerate(),
+				request.isGrantedCanManageCollaboration());
+		return new ProjectCollaborationRequestDTO(
+				request.getId(), request.getRequesterId(), request.getStatus(),
+				requestedPermissions, grantedPermissions,
+				request.getReviewedBy(), request.getReviewedAt(),
+				request.getCreatedAt(), request.getUpdatedAt());
 	}
 
 	private List<ProjectContributorDTO> toContributorDtos(UUID projectId) {
 		List<ProjectContributorEntity> contributors = projectContributorRepository.findByProjectIdOrderByCreatedAtAsc(projectId);
-		return contributors.stream().filter(contributor -> !contributor.isDisabled()).map(contributor -> new ProjectContributorDTO(contributor.getId(), contributor.getUserId(), contributor.isCanEditDraft(), contributor.isCanGenerate(), contributor.isCanManageCollaboration(), contributor.isDisabled(), contributor.getDisabledAt(), contributor.getCreatedAt())).collect(Collectors.toList());
+		return contributors.stream()
+				.filter(contributor -> !contributor.isDisabled())
+				.map(contributor -> new ProjectContributorDTO(
+						contributor.getId(), contributor.getUserId(),
+						contributor.isCanEditDraft(), contributor.isCanGenerate(),
+						contributor.isCanManageCollaboration(), contributor.isDisabled(),
+						contributor.getDisabledAt(), contributor.getCreatedAt()))
+				.collect(Collectors.toList());
 	}
 
 	private void archivePendingRequests(UUID projectId, String requesterId) {
@@ -1013,7 +1039,11 @@ public class ProjectServiceImpl implements ProjectService {
 
 	private ProjectSummaryDTO toSummary(ProjectEntity project, ProjectUserIdentityService.ResolvedProjectUser currentUser) {
 		boolean contributorAccess = findContributorAccess(project.getId(), currentUser).isPresent();
-		return new ProjectSummaryDTO(project.getId().toString(), project.getArtifact(), project.getId(), project.getName(), project.getDescription(), project.getGenerator(), project.getCreatedAt(), project.getUpdatedAt(), project.getOwnerId(), contributorAccess);
+		return new ProjectSummaryDTO(
+				project.getId().toString(), project.getArtifact(), project.getId(),
+				project.getName(), project.getDescription(), project.getGenerator(),
+				project.getCreatedAt(), project.getUpdatedAt(),
+				project.getOwnerId(), contributorAccess);
 	}
 
 	public ProjectServiceImpl(final ProjectRepository repo, final ProjectRunRepository projectRunRepository, final ProjectCollaborationRequestRepository projectCollaborationRequestRepository, final ProjectContributorRepository projectContributorRepository, final ProjectDraftVersionRepository projectDraftVersionRepository, final PluginModuleRepository pluginModuleRepository, final ProjectUserIdentityService projectUserIdentityService, final ProjectYamlService projectYamlService, final ProjectDraftService projectDraftService, final ProjectDraftSpecMapperService projectDraftSpecMapperService, final ProjectNameValidationService projectNameValidationService, final ProjectCollaborationService projectCollaborationService, final RbacService rbacService, final Validator validator) {

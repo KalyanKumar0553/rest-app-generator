@@ -1,0 +1,17 @@
+import uuid
+
+from django.db import models
+
+
+class {{modelName}}(models.Model):
+{{#fields}}
+{{#primaryKey}}
+    {{name}} = {{djangoType}}
+{{/primaryKey}}
+{{^primaryKey}}
+    {{name}} = {{djangoType}}(null={{optional}}, blank={{optional}})
+{{/primaryKey}}
+{{/fields}}
+
+    class Meta:
+        db_table = "{{tableName}}"

@@ -52,6 +52,8 @@ public interface ProjectService {
 
 	List<ProjectTabDefinitionDTO> getTabDetails(String generator, List<String> dependencies);
 
+	List<ProjectTabDefinitionDTO> getTabDetails(String generator, List<String> dependencies, String tabKey);
+
 	List<ProjectContributorDTO> getContributors(UUID projectId, String userId);
 
 	List<ProjectContributorDTO> addContributor(UUID projectId, String ownerId, ProjectContributorUpsertRequestDTO request);

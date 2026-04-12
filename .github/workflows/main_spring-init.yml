@@ -32,7 +32,7 @@ jobs:
           distribution: 'microsoft'
 
       - name: Build with Maven
-        run: mvn -B -f parent/pom.xml clean install
+        run: mvn -B -f pom.xml clean install
 
       - name: Prepare app jar
         run: |
@@ -42,8 +42,8 @@ jobs:
 
       - name: Verify Flyway migrations in packaged jar
         run: |
-          jar tf target/app.jar | grep 'BOOT-INF/classes/rest-app-db/migration/V122__subscription_schema.sql'
-          jar tf target/app.jar | grep 'BOOT-INF/classes/rest-app-db/migration/V123__subscription_seed.sql'
+          jar tf target/app.jar | grep 'BOOT-INF/classes/rest-app-db/migration/'
+          jar tf target/app.jar | grep 'BOOT-INF/classes/rest-app-db/migration/V139__ai_labs_job_history.sql'
 
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v6
@@ -67,8 +67,8 @@ jobs:
       - name: Verify downloaded deploy artifact
         run: |
           ls -la
-          jar tf app.jar | grep 'BOOT-INF/classes/rest-app-db/migration/V122__subscription_schema.sql'
-          jar tf app.jar | grep 'BOOT-INF/classes/rest-app-db/migration/V123__subscription_seed.sql'
+          jar tf app.jar | grep 'BOOT-INF/classes/rest-app-db/migration/'
+          jar tf app.jar | grep 'BOOT-INF/classes/rest-app-db/migration/V139__ai_labs_job_history.sql'
       
       - name: Login to Azure
         uses: azure/login@v2

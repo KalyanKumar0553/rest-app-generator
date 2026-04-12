@@ -1,7 +1,9 @@
 package com.src.main.service;
 
+import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -12,6 +14,9 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.ai.chat.client.ChatClient;
@@ -38,6 +43,7 @@ import com.src.main.repository.AiLabsJobHistoryRepository;
 
 @Service
 public class AiLabsService {
+	private static final Logger log = LoggerFactory.getLogger(AiLabsService.class);
 	private static final String AI_LABS_FEATURE_KEY = "app.feature.ai-labs.enabled";
 	private static final Pattern YAML_FENCE_PATTERN = Pattern.compile("```(?:yaml|yml)?\\s*(.*?)```", Pattern.DOTALL | Pattern.CASE_INSENSITIVE);
 	private static final Pattern JSON_FENCE_PATTERN = Pattern.compile("```(?:json)?\\s*(.*?)```", Pattern.DOTALL | Pattern.CASE_INSENSITIVE);
@@ -46,6 +52,8 @@ public class AiLabsService {
 	private static final String STATUS_IN_PROGRESS = "IN_PROGRESS";
 	private static final String STATUS_COMPLETED = "COMPLETED";
 	private static final String STATUS_FAILED = "FAILED";
+	private static final Duration JOB_CACHE_TTL = Duration.ofMinutes(15);
+	private static final int JOB_CACHE_MAX_SIZE = 200;
 	private static final TypeReference<Map<String, Object>> MAP_TYPE = new TypeReference<>() {
 	};
 	private static final ResponseFormat AI_DRAFT_RESPONSE_FORMAT = ResponseFormat.builder().type(ResponseFormat.Type.JSON_OBJECT).build();
@@ -69,7 +77,11 @@ public class AiLabsService {
 		if (!configMetadataService.isPropertyEnabled(AI_LABS_FEATURE_KEY, false)) {
 			throw new GenericException(HttpStatus.BAD_REQUEST, "AI Labs is disabled.");
 		}
+		if (!openAiEnabled) {
+			throw new GenericException(HttpStatus.BAD_REQUEST, "AI Labs is disabled.");
+		}
 		aiLabsQuotaService.reserveUsage(ownerId);
+		evictStaleJobs();
 		UUID jobId = UUID.randomUUID();
 		JobState state = JobState.create(jobId, prompt, ownerId);
 		jobs.put(jobId, state);
@@ -104,6 +116,28 @@ public class AiLabsService {
 
 	public org.springframework.web.servlet.mvc.method.annotation.SseEmitter subscribe(UUID jobId, String requesterUserId) {
 		return eventStreamService.subscribe(jobId, getJob(jobId, requesterUserId));
+	}
+
+	private void evictStaleJobs() {
+		OffsetDateTime cutoff = OffsetDateTime.now().minus(JOB_CACHE_TTL);
+		Iterator<Map.Entry<UUID, JobState>> it = jobs.entrySet().iterator();
+		while (it.hasNext()) {
+			Map.Entry<UUID, JobState> entry = it.next();
+			JobState state = entry.getValue();
+			boolean terminal = STATUS_COMPLETED.equals(state.status()) || STATUS_FAILED.equals(state.status());
+			if (terminal && state.updatedAt().isBefore(cutoff)) {
+				it.remove();
+			}
+		}
+		if (jobs.size() > JOB_CACHE_MAX_SIZE) {
+			jobs.entrySet().stream()
+					.filter(e -> STATUS_COMPLETED.equals(e.getValue().status()) || STATUS_FAILED.equals(e.getValue().status()))
+					.sorted(Map.Entry.comparingByValue((a, b) -> a.updatedAt().compareTo(b.updatedAt())))
+					.limit(jobs.size() - JOB_CACHE_MAX_SIZE)
+					.map(Map.Entry::getKey)
+					.toList()
+					.forEach(jobs::remove);
+		}
 	}
 
 	private void runJobWithSecurityContext(JobState state, String ownerId, SecurityContext securityContext) {
@@ -147,6 +181,9 @@ public class AiLabsService {
 	}
 
 	private Map<String, Object> requestDraftFromOpenAi(JobState state) throws Exception {
+		if (chatClientBuilder == null) {
+			throw new GenericException(HttpStatus.BAD_REQUEST, "AI Labs is disabled.");
+		}
 		ChatClient chatClient = chatClientBuilder.defaultOptions(OpenAiChatOptions.builder().model(openAiModel).temperature(0.1).responseFormat(AI_DRAFT_RESPONSE_FORMAT).build()).build();
 		StringBuilder contentBuffer = new StringBuilder();
 		AtomicInteger chunkCounter = new AtomicInteger();
@@ -205,12 +242,14 @@ public class AiLabsService {
 		String trimmed = text.trim();
 		try {
 			return objectMapper.readValue(trimmed, MAP_TYPE);
-		} catch (Exception ignored) {
+		} catch (Exception directJsonEx) {
+			log.debug("Direct JSON parsing failed, attempting fenced extraction: {}", directJsonEx.getMessage());
 			Matcher jsonMatcher = JSON_FENCE_PATTERN.matcher(trimmed);
 			if (jsonMatcher.find()) {
 				try {
 					return objectMapper.readValue(jsonMatcher.group(1).trim(), MAP_TYPE);
-				} catch (Exception innerIgnored) {
+				} catch (Exception fencedJsonEx) {
+					log.debug("Fenced JSON parsing also failed: {}", fencedJsonEx.getMessage());
 				}
 			}
 		}
@@ -550,7 +589,7 @@ public class AiLabsService {
 		}
 	}
 
-	public AiLabsService(final AiLabsEventStreamService eventStreamService, final ProjectService projectService, final ProjectDraftSpecMapperService projectDraftSpecMapperService, final ProjectNameValidationService projectNameValidationService, final ProjectUserIdentityService projectUserIdentityService, final ConfigMetadataService configMetadataService, final AiLabsQuotaService aiLabsQuotaService, final AiLabsJobHistoryRepository aiLabsJobHistoryRepository, final ChatClient.Builder chatClientBuilder, final ObjectMapper objectMapper) {
+	public AiLabsService(final AiLabsEventStreamService eventStreamService, final ProjectService projectService, final ProjectDraftSpecMapperService projectDraftSpecMapperService, final ProjectNameValidationService projectNameValidationService, final ProjectUserIdentityService projectUserIdentityService, final ConfigMetadataService configMetadataService, final AiLabsQuotaService aiLabsQuotaService, final AiLabsJobHistoryRepository aiLabsJobHistoryRepository, final ObjectProvider<ChatClient.Builder> chatClientBuilderProvider, final ObjectMapper objectMapper) {
 		this.eventStreamService = eventStreamService;
 		this.projectService = projectService;
 		this.projectDraftSpecMapperService = projectDraftSpecMapperService;
@@ -559,7 +598,7 @@ public class AiLabsService {
 		this.configMetadataService = configMetadataService;
 		this.aiLabsQuotaService = aiLabsQuotaService;
 		this.aiLabsJobHistoryRepository = aiLabsJobHistoryRepository;
-		this.chatClientBuilder = chatClientBuilder;
+		this.chatClientBuilder = chatClientBuilderProvider.getIfAvailable();
 		this.objectMapper = objectMapper;
 	}
 }

@@ -5,4 +5,4 @@ app = FastAPI(title="{{appName}}")
 
 @app.get("/")
 def root():
-    return {"message": "{{appName}} running"}
+    return {"message": "{{appName}} running", "orm": "{{orm}}"}
