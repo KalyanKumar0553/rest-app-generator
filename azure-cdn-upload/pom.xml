@@ -5,9 +5,9 @@
 
 	<parent>
 		<groupId>com.src</groupId>
-		<artifactId>campscense-parent</artifactId>
+		<artifactId>rest-app-generator-parent</artifactId>
 		<version>1.0.3</version>
-		<relativePath>../../parent/pom.xml</relativePath>
+		<relativePath>../parent/pom.xml</relativePath>
 	</parent>
 
 	<artifactId>azure-cdn-upload</artifactId>
