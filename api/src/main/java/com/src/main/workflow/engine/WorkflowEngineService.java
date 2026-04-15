@@ -25,11 +25,26 @@ import com.src.main.service.ProjectEventStreamService;
 import com.src.main.sm.config.StepExecutor;
 import com.src.main.sm.executor.common.GenerationLanguage;
 
+/**
+ * Drives execution of a {@link WorkflowPlan}: resolves the next step, invokes
+ * the corresponding {@link StepExecutor} on its dedicated thread pool, applies
+ * retry policies, and streams lifecycle events back to subscribed clients.
+ */
 @Service
 public class WorkflowEngineService {
 
 	private static final Logger log = LoggerFactory.getLogger(WorkflowEngineService.class);
+
 	private static final long DEFAULT_TIMEOUT_MS = 300_000L;
+	private static final String ERROR_VARIABLE_KEY = "error";
+
+	// Stage lifecycle statuses streamed over {@link ProjectEventStreamService}.
+	private static final String STAGE_SKIPPED = "SKIPPED";
+	private static final String STAGE_IN_PROGRESS = "INPROGRESS";
+	private static final String STAGE_RETRYING = "RETRYING";
+	private static final String STAGE_DONE = "DONE";
+	private static final String STAGE_ERROR = "ERROR";
+	private static final String STAGE_EVENT = "stage";
 
 	private final WorkflowDefinitionService workflowDefinitionService;
 	private final WorkflowExecutorRegistry workflowExecutorRegistry;
@@ -64,7 +79,7 @@ public class WorkflowEngineService {
 			}
 			if (status == WorkflowExecutionStatus.FAILURE && nextStep == null) {
 				throw new GenericException(HttpStatus.INTERNAL_SERVER_ERROR,
-						String.valueOf(state.getVariables().getOrDefault("error", "Workflow execution failed.")));
+						String.valueOf(state.getVariables().getOrDefault(ERROR_VARIABLE_KEY, "Workflow execution failed.")));
 			}
 			currentStep = nextStep;
 		}
@@ -79,62 +94,82 @@ public class WorkflowEngineService {
 	private WorkflowExecutionStatus executeStep(WorkflowPlan plan, WorkflowStepEntity step, DefaultExtendedState state,
 			ProjectRunEntity run) {
 		if (!workflowConditionEvaluator.matches(step.getRunConditionJson(), state)) {
-			publishStage(plan, run, step, "SKIPPED", "Condition evaluated to false", 0);
+			publishStage(plan, run, step, STAGE_SKIPPED, "Condition evaluated to false", 0);
 			return WorkflowExecutionStatus.SKIP;
 		}
 		validateInputs(step, state);
-		int maxAttempts = step.isRetryEnabled() ? Math.max(1, step.getRetryMaxAttempts() == null ? 1 : step.getRetryMaxAttempts()) : 1;
-		long backoff = step.getRetryBackoffMs() == null ? 0L : Math.max(0L, step.getRetryBackoffMs());
-		double multiplier = step.getRetryBackoffMultiplier() == null ? 1.0d : Math.max(1.0d, step.getRetryBackoffMultiplier());
+		RetryPolicy retryPolicy = RetryPolicy.from(step);
 
-		for (int attempt = 1; attempt <= maxAttempts; attempt++) {
-			publishStage(plan, run, step, "INPROGRESS", null, attempt);
+		long currentBackoff = retryPolicy.initialBackoffMs();
+		for (int attempt = 1; attempt <= retryPolicy.maxAttempts(); attempt++) {
+			publishStage(plan, run, step, STAGE_IN_PROGRESS, null, attempt);
 			StepResult result = invoke(step, state);
+
 			if (result.isSuccess()) {
-				if (result.getDetails() != null) {
-					result.getDetails().forEach(state.getVariables()::put);
-				}
-				validateOutputs(step, result);
-				publishStage(plan, run, step, "DONE", result.getMessage(), attempt);
+				applyStepOutputs(step, state, result);
+				publishStage(plan, run, step, STAGE_DONE, result.getMessage(), attempt);
 				return WorkflowExecutionStatus.SUCCESS;
 			}
-			log.warn("Workflow step {} failed on attempt {} with code {}: {}", step.getStepCode(), attempt, result.getCode(), result.getMessage());
-			if (attempt < maxAttempts) {
-				publishStage(plan, run, step, "RETRYING", result.getMessage(), attempt);
-				sleep(backoff);
-				backoff = Math.round(backoff * multiplier);
+
+			log.warn("Workflow step {} failed on attempt {} with code {}: {}",
+					step.getStepCode(), attempt, result.getCode(), result.getMessage());
+
+			if (attempt < retryPolicy.maxAttempts()) {
+				publishStage(plan, run, step, STAGE_RETRYING, result.getMessage(), attempt);
+				sleep(currentBackoff);
+				currentBackoff = Math.round(currentBackoff * retryPolicy.multiplier());
 				continue;
 			}
-			state.getVariables().put("error", result.getMessage());
-			publishStage(plan, run, step, "ERROR", result.getMessage(), attempt);
+
+			state.getVariables().put(ERROR_VARIABLE_KEY, result.getMessage());
+			publishStage(plan, run, step, STAGE_ERROR, result.getMessage(), attempt);
 			return WorkflowExecutionStatus.FAILURE;
 		}
 		return WorkflowExecutionStatus.FAILURE;
 	}
 
+	private void applyStepOutputs(WorkflowStepEntity step, DefaultExtendedState state, StepResult result) {
+		if (result.getDetails() != null) {
+			result.getDetails().forEach(state.getVariables()::put);
+		}
+		validateOutputs(step, result);
+	}
+
 	private StepResult invoke(WorkflowStepEntity step, DefaultExtendedState state) {
 		StepExecutor executor = workflowExecutorRegistry.resolve(step.getExecutorKey());
-		long timeoutMs = step.getTimeoutMs() == null || step.getTimeoutMs() <= 0 ? DEFAULT_TIMEOUT_MS : step.getTimeoutMs();
+		long timeoutMs = resolveTimeoutMs(step);
 		try {
-			Future<StepResult> future = workflowExecutorPoolRegistry.submit(step.getPoolCode(), () -> executor.execute(state));
+			Future<StepResult> future = workflowExecutorPoolRegistry.submit(step.getPoolCode(),
+					() -> executor.execute(state));
 			return future.get(timeoutMs, TimeUnit.MILLISECONDS);
 		} catch (TimeoutException ex) {
+			log.warn("Workflow step {} timed out after {} ms", step.getStepCode(), timeoutMs);
 			return StepResult.error(step.getStepCode(), "Timed out after " + timeoutMs + " ms");
 		} catch (InterruptedException ex) {
 			Thread.currentThread().interrupt();
+			log.warn("Workflow step {} was interrupted", step.getStepCode(), ex);
 			return StepResult.error(step.getStepCode(), ex.getMessage());
 		} catch (ExecutionException ex) {
 			Throwable cause = ex.getCause() == null ? ex : ex.getCause();
+			log.warn("Workflow step {} threw {}: {}", step.getStepCode(), cause.getClass().getSimpleName(),
+					cause.getMessage(), cause);
 			return StepResult.error(step.getStepCode(), cause.getMessage());
 		} catch (Exception ex) {
+			log.warn("Workflow step {} failed unexpectedly", step.getStepCode(), ex);
 			return StepResult.error(step.getStepCode(), ex.getMessage());
 		}
 	}
 
+	private static long resolveTimeoutMs(WorkflowStepEntity step) {
+		Long configured = step.getTimeoutMs();
+		return (configured == null || configured <= 0) ? DEFAULT_TIMEOUT_MS : configured;
+	}
+
 	private void validateInputs(WorkflowStepEntity step, DefaultExtendedState state) {
 		List<String> requiredInputs = workflowJsonHelper.readStringList(step.getRequiredInputsJson());
+		Map<Object, Object> variables = state.getVariables();
 		for (String inputKey : requiredInputs) {
-			if (!state.getVariables().containsKey(inputKey) || state.getVariables().get(inputKey) == null) {
+			if (!variables.containsKey(inputKey) || variables.get(inputKey) == null) {
 				throw new GenericException(HttpStatus.INTERNAL_SERVER_ERROR,
 						"Missing required workflow input '" + inputKey + "' for step " + step.getStepCode());
 			}
@@ -155,13 +190,9 @@ public class WorkflowEngineService {
 		}
 	}
 
-	private WorkflowStepEntity resolveNextStep(WorkflowPlan plan, WorkflowStepEntity currentStep, WorkflowExecutionStatus status,
-			DefaultExtendedState state) {
-		WorkflowTransitionType transitionType = switch (status) {
-		case SUCCESS -> WorkflowTransitionType.SUCCESS;
-		case FAILURE -> WorkflowTransitionType.FAILURE;
-		case SKIP -> WorkflowTransitionType.SKIP;
-		};
+	private WorkflowStepEntity resolveNextStep(WorkflowPlan plan, WorkflowStepEntity currentStep,
+			WorkflowExecutionStatus status, DefaultExtendedState state) {
+		WorkflowTransitionType transitionType = toTransitionType(status);
 		for (WorkflowTransitionEntity transition : plan.transitionsFor(currentStep)) {
 			if (transition.getTransitionType() != transitionType) {
 				continue;
@@ -176,7 +207,16 @@ public class WorkflowEngineService {
 		return plan.nextOrderedStep(currentStep);
 	}
 
-	private void publishStage(WorkflowPlan plan, ProjectRunEntity run, WorkflowStepEntity step, String status, String message, int attempt) {
+	private static WorkflowTransitionType toTransitionType(WorkflowExecutionStatus status) {
+		return switch (status) {
+		case SUCCESS -> WorkflowTransitionType.SUCCESS;
+		case FAILURE -> WorkflowTransitionType.FAILURE;
+		case SKIP -> WorkflowTransitionType.SKIP;
+		};
+	}
+
+	private void publishStage(WorkflowPlan plan, ProjectRunEntity run, WorkflowStepEntity step, String status,
+			String message, int attempt) {
 		if (run == null || run.getProject() == null) {
 			return;
 		}
@@ -193,10 +233,10 @@ public class WorkflowEngineService {
 		payload.put("attempt", attempt);
 		payload.put("executorKey", step.getExecutorKey());
 		payload.put("timestamp", OffsetDateTime.now().toString());
-		projectEventStreamService.publish(run.getProject().getId(), "stage", payload);
+		projectEventStreamService.publish(run.getProject().getId(), STAGE_EVENT, payload);
 	}
 
-	private void sleep(long millis) {
+	private static void sleep(long millis) {
 		if (millis <= 0) {
 			return;
 		}
@@ -204,6 +244,25 @@ public class WorkflowEngineService {
 			Thread.sleep(millis);
 		} catch (InterruptedException ex) {
 			Thread.currentThread().interrupt();
+		}
+	}
+
+	/**
+	 * Value object encapsulating a step's retry configuration with safe defaults.
+	 */
+	private record RetryPolicy(int maxAttempts, long initialBackoffMs, double multiplier) {
+
+		static RetryPolicy from(WorkflowStepEntity step) {
+			int maxAttempts = 1;
+			if (step.isRetryEnabled()) {
+				Integer configured = step.getRetryMaxAttempts();
+				maxAttempts = Math.max(1, configured == null ? 1 : configured);
+			}
+			Long backoff = step.getRetryBackoffMs();
+			long initialBackoffMs = backoff == null ? 0L : Math.max(0L, backoff);
+			Double configuredMultiplier = step.getRetryBackoffMultiplier();
+			double multiplier = configuredMultiplier == null ? 1.0d : Math.max(1.0d, configuredMultiplier);
+			return new RetryPolicy(maxAttempts, initialBackoffMs, multiplier);
 		}
 	}
 }
