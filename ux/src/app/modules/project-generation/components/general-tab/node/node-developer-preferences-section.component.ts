@@ -33,16 +33,19 @@ export class NodeDeveloperPreferencesSectionComponent {
   @Input() apiFrameworkLabel = 'Express';
   @Input({ required: true }) developerPreferences!: any;
 
-  get ormOptions(): Array<{ value: string; label: string }> {
+  private static readonly PYTHON_ORM_OPTIONS: ReadonlyArray<{ value: string; label: string }> = [
+    { value: 'sqlalchemy', label: 'SQLAlchemy' },
+    { value: 'django', label: 'Django ORM' }
+  ];
+  private static readonly NODE_ORM_OPTIONS: ReadonlyArray<{ value: string; label: string }> = [
+    { value: 'prisma', label: 'Prisma' },
+    { value: 'sequelize', label: 'Sequelize' }
+  ];
+
+  get ormOptions(): ReadonlyArray<{ value: string; label: string }> {
     return this.runtimeLabel === 'Python'
-      ? [
-          { value: 'sqlalchemy', label: 'SQLAlchemy' },
-          { value: 'django', label: 'Django ORM' }
-        ]
-      : [
-          { value: 'prisma', label: 'Prisma' },
-          { value: 'sequelize', label: 'Sequelize' }
-        ];
+      ? NodeDeveloperPreferencesSectionComponent.PYTHON_ORM_OPTIONS
+      : NodeDeveloperPreferencesSectionComponent.NODE_ORM_OPTIONS;
   }
 
   @Output() addProfile = new EventEmitter<void>();
