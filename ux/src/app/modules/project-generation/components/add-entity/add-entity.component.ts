@@ -1,5 +1,6 @@
 import { Component, EventEmitter, Input, Output, OnChanges, SimpleChanges, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { stableArray, emptyCache } from '../../../../utils/stable-reference';
 import { FormsModule } from '@angular/forms';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
@@ -141,20 +142,25 @@ export class AddEntityComponent implements OnChanges {
 
   private readonly baseFieldTypes = ENTITY_FIELD_TYPE_OPTIONS;
 
+  private _fieldTypesCache = emptyCache<string[]>();
+  private _existingRestConfigNamesCache = emptyCache<string[]>();
   get fieldTypes(): string[] {
     const enums = Array.isArray(this.enumTypes)
       ? this.enumTypes.map(item => String(item ?? '').trim()).filter(Boolean)
       : [];
-    return Array.from(new Set([...this.baseFieldTypes, ...enums]));
+    return stableArray(Array.from(new Set([...this.baseFieldTypes, ...enums])), this._fieldTypesCache);
   }
 
   get existingRestConfigNames(): string[] {
     const editingEntityName = String(this.editEntity?.name ?? '').trim().toLowerCase();
-    return (Array.isArray(this.existingEntities) ? this.existingEntities : [])
-      .filter((entity) => Boolean(entity?.addRestEndpoints))
-      .filter((entity) => String(entity?.name ?? '').trim().toLowerCase() !== editingEntityName)
-      .map((entity) => String(entity?.restConfig?.resourceName ?? '').trim())
-      .filter(Boolean);
+    return stableArray(
+      (Array.isArray(this.existingEntities) ? this.existingEntities : [])
+        .filter((entity) => Boolean(entity?.addRestEndpoints))
+        .filter((entity) => String(entity?.name ?? '').trim().toLowerCase() !== editingEntityName)
+        .map((entity) => String(entity?.restConfig?.resourceName ?? '').trim())
+        .filter(Boolean),
+      this._existingRestConfigNamesCache
+    );
   }
 
   additionalConfigurationOptions: string[] = [

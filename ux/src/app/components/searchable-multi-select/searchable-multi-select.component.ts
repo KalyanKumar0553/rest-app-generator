@@ -1,5 +1,6 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { stableArray, emptyCache } from '../../utils/stable-reference';
 import { FormsModule } from '@angular/forms';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatSelectModule } from '@angular/material/select';
@@ -23,11 +24,14 @@ export class SearchableMultiSelectComponent {
   @Output() selectedValuesChange = new EventEmitter<string[]>();
 
   searchTerm = '';
+  private _selectedTagValuesCache = emptyCache<string[]>();
+  private _filteredOptionsCache = emptyCache<string[]>();
 
   get selectedTagValues(): string[] {
-    return (this.selectedValues ?? [])
-      .map((value) => String(value ?? '').trim())
-      .filter(Boolean);
+    return stableArray(
+      (this.selectedValues ?? []).map((value) => String(value ?? '').trim()).filter(Boolean),
+      this._selectedTagValuesCache
+    );
   }
 
   get filteredOptions(): string[] {
@@ -35,7 +39,7 @@ export class SearchableMultiSelectComponent {
     const selectedSet = new Set((this.selectedValues ?? []).filter(Boolean));
     const matching = this.options.filter(option => !term || option.toLowerCase().includes(term));
     const merged = [...selectedSet, ...matching];
-    return Array.from(new Set(merged));
+    return stableArray(Array.from(new Set(merged)), this._filteredOptionsCache);
   }
 
   onSelectionChange(values: string[]): void {

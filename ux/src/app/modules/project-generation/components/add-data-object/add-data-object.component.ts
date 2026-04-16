@@ -1,5 +1,6 @@
 import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { stableArray, emptyCache } from '../../../../utils/stable-reference';
 import { FormsModule } from '@angular/forms';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
@@ -130,6 +131,7 @@ export class AddDataObjectComponent implements OnChanges {
     'Builder'
   ];
 
+  private _fieldTypesCache = emptyCache<string[]>();
   get fieldTypes(): string[] {
     const enums = Array.isArray(this.enumTypes)
       ? this.enumTypes.map(item => String(item ?? '').trim()).filter(Boolean)
@@ -138,7 +140,7 @@ export class AddDataObjectComponent implements OnChanges {
       .map(item => String(item?.name ?? '').trim())
       .filter(Boolean);
     const listDtoNames = dtoNames.map((name) => `List<${name}>`);
-    return Array.from(new Set([...this.baseFieldTypes, ...enums, ...dtoNames, ...listDtoNames]));
+    return stableArray(Array.from(new Set([...this.baseFieldTypes, ...enums, ...dtoNames, ...listDtoNames])), this._fieldTypesCache);
   }
 
   get showClassMethodsSection(): boolean {

@@ -1,5 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { Component, Input, OnChanges, SimpleChanges, ViewChild } from '@angular/core';
+import { stableArray, emptyCache } from '../../../../../utils/stable-reference';
 import { FormsModule } from '@angular/forms';
 import { ErrorStateMatcher } from '@angular/material/core';
 import { MatExpansionModule } from '@angular/material/expansion';
@@ -84,9 +85,10 @@ export class RequestResponseConfigComponent implements OnChanges {
     return Array.from(new Set(fromConfiguredDtos));
   }
 
+  private _createRequestOptionsCache = emptyCache<string[]>();
   get createRequestOptions(): string[] {
     const mapped = this.mappedEntityName;
-    return Array.from(new Set([mapped, ...this.requestDtoOptions].filter(Boolean)));
+    return stableArray(Array.from(new Set([mapped, ...this.requestDtoOptions].filter(Boolean))), this._createRequestOptionsCache);
   }
 
   get listRequestOptions(): string[] {
@@ -119,25 +121,30 @@ export class RequestResponseConfigComponent implements OnChanges {
     return ['true', 'false'];
   }
 
+  private _selectedResponseOpsCache = emptyCache<Array<'create' | 'get' | 'list' | 'patch' | 'delete' | 'bulkInsert' | 'bulkUpdate' | 'bulkDelete'>>();
   get selectedResponseOperations(): Array<'create' | 'get' | 'list' | 'patch' | 'delete' | 'bulkInsert' | 'bulkUpdate' | 'bulkDelete'> {
-    return this.responseOperationOrder.filter((key) => {
-      if (key === 'bulkInsert') {
-        return Boolean(this.draft?.methods?.bulkInsert);
-      }
-      if (key === 'bulkUpdate') {
-        return Boolean(this.draft?.methods?.bulkUpdate);
-      }
-      if (key === 'bulkDelete') {
-        return Boolean(this.draft?.methods?.bulkDelete);
-      }
-      return Boolean(this.draft?.methods?.[key]);
-    });
+    return stableArray(
+      this.responseOperationOrder.filter((key) => {
+        if (key === 'bulkInsert') {
+          return Boolean(this.draft?.methods?.bulkInsert);
+        }
+        if (key === 'bulkUpdate') {
+          return Boolean(this.draft?.methods?.bulkUpdate);
+        }
+        if (key === 'bulkDelete') {
+          return Boolean(this.draft?.methods?.bulkDelete);
+        }
+        return Boolean(this.draft?.methods?.[key]);
+      }),
+      this._selectedResponseOpsCache
+    );
   }
 
+  private _idTypeOptionsCache = emptyCache<string[]>();
   get idTypeOptions(): string[] {
     const options = Array.isArray(this.entityFieldTypeOptions) ? this.entityFieldTypeOptions : [];
     const cleaned = options.map((item) => String(item ?? '').trim()).filter(Boolean);
-    return cleaned.length ? Array.from(new Set(cleaned)) : ENTITY_FIELD_TYPE_OPTIONS;
+    return stableArray(cleaned.length ? Array.from(new Set(cleaned)) : ENTITY_FIELD_TYPE_OPTIONS, this._idTypeOptionsCache);
   }
 
   get shouldValidateRequiredFields(): boolean {

@@ -52,10 +52,17 @@ export class SearchableSelectComponent implements OnDestroy {
     this.destroy$.complete();
   }
 
+  private _filteredResultsCache = { ref: [] as SelectOption[], json: '' };
   get filteredResults(): SelectOption[] {
     const selectedIds = new Set(this.selectedItems.map((item) => item.id));
     const excludedIds = new Set(this.excludeIds);
-    return this.searchResults.filter((item) => !selectedIds.has(item.id) && !excludedIds.has(item.id));
+    const result = this.searchResults.filter((item) => !selectedIds.has(item.id) && !excludedIds.has(item.id));
+    const json = JSON.stringify(result);
+    if (json !== this._filteredResultsCache.json) {
+      this._filteredResultsCache.json = json;
+      this._filteredResultsCache.ref = result;
+    }
+    return this._filteredResultsCache.ref;
   }
 
   onSearchInput(value: string): void {

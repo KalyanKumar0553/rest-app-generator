@@ -1,5 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { Component, Input, OnChanges, ViewChild } from '@angular/core';
+import { stableArray, emptyCache } from '../../../../../utils/stable-reference';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCheckboxModule } from '@angular/material/checkbox';
@@ -65,8 +66,12 @@ export class DocumentationConfigComponent implements OnChanges {
     this.ensureDocumentationDefaults();
   }
 
+  private _selectedEndpointsCache = emptyCache<Array<{ key: EndpointKey; label: string }>>();
   get selectedEndpoints(): Array<{ key: EndpointKey; label: string; }> {
-    return this.endpointDefinitions.filter((endpoint) => Boolean(this.draft?.methods?.[endpoint.key]));
+    return stableArray(
+      this.endpointDefinitions.filter((endpoint) => Boolean(this.draft?.methods?.[endpoint.key])),
+      this._selectedEndpointsCache
+    );
   }
 
   getDescriptionTags(endpoint: EndpointKey): string[] {

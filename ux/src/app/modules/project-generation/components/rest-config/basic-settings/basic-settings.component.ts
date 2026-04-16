@@ -1,5 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { AfterViewInit, Component, EventEmitter, Input, OnChanges, Output, SimpleChanges, ViewChild } from '@angular/core';
+import { stableArray, emptyCache } from '../../../../../utils/stable-reference';
 import { FormsModule, NgModel } from '@angular/forms';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatExpansionModule } from '@angular/material/expansion';
@@ -68,8 +69,9 @@ export class BasicSettingsComponent implements OnChanges, AfterViewInit {
       .map((item) => String(item?.name ?? '').trim())
       .filter(Boolean);
 
-    return Array.from(new Set(names));
+    return stableArray(Array.from(new Set(names)), this._availableEntityNamesCache);
   }
+  private _availableEntityNamesCache = emptyCache<string[]>();
 
   ngOnChanges(changes: SimpleChanges): void {
     if (

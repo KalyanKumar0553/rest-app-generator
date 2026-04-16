@@ -1,5 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { AfterViewInit, Component, ElementRef, EventEmitter, HostListener, Input, OnChanges, OnDestroy, Output, QueryList, SimpleChanges, ViewChild, ViewChildren } from '@angular/core';
+import { stableArray, emptyCache } from '../../../../../utils/stable-reference';
 import { MatIconModule } from '@angular/material/icon';
 import { animate, style, transition, trigger } from '@angular/animations';
 import { MatBottomSheet, MatBottomSheetModule } from '@angular/material/bottom-sheet';
@@ -328,18 +329,19 @@ export class NodeRestConfigComponent implements OnChanges, AfterViewInit, OnDest
 
   constructor(private readonly bottomSheet: MatBottomSheet) {}
 
+  private _entityFieldTypeOptionsCache = emptyCache<string[]>();
   get entityFieldTypeOptions(): string[] {
     const configuredOptions = (Array.isArray(this.fieldTypeOptions) ? this.fieldTypeOptions : [])
       .map((item) => String(item ?? '').trim())
       .filter(Boolean);
     if (configuredOptions.length) {
-      return Array.from(new Set(configuredOptions));
+      return stableArray(Array.from(new Set(configuredOptions)), this._entityFieldTypeOptionsCache);
     }
     const mapped = (Array.isArray(this.entityFields) ? this.entityFields : [])
       .map((item) => typeof item === 'string' ? '' : String(item?.type ?? '').trim())
       .filter(Boolean);
     const unique = Array.from(new Set(mapped));
-    return unique.length ? unique : ENTITY_FIELD_TYPE_OPTIONS;
+    return stableArray(unique.length ? unique : ENTITY_FIELD_TYPE_OPTIONS, this._entityFieldTypeOptionsCache);
   }
 
   ngOnChanges(changes: SimpleChanges): void {

@@ -1,5 +1,6 @@
 import { ChangeDetectorRef, Component, OnInit, OnDestroy, ViewChild, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { stableArray, emptyCache, StableCache } from '../../../../utils/stable-reference';
 import { FormsModule } from '@angular/forms';
 import { Router, ActivatedRoute } from '@angular/router';
 import { Subject, Subscription, firstValueFrom, takeUntil, debounceTime, distinctUntilChanged, switchMap, of, catchError } from 'rxjs';
@@ -316,6 +317,15 @@ export class NodeProjectGenerationDashboardComponent implements OnInit, OnDestro
   deploymentOptions = DEPLOYMENT_OPTIONS;
   private visibleNavItemsCache: NavItem[] = [];
   private visibleNavItemsCacheKey = '';
+  private _existingContribIdsCache = emptyCache<string[]>();
+  private _selectedShippableModulesCache = emptyCache<string[]>();
+  private _controllerRestSpecRowsCache = emptyCache<ControllerRestSpecRow[]>();
+  private _controllersEditModeExistingNamesCache = emptyCache<string[]>();
+  private _filteredDbOptionsCache = emptyCache<DatabaseOption[]>();
+  private _controllersEntityFieldsCache = emptyCache<Array<{ name: string; type?: string }>>();
+  private _controllersFieldTypeOptionsCache = emptyCache<string[]>();
+  private _controllersEnumTypesCache = emptyCache<string[]>();
+  private _configuredEntityRestSpecNamesCache = emptyCache<string[]>();
   readonly runtimeLanguage: 'node' | 'python';
   readonly runtimeLabel: string;
   readonly apiFrameworkLabel: string;
@@ -429,7 +439,7 @@ export class NodeProjectGenerationDashboardComponent implements OnInit, OnDestro
     this.isLoggedIn = this.authService.isLoggedIn();
     const initialProjectId = trimmed(this.route.snapshot.queryParamMap.get('projectId'));
     if (!initialProjectId) {
-      this.loadTabDefinitions(this.projectSettings.language, this.selectedDependencies, 'general');
+      this.loadTabDefinitions(this.projectSettings.language, this.selectedDependencies);
     }
 
     this.route.queryParams
@@ -856,7 +866,7 @@ export class NodeProjectGenerationDashboardComponent implements OnInit, OnDestro
   }
 
   get existingContributorIds(): string[] {
-    return this.projectContributors.map((c) => c.userId);
+    return stableArray(this.projectContributors.map((c) => c.userId), this._existingContribIdsCache);
   }
 
   async submitAddContributors(): Promise<void> {
@@ -2437,8 +2447,11 @@ export class NodeProjectGenerationDashboardComponent implements OnInit, OnDestro
   }
 
   get selectedShippableModules(): string[] {
-    return this.selectedDependencies.filter((dependency) =>
-      NodeProjectGenerationDashboardComponent.shippableModuleKeys.includes(dependency)
+    return stableArray(
+      this.selectedDependencies.filter((dependency) =>
+        NodeProjectGenerationDashboardComponent.shippableModuleKeys.includes(dependency)
+      ),
+      this._selectedShippableModulesCache
     );
   }
 
@@ -2841,7 +2854,10 @@ export class NodeProjectGenerationDashboardComponent implements OnInit, OnDestro
       }
     });
 
-    return Array.from(rowsByName.values()).sort((a, b) => a.name.localeCompare(b.name));
+    return stableArray(
+      Array.from(rowsByName.values()).sort((a, b) => a.name.localeCompare(b.name)),
+      this._controllerRestSpecRowsCache
+    );
   }
 
   get isControllersSpecEditMode(): boolean {
@@ -2857,12 +2873,14 @@ export class NodeProjectGenerationDashboardComponent implements OnInit, OnDestro
   }
 
   get controllersEditModeExistingNames(): string[] {
+    const rows = this.controllerRestSpecRows;
     if (!this.controllersEditingSpecKey) {
-      return this.controllerRestSpecRows.map((row) => row.name);
+      return stableArray(rows.map((row) => row.name), this._controllersEditModeExistingNamesCache);
     }
-    return this.controllerRestSpecRows
-      .filter((row) => row.key !== this.controllersEditingSpecKey)
-      .map((row) => row.name);
+    return stableArray(
+      rows.filter((row) => row.key !== this.controllersEditingSpecKey).map((row) => row.name),
+      this._controllersEditModeExistingNamesCache
+    );
   }
 
   editControllerRestSpec(row: ControllerRestSpecRow): void {
@@ -3093,7 +3111,7 @@ export class NodeProjectGenerationDashboardComponent implements OnInit, OnDestro
 
   get filteredDatabaseOptions(): DatabaseOption[] {
     const currentType = this.databaseSettings.dbType;
-    return this.databaseOptions.filter(option => option.type === currentType);
+    return stableArray(this.databaseOptions.filter(option => option.type === currentType), this._filteredDbOptionsCache);
   }
 
   private hasConfiguredEntities(): boolean {
@@ -3234,7 +3252,7 @@ export class NodeProjectGenerationDashboardComponent implements OnInit, OnDestro
       const type = String(field?.type ?? '').trim();
       uniqueByName.set(name, { name, type: type || undefined });
     });
-    return Array.from(uniqueByName.values());
+    return stableArray(Array.from(uniqueByName.values()), this._controllersEntityFieldsCache);
   }
 
   get controllersFieldTypeOptions(): string[] {
@@ -3245,7 +3263,7 @@ export class NodeProjectGenerationDashboardComponent implements OnInit, OnDestro
     const enums = (Array.isArray(this.enums) ? this.enums : [])
       .map((item: any) => String(item?.name ?? '').trim())
       .filter(Boolean);
-    return Array.from(new Set([...ENTITY_FIELD_TYPE_OPTIONS, ...types, ...enums]));
+    return stableArray(Array.from(new Set([...ENTITY_FIELD_TYPE_OPTIONS, ...types, ...enums])), this._controllersFieldTypeOptionsCache);
   }
 
   get controllersDtoObjects(): Array<{ name?: string; dtoType?: 'request' | 'response'; fields?: unknown[] }> {
@@ -3253,16 +3271,22 @@ export class NodeProjectGenerationDashboardComponent implements OnInit, OnDestro
   }
 
   get controllersEnumTypes(): string[] {
-    return (Array.isArray(this.enums) ? this.enums : [])
-      .map((item: any) => String(item?.name ?? '').trim())
-      .filter(Boolean);
+    return stableArray(
+      (Array.isArray(this.enums) ? this.enums : [])
+        .map((item: any) => String(item?.name ?? '').trim())
+        .filter(Boolean),
+      this._controllersEnumTypesCache
+    );
   }
 
   get configuredEntityRestSpecNames(): string[] {
-    return (Array.isArray(this.entities) ? this.entities : [])
-      .filter((entity: any) => Boolean(entity?.addRestEndpoints))
-      .map((entity: any) => String(entity?.restConfig?.resourceName ?? '').trim())
-      .filter(Boolean);
+    return stableArray(
+      (Array.isArray(this.entities) ? this.entities : [])
+        .filter((entity: any) => Boolean(entity?.addRestEndpoints))
+        .map((entity: any) => String(entity?.restConfig?.resourceName ?? '').trim())
+        .filter(Boolean),
+      this._configuredEntityRestSpecNamesCache
+    );
   }
 
   private validateProjectNaming(): boolean {

@@ -33,8 +33,14 @@ export class ConfirmationModalComponent implements OnInit {
     // Theme service is initialized and CSS variables are applied
   }
 
+  private _messageLinesCache: string[] = [];
+  private _messageLinesInput: string | string[] = '';
   get messageLines(): string[] {
-    return Array.isArray(this.message) ? this.message : [this.message];
+    if (this.message !== this._messageLinesInput) {
+      this._messageLinesInput = this.message;
+      this._messageLinesCache = Array.isArray(this.message) ? this.message : [this.message];
+    }
+    return this._messageLinesCache;
   }
 
   getButtonClass(button: ModalButton): string {

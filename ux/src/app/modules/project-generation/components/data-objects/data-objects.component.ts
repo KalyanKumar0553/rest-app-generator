@@ -1,5 +1,6 @@
 import { Component, ElementRef, EventEmitter, Input, OnChanges, OnInit, Output, QueryList, SimpleChanges, ViewChild, ViewChildren } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { stableArray, emptyCache } from '../../../../utils/stable-reference';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -105,8 +106,12 @@ export class DataObjectsComponent implements OnInit, OnChanges {
   @ViewChild(AddMapperComponent) addMapperComponent!: AddMapperComponent;
   @ViewChildren('enumConstantInput') enumConstantInputs!: QueryList<ElementRef<HTMLInputElement>>;
 
+  private _enumTypeNamesCache = emptyCache<string[]>();
   get enumTypeNames(): string[] {
-    return (this.enums ?? []).map(item => String(item?.name ?? '').trim()).filter(Boolean);
+    return stableArray(
+      (this.enums ?? []).map(item => String(item?.name ?? '').trim()).filter(Boolean),
+      this._enumTypeNamesCache
+    );
   }
 
   dataObjectsExpanded = true;

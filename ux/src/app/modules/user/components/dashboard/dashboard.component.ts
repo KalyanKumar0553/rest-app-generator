@@ -1,5 +1,6 @@
 import { Component, HostListener, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { stableArray, emptyCache } from '../../../../utils/stable-reference';
 import { NavigationEnd, Router, RouterOutlet } from '@angular/router';
 import { filter } from 'rxjs/operators';
 import { MatIconModule } from '@angular/material/icon';
@@ -40,12 +41,13 @@ export class DashboardComponent implements OnInit {
     { icon: 'settings', label: 'Settings', value: 'settings' }
   ];
 
+  private _navItemsCache = emptyCache<NavItem[]>();
   get navItems(): NavItem[] {
     const items = this.baseNavItems.filter((item) => item.value !== 'ai-labs' || this.isAiLabsEnabled);
     if (this.userPermissions.includes('artifact.app.read')) {
       items.push({ icon: 'inventory_2', label: 'Artifacts', value: 'artifacts' });
     }
-    return items;
+    return stableArray(items, this._navItemsCache);
   }
 
   readonly logoutModalConfig = {

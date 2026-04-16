@@ -1,4 +1,5 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
+import { stableArray, emptyCache } from './utils/stable-reference';
 import { RouterOutlet, Router, NavigationEnd, ActivatedRouteSnapshot } from '@angular/router';
 import { IonApp } from '@ionic/angular/standalone';
 import { HeaderComponent } from './components/header/header.component';
@@ -129,14 +130,21 @@ export class AppComponent implements OnInit, OnDestroy {
     return this.resolveRequestOverlayForRoute(primaryChild, nextInheritedEnabled);
   }
 
+  private _sessionWarningCache = emptyCache<string[]>();
+  private _sessionWarningCachedSeconds = -1;
   get sessionWarningMessages(): string[] {
-    const minutes = Math.floor(this.sessionCountdownSeconds / 60);
-    const seconds = this.sessionCountdownSeconds % 60;
-    const formattedSeconds = seconds.toString().padStart(2, '0');
-    return [
-      `You have been idle for 5 minutes. Your session will expire in ${minutes}:${formattedSeconds}.`,
-      'Extend the session to continue working from the same place.'
-    ];
+    if (this.sessionCountdownSeconds !== this._sessionWarningCachedSeconds) {
+      this._sessionWarningCachedSeconds = this.sessionCountdownSeconds;
+      const minutes = Math.floor(this.sessionCountdownSeconds / 60);
+      const seconds = this.sessionCountdownSeconds % 60;
+      const formattedSeconds = seconds.toString().padStart(2, '0');
+      this._sessionWarningCache.ref = [
+        `You have been idle for 5 minutes. Your session will expire in ${minutes}:${formattedSeconds}.`,
+        'Extend the session to continue working from the same place.'
+      ];
+      this._sessionWarningCache.json = JSON.stringify(this._sessionWarningCache.ref);
+    }
+    return this._sessionWarningCache.ref;
   }
 
   extendSession(): void {

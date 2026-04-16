@@ -1,5 +1,6 @@
 import { Component, Input, Output, EventEmitter, ViewChild, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { stableArray, emptyCache } from '../../../../utils/stable-reference';
 import { ModalComponent } from '../../../../components/modal/modal.component';
 import { AddEntityComponent } from '../add-entity/add-entity.component';
 import { AddRelationComponent, Relation } from '../add-relation/add-relation.component';
@@ -138,8 +139,12 @@ export class EntitiesComponent implements OnInit {
     private router: Router
   ) {}
 
+  private _enumTypeNamesCache = emptyCache<string[]>();
   get enumTypeNames(): string[] {
-    return (this.enums ?? []).map(item => String(item?.name ?? '').trim()).filter(Boolean);
+    return stableArray(
+      (this.enums ?? []).map(item => String(item?.name ?? '').trim()).filter(Boolean),
+      this._enumTypeNamesCache
+    );
   }
 
   openDocumentation(event: Event): void {
