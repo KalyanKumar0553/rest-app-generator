@@ -2,14 +2,10 @@ package com.src.main.communication.service.sender;
 
 import java.util.Optional;
 
-import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Component;
 
 import com.src.main.communication.model.CommunicationChannelType;
 
-@Component
-@ConditionalOnMissingBean(CommunicationConfigProvider.class)
 public class DefaultCommunicationConfigProvider implements CommunicationConfigProvider {
 	private final ChannelConfig emailConfig;
 	private final ChannelConfig smsConfig;
