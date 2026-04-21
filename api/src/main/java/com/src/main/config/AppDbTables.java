@@ -17,6 +17,7 @@ public final class AppDbTables {
 	public static final String UNIQUE_VISITS = "unique_visits";
 	public static final String CONFIG_PROPERTIES = "config_property";
 	public static final String CONFIG_PROPERTY_VALUES = "config_property_values";
+	public static final String COMMUNICATION_CONFIGS = "communication_config";
 	public static final String WORKFLOW_DEFINITIONS = "workflow_definitions";
 	public static final String WORKFLOW_STEPS = "workflow_steps";
 	public static final String WORKFLOW_TRANSITIONS = "workflow_transitions";

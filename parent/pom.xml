@@ -10,14 +10,14 @@
 	<name>rest-app-generator-parent</name>
 
 	<modules>
-		<module>../common</module>
-		<module>../communication</module>
-		<module>../rbac</module>
-		<module>../subscription</module>
-		<module>../auth</module>
-		<module>../azure-cdn-upload</module>
-		<module>../state-machine</module>
-		<module>../swagger</module>
+		<module>../modules/common</module>
+		<module>../modules/communication</module>
+		<module>../modules/payment</module>
+		<module>../modules/rbac</module>
+		<module>../modules/subscription</module>
+		<module>../modules/auth</module>
+		<module>../modules/state-machine</module>
+		<module>../modules/swagger</module>
 		<module>..</module>
 	</modules>
 
@@ -76,6 +76,11 @@
 			</dependency>
 			<dependency>
 				<groupId>com.src</groupId>
+				<artifactId>payment</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>com.src</groupId>
 				<artifactId>rbac</artifactId>
 				<version>${project.version}</version>
 			</dependency>
@@ -87,11 +92,6 @@
 			<dependency>
 				<groupId>com.src</groupId>
 				<artifactId>auth</artifactId>
-				<version>${project.version}</version>
-			</dependency>
-			<dependency>
-				<groupId>com.src</groupId>
-				<artifactId>azure-cdn-upload</artifactId>
 				<version>${project.version}</version>
 			</dependency>
 			<dependency>

@@ -11,5 +11,7 @@ export const environment = {
   apiUrl: `${getBaseUrl()}/api`,
   baseUrl: getBaseUrl(),
   authBaseUrl: getBaseUrl(),
-  useMockApi: false
+  // Cloudflare Turnstile — "always passes" test key for development
+  // Replace with your real site key before going to production
+  turnstileSiteKey: '1x00000000000000000000AA'
 };

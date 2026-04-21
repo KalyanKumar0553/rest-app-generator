@@ -5,7 +5,6 @@ import { tap, catchError, map, finalize, shareReplay } from 'rxjs/operators';
 import { Router } from '@angular/router';
 import { API_CONFIG, API_ENDPOINTS, STORAGE_KEYS } from '../constants/api.constants';
 import { LocalStorageService } from './local-storage.service';
-import { MockApiService } from './mock-api.service';
 
 export interface CaptchaChallenge {
   captchaId: string;
@@ -86,8 +85,7 @@ export class AuthService {
   constructor(
     private http: HttpClient,
     private localStorageService: LocalStorageService,
-    private router: Router,
-    private mockApiService: MockApiService
+    private router: Router
   ) {
     const userData = this.localStorageService.getItem(STORAGE_KEYS.USER_DATA);
     this.currentUserSubject = new BehaviorSubject<UserData | null>(
@@ -110,27 +108,17 @@ export class AuthService {
 
   getCaptcha(): Observable<CaptchaChallenge> {
     const url = `${API_CONFIG.AUTH_BASE_URL}${API_ENDPOINTS.AUTH.CAPTCHA}`;
-    return this.mockApiService.get(url, '/assets/mock/captcha-response.json').pipe(
-      map((response: any) => response.data || response),
-      catchError(error => this.handleAuthError(error))
-    );
+    return this.http.get<any>(url).pipe(map((response: any) => response.data || response), catchError(error => this.handleAuthError(error)));
   }
 
   signup(data: SignupRequest): Observable<any> {
     const url = `${API_CONFIG.AUTH_BASE_URL}${API_ENDPOINTS.AUTH.SIGNUP}`;
-    return this.mockApiService.post(url, data, '/assets/mock/signup-response.json').pipe(
-      map((response: any) => response.data || response),
-      catchError(error => this.handleAuthError(error))
-    );
+    return this.http.post<any>(url, data).pipe(map((response: any) => response.data || response), catchError(error => this.handleAuthError(error)));
   }
 
   login(data: LoginRequest): Observable<AuthResponse> {
     const url = `${API_CONFIG.AUTH_BASE_URL}${API_ENDPOINTS.AUTH.LOGIN}`;
-    return this.mockApiService.post<any>(url, data, '/assets/mock/login-response.json').pipe(
-      map((response: any) => response.data || response),
-      tap(response => this.handleAuthSuccess(response)),
-      catchError(error => this.handleAuthError(error))
-    );
+    return this.http.post<any>(url, data).pipe(map((response: any) => response.data || response), tap(response => this.handleAuthSuccess(response)), catchError(error => this.handleAuthError(error)));
   }
 
   logout(): Observable<any> {
@@ -142,46 +130,27 @@ export class AuthService {
       return throwError(() => new Error('No refresh token available'));
     }
 
-    return this.mockApiService.post(url, { refreshToken }, '/assets/mock/logout-response.json').pipe(
-      tap(() => this.handleLogout()),
-      catchError(error => {
-        this.handleLogout();
-        return throwError(() => error);
-      })
-    );
+    return this.http.post<any>(url, { refreshToken }).pipe(tap(() => this.handleLogout()), catchError(error => { this.handleLogout(); return throwError(() => error); }));
   }
 
   sendOTP(data: SendOTPRequest): Observable<any> {
     const url = `${API_CONFIG.AUTH_BASE_URL}${API_ENDPOINTS.AUTH.SEND_OTP}`;
-    return this.mockApiService.post(url, data, '/assets/mock/send-otp-response.json').pipe(
-      map((response: any) => response.data || response),
-      catchError(error => this.handleAuthError(error))
-    );
+    return this.http.post<any>(url, data).pipe(map((response: any) => response.data || response), catchError(error => this.handleAuthError(error)));
   }
 
   verifyOTP(data: VerifyOTPRequest): Observable<any> {
     const url = `${API_CONFIG.AUTH_BASE_URL}${API_ENDPOINTS.AUTH.VERIFY_OTP}`;
-    return this.mockApiService.post(url, data, '/assets/mock/verify-otp-response.json').pipe(
-      map((response: any) => response.data || response),
-      tap(response => this.handleAuthSuccess(response)),
-      catchError(error => this.handleAuthError(error))
-    );
+    return this.http.post<any>(url, data).pipe(map((response: any) => response.data || response), tap(response => this.handleAuthSuccess(response)), catchError(error => this.handleAuthError(error)));
   }
 
   resetPasswordWithOTP(data: ResetPasswordWithOTPRequest): Observable<any> {
     const url = `${API_CONFIG.AUTH_BASE_URL}${API_ENDPOINTS.AUTH.RESET_PASSWORD_WITH_OTP}`;
-    return this.mockApiService.post(url, data, '/assets/mock/reset-password-with-otp-response.json').pipe(
-      map((response: any) => response.data || response),
-      catchError(error => this.handleAuthError(error))
-    );
+    return this.http.post<any>(url, data).pipe(map((response: any) => response.data || response), catchError(error => this.handleAuthError(error)));
   }
 
   forgotPassword(data: ForgotPasswordRequest): Observable<any> {
     const url = `${API_CONFIG.AUTH_BASE_URL}${API_ENDPOINTS.AUTH.FORGOT_PASSWORD}`;
-    return this.mockApiService.post(url, data, '/assets/mock/forgot-password-response.json').pipe(
-      map((response: any) => response.data || response),
-      catchError(error => this.handleAuthError(error))
-    );
+    return this.http.post<any>(url, data).pipe(map((response: any) => response.data || response), catchError(error => this.handleAuthError(error)));
   }
 
   refreshToken(): Observable<RefreshTokenResponse> {

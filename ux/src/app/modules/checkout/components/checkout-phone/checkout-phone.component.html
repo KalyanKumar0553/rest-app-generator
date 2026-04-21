@@ -1,0 +1,111 @@
+<div class="checkout-page">
+  <div class="checkout-card">
+    <!-- Header -->
+    <div class="checkout-card__header">
+      <div class="checkout-card__icon">
+        <i class="bi bi-bag-check-fill"></i>
+      </div>
+      <h1 class="checkout-card__title">Checkout</h1>
+      <p class="checkout-card__subtitle">
+        Enter your mobile number to receive a one-time password and continue securely.
+      </p>
+    </div>
+
+    <!-- Body -->
+    <div class="checkout-card__body">
+      <!-- Step indicator -->
+      <div class="step-indicator">
+        <div class="step step--active">
+          <span class="step__dot"><i class="bi bi-telephone-fill"></i></span>
+          <span class="step__label">Mobile</span>
+        </div>
+        <div class="step-connector"></div>
+        <div class="step">
+          <span class="step__dot">2</span>
+          <span class="step__label">Verify OTP</span>
+        </div>
+        <div class="step-connector"></div>
+        <div class="step">
+          <span class="step__dot">3</span>
+          <span class="step__label">Payment</span>
+        </div>
+      </div>
+
+      <form (ngSubmit)="sendOtp()" novalidate>
+        <!-- Mobile number field -->
+        <div class="form-group">
+          <label class="form-label" for="localNumber">Mobile Number</label>
+          <div class="mobile-input-row">
+            <select
+              class="country-select"
+              [(ngModel)]="selectedCountry"
+              name="countryCode"
+              [compareWith]="compareCountry"
+            >
+              <option *ngFor="let c of countryCodes" [ngValue]="c">
+                {{ c.flag }} {{ c.code }}
+              </option>
+            </select>
+            <input
+              id="localNumber"
+              name="localNumber"
+              type="tel"
+              class="form-control"
+              [class.form-control--error]="showMobileError && mobileError"
+              [(ngModel)]="localNumber"
+              (input)="onMobileInput()"
+              placeholder="9876543210"
+              inputmode="numeric"
+              maxlength="15"
+              autocomplete="tel-national"
+              [disabled]="isLoading"
+            />
+          </div>
+          <span class="error-message" *ngIf="showMobileError && mobileError">
+            <i class="bi bi-exclamation-circle-fill"></i>
+            {{ mobileError }}
+          </span>
+        </div>
+
+        <!-- Cloudflare Turnstile -->
+        <div class="form-group">
+          <label class="form-label">Security Check</label>
+          <div class="turnstile-section">
+            <app-turnstile
+              theme="auto"
+              size="flexible"
+              (tokenChange)="onTurnstileToken($event)"
+              (expired)="onTurnstileExpired()"
+            ></app-turnstile>
+          </div>
+          <p class="turnstile-hint" *ngIf="!turnstileToken">
+            <i class="bi bi-shield-lock"></i>
+            Complete the security check above to proceed.
+          </p>
+        </div>
+
+        <!-- Submit -->
+        <button
+          type="submit"
+          class="btn-primary-full"
+          [disabled]="isSendDisabled"
+        >
+          <span *ngIf="!isLoading">
+            <i class="bi bi-send-fill"></i>
+            Send OTP
+          </span>
+          <span *ngIf="isLoading" class="loading-label">
+            <i class="bi bi-arrow-repeat spinner-icon"></i>
+            Sending OTP…
+          </span>
+        </button>
+      </form>
+    </div>
+
+    <!-- Footer note -->
+    <div class="checkout-card__footer">
+      <i class="bi bi-lock-fill"></i>
+      Your number is used only to verify your identity and will not be shared.
+    </div>
+  </div>
+</div>

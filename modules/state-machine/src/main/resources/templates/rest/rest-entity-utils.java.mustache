@@ -1,0 +1,48 @@
+package {{supportPackage}};
+
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+import org.springframework.util.ReflectionUtils;
+
+public final class RestEntityUtils {
+
+    private RestEntityUtils() {
+    }
+
+    public static <T> void mergeNonNullFields(T source, T target, String idField) {
+        collectFields(source.getClass()).stream()
+                .filter(field -> isTransferableField(field, idField))
+                .forEach(field -> {
+                    ReflectionUtils.makeAccessible(field);
+                    Object value = ReflectionUtils.getField(field, source);
+                    if (value != null) {
+                        ReflectionUtils.setField(field, target, value);
+                    }
+                });
+    }
+
+    public static <T> void replaceFields(T source, T target, String idField) {
+        collectFields(source.getClass()).stream()
+                .filter(field -> isTransferableField(field, idField))
+                .forEach(field -> {
+                    ReflectionUtils.makeAccessible(field);
+                    ReflectionUtils.setField(field, target, ReflectionUtils.getField(field, source));
+                });
+    }
+
+    private static boolean isTransferableField(Field field, String idField) {
+        int modifiers = field.getModifiers();
+        return !Modifier.isStatic(modifiers) && !Modifier.isFinal(modifiers) && !field.getName().equals(idField);
+    }
+
+    private static List<Field> collectFields(Class<?> type) {
+        return Stream.iterate(type, c -> c != null && c != Object.class, Class::getSuperclass)
+                .flatMap(c -> Arrays.stream(c.getDeclaredFields()))
+                .collect(Collectors.toList());
+    }
+}

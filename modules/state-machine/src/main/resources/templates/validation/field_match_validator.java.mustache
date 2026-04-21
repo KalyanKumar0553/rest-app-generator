@@ -1,0 +1,45 @@
+package {{basePkg}}.validation;
+
+import java.lang.reflect.Field;
+
+import org.springframework.util.ReflectionUtils;
+
+import jakarta.validation.ConstraintValidator;
+import jakarta.validation.ConstraintValidatorContext;
+
+public class FieldMatchValidator implements ConstraintValidator<FieldMatch, Object> {
+
+    private String first;
+    private String second;
+
+    @Override
+    public void initialize(FieldMatch constraint) {
+        this.first = constraint.first();
+        this.second = constraint.second();
+    }
+
+    @Override
+    public boolean isValid(Object value, ConstraintValidatorContext ctx) {
+        if (value == null) {
+            return true;
+        }
+        Object v1 = readField(value, first);
+        Object v2 = readField(value, second);
+        if (v1 == null && v2 == null) {
+            return true;
+        }
+        if (v1 == null || v2 == null) {
+            return false;
+        }
+        return v1.equals(v2);
+    }
+
+    private Object readField(Object bean, String fieldName) {
+        Field field = ReflectionUtils.findField(bean.getClass(), fieldName);
+        if (field == null) {
+            return null;
+        }
+        ReflectionUtils.makeAccessible(field);
+        return ReflectionUtils.getField(field, bean);
+    }
+}

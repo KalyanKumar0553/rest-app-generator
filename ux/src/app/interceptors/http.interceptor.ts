@@ -80,7 +80,11 @@ export class HttpRequestInterceptor implements HttpInterceptor {
       { method: 'POST', path: '/api/v1/auth/token/refresh' },
       { method: 'POST', path: '/api/project-view/generate-zip' },
       { method: 'GET', path: '/api/openapi/dependencies' },
-      { method: 'POST', path: '/api/analytics/visits/home' }
+      { method: 'POST', path: '/api/analytics/visits/home' },
+      { method: 'POST', path: '/api/v1/checkout/otp/send' },
+      { method: 'POST', path: '/api/v1/checkout/otp/resend' },
+      { method: 'POST', path: '/api/v1/checkout/otp/verify' },
+      { method: 'POST', path: '/api/v1/orders' }
     ];
 
     return publicRoutes.some(route => method === route.method && url.includes(route.path));

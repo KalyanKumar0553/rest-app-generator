@@ -216,7 +216,7 @@ public class ProjectDraftSpecMapperService {
 		List<String> dependencies = extractDependencies(String.valueOf(project.getOrDefault("dependencies", "")),
 				asStringList(project.get("selectedDependencies")));
 		List<String> selectedModules = dependencies.stream()
-				.filter(dep -> List.of("auth", "rbac", "subscription", "state-machine", "azure-cdn-upload").contains(dep))
+				.filter(dep -> List.of("auth", "rbac", "subscription", "state-machine", "cdn").contains(dep))
 				.toList();
 		List<String> customDependencies = dependencies.stream()
 				.filter(dep -> !selectedModules.contains(dep))

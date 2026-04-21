@@ -17,34 +17,42 @@
 		<dependency>
 			<groupId>com.src</groupId>
 			<artifactId>common</artifactId>
+			<version>${project.version}</version>
 		</dependency>
 		<dependency>
 			<groupId>com.src</groupId>
 			<artifactId>communication</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>com.src</groupId>
+			<artifactId>payment</artifactId>
+			<version>${project.version}</version>
 		</dependency>
 		<dependency>
 			<groupId>com.src</groupId>
 			<artifactId>rbac</artifactId>
+			<version>${project.version}</version>
 		</dependency>
 		<dependency>
 			<groupId>com.src</groupId>
 			<artifactId>subscription</artifactId>
+			<version>${project.version}</version>
 		</dependency>
 		<dependency>
 			<groupId>com.src</groupId>
 			<artifactId>auth</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>com.src</groupId>
-			<artifactId>azure-cdn-upload</artifactId>
+			<version>${project.version}</version>
 		</dependency>
 		<dependency>
 			<groupId>com.src</groupId>
 			<artifactId>state-machine</artifactId>
+			<version>${project.version}</version>
 		</dependency>
 		<dependency>
 			<groupId>com.src</groupId>
 			<artifactId>swagger</artifactId>
+			<version>${project.version}</version>
 		</dependency>
 		<dependency>
 			<groupId>io.spring.initializr</groupId>

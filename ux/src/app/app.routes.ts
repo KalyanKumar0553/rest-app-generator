@@ -58,6 +58,10 @@ export const routes: Routes = [
       .then(m => m.ProjectCollaborationInviteComponent)
   },
   {
+    path: 'checkout',
+    loadChildren: () => import('./modules/checkout/checkout.routes').then(m => m.CHECKOUT_ROUTES)
+  },
+  {
     path: 'dashboard',
     redirectTo: 'user/dashboard',
     pathMatch: 'full'

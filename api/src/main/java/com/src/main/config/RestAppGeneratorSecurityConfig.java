@@ -38,6 +38,8 @@ public class RestAppGeneratorSecurityConfig {
 						.requestMatchers(HttpMethod.POST, "/api/project-view/generate-zip").permitAll()
 						.requestMatchers(HttpMethod.GET, "/api/projects/tab-details").permitAll()
 						.requestMatchers(HttpMethod.POST, "/api/analytics/visits/home").permitAll()
+						.requestMatchers(HttpMethod.POST, "/api/v1/orders").permitAll()
+						.requestMatchers(HttpMethod.POST, "/api/v1/payments/webhook/**").permitAll()
 						.requestMatchers(HttpMethod.POST, "/api/newsletter/subscriptions").permitAll()
 						.requestMatchers(HttpMethod.GET, "/api/openapi/**").permitAll()
 						.anyRequest().authenticated())

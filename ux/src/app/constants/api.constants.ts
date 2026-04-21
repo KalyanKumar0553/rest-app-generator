@@ -93,6 +93,12 @@ export const API_ENDPOINTS = {
   },
   DEPENDENCIES: {
     LIST: '/api/openapi/dependencies'
+  },
+  CHECKOUT: {
+    SEND_OTP:   '/api/v1/checkout/otp/send',
+    RESEND_OTP: '/api/v1/checkout/otp/resend',
+    VERIFY_OTP: '/api/v1/checkout/otp/verify',
+    PLACE_ORDER: '/api/v1/orders'
   }
 };
 

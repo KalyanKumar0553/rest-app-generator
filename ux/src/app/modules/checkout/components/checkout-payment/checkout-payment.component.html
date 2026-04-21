@@ -1,0 +1,95 @@
+<div class="checkout-page">
+  <div class="checkout-card">
+    <!-- Success state -->
+    <ng-container *ngIf="orderPlaced">
+      <div class="checkout-card__header checkout-card__header--success">
+        <div class="checkout-card__icon checkout-card__icon--success">
+          <i class="bi bi-check2-circle"></i>
+        </div>
+        <h1 class="checkout-card__title">Order Placed!</h1>
+        <p class="checkout-card__subtitle">
+          Your order has been confirmed. Reference: <strong>{{ orderReference }}</strong>
+        </p>
+      </div>
+      <div class="checkout-card__body text-center">
+        <p class="success-msg">Thank you for your purchase. You will receive a confirmation shortly.</p>
+        <button class="btn-primary-full" (click)="goHome()">
+          <i class="bi bi-house-fill"></i> Back to Home
+        </button>
+      </div>
+    </ng-container>
+
+    <!-- Payment state -->
+    <ng-container *ngIf="!orderPlaced">
+      <div class="checkout-card__header">
+        <div class="checkout-card__icon">
+          <i class="bi bi-credit-card-2-front-fill"></i>
+        </div>
+        <h1 class="checkout-card__title">Payment</h1>
+        <p class="checkout-card__subtitle">
+          Reviewing your order for <strong class="masked-mobile">{{ maskedMobile }}</strong>
+        </p>
+      </div>
+
+      <div class="checkout-card__body">
+        <!-- Step indicator -->
+        <div class="step-indicator">
+          <div class="step step--done">
+            <span class="step__dot"><i class="bi bi-check-lg"></i></span>
+            <span class="step__label">Mobile</span>
+          </div>
+          <div class="step-connector step-connector--done"></div>
+          <div class="step step--done">
+            <span class="step__dot"><i class="bi bi-check-lg"></i></span>
+            <span class="step__label">Verify OTP</span>
+          </div>
+          <div class="step-connector step-connector--done"></div>
+          <div class="step step--active">
+            <span class="step__dot"><i class="bi bi-credit-card-2-front-fill"></i></span>
+            <span class="step__label">Payment</span>
+          </div>
+        </div>
+
+        <!-- Verified badge -->
+        <div class="verified-badge">
+          <i class="bi bi-shield-check-fill"></i>
+          Identity verified — your session is secure
+        </div>
+
+        <!-- Order summary -->
+        <div class="order-summary" *ngIf="orderData">
+          <h3 class="summary-title">Order Summary</h3>
+          <div class="summary-row" *ngFor="let entry of orderData | keyvalue">
+            <span class="summary-key">{{ entry.key }}</span>
+            <span class="summary-value">{{ entry.value }}</span>
+          </div>
+        </div>
+
+        <div class="order-summary order-summary--empty" *ngIf="!orderData">
+          <i class="bi bi-receipt"></i>
+          <span>Your order details will appear here.</span>
+        </div>
+
+        <!-- Actions -->
+        <div class="action-row">
+          <button class="btn-secondary" (click)="goBack()" [disabled]="isLoading">
+            <i class="bi bi-arrow-left"></i> Back
+          </button>
+          <button class="btn-primary" (click)="placeOrder()" [disabled]="isLoading">
+            <span *ngIf="!isLoading">
+              <i class="bi bi-lock-fill"></i> Confirm &amp; Pay
+            </span>
+            <span *ngIf="isLoading" class="loading-label">
+              <i class="bi bi-arrow-repeat spinner-icon"></i> Processing…
+            </span>
+          </button>
+        </div>
+      </div>
+
+      <div class="checkout-card__footer">
+        <i class="bi bi-lock-fill"></i>
+        Payments are encrypted and processed securely.
+      </div>
+    </ng-container>
+  </div>
+</div>

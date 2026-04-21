@@ -1,0 +1,54 @@
+package {{basePkg}}.validation;
+
+import java.lang.reflect.Field;
+
+import org.springframework.util.ReflectionUtils;
+
+import jakarta.validation.ConstraintValidator;
+import jakarta.validation.ConstraintValidatorContext;
+
+public class ConditionalRequiredValidator implements ConstraintValidator<ConditionalRequired, Object> {
+
+    private String field;
+    private String dependsOn;
+    private String equalsVal;
+
+    @Override
+    public void initialize(ConditionalRequired annotation) {
+        this.field = annotation.field();
+        this.dependsOn = annotation.dependsOn();
+        this.equalsVal = annotation.equals();
+    }
+
+    @Override
+    public boolean isValid(Object bean, ConstraintValidatorContext ctx) {
+        if (bean == null) {
+            return true;
+        }
+        Object dep = readField(bean, dependsOn);
+        boolean conditionMet = (equalsVal == null || equalsVal.isBlank())
+                ? dep != null
+                : equalsVal.equals(String.valueOf(dep));
+
+        if (!conditionMet) {
+            return true;
+        }
+        Object target = readField(bean, field);
+        if (target == null) {
+            return false;
+        }
+        if (target instanceof CharSequence cs) {
+            return !cs.toString().isBlank();
+        }
+        return true;
+    }
+
+    private Object readField(Object bean, String fieldName) {
+        Field f = ReflectionUtils.findField(bean.getClass(), fieldName);
+        if (f == null) {
+            return null;
+        }
+        ReflectionUtils.makeAccessible(f);
+        return ReflectionUtils.getField(f, bean);
+    }
+}

@@ -6,5 +6,6 @@ export const environment = {
   apiUrl: `${urlPrefix}/api`,
   baseUrl: `${urlPrefix}/api`,
   authBaseUrl: urlPrefix,
-  useMockApi: false
+  // Replace with your real Cloudflare Turnstile site key
+  turnstileSiteKey: 'YOUR_TURNSTILE_SITE_KEY_HERE'
 };
