@@ -1,6 +1,12 @@
 from fastapi import FastAPI
+{{#hasModules}}
+from app.generated.module_bootstrap import configure_generated_modules
+{{/hasModules}}
 
 app = FastAPI(title="{{appName}}")
+{{#hasModules}}
+configure_generated_modules(app)
+{{/hasModules}}
 
 
 @app.get("/")

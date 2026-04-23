@@ -54,6 +54,7 @@ import { RbacModuleTabComponent } from '../rbac-module-tab/rbac-module-tab.compo
 import { AuthModuleTabComponent } from '../auth-module-tab/auth-module-tab.component';
 import { StateMachineModuleTabComponent } from '../state-machine-module-tab/state-machine-module-tab.component';
 import { SubscriptionModuleTabComponent } from '../subscription-module-tab/subscription-module-tab.component';
+import { CdnModuleTabComponent } from '../cdn-module-tab/cdn-module-tab.component';
 import {
   ModulesSelectionComponent,
   PluginModuleCard,
@@ -143,6 +144,7 @@ import { NodeProjectGenerationExploreSectionComponent } from './node-project-gen
     AuthModuleTabComponent,
     StateMachineModuleTabComponent,
     SubscriptionModuleTabComponent,
+    CdnModuleTabComponent,
     ModulesSelectionComponent,
     SidenavComponent,
     InfoBannerComponent,
@@ -153,7 +155,7 @@ import { NodeProjectGenerationExploreSectionComponent } from './node-project-gen
 })
 export class NodeProjectGenerationDashboardComponent implements OnInit, OnDestroy {
   private static readonly projectStorageResetKey = 'project_storage_reset_v20260314';
-  private static readonly shippableModuleKeys = ['rbac', 'auth', 'state-machine', 'subscription', 'azure-cdn-upload'];
+  private static readonly shippableModuleKeys = ['rbac', 'auth', 'state-machine', 'subscription', 'cdn'];
   private static readonly shippableModuleCards: ShippableModuleCard[] = [
     {
       key: 'rbac',
@@ -176,7 +178,7 @@ export class NodeProjectGenerationDashboardComponent implements OnInit, OnDestro
       description: 'Adds subscription, entitlement, pricing, and quota management support as a reusable generated module.'
     },
     {
-      key: 'azure-cdn-upload',
+      key: 'cdn',
       title: 'Azure CDN Upload',
       description: 'Adds draft image storage, one-at-a-time Azure CDN upload processing, and admin APIs for queue control.'
     }
@@ -356,7 +358,7 @@ export class NodeProjectGenerationDashboardComponent implements OnInit, OnDestro
       return this.visibleNavItemsCache;
     }
 
-    const shouldShowExplore = !this.isGeneratingFromDtoSave && !this.isExploreSyncing && this.canAccessExplore();
+    const shouldShowExplore = !this.isGeneratingFromDtoSave && this.canAccessExplore();
     const isNoneDatabase = toDatabaseCode(this.databaseSettings.database) === 'NONE';
     this.visibleNavItemsCache = [...this.tabDefinitions]
       .sort((left, right) => {
@@ -365,12 +367,12 @@ export class NodeProjectGenerationDashboardComponent implements OnInit, OnDestro
         }
         return left.order - right.order;
       })
-      .filter((tab) => this.isLoggedIn || tab.key !== 'modules')
-      .filter((tab) => shouldShowExplore || tab.key !== 'explore')
-      .filter((tab) => (this.backendProjectId && this.canManageContributors()) || tab.key !== 'collaborate')
-      .filter((tab) => this.developerPreferences.configureApi || tab.key !== 'controllers')
-      .filter((tab) => this.dataObjects.length > 0 || tab.key !== 'mappers')
-      .filter((tab) => !isNoneDatabase || tab.key !== 'entities')
+      .filter((tab) => this.activeSection === tab.key || this.isLoggedIn || tab.key !== 'modules')
+      .filter((tab) => this.activeSection === tab.key || shouldShowExplore || tab.key !== 'explore')
+      .filter((tab) => this.activeSection === tab.key || (this.backendProjectId && this.canManageContributors()) || tab.key !== 'collaborate')
+      .filter((tab) => this.activeSection === tab.key || this.developerPreferences.configureApi || tab.key !== 'controllers')
+      .filter((tab) => this.activeSection === tab.key || this.dataObjects.length > 0 || tab.key !== 'mappers')
+      .filter((tab) => this.activeSection === tab.key || !isNoneDatabase || tab.key !== 'entities')
       .map((tab) => ({
         icon: tab.icon,
         label: tab.label,
@@ -613,6 +615,7 @@ export class NodeProjectGenerationDashboardComponent implements OnInit, OnDestro
       case 'auth':
       case 'state-machine':
       case 'subscription':
+      case 'cdn':
         return {
           moduleConfigs: {
             [tabKey]: this.moduleConfigs[tabKey] || {}
@@ -1413,6 +1416,7 @@ export class NodeProjectGenerationDashboardComponent implements OnInit, OnDestro
       case 'auth':
       case 'state-machine':
       case 'subscription':
+      case 'cdn':
         if (tabData['moduleConfigs'] && typeof tabData['moduleConfigs'] === 'object') {
           this.moduleConfigs = {
             ...this.moduleConfigs,
@@ -1429,17 +1433,17 @@ export class NodeProjectGenerationDashboardComponent implements OnInit, OnDestro
     const selectedDependencies = tabData['selectedDependencies'];
     const dependencies = tabData['dependencies'];
     if (Array.isArray(selectedDependencies)) {
-      this.selectedDependencies = selectedDependencies
+      this.selectedDependencies = this.normalizeSelectedDependencies(selectedDependencies
         .map((dependency: unknown) => String(dependency ?? '').trim())
-        .filter((dependency: string) => dependency.length > 0);
+        .filter((dependency: string) => dependency.length > 0));
     } else if (typeof dependencies === 'string' && dependencies.trim()) {
-      this.selectedDependencies = dependencies
+      this.selectedDependencies = this.normalizeSelectedDependencies(dependencies
         .split(',')
         .map((dependency: string) => dependency.trim())
-        .filter((dependency: string) => dependency.length > 0);
+        .filter((dependency: string) => dependency.length > 0));
     }
     this.dependencies = typeof dependencies === 'string'
-      ? dependencies
+      ? this.selectedDependencies.join(', ')
       : this.selectedDependencies.join(', ');
   }
 
@@ -2459,7 +2463,7 @@ export class NodeProjectGenerationDashboardComponent implements OnInit, OnDestro
     const customDependencies = this.selectedDependencies.filter((dependency) =>
       !NodeProjectGenerationDashboardComponent.shippableModuleKeys.includes(dependency)
     );
-    this.selectedDependencies = [...customDependencies, ...moduleKeys];
+    this.selectedDependencies = this.normalizeSelectedDependencies([...customDependencies, ...moduleKeys]);
     this.dependencies = this.selectedDependencies.join(', ');
     this.refreshModuleTabDefinitions();
   }
@@ -3460,7 +3464,9 @@ export class NodeProjectGenerationDashboardComponent implements OnInit, OnDestro
       profiles: Array.isArray(savedProject?.preferences?.profiles) ? savedProject.preferences.profiles : []
     };
     this.dependencies = typeof savedProject?.dependencies === 'string' ? savedProject.dependencies : '';
-    this.selectedDependencies = Array.isArray(savedProject?.selectedDependencies) ? savedProject.selectedDependencies : [];
+    this.selectedDependencies = this.normalizeSelectedDependencies(
+      Array.isArray(savedProject?.selectedDependencies) ? savedProject.selectedDependencies : []
+    );
     this.entities = Array.isArray(savedProject?.entities) ? savedProject.entities : [];
     this.dataObjects = Array.isArray(savedProject?.dataObjects) ? savedProject.dataObjects : [];
     this.relations = Array.isArray(savedProject?.relations) ? savedProject.relations : [];
@@ -3496,5 +3502,23 @@ export class NodeProjectGenerationDashboardComponent implements OnInit, OnDestro
 
   private serializeProjectState(): string {
     return JSON.stringify(this.getProjectData());
+  }
+
+  private normalizeSelectedDependencies(dependencies: unknown[]): string[] {
+    const normalizedDependencies: string[] = [];
+    const seen = new Set<string>();
+    for (const dependency of dependencies) {
+      const normalized = this.normalizeDependencyKey(String(dependency ?? '').trim());
+      if (!normalized || seen.has(normalized)) {
+        continue;
+      }
+      seen.add(normalized);
+      normalizedDependencies.push(normalized);
+    }
+    return normalizedDependencies;
+  }
+
+  private normalizeDependencyKey(dependency: string): string {
+    return dependency === 'azure-cdn-upload' ? 'cdn' : dependency;
   }
 }

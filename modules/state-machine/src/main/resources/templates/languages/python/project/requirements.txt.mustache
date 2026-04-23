@@ -3,3 +3,6 @@ uvicorn==0.30.6
 {{#ormIsSqlalchemy}}sqlalchemy==2.0.36
 {{/ormIsSqlalchemy}}{{#ormIsDjango}}django==5.1.2
 {{/ormIsDjango}}
+{{#pythonDependencies}}
+{{packageName}}=={{version}}
+{{/pythonDependencies}}

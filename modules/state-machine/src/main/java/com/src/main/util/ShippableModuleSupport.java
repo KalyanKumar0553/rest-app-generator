@@ -33,6 +33,7 @@ public final class ShippableModuleSupport {
 	private static final String AZURE_COMMUNICATION_COMMON_VERSION = "1.2.0";
 	private static final String AZURE_STORAGE_BLOB_VERSION = "12.31.0";
 	private static final String TWILIO_VERSION = "10.3.0";
+	private static final String PYTHON_AZURE_STORAGE_BLOB_VERSION = "12.26.0";
 
 	private static final Map<String, ModuleDefinition> MODULES = new LinkedHashMap<>();
 
@@ -72,6 +73,10 @@ public final class ShippableModuleSupport {
 				.nodeVariant(VariantDefinition.builder()
 						.nodePackageDependencies(List.of())
 						.usesNodePrisma(true)
+						.pythonPackageDependencies(List.of())
+						.build())
+				.pythonVariant(VariantDefinition.builder()
+						.pythonPackageDependencies(List.of())
 						.build())
 				.build());
 
@@ -92,6 +97,11 @@ public final class ShippableModuleSupport {
 						.requires("rbac")
 						.nodePackageDependencies(List.of())
 						.usesNodePrisma(true)
+						.pythonPackageDependencies(List.of())
+						.build())
+				.pythonVariant(VariantDefinition.builder()
+						.requires("rbac")
+						.pythonPackageDependencies(List.of())
 						.build())
 				.build());
 
@@ -128,6 +138,10 @@ public final class ShippableModuleSupport {
 								nodeDevDependency("@types/bcryptjs", "^2.4.6")))
 						.usesNodePrisma(true)
 						.build())
+				.pythonVariant(VariantDefinition.builder()
+						.requires("rbac")
+						.pythonPackageDependencies(List.of())
+						.build())
 				.build());
 
 		register(ModuleDefinition.visible("state-machine")
@@ -150,6 +164,9 @@ public final class ShippableModuleSupport {
 						.nodePackageDependencies(List.of())
 						.usesNodePrisma(true)
 						.build())
+				.pythonVariant(VariantDefinition.builder()
+						.pythonPackageDependencies(List.of())
+						.build())
 				.build());
 
 		register(ModuleDefinition.visible("cdn")
@@ -164,6 +181,17 @@ public final class ShippableModuleSupport {
 								dependency("com.azure", "azure-storage-blob", AZURE_STORAGE_BLOB_VERSION),
 								dependency("org.postgresql", "postgresql", null, "runtime", false)))
 						.includesFlywayMigrations(true)
+						.build())
+				.nodeVariant(VariantDefinition.builder()
+						.nodePackageDependencies(List.of(
+								nodeDependency("@azure/storage-blob", "^12.28.0"),
+								nodeDependency("multer", "^2.0.2"),
+								nodeDevDependency("@types/multer", "^2.0.0")))
+						.build())
+				.pythonVariant(VariantDefinition.builder()
+						.pythonPackageDependencies(List.of(
+								pythonDependency("python-multipart", "0.0.20"),
+								pythonDependency("azure-storage-blob", PYTHON_AZURE_STORAGE_BLOB_VERSION)))
 						.build())
 				.build());
 	}
@@ -240,6 +268,19 @@ public final class ShippableModuleSupport {
 		return List.copyOf(dependencies);
 	}
 
+	public static List<PythonPackageDependency> resolvePythonPackageDependencies(Collection<String> selectedModules) {
+		List<String> expanded = expandSelectedModules(selectedModules, GenerationLanguage.PYTHON);
+		LinkedHashSet<PythonPackageDependency> dependencies = new LinkedHashSet<>();
+		for (String moduleId : expanded) {
+			VariantDefinition definition = variant(moduleId, GenerationLanguage.PYTHON);
+			if (definition == null) {
+				continue;
+			}
+			dependencies.addAll(definition.pythonPackageDependencies());
+		}
+		return List.copyOf(dependencies);
+	}
+
 	public static boolean requiresFlyway(Collection<String> selectedModules) {
 		return requiresFlyway(selectedModules, GenerationLanguage.JAVA);
 	}
@@ -269,6 +310,9 @@ public final class ShippableModuleSupport {
 	public static String resourcePrefix(String moduleId, GenerationLanguage language) {
 		if (language == GenerationLanguage.NODE) {
 			return RESOURCE_ROOT + "/node/" + normalize(moduleId);
+		}
+		if (language == GenerationLanguage.PYTHON) {
+			return RESOURCE_ROOT + "/python/" + normalize(moduleId);
 		}
 		return RESOURCE_ROOT + "/" + normalize(moduleId);
 	}
@@ -347,6 +391,9 @@ public final class ShippableModuleSupport {
 	public record NodePackageDependency(String packageName, String version, boolean devDependency) {
 	}
 
+	public record PythonPackageDependency(String packageName, String version) {
+	}
+
 	private record ModuleDefinition(String id, boolean visible, Map<GenerationLanguage, VariantDefinition> variants) {
 
 		private static Builder visible(String id) {
@@ -385,6 +432,11 @@ public final class ShippableModuleSupport {
 				return this;
 			}
 
+			private Builder pythonVariant(VariantDefinition definition) {
+				variants.put(GenerationLanguage.PYTHON, definition);
+				return this;
+			}
+
 			private ModuleDefinition build() {
 				return new ModuleDefinition(id, visible, Map.copyOf(variants));
 			}
@@ -392,7 +444,8 @@ public final class ShippableModuleSupport {
 	}
 
 	private record VariantDefinition(List<String> requiredModules, List<MavenDependencyDTO> externalDependencies,
-			List<NodePackageDependency> nodePackageDependencies, boolean includesFlywayMigrations,
+			List<NodePackageDependency> nodePackageDependencies, List<PythonPackageDependency> pythonPackageDependencies,
+			boolean includesFlywayMigrations,
 			boolean usesNodePrisma) {
 
 		private static Builder builder() {
@@ -403,6 +456,7 @@ public final class ShippableModuleSupport {
 			private final List<String> requiredModules = new ArrayList<>();
 			private final List<MavenDependencyDTO> externalDependencies = new ArrayList<>();
 			private final List<NodePackageDependency> nodePackageDependencies = new ArrayList<>();
+			private final List<PythonPackageDependency> pythonPackageDependencies = new ArrayList<>();
 			private boolean includesFlywayMigrations;
 			private boolean usesNodePrisma;
 
@@ -427,6 +481,13 @@ public final class ShippableModuleSupport {
 				return this;
 			}
 
+			private Builder pythonPackageDependencies(List<PythonPackageDependency> dependencies) {
+				if (dependencies != null) {
+					pythonPackageDependencies.addAll(dependencies);
+				}
+				return this;
+			}
+
 			private Builder includesFlywayMigrations(boolean includesFlywayMigrations) {
 				this.includesFlywayMigrations = includesFlywayMigrations;
 				return this;
@@ -439,8 +500,13 @@ public final class ShippableModuleSupport {
 
 			private VariantDefinition build() {
 				return new VariantDefinition(List.copyOf(requiredModules), List.copyOf(externalDependencies),
-						List.copyOf(nodePackageDependencies), includesFlywayMigrations, usesNodePrisma);
+						List.copyOf(nodePackageDependencies), List.copyOf(pythonPackageDependencies),
+						includesFlywayMigrations, usesNodePrisma);
 			}
 		}
+	}
+
+	private static PythonPackageDependency pythonDependency(String packageName, String version) {
+		return new PythonPackageDependency(packageName, version);
 	}
 }

@@ -460,6 +460,21 @@
       </div>
     </div>
 
+    <div class="content-body" *ngIf="isModuleSectionActive('cdn')" id="cdn">
+      <div class="sticky-header">
+        <div class="top-actions">
+          <button class="back-btn-desktop" (click)="handleHome()" aria-label="Go to home" mat-stroked-button>
+            <i class="bi bi-house-door"></i>
+            Home
+          </button>
+          <span class="active-editors-badge" *ngIf="shouldShowActiveEditorsBadge()">{{ activeEditorsBadgeLabel }}</span>
+        </div>
+      </div>
+      <div class="scrollable-content">
+        <app-cdn-module-tab></app-cdn-module-tab>
+      </div>
+    </div>
+
     <div class="content-body" *ngIf="activeSection === 'collaborate'" id="collaborate">
       <div class="sticky-header">
         <div class="top-actions">

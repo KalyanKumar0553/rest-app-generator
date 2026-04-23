@@ -320,6 +320,25 @@ public class ProjectServiceImpl implements ProjectService {
 		project.setDraftVersion(draftVersion);
 	}
 
+	private String resolveProjectDescription(ProjectEntity project) {
+		String description = project.getDescription() == null ? "" : project.getDescription().trim();
+		if (!description.isBlank()) {
+			return description;
+		}
+		String draftDataJson = project.getDraftData();
+		if (draftDataJson == null || draftDataJson.isBlank()) {
+			return description;
+		}
+		try {
+			Map<String, Object> draftData = projectDraftService.deserialize(draftDataJson);
+			Map<String, Object> settings = asSettingsMap(draftData.get("settings"));
+			String draftDescription = trimmed(settings.get("projectDescription"));
+			return draftDescription.isBlank() ? description : draftDescription;
+		} catch (Exception ignored) {
+			return description;
+		}
+	}
+
 	@Override
 	@Transactional
 	public List<ProjectSummaryDTO> list(String userId) {
@@ -395,6 +414,7 @@ public class ProjectServiceImpl implements ProjectService {
 	public ProjectDetailsDTO getDetails(UUID projectId, String userId) {
 		ProjectUserIdentityService.ResolvedProjectUser currentUser = projectUserIdentityService.resolve(userId);
 		ProjectEntity project = getAccessibleProject(projectId, currentUser);
+		String description = resolveProjectDescription(project);
 		boolean canManageAllContributors = canManageAllProjectContributors();
 		boolean isOwner = currentUser.keys().contains(project.getOwnerId());
 		Optional<ProjectContributorEntity> currentContributor = findContributorAccess(project.getId(), currentUser);
@@ -421,7 +441,7 @@ public class ProjectServiceImpl implements ProjectService {
 		String latestRunStatus = latestRun == null || latestRun.getStatus() == null ? null : latestRun.getStatus().name();
 		Integer latestRunNumber = latestRun == null ? null : latestRun.getRunNumber();
 		return new ProjectDetailsDTO(
-				project.getId().toString(), project.getId(), project.getName(), project.getDescription(),
+				project.getId().toString(), project.getId(), project.getName(), description,
 				generator, project.getArtifact(), null, null, project.getDraftVersion(), tabDetails,
 				project.getOwnerId(), isContributorAccess, canManageContributors, inviteToken,
 				toContributorDtos(project.getId()), collaborationRequests,
