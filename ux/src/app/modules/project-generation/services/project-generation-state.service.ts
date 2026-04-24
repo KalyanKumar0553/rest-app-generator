@@ -14,6 +14,7 @@ export class ProjectGenerationStateService {
     configurationOptions: ['default'],
     endpointsByConfiguration: { default: [...DEFAULT_ACTUATOR_ENDPOINTS] }
   });
+  private readonly moduleConfigsSubject = new BehaviorSubject<Record<string, any>>({});
 
   readonly actuatorState$ = this.actuatorStateSubject.asObservable().pipe(
     distinctUntilChanged((prev, curr) => this.areActuatorStatesEqual(prev, curr))
@@ -25,6 +26,9 @@ export class ProjectGenerationStateService {
 
   readonly actuatorEndpointsByConfiguration$ = this.actuatorState$.pipe(
     map(state => state.endpointsByConfiguration)
+  );
+  readonly moduleConfigs$ = this.moduleConfigsSubject.asObservable().pipe(
+    distinctUntilChanged((prev, curr) => JSON.stringify(prev) === JSON.stringify(curr))
   );
 
   setProfiles(profiles: string[]): void {
@@ -56,6 +60,47 @@ export class ProjectGenerationStateService {
 
   getActuatorStateSnapshot(): ActuatorState {
     return this.actuatorStateSubject.value;
+  }
+
+  setModuleConfigs(configs: Record<string, any> | null | undefined): void {
+    const next = this.sanitizeModuleConfigs(configs);
+    const current = this.moduleConfigsSubject.value;
+    if (JSON.stringify(current) !== JSON.stringify(next)) {
+      this.moduleConfigsSubject.next(next);
+    }
+  }
+
+  updateModuleConfig(moduleKey: string, config: Record<string, any> | null | undefined): void {
+    const key = String(moduleKey ?? '').trim();
+    if (!key) {
+      return;
+    }
+    const current = this.moduleConfigsSubject.value;
+    const next = this.sanitizeModuleConfigs({
+      ...current,
+      [key]: this.sanitizeModuleConfig(config)
+    });
+    if (JSON.stringify(current) !== JSON.stringify(next)) {
+      this.moduleConfigsSubject.next(next);
+    }
+  }
+
+  removeModuleConfig(moduleKey: string): void {
+    const key = String(moduleKey ?? '').trim();
+    if (!key) {
+      return;
+    }
+    const current = this.moduleConfigsSubject.value;
+    if (!(key in current)) {
+      return;
+    }
+    const next = { ...current };
+    delete next[key];
+    this.moduleConfigsSubject.next(this.sanitizeModuleConfigs(next));
+  }
+
+  getModuleConfigsSnapshot(): Record<string, any> {
+    return this.moduleConfigsSubject.value;
   }
 
   private nextIfChanged(next: ActuatorState): void {
@@ -142,5 +187,33 @@ export class ProjectGenerationStateService {
     }
 
     return true;
+  }
+
+  private sanitizeModuleConfigs(rawConfigs: Record<string, any> | null | undefined): Record<string, any> {
+    if (!rawConfigs || typeof rawConfigs !== 'object') {
+      return {};
+    }
+    return Object.entries(rawConfigs).reduce<Record<string, any>>((result, [rawKey, rawValue]) => {
+      const key = String(rawKey ?? '').trim();
+      if (!key) {
+        return result;
+      }
+      result[key] = this.sanitizeModuleConfig(rawValue);
+      return result;
+    }, {});
+  }
+
+  private sanitizeModuleConfig(rawConfig: Record<string, any> | null | undefined): Record<string, any> {
+    if (!rawConfig || typeof rawConfig !== 'object' || Array.isArray(rawConfig)) {
+      return {};
+    }
+    return Object.entries(rawConfig).reduce<Record<string, any>>((result, [rawKey, rawValue]) => {
+      const key = String(rawKey ?? '').trim();
+      if (!key) {
+        return result;
+      }
+      result[key] = rawValue;
+      return result;
+    }, {});
   }
 }

@@ -157,7 +157,7 @@ import { ProjectGenerationModulesSectionComponent } from './project-generation-m
 })
 export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
   private static readonly projectStorageResetKey = 'project_storage_reset_v20260314';
-  private static readonly shippableModuleKeys = ['rbac', 'auth', 'state-machine', 'subscription', 'cdn'];
+  private static readonly shippableModuleKeys = ['rbac', 'auth', 'state-machine', 'subscription', 'swagger', 'cdn'];
   private static readonly shippableModuleCards: ShippableModuleCard[] = [
     {
       key: 'rbac',
@@ -178,6 +178,11 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
       key: 'subscription',
       title: 'Subscription',
       description: 'Adds subscription, entitlement, pricing, and quota management support as a reusable generated module.'
+    },
+    {
+      key: 'swagger',
+      title: 'Swagger',
+      description: 'Adds OpenAPI metadata and interactive API documentation support to generated runtimes.'
     },
     {
       key: 'cdn',
@@ -442,6 +447,12 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.clearLegacyProjectStorageIfRequired();
     this.isLoggedIn = this.authService.isLoggedIn();
+    this.projectGenerationState.moduleConfigs$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe((configs) => {
+        this.moduleConfigs = configs;
+      });
+    this.projectGenerationState.setModuleConfigs(this.moduleConfigs);
     const initialProjectId = trimmed(this.route.snapshot.queryParamMap.get('projectId'));
     if (!initialProjectId) {
       this.loadTabDefinitions(this.projectSettings.language, this.selectedDependencies);
@@ -1394,6 +1405,7 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
             ...this.moduleConfigs,
             ...(tabData['moduleConfigs'] as Record<string, any>)
           };
+          this.projectGenerationState.setModuleConfigs(this.moduleConfigs);
         }
         this.applySelectedPluginsDraftData(tabData);
         return;
@@ -1438,6 +1450,7 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
             ...this.moduleConfigs,
             ...(tabData['moduleConfigs'] as Record<string, any>)
           };
+          this.projectGenerationState.setModuleConfigs(this.moduleConfigs);
         }
         return;
       default:
@@ -1547,6 +1560,7 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
     this.enums = [];
     this.mappers = [];
     this.moduleConfigs = {};
+    this.projectGenerationState.setModuleConfigs(this.moduleConfigs);
     this.selectedPlugins = [];
     this.dependencies = '';
     this.selectedDependencies = [];
@@ -2463,6 +2477,7 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
       this.dependencies = this.selectedDependencies.join(', ');
       if (ProjectGenerationDashboardComponent.shippableModuleKeys.includes(dep)) {
         delete this.moduleConfigs[dep];
+        this.projectGenerationState.removeModuleConfig(dep);
       }
       this.refreshModuleTabDefinitions();
     }
@@ -3649,6 +3664,7 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
     this.moduleConfigs = savedProject?.moduleConfigs && typeof savedProject.moduleConfigs === 'object'
       ? savedProject.moduleConfigs
       : {};
+    this.projectGenerationState.setModuleConfigs(this.moduleConfigs);
     this.controllersConfigEnabled = savedProject?.controllers?.enabled === undefined
       ? true
       : Boolean(savedProject.controllers.enabled);

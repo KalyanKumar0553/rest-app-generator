@@ -1,0 +1,75 @@
+<app-shipped-module-config-panel
+  moduleId="Subscription"
+  title="Subscription Module"
+  subtitle="Configure plan defaults that are persisted into YAML and materialized by the generated Node and Python subscription runtimes.">
+  <section class="config-card">
+    <h3>Global defaults</h3>
+    <div class="config-grid">
+      <mat-form-field appearance="outline" subscriptSizing="dynamic">
+        <mat-label>Currency</mat-label>
+        <input matInput [(ngModel)]="config.currency" (ngModelChange)="onConfigChange()">
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" subscriptSizing="dynamic">
+        <mat-label>Default plan code</mat-label>
+        <input matInput [(ngModel)]="config.defaultPlanCode" (ngModelChange)="onConfigChange()">
+      </mat-form-field>
+    </div>
+
+    <mat-checkbox [(ngModel)]="config.allowTrial" (ngModelChange)="onConfigChange()">
+      Enable trial subscriptions when a plan defines trial days
+    </mat-checkbox>
+  </section>
+
+  <section class="config-card">
+    <div class="config-header">
+      <div>
+        <h3>Plans</h3>
+        <p>Plans define the seed catalog for the generated subscription module.</p>
+      </div>
+      <button mat-stroked-button type="button" (click)="addPlan()">Add Plan</button>
+    </div>
+
+    <div class="plan-list">
+      <div class="plan-card" *ngFor="let plan of config.plans; let index = index; trackBy: trackByIndex">
+        <div class="plan-grid">
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <mat-label>Code</mat-label>
+            <input matInput [(ngModel)]="plan.code" (ngModelChange)="onConfigChange()">
+          </mat-form-field>
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <mat-label>Name</mat-label>
+            <input matInput [(ngModel)]="plan.name" (ngModelChange)="onConfigChange()">
+          </mat-form-field>
+          <mat-form-field appearance="outline" subscriptSizing="dynamic" class="plan-description">
+            <mat-label>Description</mat-label>
+            <input matInput [(ngModel)]="plan.description" (ngModelChange)="onConfigChange()">
+          </mat-form-field>
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <mat-label>Monthly price</mat-label>
+            <input matInput type="number" [(ngModel)]="plan.monthlyPrice" (ngModelChange)="onConfigChange()">
+          </mat-form-field>
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <mat-label>Yearly price</mat-label>
+            <input matInput type="number" [(ngModel)]="plan.yearlyPrice" (ngModelChange)="onConfigChange()">
+          </mat-form-field>
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <mat-label>Trial days</mat-label>
+            <input matInput type="number" [(ngModel)]="plan.trialDays" (ngModelChange)="onConfigChange()">
+          </mat-form-field>
+          <mat-form-field appearance="outline" subscriptSizing="dynamic" class="plan-description">
+            <mat-label>Features</mat-label>
+            <input matInput [(ngModel)]="plan.featuresInput" (ngModelChange)="onConfigChange()" placeholder="core-api, analytics">
+          </mat-form-field>
+          <mat-form-field appearance="outline" subscriptSizing="dynamic" class="plan-description">
+            <mat-label>Roles</mat-label>
+            <input matInput [(ngModel)]="plan.rolesInput" (ngModelChange)="onConfigChange()" placeholder="ROLE_USER, ROLE_MANAGER">
+          </mat-form-field>
+        </div>
+        <div class="plan-actions">
+          <button mat-button type="button" (click)="removePlan(index)">Remove Plan</button>
+        </div>
+      </div>
+    </div>
+  </section>
+</app-shipped-module-config-panel>

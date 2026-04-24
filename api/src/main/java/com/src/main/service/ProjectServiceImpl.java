@@ -69,7 +69,7 @@ public class ProjectServiceImpl implements ProjectService {
 	private static final String REQUEST_STATUS_ACCEPTED = "ACCEPTED";
 	private static final String REQUEST_STATUS_REJECTED = "REJECTED";
 	private static final String REQUEST_STATUS_ARCHIVED = "ARCHIVED";
-	private static final Set<String> SHIPPABLE_MODULE_KEYS = Set.of("rbac", "auth", "state-machine", "subscription", "cdn");
+	private static final Set<String> SHIPPABLE_MODULE_KEYS = Set.of("rbac", "auth", "state-machine", "subscription", "swagger", "cdn");
 	private final ProjectRepository repo;
 	private final ProjectRunRepository projectRunRepository;
 	private final ProjectCollaborationRequestRepository projectCollaborationRequestRepository;

@@ -169,6 +169,24 @@ public final class ShippableModuleSupport {
 						.build())
 				.build());
 
+		register(ModuleDefinition.visible("swagger")
+				.javaVariant(VariantDefinition.builder()
+						.externalDependencies(List.of(
+								dependency("org.springdoc", "springdoc-openapi-starter-webmvc-ui", "2.6.0"),
+								dependency("io.swagger.core.v3", "swagger-models", "2.2.22"),
+								dependency("io.swagger.core.v3", "swagger-annotations", "2.2.22")))
+						.build())
+				.nodeVariant(VariantDefinition.builder()
+						.nodePackageDependencies(List.of(
+								nodeDependency("swagger-ui-express", "^5.0.1"),
+								nodeDevDependency("@types/swagger-ui-express", "^4.1.8")))
+						.build())
+				.pythonVariant(VariantDefinition.builder()
+						.pythonPackageDependencies(List.of(
+								pythonDependency("pydantic", "2.10.6")))
+						.build())
+				.build());
+
 		register(ModuleDefinition.visible("cdn")
 				.javaVariant(VariantDefinition.builder()
 						.requires("common")

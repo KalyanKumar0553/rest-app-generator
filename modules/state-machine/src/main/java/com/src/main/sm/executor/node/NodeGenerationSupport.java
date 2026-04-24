@@ -191,11 +191,24 @@ final class NodeGenerationSupport {
 
 	@SuppressWarnings("unchecked")
 	static Map<String, Object> extractModuleConfigs(Map<String, Object> yaml) {
-		if (yaml == null || !(yaml.get("moduleConfigs") instanceof Map<?, ?> rawConfigs)) {
+		if (yaml == null) {
+			return Map.of();
+		}
+		Object rawConfigs = yaml.get("moduleConfigs");
+		if (!(rawConfigs instanceof Map<?, ?>) && yaml.get("core") instanceof Map<?, ?> coreMapRaw) {
+			Object modulesRaw = ((Map<String, Object>) coreMapRaw).get("modules");
+			if (modulesRaw instanceof Map<?, ?> modulesMapRaw) {
+				Object nestedConfig = ((Map<String, Object>) modulesMapRaw).get("config");
+				if (nestedConfig instanceof Map<?, ?>) {
+					rawConfigs = nestedConfig;
+				}
+			}
+		}
+		if (!(rawConfigs instanceof Map<?, ?> rawConfigsMap)) {
 			return Map.of();
 		}
 		Map<String, Object> configs = new LinkedHashMap<>();
-		for (Map.Entry<?, ?> entry : rawConfigs.entrySet()) {
+		for (Map.Entry<?, ?> entry : rawConfigsMap.entrySet()) {
 			if (entry.getKey() == null) {
 				continue;
 			}

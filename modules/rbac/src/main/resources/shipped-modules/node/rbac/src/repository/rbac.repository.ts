@@ -1,39 +1,58 @@
 import { prisma } from '../../../../src/lib/prisma';
 
 import type { RoleModel, UserRoleModel } from '../model/rbac.model';
+import type { RbacModuleConfig } from '../config/rbac-config';
 
 export class RbacRepository {
-  async seedRoles(roles: string[], permissions: string[]): Promise<void> {
-    for (const roleName of roles) {
+  async seedRoles(config: Required<RbacModuleConfig>): Promise<void> {
+    for (const role of config.roles) {
       await prisma.role.upsert({
         where: {
-          name: roleName
+          name: role.code
         },
-        update: {},
+        update: {
+          displayName: role.displayName ?? role.code,
+          description: role.description ?? null,
+          systemRole: role.systemRole ?? false,
+          active: role.active ?? true
+        },
         create: {
-          name: roleName
+          name: role.code,
+          displayName: role.displayName ?? role.code,
+          description: role.description ?? null,
+          systemRole: role.systemRole ?? false,
+          active: role.active ?? true
         }
       });
     }
 
-    for (const permissionName of permissions) {
+    for (const permission of config.permissions) {
       await prisma.permission.upsert({
         where: {
-          name: permissionName
+          name: permission.code
         },
-        update: {},
+        update: {
+          displayName: permission.displayName ?? permission.code,
+          description: permission.description ?? null,
+          category: permission.category ?? 'RBAC',
+          active: permission.active ?? true
+        },
         create: {
-          name: permissionName
+          name: permission.code,
+          displayName: permission.displayName ?? permission.code,
+          description: permission.description ?? null,
+          category: permission.category ?? 'RBAC',
+          active: permission.active ?? true
         }
       });
     }
 
-    for (const roleName of roles) {
-      const role = await prisma.role.findUnique({ where: { name: roleName } });
+    for (const mapping of config.rolePermissions) {
+      const role = await prisma.role.findUnique({ where: { name: mapping.roleCode } });
       if (!role) {
         continue;
       }
-      for (const permissionName of permissions) {
+      for (const permissionName of mapping.permissionCodes) {
         const permission = await prisma.permission.findUnique({ where: { name: permissionName } });
         if (!permission) {
           continue;
@@ -69,7 +88,11 @@ export class RbacRepository {
       }
     });
     return roles.map((role) => ({
-      name: role.name,
+      code: role.name,
+      displayName: role.displayName ?? undefined,
+      description: role.description ?? undefined,
+      systemRole: role.systemRole,
+      active: role.active,
       permissions: role.rolePermissions.map((mapping) => mapping.permission.name)
     }));
   }

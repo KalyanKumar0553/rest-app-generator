@@ -1,0 +1,144 @@
+<app-shipped-module-config-panel
+  moduleId="RBAC"
+  title="RBAC Module"
+  subtitle="Configure initial roles, permissions, and role-permission mappings. The values are stored in YAML and drive Java seed SQL plus Node and Python RBAC bootstrap behavior.">
+  <section class="config-card">
+    <h3>Global defaults</h3>
+    <mat-form-field appearance="outline" subscriptSizing="dynamic">
+      <mat-label>Default role</mat-label>
+      <input matInput [(ngModel)]="config.defaultRole" (ngModelChange)="onConfigChange()">
+    </mat-form-field>
+  </section>
+
+  <section class="config-card">
+    <div class="config-header">
+      <div>
+        <h3>Roles</h3>
+        <p>These roles become the initial RBAC catalog for the generated project.</p>
+      </div>
+      <button mat-stroked-button type="button" (click)="addRole()">Add Role</button>
+    </div>
+    <div class="item-list">
+      <div class="item-card" *ngFor="let role of config.roles; let index = index; trackBy: trackByIndex">
+        <div class="item-grid">
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <mat-label>Code</mat-label>
+            <input matInput [(ngModel)]="role.code" (ngModelChange)="onConfigChange()">
+          </mat-form-field>
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <mat-label>Display name</mat-label>
+            <input matInput [(ngModel)]="role.displayName" (ngModelChange)="onConfigChange()">
+          </mat-form-field>
+          <mat-form-field appearance="outline" subscriptSizing="dynamic" class="wide-field">
+            <mat-label>Description</mat-label>
+            <input matInput [(ngModel)]="role.description" (ngModelChange)="onConfigChange()">
+          </mat-form-field>
+        </div>
+        <div class="flag-row">
+          <mat-checkbox [(ngModel)]="role.systemRole" (ngModelChange)="onConfigChange()">System role</mat-checkbox>
+          <mat-checkbox [(ngModel)]="role.active" (ngModelChange)="onConfigChange()">Active</mat-checkbox>
+          <button mat-button type="button" (click)="removeRole(index)">Remove</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="config-card">
+    <div class="config-header">
+      <div>
+        <h3>Permissions</h3>
+        <p>Define the operations that can be mapped to roles.</p>
+      </div>
+      <button mat-stroked-button type="button" (click)="addPermission()">Add Permission</button>
+    </div>
+    <div class="item-list">
+      <div class="item-card" *ngFor="let permission of config.permissions; let index = index; trackBy: trackByIndex">
+        <div class="item-grid permission-grid">
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <mat-label>Code</mat-label>
+            <input matInput [(ngModel)]="permission.code" (ngModelChange)="onConfigChange()">
+          </mat-form-field>
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <mat-label>Display name</mat-label>
+            <input matInput [(ngModel)]="permission.displayName" (ngModelChange)="onConfigChange()">
+          </mat-form-field>
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <mat-label>Category</mat-label>
+            <input matInput [(ngModel)]="permission.category" (ngModelChange)="onConfigChange()">
+          </mat-form-field>
+          <mat-form-field appearance="outline" subscriptSizing="dynamic" class="wide-field">
+            <mat-label>Description</mat-label>
+            <input matInput [(ngModel)]="permission.description" (ngModelChange)="onConfigChange()">
+          </mat-form-field>
+        </div>
+        <div class="flag-row">
+          <mat-checkbox [(ngModel)]="permission.active" (ngModelChange)="onConfigChange()">Active</mat-checkbox>
+          <button mat-button type="button" (click)="removePermission(index)">Remove</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="config-card">
+    <div class="config-header">
+      <div>
+        <h3>Role mappings</h3>
+        <p>Map one or more permissions to each role. Use comma-separated permission codes.</p>
+      </div>
+      <button mat-stroked-button type="button" (click)="addMapping()">Add Mapping</button>
+    </div>
+    <div class="item-list">
+      <div class="item-card" *ngFor="let mapping of config.rolePermissions; let index = index; trackBy: trackByIndex">
+        <div class="item-grid">
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <mat-label>Role code</mat-label>
+            <input matInput [(ngModel)]="mapping.roleCode" (ngModelChange)="onConfigChange()">
+          </mat-form-field>
+          <mat-form-field appearance="outline" subscriptSizing="dynamic" class="wide-field">
+            <mat-label>Permission codes</mat-label>
+            <input matInput [(ngModel)]="mapping.permissionCodesInput" (ngModelChange)="onConfigChange()" placeholder="project.read, project.manage">
+          </mat-form-field>
+        </div>
+        <div class="flag-row">
+          <button mat-button type="button" (click)="removeMapping(index)">Remove</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="config-card">
+    <div class="config-header">
+      <div>
+        <h3>Route authorities</h3>
+        <p>Protect generated routes by path, HTTP method, and required authorities.</p>
+      </div>
+      <button mat-stroked-button type="button" (click)="addRoute()">Add Route</button>
+    </div>
+    <div class="item-list">
+      <div class="item-card" *ngFor="let route of config.routes; let index = index; trackBy: trackByIndex">
+        <div class="item-grid permission-grid">
+          <mat-form-field appearance="outline" subscriptSizing="dynamic" class="wide-field">
+            <mat-label>Path pattern</mat-label>
+            <input matInput [(ngModel)]="route.pathPattern" (ngModelChange)="onConfigChange()" placeholder="/api/v1/projects/**">
+          </mat-form-field>
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <mat-label>HTTP method</mat-label>
+            <input matInput [(ngModel)]="route.httpMethod" (ngModelChange)="onConfigChange()" placeholder="GET">
+          </mat-form-field>
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <mat-label>Priority</mat-label>
+            <input matInput type="number" [(ngModel)]="route.priority" (ngModelChange)="onConfigChange()">
+          </mat-form-field>
+          <mat-form-field appearance="outline" subscriptSizing="dynamic" class="wide-field">
+            <mat-label>Authorities</mat-label>
+            <input matInput [(ngModel)]="route.authoritiesInput" (ngModelChange)="onConfigChange()" placeholder="project.read, project.manage">
+          </mat-form-field>
+        </div>
+        <div class="flag-row">
+          <mat-checkbox [(ngModel)]="route.active" (ngModelChange)="onConfigChange()">Active</mat-checkbox>
+          <button mat-button type="button" (click)="removeRoute(index)">Remove</button>
+        </div>
+      </div>
+    </div>
+  </section>
+</app-shipped-module-config-panel>

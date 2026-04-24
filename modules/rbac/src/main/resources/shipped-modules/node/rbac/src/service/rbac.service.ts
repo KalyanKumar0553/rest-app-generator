@@ -9,7 +9,7 @@ export class RbacService {
   ) {}
 
   async ensureSeedData(): Promise<void> {
-    await this.rbacRepository.seedRoles(this.config.roles, this.config.permissions);
+    await this.rbacRepository.seedRoles(this.config);
   }
 
   async listRoles(): Promise<RoleModel[]> {

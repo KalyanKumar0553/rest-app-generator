@@ -1,0 +1,75 @@
+<app-shipped-module-config-panel
+  moduleId="State Machine"
+  title="State Machine Module"
+  subtitle="Define workflow states and transitions that will be written into the generated YAML and used by the Node and Python runtime templates.">
+  <section class="config-card">
+    <h3>Workflow definition</h3>
+    <div class="config-grid">
+      <mat-form-field appearance="outline" subscriptSizing="dynamic">
+        <mat-label>Workflow name</mat-label>
+        <input matInput [(ngModel)]="config.workflowName" (ngModelChange)="onConfigChange()">
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" subscriptSizing="dynamic">
+        <mat-label>Initial state</mat-label>
+        <input matInput [(ngModel)]="config.initialState" (ngModelChange)="onConfigChange()">
+      </mat-form-field>
+    </div>
+
+    <mat-checkbox [(ngModel)]="config.allowSelfTransitions" (ngModelChange)="onConfigChange()">
+      Allow self transitions
+    </mat-checkbox>
+  </section>
+
+  <section class="config-card">
+    <div class="config-header">
+      <div>
+        <h3>States</h3>
+        <p>These states seed the runtime workflow registry.</p>
+      </div>
+    </div>
+
+    <div class="inline-row">
+      <mat-form-field appearance="outline" class="grow" subscriptSizing="dynamic">
+        <mat-label>Add state</mat-label>
+        <input matInput [(ngModel)]="stateInput" placeholder="draft">
+      </mat-form-field>
+      <button mat-stroked-button type="button" (click)="addState()">Add State</button>
+    </div>
+
+    <div class="pill-list">
+      <button class="pill" type="button" *ngFor="let state of config.states" (click)="removeState(state)" [attr.aria-label]="'Remove ' + state">
+        <span>{{ state }}</span>
+        <span class="pill-remove">×</span>
+      </button>
+    </div>
+  </section>
+
+  <section class="config-card">
+    <div class="config-header">
+      <div>
+        <h3>Transitions</h3>
+        <p>Each transition becomes an allowed runtime event for the selected workflow.</p>
+      </div>
+      <button mat-stroked-button type="button" (click)="addTransition()">Add Transition</button>
+    </div>
+
+    <div class="transition-list">
+      <div class="transition-row" *ngFor="let transition of config.transitions; let index = index; trackBy: trackByIndex">
+        <mat-form-field appearance="outline" subscriptSizing="dynamic">
+          <mat-label>From</mat-label>
+          <input matInput [(ngModel)]="transition.from" (ngModelChange)="onConfigChange()">
+        </mat-form-field>
+        <mat-form-field appearance="outline" subscriptSizing="dynamic">
+          <mat-label>Event</mat-label>
+          <input matInput [(ngModel)]="transition.event" (ngModelChange)="onConfigChange()">
+        </mat-form-field>
+        <mat-form-field appearance="outline" subscriptSizing="dynamic">
+          <mat-label>To</mat-label>
+          <input matInput [(ngModel)]="transition.to" (ngModelChange)="onConfigChange()">
+        </mat-form-field>
+        <button mat-button type="button" (click)="removeTransition(index)">Remove</button>
+      </div>
+    </div>
+  </section>
+</app-shipped-module-config-panel>

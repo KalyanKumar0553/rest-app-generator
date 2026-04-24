@@ -12,6 +12,8 @@ export class SubscriptionController {
   plans = async (_request: Request, response: Response): Promise<void> => {
     response.json({
       currency: this.config.currency,
+      defaultPlanCode: this.config.defaultPlanCode,
+      allowTrial: this.config.allowTrial,
       plans: await this.subscriptionService.listPlans()
     });
   };

@@ -131,6 +131,15 @@ public class PythonGenerationExecutor implements StepExecutor {
 			return Map.of();
 		}
 		Object rawModuleConfigs = yaml.get("moduleConfigs");
+		if (!(rawModuleConfigs instanceof Map<?, ?>) && yaml.get("core") instanceof Map<?, ?> coreRaw) {
+			Object modulesRaw = ((Map<String, Object>) coreRaw).get("modules");
+			if (modulesRaw instanceof Map<?, ?> modulesMapRaw) {
+				Object configRaw = ((Map<String, Object>) modulesMapRaw).get("config");
+				if (configRaw instanceof Map<?, ?>) {
+					rawModuleConfigs = configRaw;
+				}
+			}
+		}
 		if (!(rawModuleConfigs instanceof Map<?, ?> moduleConfigs)) {
 			return Map.of();
 		}
@@ -189,18 +198,49 @@ public class PythonGenerationExecutor implements StepExecutor {
 				.map(moduleId -> "from app.modules.%s import register_module as register_%s_module"
 						.formatted(moduleId.replace('-', '_'), moduleId.replace('-', '_')))
 				.collect(Collectors.joining("\n"));
+		String configImports = selectedModules.stream()
+				.filter(moduleId -> "swagger".equals(moduleId))
+				.map(moduleId -> "from app.modules.%s import resolve_app_config as resolve_%s_app_config"
+						.formatted(moduleId.replace('-', '_'), moduleId.replace('-', '_')))
+				.collect(Collectors.joining("\n"));
 		String registryEntries = selectedModules.stream()
 				.map(moduleId -> "    \"" + escapePython(moduleId) + "\": register_" + moduleId.replace('-', '_') + "_module")
 				.collect(Collectors.joining(",\n"));
+		String configRegistryEntries = selectedModules.stream()
+				.filter(moduleId -> "swagger".equals(moduleId))
+				.map(moduleId -> "    \"" + escapePython(moduleId) + "\": resolve_" + moduleId.replace('-', '_') + "_app_config")
+				.collect(Collectors.joining(",\n"));
+		String configResolverBlock = configRegistryEntries.isBlank()
+				? "module_app_config_resolvers = {}\n"
+				: """
+				module_app_config_resolvers = {
+				%s
+				}
+				""".formatted(configRegistryEntries);
 		return """
 				from fastapi import FastAPI
 				
 				from app.generated.module_manifest import module_manifest
 				%s
+				%s
 				
 				module_registrars = {
 				%s
 				}
+				
+				%s
+				
+				def resolve_generated_app_options(default_title: str) -> dict:
+				    options = {}
+				    for module_id in module_manifest["selectedModules"]:
+				        resolver = module_app_config_resolvers.get(module_id)
+				        if resolver is None:
+				            continue
+				        config = module_manifest.get("moduleConfigs", {}).get(module_id, {})
+				        resolved = resolver(config, module_manifest, default_title)
+				        if resolved:
+				            options.update(resolved)
+				    return options
 				
 				def configure_generated_modules(app: FastAPI) -> None:
 				    for module_id in module_manifest["selectedModules"]:
@@ -209,7 +249,7 @@ public class PythonGenerationExecutor implements StepExecutor {
 				            continue
 				        config = module_manifest.get("moduleConfigs", {}).get(module_id, {})
 				        register_module(app, config, module_manifest)
-				""".formatted(imports, registryEntries);
+				""".formatted(imports, configImports, registryEntries, configResolverBlock);
 	}
 
 	private String renderPythonObject(Object value, int indentLevel) {

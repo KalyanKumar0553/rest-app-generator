@@ -54,6 +54,7 @@ import { RbacModuleTabComponent } from '../rbac-module-tab/rbac-module-tab.compo
 import { AuthModuleTabComponent } from '../auth-module-tab/auth-module-tab.component';
 import { StateMachineModuleTabComponent } from '../state-machine-module-tab/state-machine-module-tab.component';
 import { SubscriptionModuleTabComponent } from '../subscription-module-tab/subscription-module-tab.component';
+import { SwaggerModuleTabComponent } from '../swagger-module-tab/swagger-module-tab.component';
 import { CdnModuleTabComponent } from '../cdn-module-tab/cdn-module-tab.component';
 import {
   ModulesSelectionComponent,
@@ -99,6 +100,7 @@ import {
   RECENT_PROJECT_PROMPT_CONFIG
 } from './node-project-generation-dashboard.defaults';
 import { ProjectSpecMapperService } from '../../services/project-spec-mapper.service';
+import { ProjectGenerationStateService } from '../../services/project-generation-state.service';
 import { toDatabaseCode, resolveDatabaseType, trimmed, toArtifactId, hasNumber, isValidProjectDescription } from '../../utils/project-generation.utils';
 import { ProjectDraftState } from '../../models/project-draft.models';
 import { loadProjectDraftFromStorage, saveProjectDraftToStorage } from '../../utils/project-draft-storage.utils';
@@ -144,6 +146,7 @@ import { NodeProjectGenerationExploreSectionComponent } from './node-project-gen
     AuthModuleTabComponent,
     StateMachineModuleTabComponent,
     SubscriptionModuleTabComponent,
+    SwaggerModuleTabComponent,
     CdnModuleTabComponent,
     ModulesSelectionComponent,
     SidenavComponent,
@@ -155,7 +158,7 @@ import { NodeProjectGenerationExploreSectionComponent } from './node-project-gen
 })
 export class NodeProjectGenerationDashboardComponent implements OnInit, OnDestroy {
   private static readonly projectStorageResetKey = 'project_storage_reset_v20260314';
-  private static readonly shippableModuleKeys = ['rbac', 'auth', 'state-machine', 'subscription', 'cdn'];
+  private static readonly shippableModuleKeys = ['rbac', 'auth', 'state-machine', 'subscription', 'swagger', 'cdn'];
   private static readonly shippableModuleCards: ShippableModuleCard[] = [
     {
       key: 'rbac',
@@ -176,6 +179,11 @@ export class NodeProjectGenerationDashboardComponent implements OnInit, OnDestro
       key: 'subscription',
       title: 'Subscription',
       description: 'Adds subscription, entitlement, pricing, and quota management support as a reusable generated module.'
+    },
+    {
+      key: 'swagger',
+      title: 'Swagger',
+      description: 'Adds OpenAPI document generation and interactive API documentation support to generated runtimes.'
     },
     {
       key: 'cdn',
@@ -344,6 +352,7 @@ export class NodeProjectGenerationDashboardComponent implements OnInit, OnDestro
     private validatorService: ValidatorService,
     private localStorageService: LocalStorageService,
     private cdr: ChangeDetectorRef,
+    private projectGenerationState: ProjectGenerationStateService,
     private specMapper: ProjectSpecMapperService
   ) {
     this.runtimeLanguage = this.resolveRuntimeLanguage();
@@ -439,6 +448,12 @@ export class NodeProjectGenerationDashboardComponent implements OnInit, OnDestro
     this.projectSettings.language = this.runtimeLanguage;
     this.developerPreferences.orm = this.defaultOrmForRuntime();
     this.isLoggedIn = this.authService.isLoggedIn();
+    this.projectGenerationState.moduleConfigs$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe((configs) => {
+        this.moduleConfigs = configs;
+      });
+    this.projectGenerationState.setModuleConfigs(this.moduleConfigs);
     const initialProjectId = trimmed(this.route.snapshot.queryParamMap.get('projectId'));
     if (!initialProjectId) {
       this.loadTabDefinitions(this.projectSettings.language, this.selectedDependencies);
@@ -1389,6 +1404,7 @@ export class NodeProjectGenerationDashboardComponent implements OnInit, OnDestro
             ...this.moduleConfigs,
             ...(tabData['moduleConfigs'] as Record<string, any>)
           };
+          this.projectGenerationState.setModuleConfigs(this.moduleConfigs);
         }
         this.applySelectedPluginsDraftData(tabData);
         this.loadTabDefinitions(this.projectSettings.language, this.selectedDependencies);
@@ -1422,6 +1438,7 @@ export class NodeProjectGenerationDashboardComponent implements OnInit, OnDestro
             ...this.moduleConfigs,
             ...(tabData['moduleConfigs'] as Record<string, any>)
           };
+          this.projectGenerationState.setModuleConfigs(this.moduleConfigs);
         }
         return;
       default:
@@ -1531,6 +1548,7 @@ export class NodeProjectGenerationDashboardComponent implements OnInit, OnDestro
     this.enums = [];
     this.mappers = [];
     this.moduleConfigs = {};
+    this.projectGenerationState.setModuleConfigs(this.moduleConfigs);
     this.selectedPlugins = [];
     this.dependencies = '';
     this.selectedDependencies = [];
@@ -2445,6 +2463,7 @@ export class NodeProjectGenerationDashboardComponent implements OnInit, OnDestro
       this.dependencies = this.selectedDependencies.join(', ');
       if (NodeProjectGenerationDashboardComponent.shippableModuleKeys.includes(dep)) {
         delete this.moduleConfigs[dep];
+        this.projectGenerationState.removeModuleConfig(dep);
       }
       this.refreshModuleTabDefinitions();
     }
@@ -3475,6 +3494,7 @@ export class NodeProjectGenerationDashboardComponent implements OnInit, OnDestro
     this.moduleConfigs = savedProject?.moduleConfigs && typeof savedProject.moduleConfigs === 'object'
       ? savedProject.moduleConfigs
       : {};
+    this.projectGenerationState.setModuleConfigs(this.moduleConfigs);
     this.controllersConfigEnabled = savedProject?.controllers?.enabled === undefined
       ? true
       : Boolean(savedProject.controllers.enabled);

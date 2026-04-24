@@ -1,0 +1,38 @@
+<app-shipped-module-config-panel
+  moduleId="Swagger"
+  title="Swagger Module"
+  subtitle="Configure OpenAPI metadata and routes for the generated Node and Python projects. These values are persisted into YAML and consumed by the shipped swagger runtime.">
+  <section class="config-card">
+    <h3>Documentation settings</h3>
+    <div class="config-grid">
+      <mat-form-field appearance="outline" subscriptSizing="dynamic">
+        <mat-label>Title</mat-label>
+        <input matInput [(ngModel)]="config.title" (ngModelChange)="onConfigChange()">
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" subscriptSizing="dynamic">
+        <mat-label>Version</mat-label>
+        <input matInput [(ngModel)]="config.version" (ngModelChange)="onConfigChange()">
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" subscriptSizing="dynamic" class="description-field">
+        <mat-label>Description</mat-label>
+        <textarea matInput rows="3" [(ngModel)]="config.description" (ngModelChange)="onConfigChange()"></textarea>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" subscriptSizing="dynamic">
+        <mat-label>Swagger UI path</mat-label>
+        <input matInput [(ngModel)]="config.docsPath" (ngModelChange)="onConfigChange()">
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" subscriptSizing="dynamic">
+        <mat-label>OpenAPI JSON path</mat-label>
+        <input matInput [(ngModel)]="config.openApiPath" (ngModelChange)="onConfigChange()">
+      </mat-form-field>
+    </div>
+
+    <mat-checkbox [(ngModel)]="config.enableUi" (ngModelChange)="onConfigChange()">
+      Expose Swagger UI in the generated runtime
+    </mat-checkbox>
+  </section>
+</app-shipped-module-config-panel>

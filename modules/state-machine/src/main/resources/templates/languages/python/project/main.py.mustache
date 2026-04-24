@@ -1,9 +1,9 @@
 from fastapi import FastAPI
 {{#hasModules}}
-from app.generated.module_bootstrap import configure_generated_modules
+from app.generated.module_bootstrap import configure_generated_modules, resolve_generated_app_options
 {{/hasModules}}
 
-app = FastAPI(title="{{appName}}")
+app = FastAPI(title="{{appName}}"{{#hasModules}}, **resolve_generated_app_options("{{appName}}"){{/hasModules}})
 {{#hasModules}}
 configure_generated_modules(app)
 {{/hasModules}}

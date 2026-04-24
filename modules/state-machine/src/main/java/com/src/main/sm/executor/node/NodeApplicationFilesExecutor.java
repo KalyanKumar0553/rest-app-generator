@@ -266,6 +266,10 @@ public class NodeApplicationFilesExecutor implements StepExecutor {
 					model Role {
 					  id              String           @id @default(cuid())
 					  name            String           @unique
+					  displayName     String?
+					  description     String?
+					  systemRole      Boolean          @default(false)
+					  active          Boolean          @default(true)
 					  rolePermissions RolePermission[]
 					  userRoles       UserRole[]
 					}
@@ -273,6 +277,10 @@ public class NodeApplicationFilesExecutor implements StepExecutor {
 					model Permission {
 					  id              String           @id @default(cuid())
 					  name            String           @unique
+					  displayName     String?
+					  description     String?
+					  category        String           @default("RBAC")
+					  active          Boolean          @default(true)
 					  rolePermissions RolePermission[]
 					}
 					
@@ -296,19 +304,113 @@ public class NodeApplicationFilesExecutor implements StepExecutor {
 		if (selectedModules.contains("subscription")) {
 			builder.append("""
 					model SubscriptionPlan {
-					  id           String               @id @default(cuid())
-					  code         String               @unique
-					  name         String
-					  monthlyPrice Int
-					  subscriptions TenantSubscription[]
+					  id                 String                @id @default(cuid())
+					  code               String                @unique
+					  name               String
+					  description        String?
+					  currency           String                @default("INR")
+					  monthlyPrice       Int
+					  yearlyPrice        Int?
+					  trialDays          Int                  @default(0)
+					  isActive           Boolean              @default(true)
+					  isDefault          Boolean              @default(false)
+					  sortOrder          Int                  @default(0)
+					  subscriptions      TenantSubscription[]
+					  prices             PlanPrice[]
+					  featureMappings    PlanFeatureMapping[]
+					  roleMappings       SubscriptionPlanRoleMapping[]
+					  couponMappings     SubscriptionCouponPlanMapping[]
+					}
+					
+					model SubscriptionFeature {
+					  id          String               @id @default(cuid())
+					  code        String               @unique
+					  name        String
+					  description String?
+					  featureType String
+					  isActive    Boolean              @default(true)
+					  mappings    PlanFeatureMapping[]
+					}
+					
+					model PlanFeatureMapping {
+					  id          String              @id @default(cuid())
+					  planId      String
+					  featureId   String
+					  isEnabled   Boolean             @default(false)
+					  limitValue  Int?
+					  stringValue String?
+					  plan        SubscriptionPlan    @relation(fields: [planId], references: [id], onDelete: Cascade)
+					  feature     SubscriptionFeature @relation(fields: [featureId], references: [id], onDelete: Cascade)
+					
+					  @@unique([planId, featureId])
+					}
+					
+					model PlanPrice {
+					  id           String           @id @default(cuid())
+					  planId        String
+					  billingCycle  String
+					  currencyCode  String
+					  amount        Decimal        @db.Decimal(19, 2)
+					  displayLabel  String?
+					  isActive      Boolean        @default(true)
+					  plan          SubscriptionPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+					}
+					
+					model SubscriptionCoupon {
+					  id                   String                           @id @default(cuid())
+					  code                 String                           @unique
+					  name                 String
+					  discountType         String
+					  discountValue        Decimal                          @db.Decimal(19, 4)
+					  isActive             Boolean                          @default(true)
+					  planMappings         SubscriptionCouponPlanMapping[]
+					  subscriptions        TenantSubscription[]
+					}
+					
+					model SubscriptionCouponPlanMapping {
+					  id       String             @id @default(cuid())
+					  couponId String
+					  planId   String
+					  coupon   SubscriptionCoupon @relation(fields: [couponId], references: [id], onDelete: Cascade)
+					  plan     SubscriptionPlan   @relation(fields: [planId], references: [id], onDelete: Cascade)
+					
+					  @@unique([couponId, planId])
+					}
+					
+					model SubscriptionPlanRoleMapping {
+					  id       String           @id @default(cuid())
+					  planId   String
+					  roleName String
+					  plan     SubscriptionPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+					
+					  @@unique([planId, roleName])
 					}
 					
 					model TenantSubscription {
-					  tenantId  String @id
-					  planCode  String
-					  status    String
-					  createdAt DateTime @default(now())
-					  updatedAt DateTime @updatedAt
+					  tenantId              String             @id
+					  subscriberUserId      String?
+					  planCode              String
+					  status                String
+					  billingCycle          String             @default("MONTHLY")
+					  currency              String             @default("INR")
+					  trialEndsAt           DateTime?
+					  autoRenew             Boolean            @default(false)
+					  appliedCouponCode     String?
+					  createdAt             DateTime           @default(now())
+					  updatedAt             DateTime           @updatedAt
+					  plan                  SubscriptionPlan?  @relation(fields: [planCode], references: [code], onDelete: SetNull)
+					  auditLogs             SubscriptionAuditLog[]
+					}
+					
+					model SubscriptionAuditLog {
+					  id               String              @id @default(cuid())
+					  tenantId         String
+					  subscriptionId   String?
+					  eventType        String
+					  actorId          String?
+					  reason           String?
+					  createdAt        DateTime            @default(now())
+					  subscription     TenantSubscription? @relation(fields: [subscriptionId], references: [tenantId], onDelete: SetNull)
 					}
 					
 					""");
@@ -324,6 +426,29 @@ public class NodeApplicationFilesExecutor implements StepExecutor {
 					  updatedAt    DateTime @updatedAt
 					
 					  @@unique([workflowName, stateId])
+					}
+					
+					model WorkflowTransition {
+					  id           String   @id @default(cuid())
+					  workflowName String
+					  fromState    String
+					  eventName    String
+					  toState      String
+					  createdAt    DateTime @default(now())
+					  updatedAt    DateTime @updatedAt
+					
+					  @@unique([workflowName, fromState, eventName])
+					}
+					
+					model WorkflowInstance {
+					  id           String   @id @default(cuid())
+					  workflowName String
+					  entityId     String
+					  currentState String
+					  createdAt    DateTime @default(now())
+					  updatedAt    DateTime @updatedAt
+					
+					  @@unique([workflowName, entityId])
 					}
 					
 					""");

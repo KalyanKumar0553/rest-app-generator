@@ -1,0 +1,81 @@
+.config-card {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 24px;
+  border: 1px solid var(--color-border);
+  border-radius: 20px;
+  background: var(--color-background-white);
+  box-shadow: var(--shadow-sm);
+}
+
+.config-card h3,
+.config-header h3 {
+  margin: 0;
+}
+
+.config-card p,
+.config-header p {
+  margin: 4px 0 0;
+  color: var(--color-text-secondary);
+}
+
+.config-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.item-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.item-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 20px;
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+  background: var(--color-background-secondary);
+}
+
+.item-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.permission-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.wide-field {
+  grid-column: span 2;
+}
+
+.permission-grid .wide-field {
+  grid-column: span 3;
+}
+
+.flag-row {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 900px) {
+  .item-grid,
+  .permission-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .wide-field,
+  .permission-grid .wide-field {
+    grid-column: auto;
+  }
+}

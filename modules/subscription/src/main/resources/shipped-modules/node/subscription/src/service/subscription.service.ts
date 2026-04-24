@@ -19,11 +19,16 @@ export class SubscriptionService {
 
   async subscribe(tenantId: string, planCode: string): Promise<TenantSubscriptionModel> {
     await this.ensureSeedData();
-    return this.subscriptionRepository.subscribe(tenantId, planCode);
+    return this.subscriptionRepository.subscribe(tenantId, planCode, this.config.allowTrial, this.config.currency);
   }
 
   async currentSubscription(tenantId: string): Promise<TenantSubscriptionModel> {
     await this.ensureSeedData();
-    return this.subscriptionRepository.currentSubscription(tenantId, this.config.plans[0]?.code ?? 'FREE');
+    return this.subscriptionRepository.currentSubscription(
+      tenantId,
+      this.config.defaultPlanCode || this.config.plans[0]?.code || 'FREE',
+      this.config.currency,
+      this.config.allowTrial
+    );
   }
 }

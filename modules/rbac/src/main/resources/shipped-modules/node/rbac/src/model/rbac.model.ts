@@ -1,5 +1,9 @@
 export type RoleModel = {
-  name: string;
+  code: string;
+  displayName?: string;
+  description?: string;
+  systemRole?: boolean;
+  active?: boolean;
   permissions: string[];
 };
 
