@@ -265,6 +265,7 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
   private publishedPluginModulesLoadedGenerator: string | null = null;
   private loadedDraftSections = new Set<string>();
   private draftSectionLoadPromises = new Map<string, Promise<void>>();
+  private pendingCreateDraftPromise: Promise<string | null> | null = null;
   private tabDefinitionsLoadedFully = false;
   draftVersion = 1;
   tabDefinitions: ProjectTabDefinition[] = [];
@@ -628,6 +629,7 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
       case 'auth':
       case 'state-machine':
       case 'subscription':
+      case 'swagger':
         return {
           moduleConfigs: {
             [tabKey]: this.moduleConfigs[tabKey] || {}
@@ -743,22 +745,42 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
         return existingProjectId;
       }
 
-      const response = await firstValueFrom(this.projectService.createProjectDraft(payload));
-      const projectId = trimmed(response?.projectId);
-      if (!projectId) {
-        throw new Error('Project id is missing in response.');
+      if (this.pendingCreateDraftPromise) {
+        return await this.pendingCreateDraftPromise;
       }
-      this.backendProjectId = projectId;
-      this.draftVersion = Number(response?.draftVersion || 1);
-      this.connectProjectEvents(projectId);
-      this.initializeProjectCollaboration(projectId);
-      this.recordCollaborationAction(projectId, this.activeSection, 'DRAFT_CREATED', 'Created a saved draft for collaborative editing.');
-      if (showToast) {
-        this.toastService.success('Project saved successfully');
+
+      if (!(await this.validateUniqueProjectNameForCurrentUser())) {
+        if (showToast) {
+          this.toastService.error('Project name already exists. Choose a different project name');
+        }
+        return null;
       }
-      this.refreshSavedProjectStateSnapshot();
-      return projectId;
+
+      this.pendingCreateDraftPromise = (async () => {
+        const response = await firstValueFrom(this.projectService.createProjectDraft(payload));
+        const projectId = trimmed(response?.projectId);
+        if (!projectId) {
+          throw new Error('Project id is missing in response.');
+        }
+        this.backendProjectId = projectId;
+        this.draftVersion = Number(response?.draftVersion || 1);
+        this.connectProjectEvents(projectId);
+        this.initializeProjectCollaboration(projectId);
+        this.recordCollaborationAction(projectId, this.activeSection, 'DRAFT_CREATED', 'Created a saved draft for collaborative editing.');
+        if (showToast) {
+          this.toastService.success('Project saved successfully');
+        }
+        this.refreshSavedProjectStateSnapshot();
+        return projectId;
+      })();
+
+      try {
+        return await this.pendingCreateDraftPromise;
+      } finally {
+        this.pendingCreateDraftPromise = null;
+      }
     } catch (error) {
+      this.applyProjectSaveErrorState(error);
       if (showToast) {
         this.toastService.error(this.getProjectSaveErrorMessage(error));
       }
@@ -1445,6 +1467,7 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
       case 'auth':
       case 'state-machine':
       case 'subscription':
+      case 'swagger':
         if (tabData['moduleConfigs'] && typeof tabData['moduleConfigs'] === 'object') {
           this.moduleConfigs = {
             ...this.moduleConfigs,
@@ -1574,11 +1597,11 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
   }
 
   private getProjectSaveErrorMessage(error: any): string {
-    const message = typeof error?.message === 'string' ? error.message.trim() : '';
+    const message = this.extractProjectSaveErrorMessage(error);
     if (message.toLowerCase().includes('project name already exists')) {
       return 'Project name already exists. Choose a different project name';
     }
-    return 'Failed to save and start project generation.';
+    return message || 'Failed to save and start project generation.';
   }
 
   private connectProjectEvents(projectId: string): void {
@@ -2633,9 +2656,15 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
       if (!(await this.navigateToSection('modules'))) {
         return;
       }
-      const nextSection = 'controllers';
+      await this.reloadTabDefinitionsForCurrentSelection();
+      const nextSection = this.getNextModuleConfigurationSection()
+        ?? (this.developerPreferences.configureApi ? 'controllers' : null);
+      if (!nextSection) {
+        await this.saveProjectAndInvokeApi();
+        return;
+      }
       if (await this.navigateToSection(nextSection)) {
-        this.toastService.success('Controller setup loaded');
+        this.toastService.success(this.getSectionLoadedMessage(nextSection));
       }
     } catch (error) {
       this.toastService.error('Failed to proceed');
@@ -3534,6 +3563,87 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
     }
 
     return true;
+  }
+
+  private async validateUniqueProjectNameForCurrentUser(): Promise<boolean> {
+    if (!this.isLoggedIn || trimmed(this.backendProjectId)) {
+      return true;
+    }
+
+    const projectName = trimmed(this.projectSettings.projectName);
+    if (!projectName) {
+      return true;
+    }
+
+    try {
+      const projects = await firstValueFrom(this.projectService.getProjects());
+      const duplicate = (Array.isArray(projects) ? projects : []).some((project) =>
+        trimmed(project?.name).toLowerCase() === projectName.toLowerCase()
+      );
+      if (!duplicate) {
+        return true;
+      }
+      this.projectNameError = 'Project name already exists. Choose a different project name';
+      this.activeSection = 'general';
+      this.focusProjectNamingErrorField();
+      return false;
+    } catch (error) {
+      console.error('Failed to validate project name uniqueness:', error);
+      return true;
+    }
+  }
+
+  private extractProjectSaveErrorMessage(error: any): string {
+    return trimmed(error?.error?.errorMsg || error?.error?.message || error?.error?.error || error?.message);
+  }
+
+  private applyProjectSaveErrorState(error: any): void {
+    const message = this.extractProjectSaveErrorMessage(error).toLowerCase();
+    if (message.includes('project name already exists')) {
+      this.projectNameError = 'Project name already exists. Choose a different project name';
+      this.activeSection = 'general';
+      this.focusProjectNamingErrorField();
+    }
+  }
+
+  private getNextModuleConfigurationSection(): string | null {
+    const moduleTabs = this.selectedShippableModules.filter((moduleKey) => this.isSectionAvailable(moduleKey));
+    return moduleTabs.length ? moduleTabs[0] : null;
+  }
+
+  private async reloadTabDefinitionsForCurrentSelection(): Promise<void> {
+    if (!this.isLoggedIn) {
+      return;
+    }
+    try {
+      const tabDetails = await firstValueFrom(
+        this.projectService.getProjectTabDetails(this.projectSettings.language, this.selectedDependencies)
+      );
+      this.tabDefinitions = Array.isArray(tabDetails) ? tabDetails : [];
+      this.applyTabDefinitions(this.tabDefinitions);
+      this.tabDefinitionsLoadedFully = true;
+    } catch (error) {
+      console.error('Failed to refresh project tab definitions:', error);
+    }
+  }
+
+  private getSectionLoadedMessage(section: string): string {
+    switch (section) {
+      case 'rbac':
+        return 'RBAC configuration loaded';
+      case 'auth':
+        return 'Authentication configuration loaded';
+      case 'state-machine':
+        return 'State-machine configuration loaded';
+      case 'subscription':
+        return 'Subscription configuration loaded';
+      case 'swagger':
+        return 'Swagger configuration loaded';
+      case 'controllers':
+        return 'Controller setup loaded';
+      default:
+        return 'Section loaded';
+    }
   }
 
   private canPersistDraftSilently(): boolean {
