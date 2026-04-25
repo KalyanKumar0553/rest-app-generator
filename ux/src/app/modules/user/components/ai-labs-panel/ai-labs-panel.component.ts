@@ -11,6 +11,7 @@ import { ModalComponent } from '../../../../components/modal/modal.component';
 import { NoDataStateComponent } from '../../../../components/shared/no-data-state/no-data-state.component';
 import { ToastService } from '../../../../services/toast.service';
 import { resolveProjectGenerationRoute } from '../../../project-generation/utils/project-generation-route.utils';
+import { parseApiError, getApiUserMessage } from '../../../../utils/api-error.utils';
 
 @Component({
   selector: 'app-ai-labs-panel',
@@ -106,14 +107,15 @@ export class AiLabsPanelComponent implements OnInit, OnDestroy {
       },
       error: (error) => {
         this.isStartingAiJob = false;
-        if (error?.message === this.limitReachedMessage) {
+        const apiError = parseApiError(error, 'Failed to start AI project generation.');
+        if (apiError.userMessage === this.limitReachedMessage) {
           this.aiLabsAvailability = {
             ...this.aiLabsAvailability,
             limitReached: true,
             remainingCount: 0
           };
         }
-        this.toastService.error(error?.message || 'Failed to start AI project generation.');
+        this.toastService.error(apiError.userMessage);
       }
     });
   }

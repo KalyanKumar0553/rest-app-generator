@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { ModalService } from '../../../../services/modal.service';
 import { ToastService } from '../../../../services/toast.service';
+import { getApiUserMessage } from '../../../../utils/api-error.utils';
 import { AuthService, SignupRequest, LoginRequest, CaptchaChallenge, AuthProvidersResponse } from '../../../../services/auth.service';
 import { ComponentThemeService } from '../../../../services/component-theme.service';
 import { FormValidator, ValidationErrors, CommonValidationRules } from '../../../../validators/form-validator';
@@ -243,7 +244,7 @@ export class LoginModalComponent implements OnInit {
       error: (error) => {
         this.isLoading = false;
         this.refreshCaptchaAfterFailure();
-        const errorMessage = error?.error?.errorMsg ?? 'Failed to create account. Please try again.';
+        const errorMessage = getApiUserMessage(error, 'Failed to create account. Please try again.');
 
         if (errorMessage.toLowerCase().includes('already exists') || errorMessage.toLowerCase().includes('already registered')) {
           this.toastService.error(errorMessage + ' Please login instead.');
@@ -331,7 +332,7 @@ export class LoginModalComponent implements OnInit {
       error: (error) => {
         this.isLoading = false;
         this.refreshCaptchaAfterFailure();
-        const errorMessage = error.message || 'Failed to send OTP. Please try again.';
+        const errorMessage = getApiUserMessage(error, 'Failed to send OTP. Please try again.');
         this.toastService.error(errorMessage);
       }
     });

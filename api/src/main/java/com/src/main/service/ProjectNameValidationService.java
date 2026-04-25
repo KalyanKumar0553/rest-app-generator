@@ -5,7 +5,7 @@ import java.util.UUID;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
-import com.src.main.exception.GenericException;
+import com.src.main.exception.ProjectNameAlreadyExistsException;
 import com.src.main.repository.ProjectRepository;
 
 @Service
@@ -22,14 +22,13 @@ public class ProjectNameValidationService {
 			UUID excludedProjectId) {
 		String normalizedName = normalizeProjectName(projectName);
 		if (projectRepository.existsByOwnerIdInAndNameIgnoreCase(owner.keys(), normalizedName, excludedProjectId)) {
-			throw new GenericException(HttpStatus.BAD_REQUEST,
-					"Project name already exists for this user. Choose a different project name.");
+			throw new ProjectNameAlreadyExistsException();
 		}
 	}
 
 	private String normalizeProjectName(String projectName) {
 		if (projectName == null || projectName.trim().isEmpty()) {
-			throw new GenericException(HttpStatus.BAD_REQUEST, "Project name is required.");
+			throw new com.src.main.exception.SpecificException(HttpStatus.BAD_REQUEST, "PROJECT_NAME_REQUIRED", "Project name is required.");
 		}
 		return projectName.trim();
 	}

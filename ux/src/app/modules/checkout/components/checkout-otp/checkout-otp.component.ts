@@ -6,6 +6,7 @@ import { TurnstileComponent } from '../../../../components/turnstile/turnstile.c
 import { CheckoutService } from '../../services/checkout.service';
 import { CheckoutStateService } from '../../services/checkout-state.service';
 import { ToastService } from '../../../../services/toast.service';
+import { getApiUserMessage } from '../../../../utils/api-error.utils';
 
 @Component({
   selector: 'app-checkout-otp',
@@ -116,7 +117,7 @@ export class CheckoutOtpComponent implements OnInit, OnDestroy {
       },
       error: (err) => {
         this.isLoading = false;
-        this.otpError = err?.message || 'Invalid OTP. Please check and try again.';
+        this.otpError = getApiUserMessage(err, 'Invalid OTP. Please check and try again.');
         this.toastService.error(this.otpError);
       }
     });
@@ -147,7 +148,7 @@ export class CheckoutOtpComponent implements OnInit, OnDestroy {
         this.isLoading = false;
         this.resendTurnstileToken = '';
         this.turnstileWidget?.reset();
-        const msg = err?.message || 'Failed to resend OTP. Please try again.';
+        const msg = getApiUserMessage(err, 'Failed to resend OTP. Please try again.');
         this.toastService.error(msg);
       }
     });

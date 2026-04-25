@@ -13,6 +13,7 @@ import {
 } from '../../../../services/admin.service';
 import { ToastService } from '../../../../services/toast.service';
 import { UserService, UserRoles } from '../../../../services/user.service';
+import { getApiUserMessage } from '../../../../utils/api-error.utils';
 
 interface PluginModuleFormModel {
   id: string | null;
@@ -207,7 +208,7 @@ export class SettingsPanelComponent implements OnInit {
       },
       error: (error) => {
         this.isSavingAiLabsFeature = false;
-        this.toastService.error(error?.message || 'Failed to update AI Labs setting.');
+        this.toastService.error(getApiUserMessage(error, 'Failed to update AI Labs setting.'));
       }
     });
   }
@@ -232,7 +233,7 @@ export class SettingsPanelComponent implements OnInit {
       },
       error: (error) => {
         this.isSavingAiLabsFeature = false;
-        this.toastService.error(error?.message || 'Failed to update AI Labs usage limit.');
+        this.toastService.error(getApiUserMessage(error, 'Failed to update AI Labs usage limit.'));
       }
     });
   }
@@ -257,7 +258,7 @@ export class SettingsPanelComponent implements OnInit {
       },
       error: (error) => {
         this.isSavingPluginModulesFeature = false;
-        this.toastService.error(error?.message || 'Failed to update Plugin Modules setting.');
+        this.toastService.error(getApiUserMessage(error, 'Failed to update Plugin Modules setting.'));
       }
     });
   }
@@ -282,7 +283,7 @@ export class SettingsPanelComponent implements OnInit {
       },
       error: (error) => {
         this.isSavingAiLabsFeature = false;
-        this.toastService.error(error?.message || 'Failed to update newsletter retry limit.');
+        this.toastService.error(getApiUserMessage(error, 'Failed to update newsletter retry limit.'));
       }
     });
   }
@@ -385,7 +386,7 @@ export class SettingsPanelComponent implements OnInit {
       },
       error: (error) => {
         this.isSavingProjectTabDefinition = false;
-        this.toastService.error(error?.message || 'Failed to save project tab definition.');
+        this.toastService.error(getApiUserMessage(error, 'Failed to save project tab definition.'));
       }
     });
   }
@@ -406,7 +407,7 @@ export class SettingsPanelComponent implements OnInit {
       },
       error: (error) => {
         this.isDeletingProjectTabDefinition = false;
-        this.toastService.error(error?.message || 'Failed to delete project tab definition.');
+        this.toastService.error(getApiUserMessage(error, 'Failed to delete project tab definition.'));
       }
     });
   }
@@ -493,7 +494,7 @@ export class SettingsPanelComponent implements OnInit {
       },
       error: (error) => {
         this.isSavingPluginModule = false;
-        this.toastService.error(error?.message || 'Failed to save plugin module.');
+        this.toastService.error(getApiUserMessage(error, 'Failed to save plugin module.'));
       }
     });
   }
@@ -525,7 +526,7 @@ export class SettingsPanelComponent implements OnInit {
       },
       error: (error) => {
         this.isSavingPluginModule = false;
-        this.toastService.error(error?.message || 'Failed to upload plugin module version.');
+        this.toastService.error(getApiUserMessage(error, 'Failed to upload plugin module version.'));
       }
     });
   }
@@ -543,7 +544,7 @@ export class SettingsPanelComponent implements OnInit {
       },
       error: (error) => {
         this.isPublishingPluginModule = false;
-        this.toastService.error(error?.message || 'Failed to publish plugin version.');
+        this.toastService.error(getApiUserMessage(error, 'Failed to publish plugin version.'));
       }
     });
   }

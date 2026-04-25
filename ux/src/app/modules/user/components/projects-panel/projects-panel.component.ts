@@ -13,6 +13,7 @@ import { LoadingOverlayComponent } from '../../../../components/shared/loading-o
 import { NoDataStateComponent } from '../../../../components/shared/no-data-state/no-data-state.component';
 import { HelpPopoverComponent } from '../../../../components/help-popover/help-popover.component';
 import { AuthService } from '../../../../services/auth.service';
+import { getApiUserMessage } from '../../../../utils/api-error.utils';
 
 export interface Project extends ProjectSummary {
   name: string;
@@ -157,7 +158,7 @@ export class ProjectsPanelComponent implements OnInit {
       },
       error: (error) => {
         this.isImportingProject = false;
-        this.importProjectValidationMessage = error?.error?.errorMsg || 'Failed to import project.';
+        this.importProjectValidationMessage = getApiUserMessage(error, 'Failed to import project.');
       }
     });
   }

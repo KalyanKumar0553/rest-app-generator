@@ -4,6 +4,7 @@ import { Router } from '@angular/router';
 import { CheckoutService } from '../../services/checkout.service';
 import { CheckoutStateService } from '../../services/checkout-state.service';
 import { ToastService } from '../../../../services/toast.service';
+import { getApiUserMessage } from '../../../../utils/api-error.utils';
 
 @Component({
   selector: 'app-checkout-payment',
@@ -48,7 +49,7 @@ export class CheckoutPaymentComponent implements OnInit {
       },
       error: (err) => {
         this.isLoading = false;
-        const msg = err?.message || 'Failed to place order. Please try again.';
+        const msg = getApiUserMessage(err, 'Failed to place order. Please try again.');
         this.toastService.error(msg);
       }
     });

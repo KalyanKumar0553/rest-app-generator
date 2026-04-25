@@ -5,6 +5,7 @@ import { ToastService } from '../../../../services/toast.service';
 import { AuthService, CaptchaChallenge } from '../../../../services/auth.service';
 import { Router } from '@angular/router';
 import { ComponentThemeService } from '../../../../services/component-theme.service';
+import { getApiUserMessage } from '../../../../utils/api-error.utils';
 
 @Component({
   selector: 'app-otp-modal',
@@ -130,7 +131,7 @@ export class OTPModalComponent implements OnInit, OnDestroy {
       },
       error: (error) => {
         this.isLoading = false;
-        const errorMessage = error.message || 'Invalid OTP. Please try again.';
+        const errorMessage = getApiUserMessage(error, 'Invalid OTP. Please try again.');
         this.otpError = errorMessage;
         this.toastService.error(errorMessage);
       }
@@ -160,7 +161,7 @@ export class OTPModalComponent implements OnInit, OnDestroy {
       error: (error) => {
         this.isLoading = false;
         this.closeModal();
-        const errorMessage = error.message || 'Auto-login failed. Please login manually.';
+        const errorMessage = getApiUserMessage(error, 'Auto-login failed. Please login manually.');
         this.toastService.error(errorMessage);
       }
     });
@@ -192,7 +193,7 @@ export class OTPModalComponent implements OnInit, OnDestroy {
       },
       error: (error) => {
         this.isLoading = false;
-        const errorMessage = error.message || 'Failed to resend OTP. Please try again.';
+        const errorMessage = getApiUserMessage(error, 'Failed to resend OTP. Please try again.');
         this.toastService.error(errorMessage);
         this.loadCaptcha();
       }

@@ -18,6 +18,7 @@ import {
 import { ToastService } from '../../../../services/toast.service';
 import { APP_SETTINGS } from '../../../../settings/app-settings';
 import { resolveProjectGenerationRoute } from '../../utils/project-generation-route.utils';
+import { getApiUserMessage } from '../../../../utils/api-error.utils';
 
 @Component({
   selector: 'app-project-collaboration-invite',
@@ -67,7 +68,7 @@ export class ProjectCollaborationInviteComponent implements OnInit {
       await this.loadArchivedCollaborations();
       this.invite = await firstValueFrom(this.projectService.getCollaborationInvite(inviteToken));
     } catch (error: any) {
-      this.toastService.error(error?.message || 'Failed to load collaboration invite.');
+      this.toastService.error(getApiUserMessage(error, 'Failed to load collaboration invite.'));
       this.router.navigate(['/user/dashboard']);
     } finally {
       this.isLoading = false;
@@ -86,7 +87,7 @@ export class ProjectCollaborationInviteComponent implements OnInit {
       this.toastService.success('Collaboration request sent to the project owner.');
       this.invite = this.invite ? { ...this.invite, requestPending: true } : this.invite;
     } catch (error: any) {
-      this.toastService.error(error?.message || 'Failed to send collaboration request.');
+      this.toastService.error(getApiUserMessage(error, 'Failed to send collaboration request.'));
     } finally {
       this.isSubmitting = false;
     }
@@ -114,7 +115,7 @@ export class ProjectCollaborationInviteComponent implements OnInit {
       await this.loadArchivedCollaborations();
       this.toastService.success('Collaboration request sent to the project owner.');
     } catch (error: any) {
-      this.toastService.error(error?.message || 'Failed to resubscribe to this project.');
+      this.toastService.error(getApiUserMessage(error, 'Failed to resubscribe to this project.'));
     } finally {
       this.isResubscribing = false;
     }

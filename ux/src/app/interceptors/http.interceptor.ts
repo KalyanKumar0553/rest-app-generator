@@ -7,6 +7,7 @@ import { API_CONFIG, HTTP_STATUS, ERROR_MESSAGES, STORAGE_KEYS } from '../consta
 import { LocalStorageService } from '../services/local-storage.service';
 import { ToastService } from '../services/toast.service';
 import { RequestLoadingService } from '../services/request-loading.service';
+import { parseApiError } from '../utils/api-error.utils';
 
 @Injectable()
 export class HttpRequestInterceptor implements HttpInterceptor {
@@ -124,6 +125,7 @@ export class HttpRequestInterceptor implements HttpInterceptor {
     next: HttpHandler
   ): Observable<never> {
     let errorMessage = ERROR_MESSAGES.UNKNOWN_ERROR;
+    const parsedApiError = parseApiError(error, ERROR_MESSAGES.SERVER_ERROR);
 
     if (error.error instanceof ErrorEvent) {
       errorMessage = ERROR_MESSAGES.NETWORK_ERROR;
@@ -131,7 +133,7 @@ export class HttpRequestInterceptor implements HttpInterceptor {
     } else if (error.status === 0 && error.statusText === 'Unknown Error') {
       errorMessage = ERROR_MESSAGES.TIMEOUT_ERROR;
     } else {
-      errorMessage = this.getServerErrorMessage(error);
+      errorMessage = parsedApiError.userMessage;
 
       switch (error.status) {
         case HTTP_STATUS.UNAUTHORIZED:
@@ -145,11 +147,11 @@ export class HttpRequestInterceptor implements HttpInterceptor {
           break;
         case HTTP_STATUS.BAD_REQUEST:
         case HTTP_STATUS.UNPROCESSABLE_ENTITY:
-          errorMessage = this.getServerErrorMessage(error) || ERROR_MESSAGES.VALIDATION_ERROR;
+          errorMessage = parsedApiError.userMessage || ERROR_MESSAGES.VALIDATION_ERROR;
           break;
         case HTTP_STATUS.INTERNAL_SERVER_ERROR:
         case HTTP_STATUS.SERVICE_UNAVAILABLE:
-          errorMessage = ERROR_MESSAGES.SERVER_ERROR;
+          errorMessage = parsedApiError.userMessage || ERROR_MESSAGES.SERVER_ERROR;
           break;
         case 0:
           errorMessage = ERROR_MESSAGES.NETWORK_ERROR;
@@ -162,24 +164,14 @@ export class HttpRequestInterceptor implements HttpInterceptor {
     return throwError(() => ({
       status: error.status,
       message: errorMessage,
+      errorCode: parsedApiError.errorCode,
+      exceptionType: parsedApiError.exceptionType,
       originalError: error
     }));
   }
 
   private getServerErrorMessage(error: HttpErrorResponse): string {
-    if (error.error?.message) {
-      return error.error.message;
-    }
-    if (error.error?.errorMsg) {
-      return error.error.errorMsg;
-    }
-    if (error.error?.error) {
-      return error.error.error;
-    }
-    if (typeof error.error === 'string') {
-      return error.error;
-    }
-    return ERROR_MESSAGES.SERVER_ERROR;
+    return parseApiError(error, ERROR_MESSAGES.SERVER_ERROR).userMessage;
   }
 
   private handleUnauthorized(): void {

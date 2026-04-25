@@ -105,6 +105,7 @@ import { toDatabaseCode, resolveDatabaseType, trimmed, toArtifactId, hasNumber, 
 import { ProjectDraftState } from '../../models/project-draft.models';
 import { loadProjectDraftFromStorage, saveProjectDraftToStorage } from '../../utils/project-draft-storage.utils';
 import { resolveProjectGenerationRoute } from '../../utils/project-generation-route.utils';
+import { getApiUserMessage, parseApiError } from '../../../../utils/api-error.utils';
 import {
   ProjectLanguageOption,
   SupportedProjectLanguage,
@@ -856,7 +857,7 @@ export class NodeProjectGenerationDashboardComponent implements OnInit, OnDestro
       this.contributorUserId = '';
       this.toastService.success('Contributor added successfully.');
     } catch (error) {
-      this.toastService.error('Failed to add contributor.');
+      this.toastService.error(getApiUserMessage(error, 'Failed to add contributor.'));
       console.error('Error adding contributor:', error);
     } finally {
       this.isContributorSaving = false;
@@ -875,7 +876,7 @@ export class NodeProjectGenerationDashboardComponent implements OnInit, OnDestro
       this.projectContributors = this.projectContributors.filter((contributor) => contributor.userId !== userId);
       this.toastService.success('Contributor removed successfully.');
     } catch (error) {
-      this.toastService.error('Failed to remove contributor.');
+      this.toastService.error(getApiUserMessage(error, 'Failed to remove contributor.'));
       console.error('Error removing contributor:', error);
     } finally {
       this.isContributorSaving = false;
@@ -927,7 +928,7 @@ export class NodeProjectGenerationDashboardComponent implements OnInit, OnDestro
       this.toastService.success('Contributors added successfully.');
       this.closeAddContributorModal();
     } catch (error) {
-      this.toastService.error('Failed to add contributors.');
+      this.toastService.error(getApiUserMessage(error, 'Failed to add contributors.'));
       console.error('Error adding contributors:', error);
     } finally {
       this.isAddingContributors = false;
@@ -945,7 +946,7 @@ export class NodeProjectGenerationDashboardComponent implements OnInit, OnDestro
       this.toastService.success('Project archived from your collaborations.');
       this.router.navigate(['/user/dashboard/projects']);
     } catch (error: any) {
-      this.toastService.error(error?.message || 'Failed to archive this collaboration.');
+      this.toastService.error(getApiUserMessage(error, 'Failed to archive this collaboration.'));
     } finally {
       this.isContributorSaving = false;
     }
@@ -989,7 +990,7 @@ export class NodeProjectGenerationDashboardComponent implements OnInit, OnDestro
       this.projectContributors = await firstValueFrom(this.projectService.getProjectContributors(projectId));
       this.toastService.success('Collaboration request approved.');
     } catch (error: any) {
-      this.toastService.error(error?.message || 'Failed to approve collaboration request.');
+      this.toastService.error(getApiUserMessage(error, 'Failed to approve collaboration request.'));
     }
   }
 
@@ -1009,7 +1010,7 @@ export class NodeProjectGenerationDashboardComponent implements OnInit, OnDestro
       await this.refreshCollaborationRequests();
       this.toastService.success('Collaboration request rejected.');
     } catch (error: any) {
-      this.toastService.error(error?.message || 'Failed to reject collaboration request.');
+      this.toastService.error(getApiUserMessage(error, 'Failed to reject collaboration request.'));
     }
   }
 
@@ -1029,7 +1030,7 @@ export class NodeProjectGenerationDashboardComponent implements OnInit, OnDestro
       this.syncSelectedContributorForMobileEdit(contributorId);
       this.toastService.success('Contributor permissions updated.');
     } catch (error: any) {
-      this.toastService.error(error?.message || 'Failed to update contributor permissions.');
+      this.toastService.error(getApiUserMessage(error, 'Failed to update contributor permissions.'));
     }
   }
 
@@ -1583,11 +1584,7 @@ export class NodeProjectGenerationDashboardComponent implements OnInit, OnDestro
   }
 
   private getProjectSaveErrorMessage(error: any): string {
-    const message = this.extractProjectSaveErrorMessage(error);
-    if (message.toLowerCase().includes('project name already exists')) {
-      return 'Project name already exists. Choose a different project name';
-    }
-    return message || 'Failed to save and start project generation.';
+    return parseApiError(error, 'Unable to save project details.').userMessage;
   }
 
   private connectProjectEvents(projectId: string): void {
@@ -3423,13 +3420,14 @@ export class NodeProjectGenerationDashboardComponent implements OnInit, OnDestro
   }
 
   private extractProjectSaveErrorMessage(error: any): string {
-    return trimmed(error?.error?.errorMsg || error?.error?.message || error?.error?.error || error?.message);
+    return parseApiError(error, 'Unable to save project details.').message;
   }
 
   private applyProjectSaveErrorState(error: any): void {
-    const message = this.extractProjectSaveErrorMessage(error).toLowerCase();
-    if (message.includes('project name already exists')) {
-      this.projectNameError = 'Project name already exists. Choose a different project name';
+    const apiError = parseApiError(error, 'Unable to save project details.');
+    const projectNameFieldError = trimmed(apiError.fieldErrors['projectName'] || apiError.fieldErrors['name']);
+    if (apiError.errorCode === 'PROJECT_NAME_ALREADY_EXISTS' || projectNameFieldError) {
+      this.projectNameError = projectNameFieldError || apiError.userMessage;
       this.activeSection = 'general';
       this.focusProjectNamingErrorField();
     }

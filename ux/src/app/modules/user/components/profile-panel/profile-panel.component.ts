@@ -8,6 +8,7 @@ import { AuthService } from '../../../../services/auth.service';
 import { ChangePasswordPayload, UserProfile, UserRoles, UserService } from '../../../../services/user.service';
 import { matchingFieldsValidator, passwordStrengthValidator } from '../../../../validators/reactive-form.validators';
 import { COUNTRY_TIMEZONE_OPTIONS, CountryTimezoneOption } from './profile-timezone.data';
+import { getApiUserMessage } from '../../../../utils/api-error.utils';
 
 @Component({
   selector: 'app-profile-panel',
@@ -115,7 +116,7 @@ export class ProfilePanelComponent implements OnInit {
       },
       error: (error) => {
         this.isSavingPassword = false;
-        this.toastService.error(error?.message || 'Failed to update password.');
+        this.toastService.error(getApiUserMessage(error, 'Failed to update password.'));
       }
     });
   }
@@ -135,7 +136,7 @@ export class ProfilePanelComponent implements OnInit {
       },
       error: (error) => {
         this.isSavingTimeZone = false;
-        this.toastService.error(error?.message || 'Failed to update timezone.');
+        this.toastService.error(getApiUserMessage(error, 'Failed to update timezone.'));
       }
     });
   }

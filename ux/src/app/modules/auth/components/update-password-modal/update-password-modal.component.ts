@@ -6,6 +6,7 @@ import { ToastService } from '../../../../services/toast.service';
 import { ComponentThemeService } from '../../../../services/component-theme.service';
 import { FormValidator, ValidationErrors, CommonValidationRules } from '../../../../validators/form-validator';
 import { ModalComponent } from '../../../../components/modal/modal.component';
+import { getApiUserMessage } from '../../../../utils/api-error.utils';
 
 @Component({
   selector: 'app-update-password-modal',
@@ -127,7 +128,7 @@ export class UpdatePasswordModalComponent {
       },
       error: (error) => {
         this.isLoading = false;
-        const errorMessage = error.message || 'Failed to reset password. Please try again.';
+        const errorMessage = getApiUserMessage(error, 'Failed to reset password. Please try again.');
         this.toastService.error(errorMessage);
         this.validationErrors = { ...this.validationErrors, otp: errorMessage };
       }

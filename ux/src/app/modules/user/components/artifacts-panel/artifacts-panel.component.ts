@@ -10,6 +10,7 @@ import {
 import { UserService, UserRoles } from '../../../../services/user.service';
 import { ToastService } from '../../../../services/toast.service';
 import { LoadingOverlayComponent } from '../../../../components/shared/loading-overlay/loading-overlay.component';
+import { getApiUserMessage } from '../../../../utils/api-error.utils';
 
 interface ArtifactAppFormModel {
   id: string | null;
@@ -115,7 +116,7 @@ export class ArtifactsPanelComponent implements OnInit {
       },
       error: (error) => {
         this.isLoading = false;
-        this.toastService.error(error?.error?.errorMsg || 'Failed to load artifacts.');
+        this.toastService.error(getApiUserMessage(error, 'Failed to load artifacts.'));
       }
     });
   }
@@ -131,7 +132,7 @@ export class ArtifactsPanelComponent implements OnInit {
       },
       error: (error) => {
         this.isLoading = false;
-        this.toastService.error(error?.error?.errorMsg || 'Failed to load artifact details.');
+        this.toastService.error(getApiUserMessage(error, 'Failed to load artifact details.'));
       }
     });
   }
@@ -183,7 +184,7 @@ export class ArtifactsPanelComponent implements OnInit {
       },
       error: (error) => {
         this.isSaving = false;
-        this.toastService.error(error?.error?.errorMsg || 'Failed to save artifact.');
+        this.toastService.error(getApiUserMessage(error, 'Failed to save artifact.'));
       }
     });
   }
@@ -203,7 +204,7 @@ export class ArtifactsPanelComponent implements OnInit {
       },
       error: (error) => {
         this.isSnapshotting = false;
-        this.toastService.error(error?.error?.errorMsg || 'Failed to create artifact snapshot.');
+        this.toastService.error(getApiUserMessage(error, 'Failed to create artifact snapshot.'));
       }
     });
   }
@@ -221,7 +222,7 @@ export class ArtifactsPanelComponent implements OnInit {
       },
       error: (error) => {
         this.isPublishing = false;
-        this.toastService.error(error?.error?.errorMsg || 'Failed to publish artifact.');
+        this.toastService.error(getApiUserMessage(error, 'Failed to publish artifact.'));
       }
     });
   }
@@ -235,7 +236,7 @@ export class ArtifactsPanelComponent implements OnInit {
       },
       error: (error) => {
         this.isLoadingVersions = false;
-        this.toastService.error(error?.error?.errorMsg || 'Failed to load artifact versions.');
+        this.toastService.error(getApiUserMessage(error, 'Failed to load artifact versions.'));
       }
     });
   }

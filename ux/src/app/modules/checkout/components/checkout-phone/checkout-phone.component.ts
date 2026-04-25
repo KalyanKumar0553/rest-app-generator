@@ -6,6 +6,7 @@ import { TurnstileComponent } from '../../../../components/turnstile/turnstile.c
 import { CheckoutService } from '../../services/checkout.service';
 import { CheckoutStateService } from '../../services/checkout-state.service';
 import { ToastService } from '../../../../services/toast.service';
+import { getApiUserMessage } from '../../../../utils/api-error.utils';
 
 interface CountryCode {
   name: string;
@@ -118,7 +119,7 @@ export class CheckoutPhoneComponent implements OnInit {
         this.isLoading = false;
         this.turnstileToken = '';
         this.turnstileWidget?.reset();
-        const msg = err?.message || 'Failed to send OTP. Please try again.';
+        const msg = getApiUserMessage(err, 'Failed to send OTP. Please try again.');
         this.toastService.error(msg);
       }
     });

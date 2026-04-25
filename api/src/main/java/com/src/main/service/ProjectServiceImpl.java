@@ -43,6 +43,7 @@ import com.src.main.dto.ProjectImportRequestDTO;
 import com.src.main.dto.ProjectSummaryDTO;
 import com.src.main.dto.ProjectTabDefinitionDTO;
 import com.src.main.exception.GenericException;
+import com.src.main.exception.SpecificException;
 import com.src.main.model.ProjectCollaborationRequestEntity;
 import com.src.main.model.ProjectContributorEntity;
 import com.src.main.model.ProjectDraftVersionEntity;
@@ -171,10 +172,10 @@ public class ProjectServiceImpl implements ProjectService {
 		} catch (GenericException e) {
 			throw e;
 		} catch (IllegalArgumentException | ConstraintViolationException e) {
-			throw new GenericException(HttpStatus.BAD_REQUEST, e.getMessage(), e);
+			throw new SpecificException(HttpStatus.BAD_REQUEST, "PROJECT_CREATE_VALIDATION_ERROR", e.getMessage(), e);
 		} catch (Exception e) {
 			log.error("Unexpected error creating project", e);
-			throw new GenericException(HttpStatus.INTERNAL_SERVER_ERROR, "Failed to create project.", e);
+			throw new GenericException(HttpStatus.INTERNAL_SERVER_ERROR, "PROJECT_CREATE_FAILED", "Failed to create project.", e);
 		}
 	}
 
@@ -200,10 +201,10 @@ public class ProjectServiceImpl implements ProjectService {
 		} catch (GenericException e) {
 			throw e;
 		} catch (IllegalArgumentException | ConstraintViolationException e) {
-			throw new GenericException(HttpStatus.BAD_REQUEST, e.getMessage(), e);
+			throw new SpecificException(HttpStatus.BAD_REQUEST, "PROJECT_DRAFT_VALIDATION_ERROR", e.getMessage(), e);
 		} catch (Exception e) {
 			log.error("Unexpected error creating project draft", e);
-			throw new GenericException(HttpStatus.INTERNAL_SERVER_ERROR, "Failed to create project draft.", e);
+			throw new GenericException(HttpStatus.INTERNAL_SERVER_ERROR, "PROJECT_DRAFT_CREATE_FAILED", "Failed to create project draft.", e);
 		}
 	}
 
@@ -300,7 +301,7 @@ public class ProjectServiceImpl implements ProjectService {
 
 	private void assertExactDraftVersionMatch(Integer currentDraftVersion, Integer requestedDraftVersion) {
 		if (requestedDraftVersion == null || !requestedDraftVersion.equals(currentDraftVersion)) {
-			throw new GenericException(HttpStatus.CONFLICT, "Project draft is outdated. Reload the latest project state and try again.");
+			throw new SpecificException(HttpStatus.CONFLICT, "PROJECT_DRAFT_VERSION_CONFLICT", "Project draft is outdated. Reload the latest project state and try again.");
 		}
 	}
 
@@ -850,7 +851,7 @@ public class ProjectServiceImpl implements ProjectService {
 		} catch (GenericException | IllegalArgumentException | SecurityException e) {
 			throw e;
 		} catch (Exception e) {
-			throw new GenericException(HttpStatus.INTERNAL_SERVER_ERROR, "Failed to delete project");
+			throw new GenericException(HttpStatus.INTERNAL_SERVER_ERROR, "PROJECT_DELETE_FAILED", "Failed to delete project", e);
 		}
 	}
 
