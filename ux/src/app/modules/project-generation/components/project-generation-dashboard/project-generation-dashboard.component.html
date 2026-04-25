@@ -141,6 +141,10 @@
     <app-project-generation-module-tab-section *ngIf="isModuleSectionActive('state-machine')" [host]="this" moduleKey="state-machine"></app-project-generation-module-tab-section>
     
     <app-project-generation-module-tab-section *ngIf="isModuleSectionActive('subscription')" [host]="this" moduleKey="subscription"></app-project-generation-module-tab-section>
+
+    <app-project-generation-module-tab-section *ngIf="isModuleSectionActive('swagger')" [host]="this" moduleKey="swagger"></app-project-generation-module-tab-section>
+
+    <app-project-generation-module-tab-section *ngIf="isModuleSectionActive('cdn')" [host]="this" moduleKey="cdn"></app-project-generation-module-tab-section>
     
     <app-project-generation-collaborate-section *ngIf="activeSection === 'collaborate'" [host]="this"></app-project-generation-collaborate-section>
     

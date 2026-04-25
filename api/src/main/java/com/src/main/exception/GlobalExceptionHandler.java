@@ -209,7 +209,7 @@ public class GlobalExceptionHandler {
 				safeMessage(ex.getMessage(), status),
 				safeMessage(ex.getUserMessage(), status),
 				request == null ? null : request.getRequestURI(),
-				OffsetDateTime.now(),
+				OffsetDateTime.now().toString(),
 				traceId,
 				fieldErrors == null || fieldErrors.isEmpty() ? null : fieldErrors,
 				safeMessage(ex.getUserMessage(), status));

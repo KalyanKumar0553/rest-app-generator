@@ -662,10 +662,14 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
       this.collaborationInviteToken = projectDetails.collaborationInviteToken || null;
       this.collaborationRequests = projectDetails.collaborationRequests || [];
       this.draftVersion = Number(projectDetails.draftVersion || 1);
-      this.tabDefinitions = Array.isArray(projectDetails.tabDetails) ? projectDetails.tabDetails : this.tabDefinitions;
-      this.tabDefinitionsLoadedFully = Array.isArray(projectDetails.tabDetails) && projectDetails.tabDetails.length > 1;
       this.projectSettings.language = normalizeProjectLanguage(projectDetails.generator || this.projectSettings.language);
-      this.applyTabDefinitions(this.tabDefinitions);
+      await this.ensureSectionDataLoaded('general');
+      if (Array.isArray(projectDetails.tabDetails) && projectDetails.tabDetails.length > 0) {
+        this.tabDefinitions = projectDetails.tabDetails;
+        this.tabDefinitionsLoadedFully = projectDetails.tabDetails.length > 1;
+        this.applyTabDefinitions(this.tabDefinitions);
+      }
+      await this.reloadTabDefinitionsForCurrentSelection();
       this.selectDefaultMigrationLanguage();
       this.hydrateExploreStateFromProjectDetails(projectDetails);
       this.refreshExploreRunHistory();
@@ -1417,6 +1421,7 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
             : Boolean((preferences as Record<string, unknown>)['enableLombok'])
         };
         this.applyDependencyDraftData(tabData);
+        this.loadTabDefinitions(this.projectSettings.language, this.selectedDependencies);
         this.syncActuatorConfigurationsWithProfiles();
         this.syncActuatorStateStore();
         return;
@@ -1431,6 +1436,7 @@ export class ProjectGenerationDashboardComponent implements OnInit, OnDestroy {
           this.projectGenerationState.setModuleConfigs(this.moduleConfigs);
         }
         this.applySelectedPluginsDraftData(tabData);
+        this.loadTabDefinitions(this.projectSettings.language, this.selectedDependencies);
         return;
       case 'actuator': {
         const actuator = (tabData['actuator'] as Record<string, any> | undefined) || {};

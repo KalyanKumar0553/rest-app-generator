@@ -665,10 +665,14 @@ export class NodeProjectGenerationDashboardComponent implements OnInit, OnDestro
       this.collaborationInviteToken = projectDetails.collaborationInviteToken || null;
       this.collaborationRequests = projectDetails.collaborationRequests || [];
       this.draftVersion = Number(projectDetails.draftVersion || 1);
-      this.tabDefinitions = Array.isArray(projectDetails.tabDetails) ? projectDetails.tabDetails : this.tabDefinitions;
-      this.tabDefinitionsLoadedFully = Array.isArray(projectDetails.tabDetails) && projectDetails.tabDetails.length > 1;
       this.projectSettings.language = normalizeProjectLanguage(projectDetails.generator || this.projectSettings.language);
-      this.applyTabDefinitions(this.tabDefinitions);
+      await this.ensureSectionDataLoaded('general');
+      if (Array.isArray(projectDetails.tabDetails) && projectDetails.tabDetails.length > 0) {
+        this.tabDefinitions = projectDetails.tabDetails;
+        this.tabDefinitionsLoadedFully = projectDetails.tabDetails.length > 1;
+        this.applyTabDefinitions(this.tabDefinitions);
+      }
+      await this.reloadTabDefinitionsForCurrentSelection();
       this.selectDefaultMigrationLanguage();
       this.hydrateExploreStateFromProjectDetails(projectDetails);
       this.refreshExploreRunHistory();
